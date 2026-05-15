@@ -1,7 +1,6 @@
 """Pure aggregation metrics over parsed commits."""
 
-from collections import defaultdict
-from dataclasses import dataclass
+from collections import Counter, defaultdict
 from datetime import datetime
 from typing import Iterable, Protocol
 
@@ -11,12 +10,7 @@ from reviewstats.parse import Reviewer
 class _CommitLike(Protocol):
     reviewers: list[Reviewer]
     date: datetime
-
-
-@dataclass(frozen=True)
-class ActiveWindow:
-    first_week: str
-    last_week: str
+    author: str
 
 
 def iso_week(date: datetime) -> str:
@@ -32,15 +26,35 @@ def _individuals(commit: _CommitLike) -> list[str]:
     return [r.name for r in commit.reviewers if not r.is_group]
 
 
+def _keep(name: str, members: frozenset[str] | None) -> bool:
+    return members is None or name in members
+
+
 def count_by_individual(
-    commits: Iterable[_CommitLike], *, group: str
+    commits: Iterable[_CommitLike],
+    *,
+    group: str,
+    members: frozenset[str] | None = None,
 ) -> dict[str, int]:
-    counts: dict[str, int] = defaultdict(int)
+    counts: Counter[str] = Counter()
     for c in commits:
         if not _has_group(c, group):
             continue
-        for name in _individuals(c):
-            counts[name] += 1
+        counts.update(n for n in _individuals(c) if _keep(n, members))
+    return dict(counts)
+
+
+def non_member_reviewer_counts(
+    commits: Iterable[_CommitLike],
+    *,
+    group: str,
+    members: frozenset[str],
+) -> dict[str, int]:
+    counts: Counter[str] = Counter()
+    for c in commits:
+        if not _has_group(c, group):
+            continue
+        counts.update(n for n in _individuals(c) if n not in members)
     return dict(counts)
 
 
@@ -65,20 +79,27 @@ def routing_breakdown(commits: Iterable[_CommitLike], *, group: str) -> dict[str
     }
 
 
-def sole_reviewer_counts(commits: Iterable[_CommitLike]) -> dict[str, int]:
-    counts: dict[str, int] = defaultdict(int)
+def sole_reviewer_counts(
+    commits: Iterable[_CommitLike],
+    *,
+    members: frozenset[str] | None = None,
+) -> dict[str, int]:
+    counts: Counter[str] = Counter()
     for c in commits:
         if len(c.reviewers) != 1:
             continue
         only = c.reviewers[0]
-        if only.is_group:
+        if only.is_group or not _keep(only.name, members):
             continue
         counts[only.name] += 1
     return dict(counts)
 
 
 def weekly_counts_per_reviewer(
-    commits: Iterable[_CommitLike], *, group: str
+    commits: Iterable[_CommitLike],
+    *,
+    group: str,
+    members: frozenset[str] | None = None,
 ) -> dict[str, dict[str, int]]:
     """{ "2026-W20": { "padenot": 5, ... }, ... }"""
     out: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
@@ -87,27 +108,28 @@ def weekly_counts_per_reviewer(
             continue
         week = iso_week(c.date)
         for name in _individuals(c):
-            out[week][name] += 1
+            if _keep(name, members):
+                out[week][name] += 1
     return {wk: dict(d) for wk, d in out.items()}
 
 
-def active_windows(
-    commits: Iterable[_CommitLike], *, group: str
-) -> dict[str, ActiveWindow]:
-    first: dict[str, datetime] = {}
-    last: dict[str, datetime] = {}
+def author_patch_counts(
+    commits: Iterable[_CommitLike],
+) -> dict[str, int]:
+    return dict(Counter(c.author for c in commits))
+
+
+def author_reviewer_pairs(
+    commits: Iterable[_CommitLike],
+    *,
+    members: frozenset[str] | None = None,
+) -> dict[str, dict[str, int]]:
+    out: dict[str, Counter[str]] = defaultdict(Counter)
     for c in commits:
-        if not _has_group(c, group):
-            continue
         for name in _individuals(c):
-            if name not in first or c.date < first[name]:
-                first[name] = c.date
-            if name not in last or c.date > last[name]:
-                last[name] = c.date
-    return {
-        name: ActiveWindow(iso_week(first[name]), iso_week(last[name]))
-        for name in first
-    }
+            if _keep(name, members):
+                out[c.author][name] += 1
+    return {a: dict(d) for a, d in out.items() if d}
 
 
 def compute_gini(counts: list[int]) -> float:

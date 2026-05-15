@@ -8,12 +8,15 @@ from datetime import datetime, timedelta
 from typing import Iterable
 
 from reviewstats.git_log import Commit
+from reviewstats.members import MEMBERS, MEMBER_IDS
 from reviewstats.metrics import (
-    active_windows,
+    author_patch_counts,
+    author_reviewer_pairs,
     bus_factor,
     compute_gini,
     count_by_individual,
     iso_week,
+    non_member_reviewer_counts,
     routing_breakdown,
     sole_reviewer_counts,
     top_n_share,
@@ -22,6 +25,7 @@ from reviewstats.metrics import (
 
 
 _TOP_N_FOR_TREND = 5
+_TOP_AUTHORS = 15
 
 
 def _pct(part: int, whole: int) -> float:
@@ -61,10 +65,18 @@ def build_report(
     commits = list(commits)
 
     routing = routing_breakdown(commits, group=group)
-    indiv_counts = count_by_individual(commits, group=group)
-    sole_counts = sole_reviewer_counts(commits)
-    weekly = weekly_counts_per_reviewer(commits, group=group)
-    windows = active_windows(commits, group=group)
+    indiv_counts = count_by_individual(
+        commits, group=group, members=MEMBER_IDS
+    )
+    sole_counts = sole_reviewer_counts(commits, members=MEMBER_IDS)
+    weekly = weekly_counts_per_reviewer(
+        commits, group=group, members=MEMBER_IDS
+    )
+    non_member_counts = non_member_reviewer_counts(
+        commits, group=group, members=MEMBER_IDS
+    )
+    author_totals = author_patch_counts(commits)
+    author_reviewers = author_reviewer_pairs(commits, members=MEMBER_IDS)
 
     weeks = _iso_weeks_between(window_start, window_end)
     num_weeks = max(len(weeks), 1)
@@ -72,9 +84,16 @@ def build_report(
     ranked_individuals = _ranked_pairs(indiv_counts)
     top_reviewers = [name for name, _ in ranked_individuals[:_TOP_N_FOR_TREND]]
 
-    trend_counts = {
-        name: [weekly.get(wk, {}).get(name, 0) for wk in weeks]
-        for name in top_reviewers
+    all_members_weekly = {
+        member: [weekly.get(wk, {}).get(member, 0) for wk in weeks]
+        for member in MEMBER_IDS
+    }
+
+    ranked_authors = _ranked_pairs(author_totals)[:_TOP_AUTHORS]
+    top_authors = [a for a, _ in ranked_authors]
+    author_reviewer_matrix = {
+        author: author_reviewers.get(author, {})
+        for author in top_authors
     }
 
     return {
@@ -114,10 +133,14 @@ def build_report(
         "weekly_trend": {
             "weeks": weeks,
             "top_reviewers": top_reviewers,
-            "counts": trend_counts,
+            "all_members": all_members_weekly,
         },
-        "active_windows": {
-            name: {"first_week": w.first_week, "last_week": w.last_week}
-            for name, w in windows.items()
+        "non_member_reviewers": _to_ranked_list(
+            _ranked_pairs(non_member_counts)
+        ),
+        "members": MEMBERS,
+        "authors": {
+            "top_total": _to_ranked_list(ranked_authors),
+            "reviewer_matrix": author_reviewer_matrix,
         },
     }

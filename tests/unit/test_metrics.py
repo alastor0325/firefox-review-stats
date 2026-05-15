@@ -1,7 +1,6 @@
 from datetime import datetime, timezone
 
 from reviewstats.metrics import (
-    ActiveWindow,
     bus_factor,
     compute_gini,
     count_by_individual,
@@ -148,21 +147,3 @@ class TestWeeklyCountsPerReviewer:
         assert result["2026-W19"]["alwu"] == 1
 
 
-class TestActiveWindow:
-    def test_first_and_last_week(self):
-        from reviewstats.metrics import active_windows
-
-        commits = [
-            _C([_r("padenot"), _r(GROUP, True)],
-               date=datetime(2025, 12, 1, tzinfo=timezone.utc)),
-            _C([_r("padenot"), _r(GROUP, True)],
-               date=datetime(2026, 5, 15, tzinfo=timezone.utc)),
-            _C([_r("alwu"), _r(GROUP, True)],
-               date=datetime(2026, 3, 1, tzinfo=timezone.utc)),
-        ]
-        result = active_windows(commits, group=GROUP)
-        assert result["padenot"] == ActiveWindow(
-            first_week=iso_week(datetime(2025, 12, 1)),
-            last_week=iso_week(datetime(2026, 5, 15)),
-        )
-        assert result["alwu"].first_week == result["alwu"].last_week

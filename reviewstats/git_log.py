@@ -19,13 +19,14 @@ from reviewstats.parse import (
 # Record separator (ASCII 30) to delimit commits unambiguously, since
 # commit bodies contain blank lines.
 _RECORD_SEP = "\x1e"
-_GIT_LOG_FORMAT = f"%H%x09%aI%x09%s%n%b{_RECORD_SEP}"
+_GIT_LOG_FORMAT = f"%H%x09%aI%x09%an%x09%s%n%b{_RECORD_SEP}"
 
 
 @dataclass(frozen=True)
 class Commit:
     sha: str
     date: datetime
+    author: str
     subject: str
     reviewers: list[Reviewer] = field(default_factory=list)
     differential_revision: str | None = None
@@ -61,7 +62,7 @@ def parse_git_log_output(raw: str) -> list[Commit]:
             continue
         header, _, body = record.partition("\n")
         try:
-            sha, date_str, subject = header.split("\t", 2)
+            sha, date_str, author, subject = header.split("\t", 3)
         except ValueError:
             continue
         if should_skip_commit(subject):
@@ -70,6 +71,7 @@ def parse_git_log_output(raw: str) -> list[Commit]:
             Commit(
                 sha=sha,
                 date=datetime.fromisoformat(date_str),
+                author=author,
                 subject=subject,
                 reviewers=parse_reviewers(subject),
                 differential_revision=extract_differential_revision(body),

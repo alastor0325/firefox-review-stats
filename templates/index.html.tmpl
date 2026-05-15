@@ -5,28 +5,56 @@
 <title>dom/media Reviewer Load — media-playback-reviewers</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
-  body { font-family: -apple-system, system-ui, sans-serif; margin: 0; background: #f6f7f9; color: #1c1f24; }
-  header { background: #1c1f24; color: #f6f7f9; padding: 24px 32px; }
+  :root {
+    --bg: #f6f7f9;
+    --fg: #1c1f24;
+    --muted: #6b7280;
+    --card: #ffffff;
+    --accent: #3b82f6;
+    --warn: #ef4444;
+    --pill: #e5e7eb;
+    --pill-active: #1c1f24;
+    --pill-active-fg: #ffffff;
+  }
+  body { font-family: -apple-system, system-ui, sans-serif; margin: 0; background: var(--bg); color: var(--fg); }
+  header { background: var(--fg); color: var(--bg); padding: 24px 32px; }
   header h1 { margin: 0; font-size: 20px; font-weight: 600; }
   header .meta { margin-top: 6px; font-size: 13px; opacity: 0.7; }
-  main { max-width: 1100px; margin: 24px auto; padding: 0 24px 48px; }
-  section { background: white; border-radius: 8px; padding: 20px 24px; margin-bottom: 18px; box-shadow: 0 1px 2px rgba(0,0,0,.05); }
+  main { max-width: 1180px; margin: 24px auto; padding: 0 24px 48px; }
+  section { background: var(--card); border-radius: 8px; padding: 20px 24px; margin-bottom: 18px; box-shadow: 0 1px 2px rgba(0,0,0,.05); }
   section h2 { margin: 0 0 12px; font-size: 15px; font-weight: 600; color: #4b5563; }
-  .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; }
+  .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; }
   .stat { padding: 10px 14px; background: #f9fafb; border-radius: 6px; }
-  .stat .label { font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.04em; }
+  .stat .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
   .stat .value { font-size: 22px; font-weight: 600; margin-top: 4px; }
-  .stat .sub { font-size: 12px; color: #6b7280; margin-top: 2px; }
+  .stat .sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
   .chart-box { position: relative; height: 360px; }
   .chart-box.tall { height: 480px; }
+  .chart-box.square { height: 360px; max-width: 460px; margin: 0 auto; }
+  .split { display: grid; grid-template-columns: 1.4fr 1fr; gap: 18px; align-items: center; }
+  @media (max-width: 800px) { .split { grid-template-columns: 1fr; } }
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
   th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #eee; }
-  th { font-weight: 600; color: #6b7280; }
+  th { font-weight: 600; color: var(--muted); }
   td.num { text-align: right; font-variant-numeric: tabular-nums; }
-  .footer-note { font-size: 12px; color: #6b7280; margin-top: 10px; }
+  .footer-note { font-size: 12px; color: var(--muted); margin-top: 10px; }
+
+  /* View toggle */
+  .toggle-bar { display: flex; gap: 4px; margin-bottom: 16px; }
+  .toggle-bar button {
+    background: var(--pill); color: var(--fg);
+    border: none; border-radius: 999px;
+    padding: 8px 18px; font: inherit; font-size: 13px; font-weight: 500;
+    cursor: pointer;
+  }
+  .toggle-bar button.active { background: var(--pill-active); color: var(--pill-active-fg); }
+
+  /* View visibility — controlled by body class */
+  body[data-view="total"] .view-weekly { display: none; }
+  body[data-view="weekly"] .view-total { display: none; }
 </style>
 </head>
-<body>
+<body data-view="total">
 
 <header>
   <h1>dom/media Reviewer Load — <span id="hdr-group"></span></h1>
@@ -36,39 +64,73 @@
 <main>
 
 <section>
-  <h2>Summary (6-month window)</h2>
+  <h2>Summary</h2>
   <div class="summary-grid" id="summary-grid"></div>
 </section>
 
-<section>
-  <h2>Concentration metrics</h2>
-  <div class="summary-grid" id="concentration-grid"></div>
-  <div class="footer-note">Gini: 0 = perfectly even, 1 = one person does everything. Bus factor = smallest # of reviewers whose absence leaves &gt;50% uncovered.</div>
-</section>
+<div class="toggle-bar" role="tablist">
+  <button id="btn-total"  class="active" type="button">6-Month View</button>
+  <button id="btn-weekly" type="button">Per-Week View</button>
+</div>
 
-<section>
-  <h2>Within-group distribution — who is named alongside the group</h2>
-  <div class="chart-box tall"><canvas id="chart-distribution"></canvas></div>
-</section>
+<!-- ============= 6-MONTH VIEW ============= -->
+<div class="view-total">
 
-<section>
-  <h2>Sole-reviewer patches (bus-factor risk)</h2>
-  <div class="chart-box"><canvas id="chart-sole"></canvas></div>
-  <div class="footer-note">Patches with exactly one reviewer (an individual, no group tagged).</div>
-</section>
+  <section>
+    <h2>Concentration metrics (6-month totals)</h2>
+    <div class="summary-grid" id="concentration-grid"></div>
+    <div class="footer-note">Gini: 0 = perfectly even, 1 = one person does everything. Bus factor = smallest # of members whose absence leaves &gt;50% uncovered. All percentages are over reviews by listed members only.</div>
+  </section>
 
-<section>
-  <h2>Weekly trend — top 5 reviewers</h2>
-  <div class="chart-box tall"><canvas id="chart-trend"></canvas></div>
-</section>
+  <section>
+    <h2>Within-group distribution — listed members only</h2>
+    <div class="split">
+      <div class="chart-box"><canvas id="chart-distribution"></canvas></div>
+      <div class="chart-box square"><canvas id="chart-distribution-pie"></canvas></div>
+    </div>
+  </section>
 
-<section>
-  <h2>Active reviewer windows</h2>
-  <table id="active-table">
-    <thead><tr><th>Reviewer</th><th>First week</th><th>Last week</th></tr></thead>
-    <tbody></tbody>
-  </table>
-</section>
+  <section>
+    <h2>Sole-reviewer patches (bus-factor risk)</h2>
+    <div class="chart-box"><canvas id="chart-sole"></canvas></div>
+    <div class="footer-note">Patches with exactly one reviewer (a listed member, no group tagged).</div>
+  </section>
+
+  <section>
+    <h2>Reviews by non-members on media-playback patches</h2>
+    <div class="chart-box tall"><canvas id="chart-nonmember"></canvas></div>
+    <div class="footer-note">Reviewers outside the 9-member rotation who appeared on patches tagged with media-playback-reviewers. Signals cross-team review load.</div>
+  </section>
+
+  <section>
+    <h2>Top patch authors in dom/media</h2>
+    <div class="chart-box tall"><canvas id="chart-authors"></canvas></div>
+    <div class="footer-note">All authors of patches touching dom/media in the window (any reviewer).</div>
+  </section>
+
+  <section>
+    <h2>Author &rarr; reviewer mapping (top authors only)</h2>
+    <div class="chart-box tall"><canvas id="chart-author-reviewer"></canvas></div>
+    <div class="footer-note">For each author's patches, which listed members reviewed them. Bars only count reviews by members; non-member reviews don't appear here.</div>
+  </section>
+
+</div>
+
+<!-- ============= PER-WEEK VIEW ============= -->
+<div class="view-weekly">
+
+  <section>
+    <h2>Weekly trend — top 5 listed members</h2>
+    <div class="chart-box tall"><canvas id="chart-trend-top"></canvas></div>
+  </section>
+
+  <section>
+    <h2>Weekly trend — all 9 listed members</h2>
+    <div class="chart-box tall"><canvas id="chart-trend-all"></canvas></div>
+    <div class="footer-note">Lower-volume reviewers can disappear behind the others — toggle individual series by clicking the legend.</div>
+  </section>
+
+</div>
 
 </main>
 
@@ -77,6 +139,13 @@ const DATA = __DATA_JSON__;
 
 const fmtPct = v => (v * 100).toFixed(1) + '%';
 const fmtNum = v => (typeof v === 'number' && !Number.isInteger(v)) ? v.toFixed(1) : v;
+
+const PALETTE = [
+  '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444',
+  '#0ea5e9', '#84cc16', '#f97316', '#ec4899', '#06b6d4',
+  '#a855f7', '#22c55e', '#eab308', '#6366f1', '#14b8a6',
+];
+const color = i => PALETTE[i % PALETTE.length];
 
 function stat(label, value, sub) {
   const d = document.createElement('div');
@@ -95,9 +164,8 @@ const s = DATA.summary;
 const sg = document.getElementById('summary-grid');
 sg.appendChild(stat('Total dom/media patches', s.total_patches));
 sg.appendChild(stat('Tagged with group', s.group_tagged_patches, fmtPct(s.group_tagged_pct) + ' of total'));
-sg.appendChild(stat('With individual co-named', s.with_individual_named, fmtPct(s.with_individual_pct) + ' of group-tagged'));
-sg.appendChild(stat('Group-only (rotation)', s.group_only, fmtPct(s.group_only_pct) + ' of group-tagged'));
-sg.appendChild(stat('Unique individuals', s.unique_individuals));
+sg.appendChild(stat('Listed members reviewing', DATA.within_group_total.length, 'of ' + Object.keys(DATA.members).length + ' on the list'));
+sg.appendChild(stat('Group-only patches', s.group_only, fmtPct(s.group_only_pct) + ' of group-tagged'));
 sg.appendChild(stat('Avg group-tagged / week', fmtNum(s.avg_per_week)));
 
 // Concentration grid
@@ -109,77 +177,121 @@ cg.appendChild(stat('Top-5 share', fmtPct(c.top5_share)));
 cg.appendChild(stat('Gini coefficient', c.gini.toFixed(2)));
 cg.appendChild(stat('Bus factor (≥50%)', c.bus_factor));
 
-// Within-group distribution
-new Chart(document.getElementById('chart-distribution'), {
-  type: 'bar',
+// Toggle wiring
+const btnTotal = document.getElementById('btn-total');
+const btnWeekly = document.getElementById('btn-weekly');
+btnTotal.addEventListener('click', () => {
+  document.body.dataset.view = 'total';
+  btnTotal.classList.add('active');
+  btnWeekly.classList.remove('active');
+});
+btnWeekly.addEventListener('click', () => {
+  document.body.dataset.view = 'weekly';
+  btnWeekly.classList.add('active');
+  btnTotal.classList.remove('active');
+});
+
+function horizontalBar(canvasId, rows, fill) {
+  const colors = (typeof fill === 'function')
+    ? rows.map((_, i) => fill(i))
+    : rows.map(() => fill);
+  return new Chart(document.getElementById(canvasId), {
+    type: 'bar',
+    data: {
+      labels: rows.map(r => r.name),
+      datasets: [{
+        data: rows.map(r => r.count),
+        backgroundColor: colors,
+      }],
+    },
+    options: {
+      indexAxis: 'y',
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: {
+          label: ctx => {
+            const row = rows[ctx.dataIndex];
+            return row.pct != null
+              ? `${row.count} (${fmtPct(row.pct)})`
+              : `${row.count}`;
+          },
+        }},
+      },
+      scales: { x: { beginAtZero: true } },
+      maintainAspectRatio: false,
+    },
+  });
+}
+
+horizontalBar('chart-distribution', DATA.within_group_total, color);
+horizontalBar('chart-sole',         DATA.sole_reviewer,       '#ef4444');
+horizontalBar('chart-nonmember',    DATA.non_member_reviewers,'#6b7280');
+horizontalBar('chart-authors',      DATA.authors.top_total,   '#10b981');
+
+// --- Within-group distribution (doughnut) ---
+new Chart(document.getElementById('chart-distribution-pie'), {
+  type: 'doughnut',
   data: {
     labels: DATA.within_group_total.map(r => r.name),
     datasets: [{
-      label: 'Patches reviewed',
       data: DATA.within_group_total.map(r => r.count),
-      backgroundColor: '#3b82f6',
+      backgroundColor: DATA.within_group_total.map((_, i) => color(i)),
+      borderWidth: 1,
     }],
   },
   options: {
-    indexAxis: 'y',
     plugins: {
-      legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label: (ctx) => {
-            const row = DATA.within_group_total[ctx.dataIndex];
-            return `${row.count}  (${fmtPct(row.pct)})`;
-          },
-        },
-      },
+      legend: { position: 'bottom', labels: { boxWidth: 12 } },
+      tooltip: { callbacks: {
+        label: ctx => `${ctx.label}: ${ctx.parsed} (${fmtPct(DATA.within_group_total[ctx.dataIndex].pct)})`,
+      }},
     },
-    scales: { x: { beginAtZero: true } },
     maintainAspectRatio: false,
   },
 });
 
-// Sole reviewer
-new Chart(document.getElementById('chart-sole'), {
+// --- Author → reviewer matrix (stacked bar) ---
+const matrix = DATA.authors.reviewer_matrix;
+const matrixAuthors = Object.keys(matrix);
+const memberIds = Object.keys(DATA.members);
+new Chart(document.getElementById('chart-author-reviewer'), {
   type: 'bar',
   data: {
-    labels: DATA.sole_reviewer.map(r => r.name),
-    datasets: [{
-      label: 'Sole-reviewer patches',
-      data: DATA.sole_reviewer.map(r => r.count),
-      backgroundColor: '#ef4444',
-    }],
+    labels: matrixAuthors,
+    datasets: memberIds.map((m, i) => ({
+      label: m,
+      data: matrixAuthors.map(a => (matrix[a] || {})[m] || 0),
+      backgroundColor: color(i),
+    })),
   },
   options: {
     indexAxis: 'y',
     plugins: {
-      legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label: (ctx) => {
-            const row = DATA.sole_reviewer[ctx.dataIndex];
-            return `${row.count}  (${fmtPct(row.pct)})`;
-          },
-        },
-      },
+      legend: { position: 'bottom', labels: { boxWidth: 12 } },
+      tooltip: { mode: 'index' },
     },
-    scales: { x: { beginAtZero: true } },
+    scales: {
+      x: { stacked: true, beginAtZero: true },
+      y: { stacked: true },
+    },
     maintainAspectRatio: false,
   },
 });
 
-// Weekly trend
-const trendColors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444'];
-const trendDatasets = DATA.weekly_trend.top_reviewers.map((name, i) => ({
-  label: name,
-  data: DATA.weekly_trend.counts[name],
-  borderColor: trendColors[i % trendColors.length],
-  backgroundColor: trendColors[i % trendColors.length] + '33',
-  tension: 0.25,
-  fill: false,
-}));
-new Chart(document.getElementById('chart-trend'), {
+// --- Weekly trend top 5 ---
+new Chart(document.getElementById('chart-trend-top'), {
   type: 'line',
-  data: { labels: DATA.weekly_trend.weeks, datasets: trendDatasets },
+  data: {
+    labels: DATA.weekly_trend.weeks,
+    datasets: DATA.weekly_trend.top_reviewers.map((name, i) => ({
+      label: name,
+      data: DATA.weekly_trend.all_members[name],
+      borderColor: color(i),
+      backgroundColor: color(i) + '33',
+      tension: 0.25,
+      fill: false,
+    })),
+  },
   options: {
     plugins: { legend: { position: 'bottom' } },
     scales: { y: { beginAtZero: true } },
@@ -187,16 +299,27 @@ new Chart(document.getElementById('chart-trend'), {
   },
 });
 
-// Active windows table
-const tbody = document.querySelector('#active-table tbody');
-const aw = DATA.active_windows;
-Object.keys(aw)
-  .sort((a, b) => aw[b].last_week.localeCompare(aw[a].last_week))
-  .forEach(name => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${name}</td><td class="num">${aw[name].first_week}</td><td class="num">${aw[name].last_week}</td>`;
-    tbody.appendChild(tr);
-  });
+// --- Weekly trend all members ---
+const allMembers = Object.keys(DATA.weekly_trend.all_members);
+new Chart(document.getElementById('chart-trend-all'), {
+  type: 'line',
+  data: {
+    labels: DATA.weekly_trend.weeks,
+    datasets: allMembers.map((name, i) => ({
+      label: name,
+      data: DATA.weekly_trend.all_members[name],
+      borderColor: color(i),
+      backgroundColor: color(i) + '33',
+      tension: 0.25,
+      fill: false,
+    })),
+  },
+  options: {
+    plugins: { legend: { position: 'bottom' } },
+    scales: { y: { beginAtZero: true } },
+    maintainAspectRatio: false,
+  },
+});
 </script>
 
 </body>

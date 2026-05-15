@@ -1,0 +1,62 @@
+from datetime import datetime, timezone
+
+from reviewstats.metrics import author_patch_counts, author_reviewer_pairs
+from reviewstats.parse import Reviewer
+
+
+GROUP = "media-playback-reviewers"
+MEMBERS = frozenset({"padenot", "alwu", "kinetik"})
+
+
+class _C:
+    def __init__(self, author, reviewers, date=None):
+        self.author = author
+        self.reviewers = reviewers
+        self.date = date or datetime(2026, 5, 15, tzinfo=timezone.utc)
+
+
+def _r(name, is_group=False):
+    return Reviewer(name, is_group=is_group)
+
+
+class TestAuthorPatchCounts:
+    def test_counts_per_author(self):
+        commits = [
+            _C("Alastor Wu", [_r("padenot")]),
+            _C("Alastor Wu", [_r("padenot")]),
+            _C("Paul Adenot", [_r("alwu")]),
+        ]
+        assert author_patch_counts(commits) == {
+            "Alastor Wu": 2,
+            "Paul Adenot": 1,
+        }
+
+    def test_empty(self):
+        assert author_patch_counts([]) == {}
+
+
+class TestAuthorReviewerPairs:
+    def test_pairs_with_member_filter(self):
+        commits = [
+            _C("Alastor Wu", [_r(GROUP, True), _r("padenot")]),
+            _C("Alastor Wu", [_r(GROUP, True), _r("padenot")]),
+            _C("Alastor Wu", [_r(GROUP, True), _r("emilio")]),  # filtered out
+            _C("Paul Adenot", [_r(GROUP, True), _r("alwu")]),
+        ]
+        result = author_reviewer_pairs(commits, members=MEMBERS)
+        assert result == {
+            "Alastor Wu": {"padenot": 2},
+            "Paul Adenot": {"alwu": 1},
+        }
+
+    def test_pairs_without_member_filter(self):
+        commits = [
+            _C("Alastor Wu", [_r("padenot")]),
+            _C("Alastor Wu", [_r("emilio")]),
+        ]
+        result = author_reviewer_pairs(commits, members=None)
+        assert result == {"Alastor Wu": {"padenot": 1, "emilio": 1}}
+
+    def test_skips_authors_with_no_individual_reviewers(self):
+        commits = [_C("Someone", [_r(GROUP, True)])]
+        assert author_reviewer_pairs(commits, members=MEMBERS) == {}

@@ -8,10 +8,13 @@ from reviewstats.report import build_report
 GROUP = "media-playback-reviewers"
 
 
-def _commit(date: datetime, reviewers: list[Reviewer]) -> Commit:
+def _commit(
+    date: datetime, reviewers: list[Reviewer], author: str = "Tester"
+) -> Commit:
     return Commit(
         sha="x" * 7,
         date=date,
+        author=author,
         subject="Bug 1 - x. r=...",
         reviewers=reviewers,
     )
@@ -114,6 +117,5 @@ class TestBuildReport:
         trend = report["weekly_trend"]
         assert "weeks" in trend
         assert "top_reviewers" in trend
-        assert "counts" in trend
-        # Top reviewers should be sorted by descending count.
+        assert "all_members" in trend
         assert trend["top_reviewers"][0] == "padenot"

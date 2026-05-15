@@ -3,8 +3,8 @@ from datetime import datetime, timezone
 from reviewstats.git_log import Commit, parse_git_log_output
 
 
-def _entry(h: str, dt: str, subject: str, body: str = "") -> str:
-    return f"{h}\t{dt}\t{subject}\n{body}\n\x1e\n"
+def _entry(h: str, dt: str, subject: str, body: str = "", author: str = "Some Author") -> str:
+    return f"{h}\t{dt}\t{author}\t{subject}\n{body}\n\x1e\n"
 
 
 class TestParseGitLogOutput:
@@ -13,12 +13,14 @@ class TestParseGitLogOutput:
             "abc123",
             "2026-05-15T10:00:00+00:00",
             "Bug 123 - Fix thing. r=media-playback-reviewers,padenot",
+            author="Alastor Wu",
         )
         commits = parse_git_log_output(raw)
         assert len(commits) == 1
         c = commits[0]
         assert c.sha == "abc123"
         assert c.date == datetime(2026, 5, 15, 10, 0, tzinfo=timezone.utc)
+        assert c.author == "Alastor Wu"
         assert c.subject.startswith("Bug 123")
         assert [r.name for r in c.reviewers] == [
             "media-playback-reviewers",
@@ -80,6 +82,7 @@ def test_commit_dataclass_shape():
     c = Commit(
         sha="x",
         date=datetime(2026, 1, 1, tzinfo=timezone.utc),
+        author="A",
         subject="s",
         reviewers=[Reviewer("padenot", False)],
         differential_revision=None,
