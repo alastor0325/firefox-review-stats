@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>dom/media Reviewer Load — media-playback-reviewers</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; margin: 0; background: #f6f7f9; color: #1c1f24; }
+  header { background: #1c1f24; color: #f6f7f9; padding: 24px 32px; }
+  header h1 { margin: 0; font-size: 20px; font-weight: 600; }
+  header .meta { margin-top: 6px; font-size: 13px; opacity: 0.7; }
+  main { max-width: 1100px; margin: 24px auto; padding: 0 24px 48px; }
+  section { background: white; border-radius: 8px; padding: 20px 24px; margin-bottom: 18px; box-shadow: 0 1px 2px rgba(0,0,0,.05); }
+  section h2 { margin: 0 0 12px; font-size: 15px; font-weight: 600; color: #4b5563; }
+  .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; }
+  .stat { padding: 10px 14px; background: #f9fafb; border-radius: 6px; }
+  .stat .label { font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.04em; }
+  .stat .value { font-size: 22px; font-weight: 600; margin-top: 4px; }
+  .stat .sub { font-size: 12px; color: #6b7280; margin-top: 2px; }
+  .chart-box { position: relative; height: 360px; }
+  .chart-box.tall { height: 480px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #eee; }
+  th { font-weight: 600; color: #6b7280; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .footer-note { font-size: 12px; color: #6b7280; margin-top: 10px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>dom/media Reviewer Load — <span id="hdr-group"></span></h1>
+  <div class="meta" id="hdr-meta"></div>
+</header>
+
+<main>
+
+<section>
+  <h2>Summary (6-month window)</h2>
+  <div class="summary-grid" id="summary-grid"></div>
+</section>
+
+<section>
+  <h2>Concentration metrics</h2>
+  <div class="summary-grid" id="concentration-grid"></div>
+  <div class="footer-note">Gini: 0 = perfectly even, 1 = one person does everything. Bus factor = smallest # of reviewers whose absence leaves &gt;50% uncovered.</div>
+</section>
+
+<section>
+  <h2>Within-group distribution — who is named alongside the group</h2>
+  <div class="chart-box tall"><canvas id="chart-distribution"></canvas></div>
+</section>
+
+<section>
+  <h2>Sole-reviewer patches (bus-factor risk)</h2>
+  <div class="chart-box"><canvas id="chart-sole"></canvas></div>
+  <div class="footer-note">Patches with exactly one reviewer (an individual, no group tagged).</div>
+</section>
+
+<section>
+  <h2>Weekly trend — top 5 reviewers</h2>
+  <div class="chart-box tall"><canvas id="chart-trend"></canvas></div>
+</section>
+
+<section>
+  <h2>Active reviewer windows</h2>
+  <table id="active-table">
+    <thead><tr><th>Reviewer</th><th>First week</th><th>Last week</th></tr></thead>
+    <tbody></tbody>
+  </table>
+</section>
+
+</main>
+
+<script>
+const DATA = __DATA_JSON__;
+
+const fmtPct = v => (v * 100).toFixed(1) + '%';
+const fmtNum = v => (typeof v === 'number' && !Number.isInteger(v)) ? v.toFixed(1) : v;
+
+function stat(label, value, sub) {
+  const d = document.createElement('div');
+  d.className = 'stat';
+  d.innerHTML = `<div class="label">${label}</div><div class="value">${value}</div>` + (sub ? `<div class="sub">${sub}</div>` : '');
+  return d;
+}
+
+// Header
+document.getElementById('hdr-group').textContent = DATA.meta.group;
+document.getElementById('hdr-meta').textContent =
+  `${DATA.meta.path} · ${DATA.meta.window_start} → ${DATA.meta.window_end} · generated ${DATA.meta.generated_at}`;
+
+// Summary grid
+const s = DATA.summary;
+const sg = document.getElementById('summary-grid');
+sg.appendChild(stat('Total dom/media patches', s.total_patches));
+sg.appendChild(stat('Tagged with group', s.group_tagged_patches, fmtPct(s.group_tagged_pct) + ' of total'));
+sg.appendChild(stat('With individual co-named', s.with_individual_named, fmtPct(s.with_individual_pct) + ' of group-tagged'));
+sg.appendChild(stat('Group-only (rotation)', s.group_only, fmtPct(s.group_only_pct) + ' of group-tagged'));
+sg.appendChild(stat('Unique individuals', s.unique_individuals));
+sg.appendChild(stat('Avg group-tagged / week', fmtNum(s.avg_per_week)));
+
+// Concentration grid
+const c = DATA.concentration;
+const cg = document.getElementById('concentration-grid');
+cg.appendChild(stat('Top-1 share', fmtPct(c.top1_share)));
+cg.appendChild(stat('Top-3 share', fmtPct(c.top3_share)));
+cg.appendChild(stat('Top-5 share', fmtPct(c.top5_share)));
+cg.appendChild(stat('Gini coefficient', c.gini.toFixed(2)));
+cg.appendChild(stat('Bus factor (≥50%)', c.bus_factor));
+
+// Within-group distribution
+new Chart(document.getElementById('chart-distribution'), {
+  type: 'bar',
+  data: {
+    labels: DATA.within_group_total.map(r => r.name),
+    datasets: [{
+      label: 'Patches reviewed',
+      data: DATA.within_group_total.map(r => r.count),
+      backgroundColor: '#3b82f6',
+    }],
+  },
+  options: {
+    indexAxis: 'y',
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (ctx) => {
+            const row = DATA.within_group_total[ctx.dataIndex];
+            return `${row.count}  (${fmtPct(row.pct)})`;
+          },
+        },
+      },
+    },
+    scales: { x: { beginAtZero: true } },
+    maintainAspectRatio: false,
+  },
+});
+
+// Sole reviewer
+new Chart(document.getElementById('chart-sole'), {
+  type: 'bar',
+  data: {
+    labels: DATA.sole_reviewer.map(r => r.name),
+    datasets: [{
+      label: 'Sole-reviewer patches',
+      data: DATA.sole_reviewer.map(r => r.count),
+      backgroundColor: '#ef4444',
+    }],
+  },
+  options: {
+    indexAxis: 'y',
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (ctx) => {
+            const row = DATA.sole_reviewer[ctx.dataIndex];
+            return `${row.count}  (${fmtPct(row.pct)})`;
+          },
+        },
+      },
+    },
+    scales: { x: { beginAtZero: true } },
+    maintainAspectRatio: false,
+  },
+});
+
+// Weekly trend
+const trendColors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444'];
+const trendDatasets = DATA.weekly_trend.top_reviewers.map((name, i) => ({
+  label: name,
+  data: DATA.weekly_trend.counts[name],
+  borderColor: trendColors[i % trendColors.length],
+  backgroundColor: trendColors[i % trendColors.length] + '33',
+  tension: 0.25,
+  fill: false,
+}));
+new Chart(document.getElementById('chart-trend'), {
+  type: 'line',
+  data: { labels: DATA.weekly_trend.weeks, datasets: trendDatasets },
+  options: {
+    plugins: { legend: { position: 'bottom' } },
+    scales: { y: { beginAtZero: true } },
+    maintainAspectRatio: false,
+  },
+});
+
+// Active windows table
+const tbody = document.querySelector('#active-table tbody');
+const aw = DATA.active_windows;
+Object.keys(aw)
+  .sort((a, b) => aw[b].last_week.localeCompare(aw[a].last_week))
+  .forEach(name => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${name}</td><td class="num">${aw[name].first_week}</td><td class="num">${aw[name].last_week}</td>`;
+    tbody.appendChild(tr);
+  });
+</script>
+
+</body>
+</html>
