@@ -69,17 +69,8 @@ def main(argv: list[str] | None = None) -> int:
         json.dumps(report, indent=2, default=str), encoding="utf-8"
     )
 
-    phab_path = out_dir / "data_phab.json"
-    phab_data = (
-        json.loads(phab_path.read_text(encoding="utf-8"))
-        if phab_path.exists()
-        else None
-    )
-
     html_path = out_dir / "index.html"
-    html_path.write_text(
-        render_html(report, phab_data=phab_data), encoding="utf-8"
-    )
+    html_path.write_text(render_html(report), encoding="utf-8")
 
     if args.archive_week:
         archive_dir = out_dir / "archive"

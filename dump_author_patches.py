@@ -5,6 +5,7 @@ Uses the same filters as analyze_git.py (skips Lando auto-format commits,
 merge commits). Output: author_patches.txt in the project root.
 """
 
+import argparse
 from collections import defaultdict
 from pathlib import Path
 
@@ -12,7 +13,7 @@ from reviewstats.aliases import AUTHOR_ALIASES
 from reviewstats.git_log import parse_git_log_output, run_git_log
 
 
-REPO = str(Path.home() / "firefox")
+_DEFAULT_REPO = str(Path.home() / "firefox")
 PATH = "dom/media"
 SINCE = "6 months ago"
 EXCLUDE_PATHS = ("dom/media/webrtc",)
@@ -20,7 +21,10 @@ OUT = Path(__file__).resolve().parent / "author_patches.txt"
 
 
 def main() -> None:
-    raw = run_git_log(REPO, PATH, SINCE, exclude_paths=EXCLUDE_PATHS)
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--repo", default=_DEFAULT_REPO)
+    args = parser.parse_args()
+    raw = run_git_log(args.repo, PATH, SINCE, exclude_paths=EXCLUDE_PATHS)
     commits = parse_git_log_output(raw)
 
     by_author: dict[str, list] = defaultdict(list)
@@ -37,7 +41,7 @@ def main() -> None:
     lines: list[str] = []
     lines.append("=" * 78)
     lines.append("DOM/MEDIA AUTHOR-PATCH LISTING (raw author %an, no aliasing)")
-    lines.append(f"Repo: {REPO}   Path: {PATH}   Since: {SINCE}")
+    lines.append(f"Repo: {args.repo}   Path: {PATH}   Since: {SINCE}")
     lines.append(f"Excluded paths: {', '.join(EXCLUDE_PATHS)}")
     lines.append(
         f"Authors: {len(authors_sorted)}    Patches: {total}    "

@@ -1,0 +1,57 @@
+name: Weekly refresh
+
+on:
+  schedule:
+    # 09:00 UTC every Monday. Adjust via cron expression.
+    - cron: '0 9 * * 1'
+  workflow_dispatch:  # allow manual runs from the Actions tab
+
+permissions:
+  contents: write  # needed to push regenerated data + html
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout firefox-review-stats
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dev deps
+        run: python -m pip install --upgrade pip pytest
+
+      - name: Run unit tests
+        run: python -m pytest tests/unit/
+
+      - name: Clone firefox mirror (shallow, no blobs)
+        run: |
+          git clone \
+            --filter=blob:none \
+            --no-checkout \
+            --shallow-since="7 months ago" \
+            https://github.com/mozilla-firefox/firefox \
+            /tmp/firefox
+
+      - name: Generate report
+        run: python analyze_git.py --repo /tmp/firefox
+
+      - name: Generate per-author listing
+        run: python dump_author_patches.py --repo /tmp/firefox
+
+      - name: Commit & push if changed
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A data_git.json index.html author_patches.txt
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "weekly: $(date -u +'%G-W%V refresh')"
+            git push
+          fi
