@@ -1,70 +1,123 @@
 #!/usr/bin/env python3
-"""Phase 2: fetch Phabricator wait-time data for dom/media commits.
+"""Fetch + parse Phab revision timelines for every in-scope commit.
 
-Reads the same set of commits as analyze_git.py, looks up each commit's
-Differential Revision via Conduit, computes wait time (submit → first
-review action), and writes data_phab.json.
+Per-revision raw event data is committed under `raw_data/D<N>.json` so it
+stays around for future analyses (the Conduit API rate-limits make
+re-fetching painful, and the timeline data is already public on
+phabricator.services.mozilla.com).
 
-Cached per-revision in .phab_cache/ to keep weekly re-runs cheap.
+This script writes:
+  * raw_data/D<N>.json           — one per revision
+  * raw_data/_failures.json      — list of D-numbers whose fetch/parse failed
+  * data_phab.json               — aggregated wait-time data for the report
 """
 
+import argparse
 import json
 import time
-import urllib.error
-from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
 
 from reviewstats.git_log import parse_git_log_output, run_git_log
 from reviewstats.members import MEMBER_IDS
 from reviewstats.metrics import iso_week
-from reviewstats.phab import (
-    fetch_revisions,
-    fetch_transactions,
-    read_token,
+from reviewstats.phab_html import (
+    fetch_revision_page,
+    first_member_review_action,
+    parse_timeline,
 )
-from reviewstats.wait_time import (
-    aggregate_wait_times,
-    first_review_timestamp,
-    wait_time_days,
-)
+from reviewstats.wait_time import aggregate_wait_times
 
 
-REPO = str(Path.home() / "firefox")
-PATH = "dom/media"
-EXCLUDE_PATHS = ("dom/media/webrtc",)
-SINCE = "6 months ago"
-OUT_DIR = Path(__file__).resolve().parent
-CACHE_DIR = OUT_DIR / ".phab_cache"
+_DEFAULT_REPO = str(Path.home() / "firefox")
+_DEFAULT_PATH = "dom/media"
+_DEFAULT_SINCE = "6 months ago"
+_DEFAULT_EXCLUDE = ("dom/media/webrtc",)
+_OUT_DIR = Path(__file__).resolve().parent
+_RAW_DIR = _OUT_DIR / "raw_data"
+_FAILURES_PATH = _RAW_DIR / "_failures.json"
 
 
-def _cache_path(d_number: str) -> Path:
-    return CACHE_DIR / f"{d_number}.json"
+def _raw_path(d_number: str) -> Path:
+    return _RAW_DIR / f"{d_number}.json"
 
 
-def _load_cached(d_number: str, date_modified: int | None) -> dict | None:
-    path = _cache_path(d_number)
+def _load_existing(d_number: str) -> dict | None:
+    path = _raw_path(d_number)
     if not path.exists():
         return None
-    cached = json.loads(path.read_text(encoding="utf-8"))
-    if date_modified is None:
-        return cached
-    if cached.get("date_modified") != date_modified:
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
         return None
-    return cached
 
 
-def _save_cache(d_number: str, payload: dict) -> None:
-    CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    _cache_path(d_number).write_text(
-        json.dumps(payload), encoding="utf-8"
+def _process_one(
+    d_number: str, *, members: frozenset[str], polite_sleep: float
+) -> dict:
+    time.sleep(polite_sleep)
+    html = fetch_revision_page(d_number)
+    events = parse_timeline(html)
+    # Use the create event's actor as the canonical author handle. Git's
+    # display name (`%an`) is "Alastor Wu" but Phab's actor handle is
+    # "alwu" — using the create event keeps the namespace consistent.
+    create = next((e for e in events if e.action == "create"), None)
+    author = create.actor if create else None
+    first = first_member_review_action(events, members=members, author=author)
+    created_at = create.timestamp if create else None
+    wait_seconds = (
+        int((first.timestamp - created_at).total_seconds())
+        if (first and created_at)
+        else None
     )
+    return {
+        "d_number": d_number,
+        "author": author,
+        "created_at": created_at.isoformat() if created_at else None,
+        "events": [
+            {
+                "ts": e.timestamp.isoformat(),
+                "actor": e.actor,
+                "action": e.action,
+            }
+            for e in events
+        ],
+        "first_member_review": (
+            {
+                "actor": first.actor,
+                "action": first.action,
+                "ts": first.timestamp.isoformat(),
+                "wait_seconds": wait_seconds,
+            }
+            if first
+            else None
+        ),
+    }
 
 
 def main() -> int:
-    token = read_token()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--repo", default=_DEFAULT_REPO)
+    parser.add_argument("--path", default=_DEFAULT_PATH)
+    parser.add_argument("--since", default=_DEFAULT_SINCE)
+    parser.add_argument("--workers", type=int, default=3)
+    parser.add_argument(
+        "--sleep",
+        type=float,
+        default=1.5,
+        help="Per-request polite sleep before each fetch (seconds).",
+    )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Re-fetch even revisions that already have raw_data entries.",
+    )
+    args = parser.parse_args()
 
-    raw_log = run_git_log(REPO, PATH, SINCE, exclude_paths=EXCLUDE_PATHS)
+    raw_log = run_git_log(
+        args.repo, args.path, args.since, exclude_paths=_DEFAULT_EXCLUDE
+    )
     commits = parse_git_log_output(raw_log)
     commits_by_d = {
         c.differential_revision: c
@@ -74,84 +127,67 @@ def main() -> int:
     d_numbers = sorted(commits_by_d.keys())
     print(f"Found {len(d_numbers)} commits with Differential Revision links.")
 
-    # 1) Load cached metadata if any (full entries: meta + transactions).
-    cached_full: dict[str, dict] = {}
-    for d in d_numbers:
-        path = _cache_path(d)
-        if path.exists():
-            entry = json.loads(path.read_text(encoding="utf-8"))
-            if "author_phid" in entry:
-                cached_full[d] = entry
+    _RAW_DIR.mkdir(parents=True, exist_ok=True)
+    to_fetch = [
+        d for d in d_numbers
+        if args.force or _load_existing(d) is None
+    ]
+    print(
+        f"Already cached: {len(d_numbers) - len(to_fetch)}.  "
+        f"Will fetch: {len(to_fetch)}."
+    )
 
-    missing_meta = [d for d in d_numbers if d not in cached_full]
-    metadata: dict[str, dict] = {}
-    rate_limited = False
-    if missing_meta:
-        print(f"Fetching metadata for {len(missing_meta)} new revisions...")
+    failures: dict[str, str] = {}
+
+    def submit(d: str) -> tuple[str, dict | None, str | None]:
         try:
-            metadata = fetch_revisions(missing_meta, token=token)
-        except urllib.error.HTTPError as e:
-            if e.code == 429:
-                print(
-                    "[!] Rate-limited on metadata batch fetch. "
-                    "Will compute aggregates from the already-cached "
-                    f"{len(cached_full)} revisions only."
-                )
-                rate_limited = True
-            else:
-                raise
-    print(f"Cached: {len(cached_full)}  New meta fetched: {len(metadata)}")
+            payload = _process_one(
+                d, members=MEMBER_IDS, polite_sleep=args.sleep
+            )
+            _raw_path(d).write_text(
+                json.dumps(payload, indent=2), encoding="utf-8"
+            )
+            return d, payload, None
+        except Exception as e:
+            return d, None, f"{type(e).__name__}: {e}"
 
-    # 2) Per-revision transactions (extending cache).
-    per_revision: list[dict] = []
-    new_calls = 0
-    for i, d in enumerate(d_numbers, 1):
-        if d in cached_full:
-            entry = cached_full[d]
-        else:
-            meta = metadata.get(d)
-            if not meta:
-                continue
-            try:
-                txs = fetch_transactions(meta["phid"], token=token)
-            except urllib.error.HTTPError as e:
-                if e.code == 429:
+    if to_fetch:
+        with ThreadPoolExecutor(max_workers=args.workers) as pool:
+            futures = [pool.submit(submit, d) for d in to_fetch]
+            for i, fut in enumerate(as_completed(futures), 1):
+                d, _payload, err = fut.result()
+                if err:
+                    failures[d] = err
+                if i % 25 == 0:
                     print(
-                        f"\n[!] Rate-limited at revision {i}/{len(d_numbers)} "
-                        f"after {new_calls} new calls. "
-                        f"Saving progress + writing partial data_phab.json. "
-                        f"Re-run later to resume from cache."
+                        f"  {i}/{len(to_fetch)}  "
+                        f"(ok={i - len(failures)}, fail={len(failures)})"
                     )
-                    rate_limited = True
-                    break
-                raise
-            new_calls += 1
-            entry = {**meta, "transactions": txs}
-            _save_cache(d, entry)
-            time.sleep(5.0)  # Be polite: Varnish in front of Phab rate-limits aggressively
-        first = first_review_timestamp(
-            entry["transactions"], author_phid=entry["author_phid"]
+
+    if failures:
+        _FAILURES_PATH.write_text(
+            json.dumps(failures, indent=2), encoding="utf-8"
         )
-        wait_days = wait_time_days(
-            date_created=entry["date_created"], first_review=first
-        )
+    elif _FAILURES_PATH.exists():
+        _FAILURES_PATH.unlink()
+
+    # Aggregate from raw_data/*.json (no further API calls).
+    per_revision: list[dict] = []
+    for d in d_numbers:
+        raw = _load_existing(d)
+        if raw is None or raw.get("first_member_review") is None:
+            continue
+        fmr = raw["first_member_review"]
+        wait_s = fmr.get("wait_seconds")
+        if wait_s is None:
+            continue
         commit = commits_by_d[d]
-        reviewer = next(
-            (r.name for r in commit.reviewers
-             if not r.is_group and r.name in MEMBER_IDS),
-            None,
-        )
         per_revision.append({
             "d_number": d,
-            "wait_days": wait_days,
-            "reviewer": reviewer,
+            "wait_days": wait_s / 86400.0,
+            "reviewer": fmr["actor"],
             "week": iso_week(commit.date),
         })
-        if i % 50 == 0:
-            print(f"  {i}/{len(d_numbers)}  (new API calls: {new_calls})")
-
-    if not rate_limited:
-        print(f"Finished. {new_calls} new transaction calls (rest cached).")
 
     aggregated = aggregate_wait_times(per_revision)
     aggregated["meta"] = {
@@ -159,14 +195,18 @@ def main() -> int:
         "n_commits": len(commits),
         "n_with_revision": len(d_numbers),
         "n_with_wait_time": aggregated["n"],
-        "partial": rate_limited,
+        "n_failures": len(failures),
+        "partial": bool(failures),
     }
 
-    out_path = OUT_DIR / "data_phab.json"
+    out_path = _OUT_DIR / "data_phab.json"
     out_path.write_text(
         json.dumps(aggregated, indent=2, default=str), encoding="utf-8"
     )
-    print(f"Wrote {out_path}  (n={aggregated['n']}, partial={rate_limited})")
+    print(
+        f"Wrote {out_path}  (n={aggregated['n']}, "
+        f"failures={len(failures)}, partial={aggregated['meta']['partial']})"
+    )
     return 0
 
 
