@@ -11,6 +11,7 @@ from datetime import datetime
 from reviewstats.parse import (
     Reviewer,
     extract_differential_revision,
+    is_excluded_author,
     parse_reviewers,
     should_skip_commit,
 )
@@ -33,24 +34,25 @@ class Commit:
 
 
 def run_git_log(
-    repo: str, path: str, since: str
+    repo: str,
+    path: str,
+    since: str,
+    *,
+    exclude_paths: tuple[str, ...] = (),
 ) -> str:
     """Run `git log` and return raw stdout. I/O shell only."""
-    result = subprocess.run(
-        [
-            "git",
-            "-C",
-            repo,
-            "log",
-            f"--since={since}",
-            f"--format={_GIT_LOG_FORMAT}",
-            "--",
-            path,
-        ],
-        capture_output=True,
-        text=True,
-        check=True,
-    )
+    args = [
+        "git",
+        "-C",
+        repo,
+        "log",
+        f"--since={since}",
+        f"--format={_GIT_LOG_FORMAT}",
+        "--",
+        path,
+    ]
+    args.extend(f":!{excl}" for excl in exclude_paths)
+    result = subprocess.run(args, capture_output=True, text=True, check=True)
     return result.stdout
 
 
@@ -65,7 +67,7 @@ def parse_git_log_output(raw: str) -> list[Commit]:
             sha, date_str, author, subject = header.split("\t", 3)
         except ValueError:
             continue
-        if should_skip_commit(subject):
+        if should_skip_commit(subject) or is_excluded_author(author):
             continue
         commits.append(
             Commit(

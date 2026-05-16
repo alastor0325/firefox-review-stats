@@ -16,10 +16,10 @@ from reviewstats.metrics import (
     compute_gini,
     count_by_individual,
     iso_week,
-    non_member_reviewer_counts,
     routing_breakdown,
     sole_reviewer_counts,
     top_n_share,
+    total_reviews_per_member,
     weekly_counts_per_reviewer,
 )
 
@@ -72,7 +72,7 @@ def build_report(
     weekly = weekly_counts_per_reviewer(
         commits, group=group, members=MEMBER_IDS
     )
-    non_member_counts = non_member_reviewer_counts(
+    total_reviews = total_reviews_per_member(
         commits, group=group, members=MEMBER_IDS
     )
     author_totals = author_patch_counts(commits)
@@ -135,9 +135,7 @@ def build_report(
             "top_reviewers": top_reviewers,
             "all_members": all_members_weekly,
         },
-        "non_member_reviewers": _to_ranked_list(
-            _ranked_pairs(non_member_counts)
-        ),
+        "total_reviews_per_member": total_reviews,
         "members": MEMBERS,
         "authors": {
             "top_total": _to_ranked_list(ranked_authors),

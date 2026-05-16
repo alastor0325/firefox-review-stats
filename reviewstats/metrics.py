@@ -4,6 +4,7 @@ from collections import Counter, defaultdict
 from datetime import datetime
 from typing import Iterable, Protocol
 
+from reviewstats.aliases import canonicalize_author
 from reviewstats.parse import Reviewer
 
 
@@ -113,10 +114,35 @@ def weekly_counts_per_reviewer(
     return {wk: dict(d) for wk, d in out.items()}
 
 
+def total_reviews_per_member(
+    commits: Iterable[_CommitLike],
+    *,
+    group: str,
+    members: frozenset[str],
+) -> list[dict]:
+    in_group: Counter[str] = Counter()
+    out_of_group: Counter[str] = Counter()
+    for c in commits:
+        bucket = in_group if _has_group(c, group) else out_of_group
+        bucket.update(n for n in _individuals(c) if n in members)
+    names = set(in_group) | set(out_of_group)
+    rows = [
+        {
+            "name": n,
+            "in_group": in_group.get(n, 0),
+            "out_of_group": out_of_group.get(n, 0),
+            "total": in_group.get(n, 0) + out_of_group.get(n, 0),
+        }
+        for n in names
+    ]
+    rows.sort(key=lambda r: -r["total"])
+    return rows
+
+
 def author_patch_counts(
     commits: Iterable[_CommitLike],
 ) -> dict[str, int]:
-    return dict(Counter(c.author for c in commits))
+    return dict(Counter(canonicalize_author(c.author) for c in commits))
 
 
 def author_reviewer_pairs(
@@ -126,9 +152,10 @@ def author_reviewer_pairs(
 ) -> dict[str, dict[str, int]]:
     out: dict[str, Counter[str]] = defaultdict(Counter)
     for c in commits:
+        author = canonicalize_author(c.author)
         for name in _individuals(c):
             if _keep(name, members):
-                out[c.author][name] += 1
+                out[author][name] += 1
     return {a: dict(d) for a, d in out.items() if d}
 
 

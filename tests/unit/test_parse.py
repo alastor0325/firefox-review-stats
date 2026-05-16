@@ -76,7 +76,7 @@ class TestShouldSkipCommit:
         assert should_skip_commit("Merge autoland to mozilla-central") is True
 
     def test_keep_backout(self):
-        # Pinned: backouts are NOT skipped — the backout itself is a landing.
+        # "Backed out N changesets" isn't currently filtered; pinning behavior.
         assert should_skip_commit("Backed out 2 changesets for causing X") is False
 
     def test_keep_normal_commit(self):
@@ -84,10 +84,14 @@ class TestShouldSkipCommit:
             should_skip_commit("Bug 123 - Fix something. r=padenot") is False
         )
 
-    def test_keep_revert(self):
+    def test_skip_revert(self):
+        # Per spec: Revert means backing out, not a landing.
         assert (
-            should_skip_commit('Revert "Bug 123 - Fix" for causing X') is False
+            should_skip_commit('Revert "Bug 123 - Fix" for causing X') is True
         )
+
+    def test_skip_revert_no_quotes(self):
+        assert should_skip_commit("Revert Bug 123 - Fix") is True
 
 
 class TestExtractDifferentialRevision:

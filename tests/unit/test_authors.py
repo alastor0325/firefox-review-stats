@@ -34,6 +34,29 @@ class TestAuthorPatchCounts:
     def test_empty(self):
         assert author_patch_counts([]) == {}
 
+    def test_collapses_known_aliases(self):
+        commits = [
+            _C("Alastor Wu", [_r("padenot")]),
+            _C("alastor0325", [_r("padenot")]),
+            _C("alwu", [_r("padenot")]),
+            _C("Paul Adenot", [_r("alwu")]),
+        ]
+        assert author_patch_counts(commits) == {
+            "Alastor Wu": 3,
+            "Paul Adenot": 1,
+        }
+
+
+class TestAuthorReviewerPairsAliases:
+    def test_pairs_collapse_author_aliases(self):
+        commits = [
+            _C("Alastor Wu", [_r("padenot")]),
+            _C("alastor0325", [_r("padenot")]),
+            _C("alwu", [_r("alwu")]),
+        ]
+        result = author_reviewer_pairs(commits, members=None)
+        assert result == {"Alastor Wu": {"padenot": 2, "alwu": 1}}
+
 
 class TestAuthorReviewerPairs:
     def test_pairs_with_member_filter(self):

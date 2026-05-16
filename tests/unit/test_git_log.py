@@ -55,6 +55,23 @@ class TestParseGitLogOutput:
         commits = parse_git_log_output(raw)
         assert [c.sha for c in commits] == ["ddd"]
 
+    def test_skips_lando_authored_commit(self):
+        raw = _entry(
+            "lll",
+            "2026-05-15T10:00:00+00:00",
+            "Bug 999 - some change. r=padenot",
+            author="Lando",
+        )
+        assert parse_git_log_output(raw) == []
+
+    def test_skips_revert_commit(self):
+        raw = _entry(
+            "rrr",
+            "2026-05-15T10:00:00+00:00",
+            'Revert "Bug 1 - X" for causing failures',
+        )
+        assert parse_git_log_output(raw) == []
+
     def test_skips_merge_commit(self):
         raw = _entry("eee", "2026-05-15T10:00:00+00:00", "Merge autoland to mozilla-central")
         assert parse_git_log_output(raw) == []

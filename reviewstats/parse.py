@@ -9,7 +9,9 @@ _DIFF_REV_RE = re.compile(
 )
 _LANDO_FORMAT_RE = re.compile(r"apply code formatting via Lando", re.IGNORECASE)
 _MERGE_RE = re.compile(r"^Merge\b", re.IGNORECASE)
+_REVERT_RE = re.compile(r"^Revert\b", re.IGNORECASE)
 _GROUP_SUFFIXES = ("-reviewers", "-reviewers-rotation")
+_EXCLUDED_AUTHORS = frozenset({"Lando"})
 
 
 @dataclass(frozen=True)
@@ -40,7 +42,13 @@ def should_skip_commit(subject: str) -> bool:
         return True
     if _MERGE_RE.match(subject):
         return True
+    if _REVERT_RE.match(subject):
+        return True
     return False
+
+
+def is_excluded_author(author: str) -> bool:
+    return author in _EXCLUDED_AUTHORS
 
 
 def extract_differential_revision(body: str) -> str | None:

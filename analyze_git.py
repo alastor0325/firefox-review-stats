@@ -25,6 +25,7 @@ from reviewstats.report import build_report
 _DEFAULT_SINCE = "6 months ago"
 _DEFAULT_PATH = "dom/media"
 _DEFAULT_GROUP = "media-playback-reviewers"
+_EXCLUDE_PATHS = ("dom/media/webrtc",)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -42,7 +43,9 @@ def main(argv: list[str] | None = None) -> int:
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    raw = run_git_log(args.repo, args.path, args.since)
+    raw = run_git_log(
+        args.repo, args.path, args.since, exclude_paths=_EXCLUDE_PATHS
+    )
     commits = parse_git_log_output(raw)
     if not commits:
         print(f"No commits found under {args.path} since {args.since}.")

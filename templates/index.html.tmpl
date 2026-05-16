@@ -97,9 +97,9 @@
   </section>
 
   <section>
-    <h2>Reviews by non-members on media-playback patches</h2>
-    <div class="chart-box tall"><canvas id="chart-nonmember"></canvas></div>
-    <div class="footer-note">Reviewers outside the 9-member rotation who appeared on patches tagged with media-playback-reviewers. Signals cross-team review load.</div>
+    <h2>Total reviews per member (sole + co-reviewed, any tag)</h2>
+    <div class="chart-box"><canvas id="chart-total-reviews"></canvas></div>
+    <div class="footer-note">All dom/media patches each member reviewed in the window. Blue = patches tagged with <code>media-playback-reviewers</code>; gray = other dom/media patches (drive-by / cross-domain reviews).</div>
   </section>
 
   <section>
@@ -225,8 +225,47 @@ function horizontalBar(canvasId, rows, fill) {
 
 horizontalBar('chart-distribution', DATA.within_group_total, color);
 horizontalBar('chart-sole',         DATA.sole_reviewer,       '#ef4444');
-horizontalBar('chart-nonmember',    DATA.non_member_reviewers,'#6b7280');
 horizontalBar('chart-authors',      DATA.authors.top_total,   '#10b981');
+
+// --- Total reviews per member (stacked: in-group vs out-of-group) ---
+new Chart(document.getElementById('chart-total-reviews'), {
+  type: 'bar',
+  data: {
+    labels: DATA.total_reviews_per_member.map(r => r.name),
+    datasets: [
+      {
+        label: 'media-playback-tagged',
+        data: DATA.total_reviews_per_member.map(r => r.in_group),
+        backgroundColor: '#3b82f6',
+      },
+      {
+        label: 'other dom/media',
+        data: DATA.total_reviews_per_member.map(r => r.out_of_group),
+        backgroundColor: '#9ca3af',
+      },
+    ],
+  },
+  options: {
+    indexAxis: 'y',
+    plugins: {
+      legend: { position: 'bottom' },
+      tooltip: {
+        mode: 'index',
+        callbacks: {
+          footer: items => {
+            const row = DATA.total_reviews_per_member[items[0].dataIndex];
+            return `Total: ${row.total}`;
+          },
+        },
+      },
+    },
+    scales: {
+      x: { stacked: true, beginAtZero: true },
+      y: { stacked: true },
+    },
+    maintainAspectRatio: false,
+  },
+});
 
 // --- Within-group distribution (doughnut) ---
 new Chart(document.getElementById('chart-distribution-pie'), {
