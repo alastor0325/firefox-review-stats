@@ -39,6 +39,32 @@
   td.num { text-align: right; font-variant-numeric: tabular-nums; }
   .footer-note { font-size: 12px; color: var(--muted); margin-top: 10px; }
 
+  /* Info icon + tooltip */
+  .info {
+    display: inline-block; margin-left: 5px;
+    width: 13px; height: 13px;
+    font-size: 10px; line-height: 13px; text-align: center;
+    border-radius: 50%; background: #e5e7eb; color: #4b5563;
+    cursor: help; position: relative;
+    font-style: normal; font-weight: 600; text-transform: none; letter-spacing: 0;
+  }
+  .info::before { content: "i"; }
+  .info:hover::after {
+    content: attr(data-tip);
+    position: absolute;
+    left: 18px; top: -4px;
+    width: 240px;
+    background: #1c1f24; color: #f6f7f9;
+    padding: 8px 10px; border-radius: 6px;
+    font-size: 12px; font-weight: 400; line-height: 1.4;
+    text-transform: none; letter-spacing: 0;
+    white-space: normal;
+    box-shadow: 0 4px 12px rgba(0,0,0,.2);
+    z-index: 100;
+    pointer-events: none;
+  }
+  section h2 .info { vertical-align: middle; background: #d1d5db; color: #374151; }
+
   /* View toggle */
   .toggle-bar { display: flex; gap: 4px; margin-bottom: 16px; }
   .toggle-bar button {
@@ -83,7 +109,7 @@
   </section>
 
   <section>
-    <h2>Within-group distribution — listed members only</h2>
+    <h2>Within-group distribution — listed members only <span class="info" data-tip="Reviews per listed member on patches tagged with media-playback-reviewers. Only the 8 rotation members are counted; outside reviewers are excluded."></span></h2>
     <div class="split">
       <div class="chart-box"><canvas id="chart-distribution"></canvas></div>
       <div class="chart-box square"><canvas id="chart-distribution-pie"></canvas></div>
@@ -91,25 +117,25 @@
   </section>
 
   <section>
-    <h2>Sole-reviewer patches (bus-factor risk)</h2>
+    <h2>Sole-reviewer patches (bus-factor risk) <span class="info" data-tip="Patches with exactly one reviewer named (a listed member, no group). Highest single-point-of-failure risk per person."></span></h2>
     <div class="chart-box"><canvas id="chart-sole"></canvas></div>
     <div class="footer-note">Patches with exactly one reviewer (a listed member, no group tagged).</div>
   </section>
 
   <section>
-    <h2>Total reviews per member (sole + co-reviewed, any tag)</h2>
+    <h2>Total reviews per member (sole + co-reviewed, any tag) <span class="info" data-tip="All dom/media patches each member reviewed, split by whether the patch was tagged with media-playback-reviewers (blue, &quot;our&quot; work) or not (gray, drive-by / cross-domain)."></span></h2>
     <div class="chart-box"><canvas id="chart-total-reviews"></canvas></div>
     <div class="footer-note">All dom/media patches each member reviewed in the window. Blue = patches tagged with <code>media-playback-reviewers</code>; gray = other dom/media patches (drive-by / cross-domain reviews).</div>
   </section>
 
   <section>
-    <h2>Top patch authors in dom/media</h2>
+    <h2>Top patch authors in dom/media <span class="info" data-tip="Authors of patches touching dom/media in the window. Aliases collapsed (e.g. alastor0325 / alwu → Alastor Wu)."></span></h2>
     <div class="chart-box tall"><canvas id="chart-authors"></canvas></div>
     <div class="footer-note">All authors of patches touching dom/media in the window (any reviewer).</div>
   </section>
 
   <section>
-    <h2>Author &rarr; reviewer mapping (top authors only)</h2>
+    <h2>Author &rarr; reviewer mapping (top authors only) <span class="info" data-tip="For each top author, stacked bar of which listed members reviewed their patches. Non-member reviews are not shown."></span></h2>
     <div class="chart-box tall"><canvas id="chart-author-reviewer"></canvas></div>
     <div class="footer-note">For each author's patches, which listed members reviewed them. Bars only count reviews by members; non-member reviews don't appear here.</div>
   </section>
@@ -132,12 +158,12 @@
   </section>
 
   <section>
-    <h2>Weekly trend — top 5 listed members</h2>
+    <h2>Weekly trend — top 5 listed members <span class="info" data-tip="Reviews per ISO week for the top 5 members by 6-month total."></span></h2>
     <div class="chart-box tall"><canvas id="chart-trend-top"></canvas></div>
   </section>
 
   <section>
-    <h2>Weekly trend — all 9 listed members</h2>
+    <h2>Weekly trend — all 8 listed members <span class="info" data-tip="Same metric for every listed member. Toggle individual series via the legend; the &quot;0&quot; lines are members inactive this period."></span></h2>
     <div class="chart-box tall"><canvas id="chart-trend-all"></canvas></div>
     <div class="footer-note">Lower-volume reviewers can disappear behind the others — toggle individual series by clicking the legend.</div>
   </section>
@@ -154,17 +180,17 @@
   </section>
 
   <section>
-    <h2>Wait-time distribution (submit → first review action)</h2>
+    <h2>Wait-time distribution (submit → first review action) <span class="info" data-tip="Histogram of time from Phabricator revision creation to the first non-author, non-bot reviewer action (comment / accept / request-changes)."></span></h2>
     <div class="chart-box"><canvas id="chart-wait-hist"></canvas></div>
   </section>
 
   <section>
-    <h2>Median wait time per member (lower = faster)</h2>
+    <h2>Median wait time per member (lower = faster) <span class="info" data-tip="50th-percentile wait time for each reviewer's patches. Lower = faster to respond once a patch is in their queue."></span></h2>
     <div class="chart-box"><canvas id="chart-wait-per-reviewer"></canvas></div>
   </section>
 
   <section>
-    <h2>Median wait time by week</h2>
+    <h2>Median wait time by week <span class="info" data-tip="Median wait time computed within each ISO week. Use to spot trends — is the queue getting slower?"></span></h2>
     <div class="chart-box"><canvas id="chart-wait-weekly"></canvas></div>
   </section>
 </div>
@@ -185,10 +211,13 @@ const PALETTE = [
 ];
 const color = i => PALETTE[i % PALETTE.length];
 
-function stat(label, value, sub) {
+function escAttr(s) { return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+function stat(label, value, sub, info) {
   const d = document.createElement('div');
   d.className = 'stat';
-  d.innerHTML = `<div class="label">${label}</div><div class="value">${value}</div>` + (sub ? `<div class="sub">${sub}</div>` : '');
+  const tip = info ? `<span class="info" data-tip="${escAttr(info)}"></span>` : '';
+  d.innerHTML = `<div class="label">${label}${tip}</div><div class="value">${value}</div>` + (sub ? `<div class="sub">${sub}</div>` : '');
   return d;
 }
 
@@ -241,20 +270,30 @@ document.getElementById('hdr-meta').textContent =
 // Summary grid
 const s = DATA.summary;
 const sg = document.getElementById('summary-grid');
-sg.appendChild(stat('Total dom/media patches', s.total_patches));
-sg.appendChild(stat('Tagged with group', s.group_tagged_patches, fmtPct(s.group_tagged_pct) + ' of total'));
-sg.appendChild(stat('Listed members reviewing', DATA.within_group_total.length, 'of ' + Object.keys(DATA.members).length + ' on the list'));
-sg.appendChild(stat('Group-only patches', s.group_only, fmtPct(s.group_only_pct) + ' of group-tagged'));
-sg.appendChild(stat('Avg group-tagged / week', fmtNum(s.avg_per_week)));
+sg.appendChild(stat('Total dom/media patches', s.total_patches, null,
+  'All landings touching dom/media in the last 6 months, excluding dom/media/webrtc, Lando-bot, Revert, merge, and code-format commits.'));
+sg.appendChild(stat('Tagged with group', s.group_tagged_patches, fmtPct(s.group_tagged_pct) + ' of total',
+  'Patches whose r= line includes "media-playback-reviewers".'));
+sg.appendChild(stat('Listed members reviewing', DATA.within_group_total.length, 'of ' + Object.keys(DATA.members).length + ' on the list',
+  'How many listed members reviewed at least one patch in the 6-month window.'));
+sg.appendChild(stat('Group-only patches', s.group_only, fmtPct(s.group_only_pct) + ' of group-tagged',
+  'Group-tagged patches with no individual named — went to the rotation.'));
+sg.appendChild(stat('Avg group-tagged / week', fmtNum(s.avg_per_week), null,
+  'Group-tagged patches landed per ISO week, averaged across the window.'));
 
 // Concentration grid
 const c = DATA.concentration;
 const cg = document.getElementById('concentration-grid');
-cg.appendChild(stat('Top-1 share', fmtPct(c.top1_share)));
-cg.appendChild(stat('Top-3 share', fmtPct(c.top3_share)));
-cg.appendChild(stat('Top-5 share', fmtPct(c.top5_share)));
-cg.appendChild(stat('Gini coefficient', c.gini.toFixed(2)));
-cg.appendChild(stat('Bus factor (≥50%)', c.bus_factor));
+cg.appendChild(stat('Top-1 share', fmtPct(c.top1_share), null,
+  'Share of all member-reviews done by the single top member.'));
+cg.appendChild(stat('Top-3 share', fmtPct(c.top3_share), null,
+  'Share done by the top 3 members combined.'));
+cg.appendChild(stat('Top-5 share', fmtPct(c.top5_share), null,
+  'Share done by the top 5 members combined.'));
+cg.appendChild(stat('Gini coefficient', c.gini.toFixed(2), null,
+  'Inequality measure. 0 = perfectly even, 1 = one person does everything. ~0.5+ = significant concentration.'));
+cg.appendChild(stat('Bus factor (≥50%)', c.bus_factor, null,
+  'Smallest number of members whose absence leaves >50% of reviews uncovered. Lower = more single-point-of-failure risk.'));
 
 // --- Weekly summary + concentration (latest week vs previous) ---
 const lastIdx = DATA.weekly_trend.weeks.length - 1;
@@ -279,23 +318,32 @@ if (lastIdx >= 0) {
   document.getElementById('weekly-summary-label').textContent = now.week;
   const wsg = document.getElementById('weekly-summary-grid');
   wsg.appendChild(stat('Group-tagged reviews this week', now.total,
-    delta(now.total, prev ? prev.total : null)));
+    delta(now.total, prev ? prev.total : null),
+    'Reviews by listed members on group-tagged patches in the latest ISO week.'));
   wsg.appendChild(stat('Active members this week', `${now.active} / ${Object.keys(DATA.members).length}`,
-    prev ? delta(now.active, prev.active) : ''));
+    prev ? delta(now.active, prev.active) : '',
+    'Listed members with any review activity in the latest week.'));
   wsg.appendChild(stat('Top reviewer this week',
-    now.top && now.top[1] > 0 ? `${now.top[0]} (${now.top[1]})` : '—'));
+    now.top && now.top[1] > 0 ? `${now.top[0]} (${now.top[1]})` : '—',
+    null,
+    'Single highest-volume member in the latest week.'));
   wsg.appendChild(stat('Top-1 share this week', fmtPct(now.topShare),
-    prev ? deltaPct(now.topShare, prev.topShare) : ''));
+    prev ? deltaPct(now.topShare, prev.topShare) : '',
+    'Top member’s share of the week’s member-reviews. Small samples — one review can swing this a lot.'));
 
   const wcg = document.getElementById('weekly-concentration-grid');
   wcg.appendChild(stat('Top-1 share', fmtPct(now.topShare),
-    prev ? deltaPct(now.topShare, prev.topShare) : ''));
+    prev ? deltaPct(now.topShare, prev.topShare) : '',
+    'Top member’s share for the latest week.'));
   wcg.appendChild(stat('Gini coefficient', now.gini.toFixed(2),
-    prev ? delta(now.gini, prev.gini) : ''));
+    prev ? delta(now.gini, prev.gini) : '',
+    'Inequality (0 even, 1 one person) for the latest week. Noisy with small weekly samples — watch for sustained drift.'));
   wcg.appendChild(stat('Bus factor (≥50%)', now.busFactor,
-    prev ? delta(now.busFactor, prev.busFactor) : ''));
+    prev ? delta(now.busFactor, prev.busFactor) : '',
+    'Bus factor computed over the latest week only.'));
   wcg.appendChild(stat('Active members', `${now.active} / ${Object.keys(DATA.members).length}`,
-    prev ? delta(now.active, prev.active) : ''));
+    prev ? delta(now.active, prev.active) : '',
+    'Listed members with any review activity this week.'));
 }
 
 // Toggle wiring
@@ -489,10 +537,14 @@ if (PHAB_DATA && PHAB_DATA.n > 0) {
 
   // Summary tiles
   const pg = document.getElementById('phab-summary-grid');
-  pg.appendChild(stat('Patches with wait data', PHAB_DATA.n));
-  pg.appendChild(stat('Median wait', PHAB_DATA.percentiles.p50.toFixed(1) + ' d'));
-  pg.appendChild(stat('P75 wait', PHAB_DATA.percentiles.p75.toFixed(1) + ' d'));
-  pg.appendChild(stat('P90 wait', PHAB_DATA.percentiles.p90.toFixed(1) + ' d'));
+  pg.appendChild(stat('Patches with wait data', PHAB_DATA.n, null,
+    'Patches we could compute submit→first-review-action latency for (excludes those with no non-author transactions yet).'));
+  pg.appendChild(stat('Median wait', PHAB_DATA.percentiles.p50.toFixed(1) + ' d', null,
+    '50th percentile: half of patches waited longer than this, half shorter.'));
+  pg.appendChild(stat('P75 wait', PHAB_DATA.percentiles.p75.toFixed(1) + ' d', null,
+    '75th percentile: a quarter of patches waited longer than this.'));
+  pg.appendChild(stat('P90 wait', PHAB_DATA.percentiles.p90.toFixed(1) + ' d', null,
+    '90th percentile: a tenth of patches waited longer than this (the "slow tail").'));
 
   // Histogram
   new Chart(document.getElementById('chart-wait-hist'), {
