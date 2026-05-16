@@ -218,11 +218,6 @@
   </section>
 
   <section>
-    <h2>Median wait time per member (lower = faster) <span class="info" data-tip="50th-percentile wait time for each reviewer's patches. Lower = faster to respond once a patch is in their queue."></span></h2>
-    <div class="chart-box"><canvas id="chart-wait-per-reviewer"></canvas></div>
-  </section>
-
-  <section>
     <h2>Median wait time by week <span class="info" data-tip="Median wait time computed within each ISO week. Use to spot trends — is the queue getting slower?"></span></h2>
     <div class="chart-box"><canvas id="chart-wait-weekly"></canvas></div>
   </section>
@@ -634,32 +629,6 @@ if (PHAB_DATA && PHAB_DATA.n > 0) {
         }},
       },
       scales: { y: { beginAtZero: true } },
-      maintainAspectRatio: false,
-    },
-  });
-
-  // Per-reviewer median
-  new Chart(document.getElementById('chart-wait-per-reviewer'), {
-    type: 'bar',
-    data: {
-      labels: PHAB_DATA.per_reviewer.map(r => r.name),
-      datasets: [{
-        data: PHAB_DATA.per_reviewer.map(r => r.median_days),
-        backgroundColor: '#8b5cf6',
-      }],
-    },
-    options: {
-      indexAxis: 'y',
-      plugins: {
-        legend: { display: false },
-        tooltip: { callbacks: {
-          label: ctx => {
-            const row = PHAB_DATA.per_reviewer[ctx.dataIndex];
-            return `${row.median_days.toFixed(1)} d  (n=${row.count})`;
-          },
-        }},
-      },
-      scales: { x: { beginAtZero: true, title: { display: true, text: 'days' } } },
       maintainAspectRatio: false,
     },
   });

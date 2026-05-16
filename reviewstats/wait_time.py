@@ -96,23 +96,6 @@ def aggregate_wait_times(
         for b in BUCKETS
     ]
 
-    by_reviewer: dict[str, list[float]] = {}
-    for r in valid:
-        rev = r.get("reviewer")
-        if rev:
-            by_reviewer.setdefault(rev, []).append(r["wait_days"])
-    per_reviewer = sorted(
-        [
-            {
-                "name": name,
-                "median_days": statistics.median(vs),
-                "count": len(vs),
-            }
-            for name, vs in by_reviewer.items()
-        ],
-        key=lambda r: r["median_days"],
-    )
-
     by_week: dict[str, list[float]] = {}
     for r in valid:
         wk = r.get("week")
@@ -134,6 +117,5 @@ def aggregate_wait_times(
             "p75": percentile_days(days, 75),
             "p90": percentile_days(days, 90),
         },
-        "per_reviewer": per_reviewer,
         "weekly_median": weekly,
     }
