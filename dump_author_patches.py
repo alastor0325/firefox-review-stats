@@ -41,7 +41,7 @@ def main() -> None:
     lines: list[str] = []
     lines.append("=" * 78)
     lines.append("DOM/MEDIA AUTHOR-PATCH LISTING (raw author %an, no aliasing)")
-    lines.append(f"Repo: {args.repo}   Path: {PATH}   Since: {SINCE}")
+    lines.append(f"Path: {PATH}   Since: {SINCE}")
     lines.append(f"Excluded paths: {', '.join(EXCLUDE_PATHS)}")
     lines.append(
         f"Authors: {len(authors_sorted)}    Patches: {total}    "
