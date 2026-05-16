@@ -1,9 +1,11 @@
-"""Tests for the sticky header + toggle-bar layout.
+"""Tests for the sticky title + view-switcher layout.
 
-We can't run a real browser layout test from a Python unit test, but
-we can verify the rendered HTML contains the CSS rules that make
-those elements sticky. If anyone accidentally removes them, these
-tests will fail.
+Header and the 6-Month / Per-Week / Member Profile toggle live inside
+one shared `.top-bar` element. That single element is sticky, so the
+two children move as one unit and never jitter on scroll. The toggle's
+top and bottom padding must be equal so the row of pills looks
+balanced. These tests pin the rules so a future stylesheet edit can't
+silently regress them.
 """
 
 import re
@@ -33,75 +35,93 @@ _MINIMAL_DATA = {
 
 
 def _extract_rule(html: str, selector: str) -> str:
-    """Return the CSS declarations inside the first rule for `selector`."""
-    pattern = re.compile(
-        re.escape(selector) + r"\s*\{([^}]+)\}",
-        re.DOTALL,
-    )
+    pattern = re.compile(re.escape(selector) + r"\s*\{([^}]+)\}", re.DOTALL)
     m = pattern.search(html)
     assert m is not None, f"CSS rule for {selector!r} not found"
     return m.group(1)
 
 
-class TestStickyHeader:
-    def test_header_is_position_sticky(self):
+def _padding_top_bottom(rule: str) -> tuple[int, int]:
+    """Return (top, bottom) from a `padding:` declaration in px.
+
+    Handles 1-/2-/3-/4-value shorthand.
+    """
+    m = re.search(r"\bpadding:\s*([^;]+);", rule)
+    assert m is not None, "no `padding:` declaration in rule"
+    parts = [p.strip() for p in m.group(1).split()]
+    nums = []
+    for p in parts:
+        n = re.match(r"(\d+)px", p)
+        assert n is not None, f"non-px padding value {p!r}"
+        nums.append(int(n.group(1)))
+    if len(nums) == 1:
+        return nums[0], nums[0]
+    if len(nums) == 2:
+        return nums[0], nums[0]
+    if len(nums) == 3:
+        return nums[0], nums[2]
+    return nums[0], nums[2]
+
+
+class TestStickyTopBar:
+    """Header + toggle move as one unit, pinned from the first
+    scroll pixel (no scroll-and-snap jump)."""
+
+    def test_top_bar_exists_in_markup(self):
         html = render_html(_MINIMAL_DATA)
-        rule = _extract_rule(html, "header")
-        assert re.search(r"position:\s*sticky", rule), (
-            "header must use position: sticky so it pins to the top on scroll"
+        assert 'class="top-bar"' in html, (
+            "Header + toggle must be wrapped in a single .top-bar "
+            "element so they pin together without independent jitter."
         )
 
-    def test_header_top_zero(self):
-        html = render_html(_MINIMAL_DATA)
-        rule = _extract_rule(html, "header")
+    def test_top_bar_is_position_sticky(self):
+        rule = _extract_rule(render_html(_MINIMAL_DATA), ".top-bar")
+        assert re.search(r"position:\s*sticky", rule)
+
+    def test_top_bar_pinned_at_top_zero(self):
+        rule = _extract_rule(render_html(_MINIMAL_DATA), ".top-bar")
         assert re.search(r"\btop:\s*0\b", rule), (
-            "header must stick at top: 0"
+            "top must be 0 so there is no gap-then-snap behaviour on scroll"
         )
 
-    def test_header_has_high_z_index(self):
-        html = render_html(_MINIMAL_DATA)
-        rule = _extract_rule(html, "header")
+    def test_top_bar_has_high_z_index(self):
+        rule = _extract_rule(render_html(_MINIMAL_DATA), ".top-bar")
         m = re.search(r"z-index:\s*(\d+)", rule)
-        assert m is not None, "header needs z-index so it floats above content"
-        assert int(m.group(1)) >= 10, "header z-index should be well above default"
+        assert m is not None
+        assert int(m.group(1)) >= 10
+
+    def test_top_bar_has_opaque_background(self):
+        """Otherwise content scrolling underneath shows through the
+        gaps between toggle pills."""
+        rule = _extract_rule(render_html(_MINIMAL_DATA), ".top-bar")
+        assert "background:" in rule
 
 
-class TestStickyToggleBar:
-    def test_toggle_bar_is_position_sticky(self):
+class TestToggleBarLayout:
+    def test_toggle_bar_is_inside_top_bar(self):
         html = render_html(_MINIMAL_DATA)
-        rule = _extract_rule(html, ".toggle-bar")
-        assert re.search(r"position:\s*sticky", rule), (
-            ".toggle-bar must use position: sticky so the view-switcher "
-            "is always reachable"
+        # Find the .top-bar block and assert the toggle is inside it.
+        m = re.search(r'<div class="top-bar">(.*?)</div>\s*<main>',
+                      html, re.DOTALL)
+        assert m is not None, ".top-bar must wrap header + toggle, before <main>"
+        assert 'class="toggle-bar"' in m.group(1), (
+            ".toggle-bar must live inside .top-bar so the two stick together"
         )
 
-    def test_toggle_bar_top_below_header(self):
-        html = render_html(_MINIMAL_DATA)
-        rule = _extract_rule(html, ".toggle-bar")
-        m = re.search(r"\btop:\s*(\d+)px", rule)
-        assert m is not None, ".toggle-bar must specify a `top:` offset"
-        # Must be > 0 so it sits below the header rather than overlapping.
-        assert int(m.group(1)) > 0, (
-            ".toggle-bar top must be > 0 to clear the sticky header"
+    def test_toggle_bar_padding_top_equals_bottom(self):
+        """The user can see when this is off — top and bottom space
+        around the row of pills must match."""
+        rule = _extract_rule(render_html(_MINIMAL_DATA), ".toggle-bar")
+        top, bottom = _padding_top_bottom(rule)
+        assert top == bottom, (
+            f".toggle-bar padding asymmetric: top={top}px, bottom={bottom}px"
         )
 
-    def test_toggle_bar_has_background(self):
-        """Without a background, the sections scrolling underneath would
-        bleed through the gaps between the pills."""
-        html = render_html(_MINIMAL_DATA)
-        rule = _extract_rule(html, ".toggle-bar")
-        assert "background:" in rule, (
-            ".toggle-bar needs an explicit background or content "
-            "scrolls visibly behind the pills"
-        )
-
-    def test_toggle_bar_z_index_below_header(self):
-        html = render_html(_MINIMAL_DATA)
-        header_rule = _extract_rule(html, "header")
-        toggle_rule = _extract_rule(html, ".toggle-bar")
-        header_z = int(re.search(r"z-index:\s*(\d+)", header_rule).group(1))
-        toggle_z = int(re.search(r"z-index:\s*(\d+)", toggle_rule).group(1))
-        assert toggle_z < header_z, (
-            "toggle-bar z-index must be below header so the header always "
-            "overlaps the toggle bar's top edge"
+    def test_toggle_bar_does_not_set_its_own_sticky(self):
+        """If the toggle had its own `position: sticky`, it would
+        compete with the wrapper and re-introduce the jitter."""
+        rule = _extract_rule(render_html(_MINIMAL_DATA), ".toggle-bar")
+        assert "position:" not in rule, (
+            ".toggle-bar must inherit positioning from .top-bar; "
+            "setting its own `position` re-introduces the scroll jump"
         )

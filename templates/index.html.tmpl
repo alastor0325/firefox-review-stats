@@ -17,11 +17,15 @@
     --pill-active-fg: #ffffff;
   }
   body { font-family: -apple-system, system-ui, sans-serif; margin: 0; background: var(--bg); color: var(--fg); }
-  header {
-    background: var(--fg); color: var(--bg); padding: 24px 32px;
+  /* Wraps header + view-switcher and pins both to the top as one
+     unit. Sticky from `top: 0` means there's no scroll-and-snap
+     jump — they never move while the user scrolls. */
+  .top-bar {
     position: sticky; top: 0; z-index: 100;
-    box-shadow: 0 1px 0 rgba(0,0,0,.08);
+    background: var(--bg);
+    box-shadow: 0 1px 2px rgba(0,0,0,.06);
   }
+  header { background: var(--fg); color: var(--bg); padding: 24px 32px; }
   header h1 { margin: 0; font-size: 20px; font-weight: 600; }
   header .meta { margin-top: 6px; font-size: 13px; opacity: 0.7; }
   main { max-width: 1180px; margin: 0 auto; padding: 24px 24px 48px; }
@@ -67,17 +71,14 @@
     white-space: normal;
   }
 
-  /* View toggle — sticky below the header so it's always reachable */
+  /* View switcher — visually attached to the sticky `.top-bar`,
+     no independent positioning. Even padding above and below. */
   .toggle-bar {
     display: flex; gap: 4px;
-    position: sticky;
-    /* Header is ~76px tall (24+20+6+13+24 padding + content). Allow a
-       little breathing room so the toggle's pills don't kiss the header. */
-    top: 76px;
-    z-index: 99;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 14px 24px;
     background: var(--bg);
-    padding: 12px 0;
-    margin: 0 0 4px;
   }
   .toggle-bar button {
     background: var(--pill); color: var(--fg);
@@ -104,18 +105,19 @@
 </head>
 <body data-view="total">
 
-<header>
-  <h1>dom/media Reviewer Load — <span id="hdr-group"></span></h1>
-  <div class="meta" id="hdr-meta"></div>
-</header>
+<div class="top-bar">
+  <header>
+    <h1>dom/media Reviewer Load — <span id="hdr-group"></span></h1>
+    <div class="meta" id="hdr-meta"></div>
+  </header>
+  <nav class="toggle-bar" role="tablist">
+    <button id="btn-total"   class="active" type="button">6-Month View</button>
+    <button id="btn-weekly"  type="button">Per-Week View</button>
+    <button id="btn-profile" type="button">Member Profile</button>
+  </nav>
+</div>
 
 <main>
-
-<div class="toggle-bar" role="tablist">
-  <button id="btn-total"   class="active" type="button">6-Month View</button>
-  <button id="btn-weekly"  type="button">Per-Week View</button>
-  <button id="btn-profile" type="button">Member Profile</button>
-</div>
 
 <!-- ============= 6-MONTH VIEW ============= -->
 <div class="view-total">
