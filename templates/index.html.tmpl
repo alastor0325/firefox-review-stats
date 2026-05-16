@@ -63,11 +63,6 @@
 
 <main>
 
-<section>
-  <h2>Summary</h2>
-  <div class="summary-grid" id="summary-grid"></div>
-</section>
-
 <div class="toggle-bar" role="tablist">
   <button id="btn-total"  class="active" type="button">6-Month View</button>
   <button id="btn-weekly" type="button">Per-Week View</button>
@@ -75,6 +70,11 @@
 
 <!-- ============= 6-MONTH VIEW ============= -->
 <div class="view-total">
+
+  <section>
+    <h2>Summary (6-month window)</h2>
+    <div class="summary-grid" id="summary-grid"></div>
+  </section>
 
   <section>
     <h2>Concentration metrics (6-month totals)</h2>
@@ -118,6 +118,18 @@
 
 <!-- ============= PER-WEEK VIEW ============= -->
 <div class="view-weekly">
+
+  <section>
+    <h2>Latest week snapshot — <span id="weekly-summary-label"></span></h2>
+    <div class="summary-grid" id="weekly-summary-grid"></div>
+    <div class="footer-note">"This week" = the most recent ISO week with any landing in the dataset.</div>
+  </section>
+
+  <section>
+    <h2>Concentration metrics — latest week</h2>
+    <div class="summary-grid" id="weekly-concentration-grid"></div>
+    <div class="footer-note">Same metrics as the 6-month view, computed over the latest week's group-tagged reviews only. Use the deltas to spot drift.</div>
+  </section>
 
   <section>
     <h2>Weekly trend — top 5 listed members</h2>
@@ -180,6 +192,47 @@ function stat(label, value, sub) {
   return d;
 }
 
+function giniOf(values) {
+  if (values.length <= 1) return 0;
+  const total = values.reduce((a, b) => a + b, 0);
+  if (total === 0) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  let weighted = 0;
+  sorted.forEach((v, i) => { weighted += (i + 1) * v; });
+  return (2 * weighted) / (sorted.length * total) - (sorted.length + 1) / sorted.length;
+}
+
+function busFactorOf(values, threshold) {
+  if (!values.length) return 0;
+  const total = values.reduce((a, b) => a + b, 0);
+  if (total === 0) return 0;
+  const sorted = [...values].sort((a, b) => b - a);
+  let accum = 0;
+  for (let i = 0; i < sorted.length; i++) {
+    accum += sorted[i];
+    if (accum / total >= threshold) return i + 1;
+  }
+  return sorted.length;
+}
+
+function weekStats(weekIndex) {
+  const week = DATA.weekly_trend.weeks[weekIndex];
+  const counts = {};
+  for (const [m, arr] of Object.entries(DATA.weekly_trend.all_members)) {
+    counts[m] = arr[weekIndex] || 0;
+  }
+  const values = Object.values(counts);
+  const total = values.reduce((a, b) => a + b, 0);
+  const active = values.filter(c => c > 0).length;
+  const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+  const topShare = total > 0 ? top[1] / total : 0;
+  return {
+    week, total, active, top, topShare,
+    gini: giniOf(values),
+    busFactor: busFactorOf(values, 0.5),
+  };
+}
+
 // Header
 document.getElementById('hdr-group').textContent = DATA.meta.group;
 document.getElementById('hdr-meta').textContent =
@@ -202,6 +255,48 @@ cg.appendChild(stat('Top-3 share', fmtPct(c.top3_share)));
 cg.appendChild(stat('Top-5 share', fmtPct(c.top5_share)));
 cg.appendChild(stat('Gini coefficient', c.gini.toFixed(2)));
 cg.appendChild(stat('Bus factor (≥50%)', c.bus_factor));
+
+// --- Weekly summary + concentration (latest week vs previous) ---
+const lastIdx = DATA.weekly_trend.weeks.length - 1;
+if (lastIdx >= 0) {
+  const now = weekStats(lastIdx);
+  const prev = lastIdx > 0 ? weekStats(lastIdx - 1) : null;
+  const delta = (curr, base) => {
+    if (base == null) return '';
+    const d = curr - base;
+    if (d === 0) return 'no change vs prev week';
+    const sign = d > 0 ? '+' : '';
+    return `${sign}${typeof d === 'number' && !Number.isInteger(d) ? d.toFixed(2) : d} vs prev week`;
+  };
+  const deltaPct = (curr, base) => {
+    if (base == null) return '';
+    const d = curr - base;
+    if (Math.abs(d) < 0.001) return 'no change vs prev week';
+    const sign = d > 0 ? '+' : '';
+    return `${sign}${fmtPct(d)} vs prev week`;
+  };
+
+  document.getElementById('weekly-summary-label').textContent = now.week;
+  const wsg = document.getElementById('weekly-summary-grid');
+  wsg.appendChild(stat('Group-tagged reviews this week', now.total,
+    delta(now.total, prev ? prev.total : null)));
+  wsg.appendChild(stat('Active members this week', `${now.active} / ${Object.keys(DATA.members).length}`,
+    prev ? delta(now.active, prev.active) : ''));
+  wsg.appendChild(stat('Top reviewer this week',
+    now.top && now.top[1] > 0 ? `${now.top[0]} (${now.top[1]})` : '—'));
+  wsg.appendChild(stat('Top-1 share this week', fmtPct(now.topShare),
+    prev ? deltaPct(now.topShare, prev.topShare) : ''));
+
+  const wcg = document.getElementById('weekly-concentration-grid');
+  wcg.appendChild(stat('Top-1 share', fmtPct(now.topShare),
+    prev ? deltaPct(now.topShare, prev.topShare) : ''));
+  wcg.appendChild(stat('Gini coefficient', now.gini.toFixed(2),
+    prev ? delta(now.gini, prev.gini) : ''));
+  wcg.appendChild(stat('Bus factor (≥50%)', now.busFactor,
+    prev ? delta(now.busFactor, prev.busFactor) : ''));
+  wcg.appendChild(stat('Active members', `${now.active} / ${Object.keys(DATA.members).length}`,
+    prev ? delta(now.active, prev.active) : ''));
+}
 
 // Toggle wiring
 const btnTotal = document.getElementById('btn-total');
