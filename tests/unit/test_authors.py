@@ -50,6 +50,20 @@ class TestAuthorPatchCounts:
             "Paul Adenot": 1,
         }
 
+    def test_dedupes_relands_by_differential_revision(self):
+        # 3 commits with the same D-number (a patch that was backed
+        # out and re-landed twice) — count it once.
+        c1 = _C("Alastor Wu", [_r("padenot")])
+        c1.differential_revision = "D12345"
+        c2 = _C("Alastor Wu", [_r("padenot")])
+        c2.differential_revision = "D12345"
+        c3 = _C("Alastor Wu", [_r("padenot")])
+        c3.differential_revision = "D12345"
+        # A different patch by the same author.
+        c4 = _C("Alastor Wu", [_r("padenot")])
+        c4.differential_revision = "D99999"
+        assert author_patch_counts([c1, c2, c3, c4]) == {"Alastor Wu": 2}
+
 
 class TestReviewerToAuthors:
     def test_inverse_of_author_reviewer_pairs(self):

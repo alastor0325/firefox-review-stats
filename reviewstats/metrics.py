@@ -142,7 +142,24 @@ def total_reviews_per_member(
 def author_patch_counts(
     commits: Iterable[_CommitLike],
 ) -> dict[str, int]:
-    return dict(Counter(canonicalize_author(c.author) for c in commits))
+    """Count unique patches (D-numbers) per author.
+
+    A patch that's backed out and re-landed shows up as multiple
+    commits with the same Differential Revision — we count it once.
+    Commits without a Differential Revision (rare for filtered
+    dom/media) count individually.
+    """
+    seen: dict[str, set[str]] = defaultdict(set)
+    counts: dict[str, int] = defaultdict(int)
+    for c in commits:
+        author = canonicalize_author(c.author)
+        d = getattr(c, "differential_revision", None)
+        if d:
+            if d in seen[author]:
+                continue
+            seen[author].add(d)
+        counts[author] += 1
+    return dict(counts)
 
 
 def author_reviewer_pairs(
