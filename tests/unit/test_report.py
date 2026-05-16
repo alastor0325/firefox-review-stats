@@ -119,3 +119,17 @@ class TestBuildReport:
         assert "top_reviewers" in trend
         assert "all_members" in trend
         assert trend["top_reviewers"][0] == "padenot"
+
+    def test_per_member_authors_present(self):
+        report = build_report(
+            _make_commits(),
+            group=GROUP,
+            path="dom/media",
+            window_start=datetime(2025, 11, 15, tzinfo=timezone.utc),
+            window_end=datetime(2026, 5, 15, tzinfo=timezone.utc),
+            generated_at=datetime(2026, 5, 15, tzinfo=timezone.utc),
+        )
+        assert "per_member_authors" in report
+        # padenot reviewed 2 patches by 'Tester' in our fixture.
+        padenot_authors = report["per_member_authors"].get("padenot", [])
+        assert any(a["name"] == "Tester" for a in padenot_authors)

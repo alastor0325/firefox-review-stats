@@ -159,6 +159,29 @@ def author_reviewer_pairs(
     return {a: dict(d) for a, d in out.items() if d}
 
 
+def reviewer_to_authors(
+    commits: Iterable[_CommitLike],
+    *,
+    members: frozenset[str],
+) -> dict[str, list[dict]]:
+    """For each member, return an ordered list of {name, count} for the
+    authors whose patches they reviewed (descending by count).
+    """
+    out: dict[str, Counter[str]] = defaultdict(Counter)
+    for c in commits:
+        author = canonicalize_author(c.author)
+        for name in _individuals(c):
+            if name in members:
+                out[name][author] += 1
+    return {
+        member: [
+            {"name": author, "count": cnt}
+            for author, cnt in sorted(counter.items(), key=lambda kv: -kv[1])
+        ]
+        for member, counter in out.items()
+    }
+
+
 def compute_gini(counts: list[int]) -> float:
     """Gini coefficient. 0 = perfectly even, 1 = one person has everything."""
     n = len(counts)

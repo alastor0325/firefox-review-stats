@@ -16,6 +16,7 @@ from reviewstats.metrics import (
     compute_gini,
     count_by_individual,
     iso_week,
+    reviewer_to_authors,
     routing_breakdown,
     sole_reviewer_counts,
     top_n_share,
@@ -77,6 +78,7 @@ def build_report(
     )
     author_totals = author_patch_counts(commits)
     author_reviewers = author_reviewer_pairs(commits, members=MEMBER_IDS)
+    by_member_authors = reviewer_to_authors(commits, members=MEMBER_IDS)
 
     weeks = _iso_weeks_between(window_start, window_end)
     num_weeks = max(len(weeks), 1)
@@ -141,4 +143,5 @@ def build_report(
             "top_total": _to_ranked_list(ranked_authors),
             "reviewer_matrix": author_reviewer_matrix,
         },
+        "per_member_authors": by_member_authors,
     }

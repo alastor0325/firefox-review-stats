@@ -74,8 +74,17 @@
   .toggle-bar button.active { background: var(--pill-active); color: var(--pill-active-fg); }
 
   /* View visibility — controlled by body class */
-  body[data-view="total"] .view-weekly { display: none; }
-  body[data-view="weekly"] .view-total { display: none; }
+  body[data-view="total"]   .view-weekly,
+  body[data-view="total"]   .view-profile { display: none; }
+  body[data-view="weekly"]  .view-total,
+  body[data-view="weekly"]  .view-profile { display: none; }
+  body[data-view="profile"] .view-total,
+  body[data-view="profile"] .view-weekly { display: none; }
+
+  .profile-select {
+    font-size: 14px; padding: 6px 10px; border-radius: 6px;
+    border: 1px solid #d1d5db; background: white;
+  }
 </style>
 </head>
 <body data-view="total">
@@ -88,8 +97,9 @@
 <main>
 
 <div class="toggle-bar" role="tablist">
-  <button id="btn-total"  class="active" type="button">6-Month View</button>
-  <button id="btn-weekly" type="button">Per-Week View</button>
+  <button id="btn-total"   class="active" type="button">6-Month View</button>
+  <button id="btn-weekly"  type="button">Per-Week View</button>
+  <button id="btn-profile" type="button">Member Profile</button>
 </div>
 
 <!-- ============= 6-MONTH VIEW ============= -->
@@ -164,6 +174,31 @@
     <h2>Weekly trend — all 8 listed members <span class="info" data-tip="Same metric for every listed member. Toggle individual series via the legend; the &quot;0&quot; lines are members inactive this period."></span></h2>
     <div class="chart-box tall"><canvas id="chart-trend-all"></canvas></div>
     <div class="footer-note">Lower-volume reviewers can disappear behind the others — toggle individual series by clicking the legend.</div>
+  </section>
+
+</div>
+
+<!-- ============= MEMBER PROFILE VIEW ============= -->
+<div class="view-profile">
+
+  <section>
+    <h2>Member profile</h2>
+    <p style="margin: 0 0 12px;">
+      <label for="profile-member" style="margin-right: 8px; font-size: 13px; color: #4b5563;">Member:</label>
+      <select id="profile-member" class="profile-select"></select>
+    </p>
+    <div class="summary-grid" id="profile-summary-grid"></div>
+  </section>
+
+  <section>
+    <h2>Weekly activity — <span id="profile-name-1"></span> <span class="info" data-tip="Reviews per ISO week for the selected member only. 4-week rolling average overlaid to smooth noise."></span></h2>
+    <div class="chart-box tall"><canvas id="chart-profile-weekly"></canvas></div>
+  </section>
+
+  <section>
+    <h2>Authors whose patches <span id="profile-name-2"></span> reviewed <span class="info" data-tip="For the selected member, count of patches reviewed grouped by author of those patches. Top 15."></span></h2>
+    <div class="chart-box tall"><canvas id="chart-profile-authors"></canvas></div>
+    <div class="footer-note">Includes all dom/media patches the member reviewed (group-tagged and non-tagged), with author aliases collapsed.</div>
   </section>
 
 </div>
@@ -376,19 +411,21 @@ if (lastIdx >= 0) {
     'Listed members with any review activity this week.'));
 }
 
-// Toggle wiring
-const btnTotal = document.getElementById('btn-total');
-const btnWeekly = document.getElementById('btn-weekly');
-btnTotal.addEventListener('click', () => {
-  document.body.dataset.view = 'total';
-  btnTotal.classList.add('active');
-  btnWeekly.classList.remove('active');
-});
-btnWeekly.addEventListener('click', () => {
-  document.body.dataset.view = 'weekly';
-  btnWeekly.classList.add('active');
-  btnTotal.classList.remove('active');
-});
+// Toggle wiring (3 views)
+const viewButtons = {
+  total:   document.getElementById('btn-total'),
+  weekly:  document.getElementById('btn-weekly'),
+  profile: document.getElementById('btn-profile'),
+};
+function setView(v) {
+  document.body.dataset.view = v;
+  for (const [name, btn] of Object.entries(viewButtons)) {
+    btn.classList.toggle('active', name === v);
+  }
+}
+for (const [name, btn] of Object.entries(viewButtons)) {
+  btn.addEventListener('click', () => setView(name));
+}
 
 function horizontalBar(canvasId, rows, fill) {
   const colors = (typeof fill === 'function')
@@ -647,6 +684,155 @@ if (PHAB_DATA && PHAB_DATA.n > 0) {
     },
   });
 }
+
+// =============================================================
+// Member Profile view
+// =============================================================
+(function setupProfileView() {
+  const select = document.getElementById('profile-member');
+  const ranked = DATA.within_group_total.map(r => r.name);
+  const allMembers = Object.keys(DATA.members);
+  // Sort: ranked members first by activity, inactive members alphabetically.
+  const ordered = [
+    ...ranked,
+    ...allMembers.filter(m => !ranked.includes(m)).sort(),
+  ];
+  for (const m of ordered) {
+    const opt = document.createElement('option');
+    opt.value = m;
+    opt.textContent = `${m} (${DATA.members[m] || m})`;
+    select.appendChild(opt);
+  }
+
+  let weeklyChart = null;
+  let authorsChart = null;
+
+  function rolling(values, win) {
+    const out = [];
+    for (let i = 0; i < values.length; i++) {
+      const start = Math.max(0, i - win + 1);
+      const slice = values.slice(start, i + 1);
+      out.push(slice.reduce((a, b) => a + b, 0) / slice.length);
+    }
+    return out;
+  }
+
+  function fmtWeekRange(weeks, weekly) {
+    const firstIdx = weekly.findIndex(c => c > 0);
+    const lastIdx  = weekly.findLastIndex ? weekly.findLastIndex(c => c > 0)
+                                          : weekly.length - 1 - [...weekly].reverse().findIndex(c => c > 0);
+    if (firstIdx < 0) return '—';
+    return `${weeks[firstIdx]} → ${weeks[lastIdx]}`;
+  }
+
+  function render(member) {
+    document.getElementById('profile-name-1').textContent = member;
+    document.getElementById('profile-name-2').textContent = member;
+
+    const total = DATA.total_reviews_per_member.find(r => r.name === member)
+                  || { in_group: 0, out_of_group: 0, total: 0 };
+    const sole  = DATA.sole_reviewer.find(r => r.name === member)
+                  || { count: 0 };
+    const rank  = ranked.indexOf(member);
+    const weekly = DATA.weekly_trend.all_members[member] || [];
+    const authors = (DATA.per_member_authors || {})[member] || [];
+    const activeWeeks = weekly.filter(c => c > 0).length;
+
+    const grid = document.getElementById('profile-summary-grid');
+    grid.innerHTML = '';
+    grid.appendChild(stat('Full name', DATA.members[member] || '—', null,
+      'Display name from members.py.'));
+    grid.appendChild(stat('Total reviews (any tag)', total.total,
+      `${total.in_group} in-group · ${total.out_of_group} other`,
+      'All dom/media patches this member reviewed in the 6-month window.'));
+    grid.appendChild(stat('Sole-reviewer patches', sole.count, null,
+      'Patches where this member was the only reviewer named (no group, no co-reviewer).'));
+    grid.appendChild(stat('Rank (within-group)',
+      rank >= 0 ? `#${rank + 1} of ${ranked.length}` : 'inactive',
+      null,
+      "This member's position when ranking listed members by group-tagged reviews."));
+    grid.appendChild(stat('Active weeks',
+      `${activeWeeks} / ${weekly.length}`,
+      null,
+      'ISO weeks in the window where this member did at least one review.'));
+    grid.appendChild(stat('Active period',
+      fmtWeekRange(DATA.weekly_trend.weeks, weekly),
+      null,
+      "First → last ISO week with any review by this member."));
+
+    // Weekly chart with 4-week rolling average overlay
+    const labels = DATA.weekly_trend.weeks;
+    const datasets = [
+      {
+        label: 'Reviews / week',
+        data: weekly,
+        borderColor: '#3b82f6',
+        backgroundColor: '#3b82f622',
+        tension: 0.2,
+        pointRadius: 2,
+        fill: true,
+      },
+      {
+        label: '4-week rolling avg',
+        data: rolling(weekly, 4),
+        borderColor: '#f59e0b',
+        backgroundColor: '#f59e0b00',
+        borderDash: [4, 4],
+        tension: 0.3,
+        pointRadius: 0,
+        fill: false,
+      },
+    ];
+    if (weeklyChart) {
+      weeklyChart.data.labels = labels;
+      weeklyChart.data.datasets = datasets;
+      weeklyChart.update();
+    } else {
+      weeklyChart = new Chart(document.getElementById('chart-profile-weekly'), {
+        type: 'line',
+        data: { labels, datasets },
+        options: {
+          plugins: { legend: { position: 'bottom' } },
+          scales: { y: { beginAtZero: true } },
+          maintainAspectRatio: false,
+        },
+      });
+    }
+
+    // Top 15 authors this member reviewed
+    const topAuthors = authors.slice(0, 15);
+    if (authorsChart) {
+      authorsChart.data.labels = topAuthors.map(a => a.name);
+      authorsChart.data.datasets[0].data = topAuthors.map(a => a.count);
+      authorsChart.update();
+    } else {
+      authorsChart = new Chart(document.getElementById('chart-profile-authors'), {
+        type: 'bar',
+        data: {
+          labels: topAuthors.map(a => a.name),
+          datasets: [{
+            data: topAuthors.map(a => a.count),
+            backgroundColor: '#10b981',
+          }],
+        },
+        options: {
+          indexAxis: 'y',
+          plugins: { legend: { display: false } },
+          scales: { x: { beginAtZero: true } },
+          maintainAspectRatio: false,
+        },
+      });
+    }
+
+    attachTooltips(document);
+  }
+
+  select.addEventListener('change', e => render(e.target.value));
+  if (ordered.length > 0) {
+    select.value = ordered[0];
+    render(ordered[0]);
+  }
+})();
 
 attachTooltips(document);
 </script>

@@ -1,6 +1,10 @@
 from datetime import datetime, timezone
 
-from reviewstats.metrics import author_patch_counts, author_reviewer_pairs
+from reviewstats.metrics import (
+    author_patch_counts,
+    author_reviewer_pairs,
+    reviewer_to_authors,
+)
 from reviewstats.parse import Reviewer
 
 
@@ -45,6 +49,44 @@ class TestAuthorPatchCounts:
             "Alastor Wu": 3,
             "Paul Adenot": 1,
         }
+
+
+class TestReviewerToAuthors:
+    def test_inverse_of_author_reviewer_pairs(self):
+        commits = [
+            _C("Alastor Wu", [_r("padenot")]),
+            _C("Alastor Wu", [_r("padenot")]),
+            _C("Paul Adenot", [_r("alwu")]),
+            _C("Paul Adenot", [_r("padenot"), _r("alwu")]),
+        ]
+        result = reviewer_to_authors(
+            commits, members=frozenset({"padenot", "alwu"})
+        )
+        assert result["padenot"] == [
+            {"name": "Alastor Wu", "count": 2},
+            {"name": "Paul Adenot", "count": 1},
+        ]
+        assert result["alwu"] == [
+            {"name": "Paul Adenot", "count": 2},
+        ]
+
+    def test_collapses_author_aliases(self):
+        commits = [
+            _C("alastor0325", [_r("padenot")]),
+            _C("Alastor Wu", [_r("padenot")]),
+        ]
+        result = reviewer_to_authors(
+            commits, members=frozenset({"padenot"})
+        )
+        assert result["padenot"] == [
+            {"name": "Alastor Wu", "count": 2},
+        ]
+
+    def test_skips_non_member_reviewers(self):
+        commits = [_C("Author", [_r("emilio")])]
+        assert reviewer_to_authors(
+            commits, members=frozenset({"padenot"})
+        ) == {}
 
 
 class TestAuthorReviewerPairsAliases:
