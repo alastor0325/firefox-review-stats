@@ -104,7 +104,7 @@ def main() -> int:
             new_calls += 1
             entry = {**meta, "transactions": txs}
             _save_cache(d, entry)
-            time.sleep(0.3)
+            time.sleep(5.0)  # Be polite: Varnish in front of Phab rate-limits aggressively
         first = first_review_timestamp(
             entry["transactions"], author_phid=entry["author_phid"]
         )
