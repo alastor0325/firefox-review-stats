@@ -48,6 +48,8 @@ def test_info_icons_on_section_headings():
         "Top patch authors",
         "Author &rarr; reviewer mapping",
         "Weekly trend",
+        "Wait-time distribution",
+        "Median wait time per member",
     ]
     for snippet in expected_heading_substrings:
         # Find the line containing the heading; assert an info icon sits

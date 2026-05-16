@@ -203,11 +203,36 @@
 
 </div>
 
+<!-- ============= WAIT-TIME SECTION (Phab Phase 2) ============= -->
+<div id="phab-section" style="display:none">
+  <h2 style="margin: 32px 0 12px; padding: 0 4px; font-size: 16px; color: #4b5563;">Review wait time (Phabricator data)</h2>
+
+  <section>
+    <h2>Summary</h2>
+    <div class="summary-grid" id="phab-summary-grid"></div>
+  </section>
+
+  <section>
+    <h2>Wait-time distribution (submit → first review action) <span class="info" data-tip="Histogram of time from Phabricator revision creation to the first non-author, non-bot reviewer action (comment / accept / request-changes)."></span></h2>
+    <div class="chart-box"><canvas id="chart-wait-hist"></canvas></div>
+  </section>
+
+  <section>
+    <h2>Median wait time per member (lower = faster) <span class="info" data-tip="50th-percentile wait time for each reviewer's patches. Lower = faster to respond once a patch is in their queue."></span></h2>
+    <div class="chart-box"><canvas id="chart-wait-per-reviewer"></canvas></div>
+  </section>
+
+  <section>
+    <h2>Median wait time by week <span class="info" data-tip="Median wait time computed within each ISO week. Use to spot trends — is the queue getting slower?"></span></h2>
+    <div class="chart-box"><canvas id="chart-wait-weekly"></canvas></div>
+  </section>
+</div>
 
 </main>
 
 <script>
-const DATA = {"meta": {"path": "dom/media", "group": "media-playback-reviewers", "window_start": "2025-11-16", "window_end": "2026-04-28", "generated_at": "2026-05-16T02:08:58.649442+00:00"}, "summary": {"total_patches": 646, "group_tagged_patches": 413, "group_tagged_pct": 0.6393188854489165, "with_individual_named": 413, "with_individual_pct": 1.0, "group_only": 0, "group_only_pct": 0.0, "unique_individuals": 8, "avg_per_week": 16.52}, "within_group_total": [{"name": "padenot", "count": 222, "pct": 0.5323741007194245}, {"name": "alwu", "count": 67, "pct": 0.1606714628297362}, {"name": "karlt", "count": 33, "pct": 0.07913669064748201}, {"name": "aosmond", "count": 32, "pct": 0.07673860911270983}, {"name": "jolin", "count": 28, "pct": 0.0671462829736211}, {"name": "kinetik", "count": 15, "pct": 0.03597122302158273}, {"name": "chunmin", "count": 15, "pct": 0.03597122302158273}, {"name": "azebrowski", "count": 5, "pct": 0.011990407673860911}], "concentration": {"top1_share": 0.5323741007194245, "top3_share": 0.7721822541966427, "top5_share": 0.9160671462829736, "gini": 0.5506594724220624, "bus_factor": 1}, "sole_reviewer": [{"name": "padenot", "count": 27, "pct": 0.34615384615384615}, {"name": "alwu", "count": 25, "pct": 0.32051282051282054}, {"name": "karlt", "count": 15, "pct": 0.19230769230769232}, {"name": "chunmin", "count": 8, "pct": 0.10256410256410256}, {"name": "kinetik", "count": 1, "pct": 0.01282051282051282}, {"name": "jolin", "count": 1, "pct": 0.01282051282051282}, {"name": "aosmond", "count": 1, "pct": 0.01282051282051282}], "weekly_trend": {"weeks": ["2025-W46", "2025-W47", "2025-W48", "2025-W49", "2025-W50", "2025-W51", "2025-W52", "2026-W01", "2026-W02", "2026-W03", "2026-W04", "2026-W05", "2026-W06", "2026-W07", "2026-W08", "2026-W09", "2026-W10", "2026-W11", "2026-W12", "2026-W13", "2026-W14", "2026-W15", "2026-W16", "2026-W17", "2026-W18"], "top_reviewers": ["padenot", "alwu", "karlt", "aosmond", "jolin"], "all_members": {"chunmin": [0, 0, 0, 0, 2, 1, 0, 0, 0, 0, 0, 0, 8, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0], "padenot": [0, 0, 2, 6, 6, 1, 10, 0, 9, 35, 0, 0, 6, 0, 2, 15, 10, 8, 45, 25, 11, 15, 7, 7, 2], "azebrowski": [0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0], "alwu": [1, 3, 4, 2, 1, 1, 1, 1, 2, 1, 3, 4, 0, 12, 2, 1, 1, 3, 3, 6, 5, 4, 2, 4, 0], "kinetik": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 5, 0, 2, 0, 5, 2], "jolin": [0, 0, 0, 3, 0, 0, 0, 2, 5, 0, 0, 0, 1, 0, 0, 0, 3, 3, 3, 1, 0, 0, 7, 0, 0], "karlt": [0, 3, 2, 0, 2, 1, 1, 0, 1, 1, 3, 0, 0, 7, 1, 1, 2, 0, 0, 3, 1, 2, 1, 1, 0], "aosmond": [0, 3, 0, 3, 1, 0, 0, 1, 1, 0, 6, 0, 0, 0, 1, 2, 1, 0, 2, 1, 1, 0, 4, 2, 3]}}, "total_reviews_per_member": [{"name": "padenot", "in_group": 222, "out_of_group": 29, "total": 251}, {"name": "alwu", "in_group": 67, "out_of_group": 25, "total": 92}, {"name": "karlt", "in_group": 33, "out_of_group": 18, "total": 51}, {"name": "aosmond", "in_group": 32, "out_of_group": 3, "total": 35}, {"name": "jolin", "in_group": 28, "out_of_group": 2, "total": 30}, {"name": "chunmin", "in_group": 15, "out_of_group": 8, "total": 23}, {"name": "kinetik", "in_group": 15, "out_of_group": 1, "total": 16}, {"name": "azebrowski", "in_group": 5, "out_of_group": 0, "total": 5}], "members": {"alwu": "Alastor Wu", "chunmin": "C.M.Chang", "jolin": "John Lin", "padenot": "Paul Adenot", "azebrowski": "azebrowski", "kinetik": "Matthew Gregan", "karlt": "Karl Tomlinson", "aosmond": "Andrew Osmond"}, "authors": {"top_total": [{"name": "Alastor Wu", "count": 120, "pct": 0.22181146025878004}, {"name": "Andrew Osmond", "count": 71, "pct": 0.13123844731977818}, {"name": "Paul Adenot", "count": 63, "pct": 0.11645101663585952}, {"name": "Andreas Pehrson", "count": 55, "pct": 0.10166358595194085}, {"name": "serge-sans-paille", "count": 48, "pct": 0.08872458410351201}, {"name": "Chun-Min Chang", "count": 46, "pct": 0.08502772643253234}, {"name": "Karl Tomlinson", "count": 40, "pct": 0.07393715341959335}, {"name": "azebrowski", "count": 19, "pct": 0.03512014787430684}, {"name": "Ryan VanderMeulen", "count": 16, "pct": 0.029574861367837338}, {"name": "John Lin", "count": 15, "pct": 0.027726432532347505}, {"name": "Tom Schuster", "count": 13, "pct": 0.024029574861367836}, {"name": "André Bargull", "count": 13, "pct": 0.024029574861367836}, {"name": "Nika Layzell", "count": 9, "pct": 0.0166358595194085}, {"name": "Emilio Cobos Álvarez", "count": 7, "pct": 0.012939001848428836}, {"name": "Randell Jesup", "count": 6, "pct": 0.011090573012939002}], "reviewer_matrix": {"Alastor Wu": {"padenot": 74, "kinetik": 11, "aosmond": 2, "jolin": 9, "karlt": 7, "chunmin": 9}, "Andrew Osmond": {"padenot": 41, "kinetik": 3, "azebrowski": 4, "alwu": 8, "jolin": 14, "karlt": 4}, "Paul Adenot": {"alwu": 25, "aosmond": 1, "karlt": 13, "jolin": 2, "chunmin": 6, "azebrowski": 1}, "Andreas Pehrson": {"padenot": 3, "aosmond": 2, "karlt": 10, "alwu": 3}, "serge-sans-paille": {"padenot": 27, "alwu": 2, "aosmond": 1}, "Chun-Min Chang": {"padenot": 28, "jolin": 4, "karlt": 6, "alwu": 5, "aosmond": 2}, "Karl Tomlinson": {"padenot": 18, "alwu": 1, "kinetik": 1, "chunmin": 7, "aosmond": 1}, "azebrowski": {"aosmond": 5, "padenot": 11, "alwu": 2}, "Ryan VanderMeulen": {"aosmond": 2, "alwu": 11, "padenot": 2, "karlt": 1}, "John Lin": {"alwu": 10, "padenot": 2, "karlt": 1, "aosmond": 1}, "Tom Schuster": {"alwu": 4, "padenot": 4, "aosmond": 4}, "André Bargull": {"padenot": 9}, "Nika Layzell": {"aosmond": 1, "padenot": 3, "alwu": 1, "karlt": 1}, "Emilio Cobos Álvarez": {"aosmond": 1, "padenot": 1}, "Randell Jesup": {"aosmond": 1, "padenot": 3}}}, "per_member_authors": {"padenot": [{"name": "Alastor Wu", "count": 74}, {"name": "Andrew Osmond", "count": 41}, {"name": "Chun-Min Chang", "count": 28}, {"name": "serge-sans-paille", "count": 27}, {"name": "Karl Tomlinson", "count": 18}, {"name": "azebrowski", "count": 11}, {"name": "André Bargull", "count": 9}, {"name": "Alex Hochheiden", "count": 5}, {"name": "Tom Schuster", "count": 4}, {"name": "Jonathan Moss", "count": 4}, {"name": "Nika Layzell", "count": 3}, {"name": "Andreas Pehrson", "count": 3}, {"name": "Randell Jesup", "count": 3}, {"name": "Sylvestre Ledru", "count": 2}, {"name": "Timothy Nikkel", "count": 2}, {"name": "John Lin", "count": 2}, {"name": "Matthew Gregan", "count": 2}, {"name": "Jari Jalkanen", "count": 2}, {"name": "Ryan VanderMeulen", "count": 2}, {"name": "Brad Werth", "count": 1}, {"name": "Jens Stutte", "count": 1}, {"name": "Michael Lynch", "count": 1}, {"name": "Jamie Nicol", "count": 1}, {"name": "Sandor Molnar", "count": 1}, {"name": "Anutrix", "count": 1}, {"name": "Chris Peterson", "count": 1}, {"name": "Emilio Cobos Álvarez", "count": 1}, {"name": "Landry Breuil", "count": 1}], "kinetik": [{"name": "Alastor Wu", "count": 11}, {"name": "Andrew Osmond", "count": 3}, {"name": "Andrew McCreight", "count": 1}, {"name": "Karl Tomlinson", "count": 1}], "aosmond": [{"name": "azebrowski", "count": 5}, {"name": "Tom Schuster", "count": 4}, {"name": "Ryan VanderMeulen", "count": 2}, {"name": "Alastor Wu", "count": 2}, {"name": "Andreas Pehrson", "count": 2}, {"name": "Bob Owen", "count": 2}, {"name": "Chun-Min Chang", "count": 2}, {"name": "Mark Banner", "count": 2}, {"name": "Nika Layzell", "count": 1}, {"name": "Randell Jesup", "count": 1}, {"name": "Emilio Cobos Álvarez", "count": 1}, {"name": "Val Packett", "count": 1}, {"name": "Paul Adenot", "count": 1}, {"name": "Lee Salzman", "count": 1}, {"name": "Timothy Nikkel", "count": 1}, {"name": "serge-sans-paille", "count": 1}, {"name": "Karl Tomlinson", "count": 1}, {"name": "Chris Peterson", "count": 1}, {"name": "John Lin", "count": 1}, {"name": "Vincent Hilla", "count": 1}, {"name": "Andrew McCreight", "count": 1}, {"name": "Gregory Pappas", "count": 1}], "alwu": [{"name": "Paul Adenot", "count": 25}, {"name": "Ryan VanderMeulen", "count": 11}, {"name": "John Lin", "count": 10}, {"name": "Andrew Osmond", "count": 8}, {"name": "Chun-Min Chang", "count": 5}, {"name": "Tom Schuster", "count": 4}, {"name": "Landry Breuil", "count": 4}, {"name": "Andreas Pehrson", "count": 3}, {"name": "Ashley Hale", "count": 3}, {"name": "Matthew Gregan", "count": 2}, {"name": "Simon Farre", "count": 2}, {"name": "azebrowski", "count": 2}, {"name": "serge-sans-paille", "count": 2}, {"name": "Nika Layzell", "count": 1}, {"name": "Karl Tomlinson", "count": 1}, {"name": "Aethar", "count": 1}, {"name": "Gabriele Svelto", "count": 1}, {"name": "Frederik Braun", "count": 1}, {"name": "Slowlife01", "count": 1}, {"name": "Sotaro Ikeda", "count": 1}, {"name": "Mark Banner", "count": 1}, {"name": "Alex Hochheiden", "count": 1}, {"name": "Tom Marble", "count": 1}, {"name": "Emily McDonough", "count": 1}], "karlt": [{"name": "Paul Adenot", "count": 13}, {"name": "Andreas Pehrson", "count": 10}, {"name": "Alastor Wu", "count": 7}, {"name": "Chun-Min Chang", "count": 6}, {"name": "Arnaud Bienner", "count": 6}, {"name": "Andrew Osmond", "count": 4}, {"name": "Matthew Gregan", "count": 1}, {"name": "Nika Layzell", "count": 1}, {"name": "John Lin", "count": 1}, {"name": "Ryan VanderMeulen", "count": 1}, {"name": "longsonr", "count": 1}], "jolin": [{"name": "Andrew Osmond", "count": 14}, {"name": "Alastor Wu", "count": 9}, {"name": "Chun-Min Chang", "count": 4}, {"name": "Paul Adenot", "count": 2}, {"name": "Makoto Kato", "count": 1}], "azebrowski": [{"name": "Andrew Osmond", "count": 4}, {"name": "Paul Adenot", "count": 1}], "chunmin": [{"name": "Alastor Wu", "count": 9}, {"name": "Karl Tomlinson", "count": 7}, {"name": "Paul Adenot", "count": 6}, {"name": "Timothy Nikkel", "count": 1}]}};
+const DATA = {"meta": {"path": "dom/media", "group": "media-playback-reviewers", "window_start": "2025-11-16", "window_end": "2026-04-28", "generated_at": "2026-05-16T02:42:31.357127+00:00"}, "summary": {"total_patches": 646, "group_tagged_patches": 413, "group_tagged_pct": 0.6393188854489165, "with_individual_named": 413, "with_individual_pct": 1.0, "group_only": 0, "group_only_pct": 0.0, "unique_individuals": 8, "avg_per_week": 16.52}, "within_group_total": [{"name": "padenot", "count": 222, "pct": 0.5323741007194245}, {"name": "alwu", "count": 67, "pct": 0.1606714628297362}, {"name": "karlt", "count": 33, "pct": 0.07913669064748201}, {"name": "aosmond", "count": 32, "pct": 0.07673860911270983}, {"name": "jolin", "count": 28, "pct": 0.0671462829736211}, {"name": "kinetik", "count": 15, "pct": 0.03597122302158273}, {"name": "chunmin", "count": 15, "pct": 0.03597122302158273}, {"name": "azebrowski", "count": 5, "pct": 0.011990407673860911}], "concentration": {"top1_share": 0.5323741007194245, "top3_share": 0.7721822541966427, "top5_share": 0.9160671462829736, "gini": 0.5506594724220624, "bus_factor": 1}, "sole_reviewer": [{"name": "padenot", "count": 27, "pct": 0.34615384615384615}, {"name": "alwu", "count": 25, "pct": 0.32051282051282054}, {"name": "karlt", "count": 15, "pct": 0.19230769230769232}, {"name": "chunmin", "count": 8, "pct": 0.10256410256410256}, {"name": "kinetik", "count": 1, "pct": 0.01282051282051282}, {"name": "jolin", "count": 1, "pct": 0.01282051282051282}, {"name": "aosmond", "count": 1, "pct": 0.01282051282051282}], "weekly_trend": {"weeks": ["2025-W46", "2025-W47", "2025-W48", "2025-W49", "2025-W50", "2025-W51", "2025-W52", "2026-W01", "2026-W02", "2026-W03", "2026-W04", "2026-W05", "2026-W06", "2026-W07", "2026-W08", "2026-W09", "2026-W10", "2026-W11", "2026-W12", "2026-W13", "2026-W14", "2026-W15", "2026-W16", "2026-W17", "2026-W18"], "top_reviewers": ["padenot", "alwu", "karlt", "aosmond", "jolin"], "all_members": {"chunmin": [0, 0, 0, 0, 2, 1, 0, 0, 0, 0, 0, 0, 8, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0], "azebrowski": [0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0], "kinetik": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 5, 0, 2, 0, 5, 2], "karlt": [0, 3, 2, 0, 2, 1, 1, 0, 1, 1, 3, 0, 0, 7, 1, 1, 2, 0, 0, 3, 1, 2, 1, 1, 0], "alwu": [1, 3, 4, 2, 1, 1, 1, 1, 2, 1, 3, 4, 0, 12, 2, 1, 1, 3, 3, 6, 5, 4, 2, 4, 0], "jolin": [0, 0, 0, 3, 0, 0, 0, 2, 5, 0, 0, 0, 1, 0, 0, 0, 3, 3, 3, 1, 0, 0, 7, 0, 0], "aosmond": [0, 3, 0, 3, 1, 0, 0, 1, 1, 0, 6, 0, 0, 0, 1, 2, 1, 0, 2, 1, 1, 0, 4, 2, 3], "padenot": [0, 0, 2, 6, 6, 1, 10, 0, 9, 35, 0, 0, 6, 0, 2, 15, 10, 8, 45, 25, 11, 15, 7, 7, 2]}}, "total_reviews_per_member": [{"name": "padenot", "in_group": 222, "out_of_group": 29, "total": 251}, {"name": "alwu", "in_group": 67, "out_of_group": 25, "total": 92}, {"name": "karlt", "in_group": 33, "out_of_group": 18, "total": 51}, {"name": "aosmond", "in_group": 32, "out_of_group": 3, "total": 35}, {"name": "jolin", "in_group": 28, "out_of_group": 2, "total": 30}, {"name": "chunmin", "in_group": 15, "out_of_group": 8, "total": 23}, {"name": "kinetik", "in_group": 15, "out_of_group": 1, "total": 16}, {"name": "azebrowski", "in_group": 5, "out_of_group": 0, "total": 5}], "members": {"alwu": "Alastor Wu", "chunmin": "C.M.Chang", "jolin": "John Lin", "padenot": "Paul Adenot", "azebrowski": "azebrowski", "kinetik": "Matthew Gregan", "karlt": "Karl Tomlinson", "aosmond": "Andrew Osmond"}, "authors": {"top_total": [{"name": "Alastor Wu", "count": 120, "pct": 0.22181146025878004}, {"name": "Andrew Osmond", "count": 71, "pct": 0.13123844731977818}, {"name": "Paul Adenot", "count": 63, "pct": 0.11645101663585952}, {"name": "Andreas Pehrson", "count": 55, "pct": 0.10166358595194085}, {"name": "serge-sans-paille", "count": 48, "pct": 0.08872458410351201}, {"name": "Chun-Min Chang", "count": 46, "pct": 0.08502772643253234}, {"name": "Karl Tomlinson", "count": 40, "pct": 0.07393715341959335}, {"name": "azebrowski", "count": 19, "pct": 0.03512014787430684}, {"name": "Ryan VanderMeulen", "count": 16, "pct": 0.029574861367837338}, {"name": "John Lin", "count": 15, "pct": 0.027726432532347505}, {"name": "Tom Schuster", "count": 13, "pct": 0.024029574861367836}, {"name": "André Bargull", "count": 13, "pct": 0.024029574861367836}, {"name": "Nika Layzell", "count": 9, "pct": 0.0166358595194085}, {"name": "Emilio Cobos Álvarez", "count": 7, "pct": 0.012939001848428836}, {"name": "Randell Jesup", "count": 6, "pct": 0.011090573012939002}], "reviewer_matrix": {"Alastor Wu": {"padenot": 74, "kinetik": 11, "aosmond": 2, "jolin": 9, "karlt": 7, "chunmin": 9}, "Andrew Osmond": {"padenot": 41, "kinetik": 3, "azebrowski": 4, "alwu": 8, "jolin": 14, "karlt": 4}, "Paul Adenot": {"alwu": 25, "aosmond": 1, "karlt": 13, "jolin": 2, "chunmin": 6, "azebrowski": 1}, "Andreas Pehrson": {"padenot": 3, "aosmond": 2, "karlt": 10, "alwu": 3}, "serge-sans-paille": {"padenot": 27, "alwu": 2, "aosmond": 1}, "Chun-Min Chang": {"padenot": 28, "jolin": 4, "karlt": 6, "alwu": 5, "aosmond": 2}, "Karl Tomlinson": {"padenot": 18, "alwu": 1, "kinetik": 1, "chunmin": 7, "aosmond": 1}, "azebrowski": {"aosmond": 5, "padenot": 11, "alwu": 2}, "Ryan VanderMeulen": {"aosmond": 2, "alwu": 11, "padenot": 2, "karlt": 1}, "John Lin": {"alwu": 10, "padenot": 2, "karlt": 1, "aosmond": 1}, "Tom Schuster": {"alwu": 4, "padenot": 4, "aosmond": 4}, "André Bargull": {"padenot": 9}, "Nika Layzell": {"aosmond": 1, "padenot": 3, "alwu": 1, "karlt": 1}, "Emilio Cobos Álvarez": {"aosmond": 1, "padenot": 1}, "Randell Jesup": {"aosmond": 1, "padenot": 3}}}, "per_member_authors": {"padenot": [{"name": "Alastor Wu", "count": 74}, {"name": "Andrew Osmond", "count": 41}, {"name": "Chun-Min Chang", "count": 28}, {"name": "serge-sans-paille", "count": 27}, {"name": "Karl Tomlinson", "count": 18}, {"name": "azebrowski", "count": 11}, {"name": "André Bargull", "count": 9}, {"name": "Alex Hochheiden", "count": 5}, {"name": "Tom Schuster", "count": 4}, {"name": "Jonathan Moss", "count": 4}, {"name": "Nika Layzell", "count": 3}, {"name": "Andreas Pehrson", "count": 3}, {"name": "Randell Jesup", "count": 3}, {"name": "Sylvestre Ledru", "count": 2}, {"name": "Timothy Nikkel", "count": 2}, {"name": "John Lin", "count": 2}, {"name": "Matthew Gregan", "count": 2}, {"name": "Jari Jalkanen", "count": 2}, {"name": "Ryan VanderMeulen", "count": 2}, {"name": "Brad Werth", "count": 1}, {"name": "Jens Stutte", "count": 1}, {"name": "Michael Lynch", "count": 1}, {"name": "Jamie Nicol", "count": 1}, {"name": "Sandor Molnar", "count": 1}, {"name": "Anutrix", "count": 1}, {"name": "Chris Peterson", "count": 1}, {"name": "Emilio Cobos Álvarez", "count": 1}, {"name": "Landry Breuil", "count": 1}], "kinetik": [{"name": "Alastor Wu", "count": 11}, {"name": "Andrew Osmond", "count": 3}, {"name": "Andrew McCreight", "count": 1}, {"name": "Karl Tomlinson", "count": 1}], "aosmond": [{"name": "azebrowski", "count": 5}, {"name": "Tom Schuster", "count": 4}, {"name": "Ryan VanderMeulen", "count": 2}, {"name": "Alastor Wu", "count": 2}, {"name": "Andreas Pehrson", "count": 2}, {"name": "Bob Owen", "count": 2}, {"name": "Chun-Min Chang", "count": 2}, {"name": "Mark Banner", "count": 2}, {"name": "Nika Layzell", "count": 1}, {"name": "Randell Jesup", "count": 1}, {"name": "Emilio Cobos Álvarez", "count": 1}, {"name": "Val Packett", "count": 1}, {"name": "Paul Adenot", "count": 1}, {"name": "Lee Salzman", "count": 1}, {"name": "Timothy Nikkel", "count": 1}, {"name": "serge-sans-paille", "count": 1}, {"name": "Karl Tomlinson", "count": 1}, {"name": "Chris Peterson", "count": 1}, {"name": "John Lin", "count": 1}, {"name": "Vincent Hilla", "count": 1}, {"name": "Andrew McCreight", "count": 1}, {"name": "Gregory Pappas", "count": 1}], "alwu": [{"name": "Paul Adenot", "count": 25}, {"name": "Ryan VanderMeulen", "count": 11}, {"name": "John Lin", "count": 10}, {"name": "Andrew Osmond", "count": 8}, {"name": "Chun-Min Chang", "count": 5}, {"name": "Tom Schuster", "count": 4}, {"name": "Landry Breuil", "count": 4}, {"name": "Andreas Pehrson", "count": 3}, {"name": "Ashley Hale", "count": 3}, {"name": "Matthew Gregan", "count": 2}, {"name": "Simon Farre", "count": 2}, {"name": "azebrowski", "count": 2}, {"name": "serge-sans-paille", "count": 2}, {"name": "Nika Layzell", "count": 1}, {"name": "Karl Tomlinson", "count": 1}, {"name": "Aethar", "count": 1}, {"name": "Gabriele Svelto", "count": 1}, {"name": "Frederik Braun", "count": 1}, {"name": "Slowlife01", "count": 1}, {"name": "Sotaro Ikeda", "count": 1}, {"name": "Mark Banner", "count": 1}, {"name": "Alex Hochheiden", "count": 1}, {"name": "Tom Marble", "count": 1}, {"name": "Emily McDonough", "count": 1}], "karlt": [{"name": "Paul Adenot", "count": 13}, {"name": "Andreas Pehrson", "count": 10}, {"name": "Alastor Wu", "count": 7}, {"name": "Chun-Min Chang", "count": 6}, {"name": "Arnaud Bienner", "count": 6}, {"name": "Andrew Osmond", "count": 4}, {"name": "Matthew Gregan", "count": 1}, {"name": "Nika Layzell", "count": 1}, {"name": "John Lin", "count": 1}, {"name": "Ryan VanderMeulen", "count": 1}, {"name": "longsonr", "count": 1}], "jolin": [{"name": "Andrew Osmond", "count": 14}, {"name": "Alastor Wu", "count": 9}, {"name": "Chun-Min Chang", "count": 4}, {"name": "Paul Adenot", "count": 2}, {"name": "Makoto Kato", "count": 1}], "azebrowski": [{"name": "Andrew Osmond", "count": 4}, {"name": "Paul Adenot", "count": 1}], "chunmin": [{"name": "Alastor Wu", "count": 9}, {"name": "Karl Tomlinson", "count": 7}, {"name": "Paul Adenot", "count": 6}, {"name": "Timothy Nikkel", "count": 1}]}};
+const PHAB_DATA = {"n": 134, "histogram": [{"bucket": "\u003c 1 day", "count": 87, "pct": 0.6492537313432836}, {"bucket": "1-3 days", "count": 23, "pct": 0.17164179104477612}, {"bucket": "3-7 days", "count": 12, "pct": 0.08955223880597014}, {"bucket": "1-2 weeks", "count": 5, "pct": 0.03731343283582089}, {"bucket": "2-4 weeks", "count": 2, "pct": 0.014925373134328358}, {"bucket": "> 1 month", "count": 5, "pct": 0.03731343283582089}], "percentiles": {"p50": 0.42375, "p75": 2.1597222222222223, "p90": 5.2815972222222225}, "per_reviewer": [{"name": "chunmin", "median_days": 0.015046296296296295, "count": 3}, {"name": "jolin", "median_days": 0.06844907407407408, "count": 12}, {"name": "alwu", "median_days": 0.18119212962962963, "count": 16}, {"name": "karlt", "median_days": 0.2961053240740741, "count": 18}, {"name": "padenot", "median_days": 0.5397800925925926, "count": 43}, {"name": "aosmond", "median_days": 1.417025462962963, "count": 15}, {"name": "azebrowski", "median_days": 2.698246527777778, "count": 2}], "weekly_median": [{"week": "2025-W46", "median_days": 0.022349537037037036, "count": 1}, {"week": "2025-W47", "median_days": 1.3905266203703706, "count": 14}, {"week": "2025-W48", "median_days": 0.7188773148148148, "count": 15}, {"week": "2025-W49", "median_days": 0.2696238425925926, "count": 18}, {"week": "2025-W50", "median_days": 0.20252314814814815, "count": 13}, {"week": "2025-W51", "median_days": 0.23059027777777777, "count": 9}, {"week": "2025-W52", "median_days": 0.5382870370370371, "count": 7}, {"week": "2026-W01", "median_days": 0.508425925925926, "count": 4}, {"week": "2026-W02", "median_days": 0.2562905092592592, "count": 22}, {"week": "2026-W03", "median_days": 0.6162789351851852, "count": 16}, {"week": "2026-W04", "median_days": 1.946087962962963, "count": 6}, {"week": "2026-W06", "median_days": 0.023275462962962963, "count": 1}, {"week": "2026-W09", "median_days": 0.36214120370370373, "count": 1}, {"week": "2026-W10", "median_days": 0.420625, "count": 1}, {"week": "2026-W13", "median_days": 1.255601851851852, "count": 4}, {"week": "2026-W16", "median_days": 3.0597800925925926, "count": 1}, {"week": "2026-W17", "median_days": 76.41928240740741, "count": 1}], "meta": {"generated_at": "2026-05-16T02:42:08.895849+00:00", "n_commits": 646, "n_with_revision": 522, "n_with_wait_time": 134, "partial": true}};
 
 const tipEl = document.createElement('div');
 tipEl.className = 'tip-floating';
@@ -570,6 +595,95 @@ new Chart(document.getElementById('chart-trend-all'), {
     maintainAspectRatio: false,
   },
 });
+
+// =============================================================
+// Wait-time section (only if Phabricator data was generated)
+// =============================================================
+if (PHAB_DATA && PHAB_DATA.n > 0) {
+  document.getElementById('phab-section').style.display = 'block';
+
+  // Summary tiles
+  const pg = document.getElementById('phab-summary-grid');
+  pg.appendChild(stat('Patches with wait data', PHAB_DATA.n, null,
+    'Patches we could compute submit→first-review-action latency for (excludes those with no non-author transactions yet).'));
+  pg.appendChild(stat('Median wait', PHAB_DATA.percentiles.p50.toFixed(1) + ' d', null,
+    '50th percentile: half of patches waited longer than this, half shorter.'));
+  pg.appendChild(stat('P75 wait', PHAB_DATA.percentiles.p75.toFixed(1) + ' d', null,
+    '75th percentile: a quarter of patches waited longer than this.'));
+  pg.appendChild(stat('P90 wait', PHAB_DATA.percentiles.p90.toFixed(1) + ' d', null,
+    '90th percentile: a tenth of patches waited longer than this (the "slow tail").'));
+
+  // Histogram
+  new Chart(document.getElementById('chart-wait-hist'), {
+    type: 'bar',
+    data: {
+      labels: PHAB_DATA.histogram.map(r => r.bucket),
+      datasets: [{
+        data: PHAB_DATA.histogram.map(r => r.count),
+        backgroundColor: '#0ea5e9',
+      }],
+    },
+    options: {
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: {
+          label: ctx => {
+            const row = PHAB_DATA.histogram[ctx.dataIndex];
+            return `${row.count} (${fmtPct(row.pct)})`;
+          },
+        }},
+      },
+      scales: { y: { beginAtZero: true } },
+      maintainAspectRatio: false,
+    },
+  });
+
+  // Per-reviewer median
+  new Chart(document.getElementById('chart-wait-per-reviewer'), {
+    type: 'bar',
+    data: {
+      labels: PHAB_DATA.per_reviewer.map(r => r.name),
+      datasets: [{
+        data: PHAB_DATA.per_reviewer.map(r => r.median_days),
+        backgroundColor: '#8b5cf6',
+      }],
+    },
+    options: {
+      indexAxis: 'y',
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: {
+          label: ctx => {
+            const row = PHAB_DATA.per_reviewer[ctx.dataIndex];
+            return `${row.median_days.toFixed(1)} d  (n=${row.count})`;
+          },
+        }},
+      },
+      scales: { x: { beginAtZero: true, title: { display: true, text: 'days' } } },
+      maintainAspectRatio: false,
+    },
+  });
+
+  // Weekly median
+  new Chart(document.getElementById('chart-wait-weekly'), {
+    type: 'line',
+    data: {
+      labels: PHAB_DATA.weekly_median.map(r => r.week),
+      datasets: [{
+        label: 'Median wait (days)',
+        data: PHAB_DATA.weekly_median.map(r => r.median_days),
+        borderColor: '#0ea5e9',
+        backgroundColor: '#0ea5e933',
+        tension: 0.25,
+      }],
+    },
+    options: {
+      plugins: { legend: { position: 'bottom' } },
+      scales: { y: { beginAtZero: true, title: { display: true, text: 'days' } } },
+      maintainAspectRatio: false,
+    },
+  });
+}
 
 // =============================================================
 // Member Profile view
