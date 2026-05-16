@@ -715,8 +715,17 @@ if (PHAB_DATA && PHAB_DATA.n > 0) {
     if (myWait && myWait.n_react > 0) {
       waitSection.style.display = '';
       const fmtDays = v => v == null ? '—' : `${v.toFixed(2)} d`;
-      waitGrid.appendChild(stat('Revisions authored', myWait.n_react, null,
-        'Number of revisions authored by this member where another listed member reacted.'));
+      // Show the wait-time sample as "X of Y" to make the relationship
+      // to "Patches authored" obvious — X is the subset of Y for which
+      // we could compute a wait (group added + member reacted on Phab).
+      waitGrid.appendChild(stat(
+        'Wait-time sample',
+        `${myWait.n_react} of ${authoredCount}`,
+        'revisions with computable wait',
+        `${myWait.n_react} of ${authoredCount} patches authored by this member had `
+        + `the media-playback-reviewers group added AND a reaction from `
+        + `another listed member — the subset where wait time is measurable.`
+      ));
       waitGrid.appendChild(stat('Time to react (median)', fmtDays(myWait.react_p50), null,
         'Median time from media-playback-reviewers being added, to first reaction by another listed member.'));
       waitGrid.appendChild(stat('Time to react (P90)', fmtDays(myWait.react_p90), null,
