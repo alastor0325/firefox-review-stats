@@ -13,9 +13,8 @@ This script writes:
 """
 
 import argparse
+import asyncio
 import json
-import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -23,7 +22,7 @@ from reviewstats.git_log import parse_git_log_output, run_git_log
 from reviewstats.members import MEMBER_IDS
 from reviewstats.metrics import iso_week
 from reviewstats.phab_html import (
-    fetch_revision_page,
+    bulk_fetch_async,
     first_member_review_action,
     parse_timeline,
 )
@@ -58,17 +57,7 @@ def _load_existing(d_number: str) -> dict | None:
         return None
 
 
-def _process_one(
-    d_number: str, *, members: frozenset[str], polite_sleep: float
-) -> dict:
-    cached_html = _html_cache_path(d_number)
-    if cached_html.exists():
-        html = cached_html.read_text(encoding="utf-8")
-    else:
-        time.sleep(polite_sleep)
-        html = fetch_revision_page(d_number)
-        _HTML_CACHE_DIR.mkdir(parents=True, exist_ok=True)
-        cached_html.write_text(html, encoding="utf-8")
+def _process_html(html: str, d_number: str, *, members: frozenset[str]) -> dict:
     events = parse_timeline(html)
     # Use the create event's actor as the canonical author handle. Git's
     # display name (`%an`) is "Alastor Wu" but Phab's actor handle is
@@ -83,22 +72,41 @@ def _process_one(
         else None
     )
 
-    # Queue time = first member reaction − latest `add-reviewer:
-    # media-playback-reviewers` event preceding that reaction. This is
-    # the answer to "once the team was put on the patch, how long until
-    # somebody on the rotation reacted?"
+    # First accept by a listed member (subset of review actions).
+    first_accept = None
+    for e in events:
+        if (
+            e.action == "accept"
+            and e.actor != author
+            and e.actor in members
+        ):
+            first_accept = e
+            break
+
+    # Queue anchor: latest `add-reviewer: media-playback-reviewers`
+    # event preceding the first member reaction. Answers "once the
+    # team was put on the patch, how long until someone reacted /
+    # accepted?"
     queue_added_at = None
     queue_seconds = None
+    queue_to_accept_seconds = None
     if first:
         for e in events:
             if e.timestamp > first.timestamp:
                 break
-            if e.action == "add-reviewer" and e.target == "media-playback-reviewers":
+            if (
+                e.action == "add-reviewer"
+                and e.target == "media-playback-reviewers"
+            ):
                 queue_added_at = e.timestamp
         if queue_added_at:
             queue_seconds = int(
                 (first.timestamp - queue_added_at).total_seconds()
             )
+            if first_accept:
+                queue_to_accept_seconds = int(
+                    (first_accept.timestamp - queue_added_at).total_seconds()
+                )
     return {
         "d_number": d_number,
         "author": author,
@@ -116,6 +124,15 @@ def _process_one(
             queue_added_at.isoformat() if queue_added_at else None
         ),
         "queue_seconds": queue_seconds,
+        "queue_to_accept_seconds": queue_to_accept_seconds,
+        "first_member_accept": (
+            {
+                "actor": first_accept.actor,
+                "ts": first_accept.timestamp.isoformat(),
+            }
+            if first_accept
+            else None
+        ),
         "first_member_review": (
             {
                 "actor": first.actor,
@@ -134,12 +151,11 @@ def main() -> int:
     parser.add_argument("--repo", default=_DEFAULT_REPO)
     parser.add_argument("--path", default=_DEFAULT_PATH)
     parser.add_argument("--since", default=_DEFAULT_SINCE)
-    parser.add_argument("--workers", type=int, default=3)
     parser.add_argument(
-        "--sleep",
-        type=float,
-        default=1.5,
-        help="Per-request polite sleep before each fetch (seconds).",
+        "--concurrency",
+        type=int,
+        default=5,
+        help="Concurrent in-flight Playwright fetches.",
     )
     parser.add_argument(
         "--force",
@@ -161,41 +177,68 @@ def main() -> int:
     print(f"Found {len(d_numbers)} commits with Differential Revision links.")
 
     _RAW_DIR.mkdir(parents=True, exist_ok=True)
-    to_fetch = [
+    candidates = [
         d for d in d_numbers
         if args.force or _load_existing(d) is None
     ]
+
+    # Re-process anything with cached HTML synchronously — that's just
+    # a parse + write, no network needed. Only the remainder goes to
+    # Playwright.
+    from_cache = [d for d in candidates if _html_cache_path(d).exists()]
+    to_fetch = [d for d in candidates if not _html_cache_path(d).exists()]
     print(
-        f"Already cached: {len(d_numbers) - len(to_fetch)}.  "
-        f"Will fetch: {len(to_fetch)}."
+        f"Total {len(d_numbers)} revisions.  "
+        f"Cached raw_data: {len(d_numbers) - len(candidates)}.  "
+        f"Re-parse from cached HTML: {len(from_cache)}.  "
+        f"Fetch via Playwright: {len(to_fetch)}."
     )
 
     failures: dict[str, str] = {}
 
-    def submit(d: str) -> tuple[str, dict | None, str | None]:
+    for d in from_cache:
         try:
-            payload = _process_one(
-                d, members=MEMBER_IDS, polite_sleep=args.sleep
-            )
+            html = _html_cache_path(d).read_text(encoding="utf-8")
+            payload = _process_html(html, d, members=MEMBER_IDS)
             _raw_path(d).write_text(
                 json.dumps(payload, indent=2), encoding="utf-8"
             )
-            return d, payload, None
         except Exception as e:
-            return d, None, f"{type(e).__name__}: {e}"
+            failures[d] = f"{type(e).__name__}: {e}"
+    if from_cache:
+        print(f"Re-parsed {len(from_cache) - len(failures)} from cached HTML.")
+
+    progress = {"i": 0}
+
+    def on_each(d: str, result) -> None:
+        progress["i"] += 1
+        i = progress["i"]
+        if isinstance(result, Exception):
+            failures[d] = f"{type(result).__name__}: {result}"
+        else:
+            _HTML_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+            _html_cache_path(d).write_text(result, encoding="utf-8")
+            try:
+                payload = _process_html(result, d, members=MEMBER_IDS)
+                _raw_path(d).write_text(
+                    json.dumps(payload, indent=2), encoding="utf-8"
+                )
+            except Exception as e:
+                failures[d] = f"{type(e).__name__}: {e}"
+        if i % 25 == 0 or i == len(to_fetch):
+            print(
+                f"  {i}/{len(to_fetch)}  "
+                f"(ok={i - len(failures)}, fail={len(failures)})"
+            )
 
     if to_fetch:
-        with ThreadPoolExecutor(max_workers=args.workers) as pool:
-            futures = [pool.submit(submit, d) for d in to_fetch]
-            for i, fut in enumerate(as_completed(futures), 1):
-                d, _payload, err = fut.result()
-                if err:
-                    failures[d] = err
-                if i % 25 == 0:
-                    print(
-                        f"  {i}/{len(to_fetch)}  "
-                        f"(ok={i - len(failures)}, fail={len(failures)})"
-                    )
+        asyncio.run(
+            bulk_fetch_async(
+                to_fetch,
+                concurrency=args.concurrency,
+                on_each=on_each,
+            )
+        )
 
     if failures:
         _FAILURES_PATH.write_text(

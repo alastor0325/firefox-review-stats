@@ -13,7 +13,6 @@ need to worry about the human-readable display strings.
 """
 
 import re
-import subprocess
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Iterable
@@ -104,51 +103,132 @@ class FetchError(RuntimeError):
 def fetch_revision_page(
     d_number: int | str,
     *,
-    timeout: float = 15.0,
+    timeout: float = 20.0,
     max_retries: int = _MAX_RETRIES,
 ) -> str:
-    """Fetch a Phab revision page via `curl`.
+    """One-shot fetch via a temporary Playwright browser.
 
-    Python's urllib gets HTTP 429 from Varnish even after our IP would
-    normally be allowed; curl with the same User-Agent gets 200. The
-    difference is likely TLS fingerprint (JA3/JA4) — Varnish's anti-bot
-    rule treats urllib's handshake as suspect. Shelling out to curl
-    sidesteps it entirely.
+    Cheap for spot checks (a few pages) but spins up a fresh Chromium
+    per call. For bulk runs, use `PlaywrightFetcher` to reuse the
+    browser across many fetches.
     """
-    import time
-    d_int = int(str(d_number).lstrip("D"))
-    url = f"{_HOST}/D{d_int}"
-    backoff = 30.0
-    last_err = ""
-    for attempt in range(max_retries):
-        result = subprocess.run(
-            [
-                "curl",
-                "-sS",
-                "-A", _UA,
-                "--max-time", str(int(timeout)),
-                "-w", "\n%{http_code}",
-                url,
-            ],
-            capture_output=True,
-            text=True,
-        )
-        # `curl -w` appends the HTTP status code on the last line.
-        body, _, code = result.stdout.rpartition("\n")
-        code = code.strip()
-        if result.returncode != 0:
-            last_err = f"curl rc={result.returncode}: {result.stderr.strip()}"
-        elif code == "200":
-            return body
-        elif code in _RETRY_STATUSES and attempt < max_retries - 1:
-            last_err = f"HTTP {code}"
-            time.sleep(backoff)
-            backoff = min(backoff * 2, 300.0)
-            continue
-        else:
-            last_err = f"HTTP {code}"
+    with PlaywrightFetcher() as f:
+        return f.fetch(d_number, timeout=timeout, max_retries=max_retries)
+
+
+async def bulk_fetch_async(
+    d_numbers: list[str],
+    *,
+    concurrency: int = 5,
+    timeout: float = 30.0,
+    on_each: callable | None = None,
+) -> dict[str, str | Exception]:
+    """Fetch many revision pages concurrently using Playwright async.
+
+    Returns `{d_number: html_str | Exception}`. Each fetch uses its own
+    `page` inside one shared `browser` instance — keeps memory low
+    (~150 MB total) while running up to `concurrency` requests in
+    flight at once.
+
+    `on_each(d, result)` is called as each fetch completes; useful for
+    progress reporting and incremental persistence.
+    """
+    import asyncio
+    from playwright.async_api import async_playwright
+
+    sem = asyncio.Semaphore(concurrency)
+    results: dict[str, str | Exception] = {}
+
+    async with async_playwright() as pw:
+        browser = await pw.chromium.launch(headless=True)
+
+        async def fetch_one(d: str) -> None:
+            async with sem:
+                page = await browser.new_page(user_agent=_UA)
+                try:
+                    d_int = int(d.lstrip("D"))
+                    url = f"{_HOST}/D{d_int}"
+                    resp = await page.goto(url, timeout=int(timeout * 1000))
+                    if resp and resp.status == 200:
+                        html = await page.content()
+                        results[d] = html
+                    else:
+                        results[d] = FetchError(
+                            f"{url}: HTTP {resp.status if resp else '?'}"
+                        )
+                except Exception as e:
+                    results[d] = e
+                finally:
+                    await page.close()
+                    if on_each is not None:
+                        on_each(d, results[d])
+
+        await asyncio.gather(*(fetch_one(d) for d in d_numbers))
+        await browser.close()
+    return results
+
+
+class PlaywrightFetcher:
+    """Reusable Playwright session for bulk fetches.
+
+    Mozilla Phabricator's Varnish CDN blocks urllib and curl after a
+    few hundred requests from one IP, but accepts a real Chromium
+    handshake the same way it accepts a browser visit. Driving
+    Chromium via Playwright dodges the block; the only cost is ~3-5 s
+    per page (browser-internal navigation + render).
+
+    Use as a context manager:
+
+        with PlaywrightFetcher() as f:
+            for d in d_numbers:
+                html = f.fetch(d)
+    """
+
+    def __init__(self) -> None:
+        self._pw = None
+        self._browser = None
+        self._page = None
+
+    def __enter__(self) -> "PlaywrightFetcher":
+        # Local import so the rest of the module (parser, tests) stays
+        # importable without playwright installed.
+        from playwright.sync_api import sync_playwright
+        self._pw = sync_playwright().start()
+        self._browser = self._pw.chromium.launch(headless=True)
+        self._page = self._browser.new_page(user_agent=_UA)
+        return self
+
+    def __exit__(self, *exc) -> None:
+        if self._browser:
+            self._browser.close()
+        if self._pw:
+            self._pw.stop()
+
+    def fetch(
+        self,
+        d_number: int | str,
+        *,
+        timeout: float = 20.0,
+        max_retries: int = _MAX_RETRIES,
+    ) -> str:
+        import time
+        d_int = int(str(d_number).lstrip("D"))
+        url = f"{_HOST}/D{d_int}"
+        backoff = 30.0
+        last_err = ""
+        for attempt in range(max_retries):
+            resp = self._page.goto(url, timeout=int(timeout * 1000))
+            status = resp.status if resp else 0
+            if status == 200:
+                return self._page.content()
+            if str(status) in _RETRY_STATUSES and attempt < max_retries - 1:
+                last_err = f"HTTP {status}"
+                time.sleep(backoff)
+                backoff = min(backoff * 2, 300.0)
+                continue
+            last_err = f"HTTP {status}"
             break
-    raise FetchError(f"{url}: {last_err}")
+        raise FetchError(f"{url}: {last_err}")
 
 
 def _parse_timestamp(s: str) -> datetime | None:
