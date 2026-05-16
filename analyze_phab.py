@@ -36,11 +36,16 @@ _DEFAULT_SINCE = "6 months ago"
 _DEFAULT_EXCLUDE = ("dom/media/webrtc",)
 _OUT_DIR = Path(__file__).resolve().parent
 _RAW_DIR = _OUT_DIR / "raw_data"
+_HTML_CACHE_DIR = _OUT_DIR / ".phab_html_cache"
 _FAILURES_PATH = _RAW_DIR / "_failures.json"
 
 
 def _raw_path(d_number: str) -> Path:
     return _RAW_DIR / f"{d_number}.json"
+
+
+def _html_cache_path(d_number: str) -> Path:
+    return _HTML_CACHE_DIR / f"{d_number}.html"
 
 
 def _load_existing(d_number: str) -> dict | None:
@@ -56,8 +61,14 @@ def _load_existing(d_number: str) -> dict | None:
 def _process_one(
     d_number: str, *, members: frozenset[str], polite_sleep: float
 ) -> dict:
-    time.sleep(polite_sleep)
-    html = fetch_revision_page(d_number)
+    cached_html = _html_cache_path(d_number)
+    if cached_html.exists():
+        html = cached_html.read_text(encoding="utf-8")
+    else:
+        time.sleep(polite_sleep)
+        html = fetch_revision_page(d_number)
+        _HTML_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        cached_html.write_text(html, encoding="utf-8")
     events = parse_timeline(html)
     # Use the create event's actor as the canonical author handle. Git's
     # display name (`%an`) is "Alastor Wu" but Phab's actor handle is
@@ -71,6 +82,23 @@ def _process_one(
         if (first and created_at)
         else None
     )
+
+    # Queue time = first member reaction − latest `add-reviewer:
+    # media-playback-reviewers` event preceding that reaction. This is
+    # the answer to "once the team was put on the patch, how long until
+    # somebody on the rotation reacted?"
+    queue_added_at = None
+    queue_seconds = None
+    if first:
+        for e in events:
+            if e.timestamp > first.timestamp:
+                break
+            if e.action == "add-reviewer" and e.target == "media-playback-reviewers":
+                queue_added_at = e.timestamp
+        if queue_added_at:
+            queue_seconds = int(
+                (first.timestamp - queue_added_at).total_seconds()
+            )
     return {
         "d_number": d_number,
         "author": author,
@@ -80,9 +108,14 @@ def _process_one(
                 "ts": e.timestamp.isoformat(),
                 "actor": e.actor,
                 "action": e.action,
+                **({"target": e.target} if e.target else {}),
             }
             for e in events
         ],
+        "queue_added_at": (
+            queue_added_at.isoformat() if queue_added_at else None
+        ),
+        "queue_seconds": queue_seconds,
         "first_member_review": (
             {
                 "actor": first.actor,
@@ -172,20 +205,25 @@ def main() -> int:
         _FAILURES_PATH.unlink()
 
     # Aggregate from raw_data/*.json (no further API calls).
+    # `queue_seconds` is our headline metric: time from when
+    # `media-playback-reviewers` was added to the revision's reviewer
+    # list, to when the first listed member reacted. Per-member
+    # attribution is intentionally not used here — anyone in the
+    # rotation could have responded; the first one's identity isn't
+    # a measure of *their* responsiveness, just team responsiveness.
     per_revision: list[dict] = []
     for d in d_numbers:
         raw = _load_existing(d)
-        if raw is None or raw.get("first_member_review") is None:
+        if raw is None:
             continue
-        fmr = raw["first_member_review"]
-        wait_s = fmr.get("wait_seconds")
-        if wait_s is None:
+        queue_s = raw.get("queue_seconds")
+        if queue_s is None:
             continue
         commit = commits_by_d[d]
         per_revision.append({
             "d_number": d,
-            "wait_days": wait_s / 86400.0,
-            "reviewer": fmr["actor"],
+            "wait_days": queue_s / 86400.0,
+            "reviewer": (raw.get("first_member_review") or {}).get("actor"),
             "week": iso_week(commit.date),
         })
 

@@ -77,6 +77,31 @@ class TestParseTimelineD299302:
         assert len(publishes) >= 1
         assert publishes[0].actor == "phab-bot"
 
+    def test_add_reviewer_target_extracted(self):
+        events = _events()
+        adds = [e for e in events if e.action == "add-reviewer"]
+        # D299302 has at least two `add-reviewer` events, both targeting
+        # `media-playback-reviewers` (Herald auto-add + alwu re-add).
+        assert len(adds) >= 2
+        for e in adds:
+            assert e.target == "media-playback-reviewers", (
+                f"unexpected target {e.target!r} for add-reviewer at {e.timestamp}"
+            )
+
+    def test_remove_reviewer_target_extracted(self):
+        events = _events()
+        removes = [e for e in events if e.action == "remove-reviewer"]
+        assert len(removes) >= 1
+        assert removes[0].target == "media-playback-reviewers"
+
+    def test_non_reviewer_events_have_no_target(self):
+        events = _events()
+        for e in events:
+            if e.action not in ("add-reviewer", "remove-reviewer"):
+                assert e.target is None, (
+                    f"unexpected target {e.target!r} on action {e.action}"
+                )
+
 
 class TestFirstMemberReviewAction:
     MEMBERS = frozenset({"padenot", "alwu", "kinetik"})

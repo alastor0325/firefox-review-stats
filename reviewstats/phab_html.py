@@ -88,6 +88,9 @@ class Event:
     actor: str
     action: str
     raw_verb: str
+    # For add-reviewer / remove-reviewer events: the target reviewer
+    # handle (individual or group like "media-playback-reviewers").
+    target: str | None = None
 
 
 _RETRY_STATUSES = ("429", "500", "502", "503", "504")
@@ -163,8 +166,22 @@ def _verb_to_action(body_text: str) -> tuple[str, str]:
     verb = body_text.strip()
     for pat, action in _VERB_TO_ACTION:
         if pat.match(verb):
-            return action, verb[:80]
-    return "other", verb[:80]
+            return action, verb[:120]
+    return "other", verb[:120]
+
+
+# Inside an add-reviewer / remove-reviewer body, the target reviewer
+# appears as a `phui-handle` link immediately after the verb.
+_REVIEWER_TARGET_RE = re.compile(
+    r"(?:added|removed) a reviewer:\s*([A-Za-z0-9_.\-]+)"
+)
+
+
+def _extract_target(action: str, body_text: str) -> str | None:
+    if action not in ("add-reviewer", "remove-reviewer"):
+        return None
+    m = _REVIEWER_TARGET_RE.search(body_text)
+    return m.group(1) if m else None
 
 
 def parse_timeline(html: str) -> list[Event]:
@@ -187,7 +204,16 @@ def parse_timeline(html: str) -> list[Event]:
         ts = _parse_timestamp(ts_str)
         if ts is None:
             continue
-        events.append(Event(timestamp=ts, actor=actor, action=action, raw_verb=raw_verb))
+        target = _extract_target(action, verb_text)
+        events.append(
+            Event(
+                timestamp=ts,
+                actor=actor,
+                action=action,
+                raw_verb=raw_verb,
+                target=target,
+            )
+        )
     return events
 
 

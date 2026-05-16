@@ -63,6 +63,8 @@ def main() -> None:
             "d_number": d_number,
             "author": author or "—",
             "created_at": created_at,
+            "queue_added_at": d.get("queue_added_at"),
+            "queue_seconds": d.get("queue_seconds"),
             "react_actor": first_react["actor"] if first_react else None,
             "react_action": first_react["action"] if first_react else None,
             "react_at": first_react["ts"] if first_react else None,
@@ -94,6 +96,11 @@ def main() -> None:
     lines.append(
         f"- Have an explicit `accept` by a listed member: **{n_with_accept}**"
     )
+    n_with_queue = sum(1 for r in rows if r.get("queue_seconds") is not None)
+    lines.append(
+        f"- Have a computable **queue wait** (group added then member reacted): "
+        f"**{n_with_queue}**"
+    )
     lines.append("")
     lines.append(
         "Member set (from `reviewstats/members.py`): "
@@ -108,8 +115,11 @@ def main() -> None:
     lines.append("")
     lines.append("---")
     lines.append("")
-    lines.append("| # | Revision | Author | Created | First member reaction | First member accept |")
-    lines.append("|--:|---|---|---|---|---|")
+    lines.append(
+        "| # | Revision | Author | Created | Group added to queue "
+        "| First member reaction | First member accept | Queue wait |"
+    )
+    lines.append("|--:|---|---|---|---|---|---|--:|")
 
     for i, r in enumerate(rows, 1):
         react = "—"
@@ -118,13 +128,21 @@ def main() -> None:
         accept = "—"
         if r["accept_at"]:
             accept = f"{_fmt(r['accept_at'])} by **{r['accept_actor']}**"
+        queue_wait = "—"
+        if r.get("queue_seconds") is not None:
+            hours = r["queue_seconds"] / 3600
+            queue_wait = (
+                f"{hours/24:.1f} d" if hours >= 24 else f"{hours:.1f} h"
+            )
         lines.append(
             f"| {i} "
             f"| [{r['d_number']}](https://phabricator.services.mozilla.com/{r['d_number']}) "
             f"| {r['author']} "
             f"| {_fmt(r['created_at'])} "
+            f"| {_fmt(r.get('queue_added_at'))} "
             f"| {react} "
-            f"| {accept} |"
+            f"| {accept} "
+            f"| {queue_wait} |"
         )
 
     OUT.write_text("\n".join(lines), encoding="utf-8")
