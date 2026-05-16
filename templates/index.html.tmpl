@@ -79,7 +79,8 @@
   body[data-view="weekly"]  .view-total,
   body[data-view="weekly"]  .view-profile { display: none; }
   body[data-view="profile"] .view-total,
-  body[data-view="profile"] .view-weekly { display: none; }
+  body[data-view="profile"] .view-weekly,
+  body[data-view="profile"] .view-not-profile { display: none; }
 
   .profile-select {
     font-size: 14px; padding: 6px 10px; border-radius: 6px;
@@ -201,11 +202,17 @@
     <div class="footer-note">Includes all dom/media patches the member reviewed (group-tagged and non-tagged), with author aliases collapsed.</div>
   </section>
 
+  <section id="profile-wait-section" style="display:none">
+    <h2>Wait time when <span id="profile-name-3"></span> is the patch author <span class="info" data-tip="Time from when the media-playback-reviewers group was added to the revision, to when another listed member first reacted / accepted. Filtered to patches authored by the selected member."></span></h2>
+    <div class="summary-grid" id="profile-wait-grid"></div>
+    <div class="footer-note">"Time to react" = first comment / accept / request-changes by a listed member (excluding the author). "Time to accept" = first accept by a listed member.</div>
+  </section>
+
 </div>
 
 <!-- ============= WAIT-TIME SECTION (Phab Phase 2) ============= -->
-<div id="phab-section" style="display:none">
-  <h2 style="margin: 32px 0 12px; padding: 0 4px; font-size: 16px; color: #4b5563;">Review wait time (Phabricator data)</h2>
+<div id="phab-section" class="view-not-profile" style="display:none">
+  <h2 style="margin: 32px 0 12px; padding: 0 4px; font-size: 16px; color: #4b5563;">Review wait time (Phabricator data) — team-level</h2>
 
   <section>
     <h2>Summary</h2>
@@ -697,6 +704,30 @@ if (PHAB_DATA && PHAB_DATA.n > 0) {
   function render(member) {
     document.getElementById('profile-name-1').textContent = member;
     document.getElementById('profile-name-2').textContent = member;
+    document.getElementById('profile-name-3').textContent = member;
+
+    // Per-author wait-time tiles (only if PHAB_DATA is loaded).
+    const waitSection = document.getElementById('profile-wait-section');
+    const waitGrid = document.getElementById('profile-wait-grid');
+    waitGrid.innerHTML = '';
+    const pa = (PHAB_DATA && PHAB_DATA.per_author) || {};
+    const myWait = pa[member];
+    if (myWait && myWait.n_react > 0) {
+      waitSection.style.display = '';
+      const fmtDays = v => v == null ? '—' : `${v.toFixed(2)} d`;
+      waitGrid.appendChild(stat('Revisions authored', myWait.n_react, null,
+        'Number of revisions authored by this member where another listed member reacted.'));
+      waitGrid.appendChild(stat('Time to react (median)', fmtDays(myWait.react_p50), null,
+        'Median time from media-playback-reviewers being added, to first reaction by another listed member.'));
+      waitGrid.appendChild(stat('Time to react (P90)', fmtDays(myWait.react_p90), null,
+        '90th percentile — the slow tail.'));
+      waitGrid.appendChild(stat('Time to accept (median)', fmtDays(myWait.accept_p50), null,
+        'Median time from group added to first accept by a listed member.'));
+      waitGrid.appendChild(stat('Time to accept (P90)', fmtDays(myWait.accept_p90), null,
+        '90th percentile of time to accept.'));
+    } else {
+      waitSection.style.display = 'none';
+    }
 
     const total = DATA.total_reviews_per_member.find(r => r.name === member)
                   || { in_group: 0, out_of_group: 0, total: 0 };

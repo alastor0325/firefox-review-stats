@@ -270,7 +270,53 @@ def main() -> int:
             "week": iso_week(commit.date),
         })
 
+    # Per-author wait-time breakdown (for Member Profile view).
+    # "How long does this author's patch wait for review?" — only
+    # meaningful when the author IS the one waiting. Filtered to
+    # members so we have a single bounded set in the report.
+    per_author: dict[str, dict] = {}
+    for d in d_numbers:
+        raw = _load_existing(d)
+        if raw is None:
+            continue
+        author = raw.get("author")
+        if author not in MEMBER_IDS:
+            continue
+        bucket = per_author.setdefault(author, {
+            "react_days": [], "accept_days": [],
+        })
+        if raw.get("queue_seconds") is not None:
+            bucket["react_days"].append(raw["queue_seconds"] / 86400.0)
+        if raw.get("queue_to_accept_seconds") is not None:
+            bucket["accept_days"].append(
+                raw["queue_to_accept_seconds"] / 86400.0
+            )
+
+    def _pct(vals, p):
+        if not vals:
+            return None
+        s = sorted(vals)
+        k = (len(s) - 1) * p / 100.0
+        f = int(k)
+        c = min(f + 1, len(s) - 1)
+        return s[f] + (s[c] - s[f]) * (k - f)
+
+    per_author_summary = {
+        author: {
+            "n_react": len(b["react_days"]),
+            "n_accept": len(b["accept_days"]),
+            "react_p50": _pct(b["react_days"], 50),
+            "react_p75": _pct(b["react_days"], 75),
+            "react_p90": _pct(b["react_days"], 90),
+            "accept_p50": _pct(b["accept_days"], 50),
+            "accept_p75": _pct(b["accept_days"], 75),
+            "accept_p90": _pct(b["accept_days"], 90),
+        }
+        for author, b in per_author.items()
+    }
+
     aggregated = aggregate_wait_times(per_revision)
+    aggregated["per_author"] = per_author_summary
     aggregated["meta"] = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "n_commits": len(commits),
