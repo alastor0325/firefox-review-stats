@@ -17,10 +17,14 @@
     --pill-active-fg: #ffffff;
   }
   body { font-family: -apple-system, system-ui, sans-serif; margin: 0; background: var(--bg); color: var(--fg); }
-  header { background: var(--fg); color: var(--bg); padding: 24px 32px; }
+  header {
+    background: var(--fg); color: var(--bg); padding: 24px 32px;
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 1px 0 rgba(0,0,0,.08);
+  }
   header h1 { margin: 0; font-size: 20px; font-weight: 600; }
   header .meta { margin-top: 6px; font-size: 13px; opacity: 0.7; }
-  main { max-width: 1180px; margin: 24px auto; padding: 0 24px 48px; }
+  main { max-width: 1180px; margin: 0 auto; padding: 24px 24px 48px; }
   section { background: var(--card); border-radius: 8px; padding: 20px 24px; margin-bottom: 18px; box-shadow: 0 1px 2px rgba(0,0,0,.05); }
   section h2 { margin: 0 0 12px; font-size: 15px; font-weight: 600; color: #4b5563; }
   .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; }
@@ -63,8 +67,18 @@
     white-space: normal;
   }
 
-  /* View toggle */
-  .toggle-bar { display: flex; gap: 4px; margin-bottom: 16px; }
+  /* View toggle — sticky below the header so it's always reachable */
+  .toggle-bar {
+    display: flex; gap: 4px;
+    position: sticky;
+    /* Header is ~76px tall (24+20+6+13+24 padding + content). Allow a
+       little breathing room so the toggle's pills don't kiss the header. */
+    top: 76px;
+    z-index: 99;
+    background: var(--bg);
+    padding: 12px 0;
+    margin: 0 0 4px;
+  }
   .toggle-bar button {
     background: var(--pill); color: var(--fg);
     border: none; border-radius: 999px;
