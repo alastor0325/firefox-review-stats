@@ -9,6 +9,7 @@ from pathlib import Path
 
 from reviewstats.phab_html import (
     Event,
+    extract_author_handle,
     first_member_review_action,
     parse_timeline,
 )
@@ -93,6 +94,10 @@ class TestParseTimelineD299302:
         removes = [e for e in events if e.action == "remove-reviewer"]
         assert len(removes) >= 1
         assert removes[0].target == "media-playback-reviewers"
+
+    def test_extract_author_handle(self):
+        html = _FIXTURE.read_text(encoding="utf-8")
+        assert extract_author_handle(html) == "alwu"
 
     def test_non_reviewer_events_have_no_target(self):
         events = _events()

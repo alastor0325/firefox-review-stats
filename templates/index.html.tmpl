@@ -80,7 +80,7 @@
   body[data-view="weekly"]  .view-profile { display: none; }
   body[data-view="profile"] .view-total,
   body[data-view="profile"] .view-weekly,
-  body[data-view="profile"] .view-not-profile { display: none; }
+  body[data-view="profile"] .view-not-profile { display: none !important; }
 
   .profile-select {
     font-size: 14px; padding: 6px 10px; border-radius: 6px;
@@ -742,6 +742,12 @@ if (PHAB_DATA && PHAB_DATA.n > 0) {
     grid.innerHTML = '';
     grid.appendChild(stat('Full name', DATA.members[member] || '—', null,
       'Display name from members.py.'));
+    // Patches authored — computed from the same git source as the
+    // "Top patch authors" bar chart so the two numbers always agree.
+    // Works for members below the top-15 cutoff too.
+    const authoredCount = (DATA.member_authored_counts || {})[member] || 0;
+    grid.appendChild(stat('Patches authored', authoredCount, null,
+      'Same source / same alias collapse as the 6-Month View "Top patch authors" chart.'));
     grid.appendChild(stat('Total reviews (any tag)', total.total,
       `${total.in_group} in-group · ${total.out_of_group} other`,
       'All dom/media patches this member reviewed in the 6-month window.'));

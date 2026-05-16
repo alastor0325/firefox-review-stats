@@ -120,6 +120,44 @@ class TestBuildReport:
         assert "all_members" in trend
         assert trend["top_reviewers"][0] == "padenot"
 
+    def test_member_authored_counts_match_top_authors(self):
+        """For every member who shows up in `top_total`, the count in
+        `member_authored_counts` must equal the count in the chart's
+        row — same source, same alias collapse, no drift between the
+        Top Authors chart and the Member Profile tile.
+        """
+        commits = [
+            _commit(
+                datetime(2026, 5, 15, tzinfo=timezone.utc),
+                [_r(GROUP, True), _r("padenot")],
+                author="Paul Adenot",
+            ),
+        ] * 3 + [
+            _commit(
+                datetime(2026, 5, 10, tzinfo=timezone.utc),
+                [_r("padenot")],
+                author="Alastor Wu",
+            ),
+        ] * 7
+        report = build_report(
+            commits,
+            group=GROUP,
+            path="dom/media",
+            window_start=datetime(2025, 11, 15, tzinfo=timezone.utc),
+            window_end=datetime(2026, 5, 15, tzinfo=timezone.utc),
+            generated_at=datetime(2026, 5, 15, tzinfo=timezone.utc),
+        )
+        # Verify the consistency invariant.
+        members = report["members"]
+        top_by_name = {r["name"]: r["count"] for r in report["authors"]["top_total"]}
+        for member, count in report["member_authored_counts"].items():
+            canonical = members[member]
+            if canonical in top_by_name:
+                assert count == top_by_name[canonical], (
+                    f"member_authored_counts[{member!r}] = {count}, "
+                    f"but Top Authors row {canonical!r} = {top_by_name[canonical]}"
+                )
+
     def test_per_member_authors_present(self):
         report = build_report(
             _make_commits(),

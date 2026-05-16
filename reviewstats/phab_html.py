@@ -80,6 +80,13 @@ _TS_RE = re.compile(
     r"(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2}):(\d{2})\s*\(UTC([+-]\d+)\)"
 )
 
+# Page header always has: `Authored by <strong><a href="/p/<handle>/">...`.
+# Reliable even when the timeline pages out the `created this revision`
+# event for older revisions.
+_AUTHOR_HEADER_RE = re.compile(
+    r'Authored by\s*<strong>\s*<a\s+href="/p/([^/]+)/"'
+)
+
 
 @dataclass(frozen=True)
 class Event:
@@ -261,6 +268,16 @@ def _extract_target(action: str, body_text: str) -> str | None:
     if action not in ("add-reviewer", "remove-reviewer"):
         return None
     m = _REVIEWER_TARGET_RE.search(body_text)
+    return m.group(1) if m else None
+
+
+def extract_author_handle(html: str) -> str | None:
+    """The Phab handle of the revision author, from the page header.
+
+    Works for every revision including ones where the `created` event
+    has paged off the bottom of the rendered timeline.
+    """
+    m = _AUTHOR_HEADER_RE.search(html)
     return m.group(1) if m else None
 
 

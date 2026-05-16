@@ -23,6 +23,7 @@ from reviewstats.members import MEMBER_IDS
 from reviewstats.metrics import iso_week
 from reviewstats.phab_html import (
     bulk_fetch_async,
+    extract_author_handle,
     first_member_review_action,
     parse_timeline,
 )
@@ -59,11 +60,11 @@ def _load_existing(d_number: str) -> dict | None:
 
 def _process_html(html: str, d_number: str, *, members: frozenset[str]) -> dict:
     events = parse_timeline(html)
-    # Use the create event's actor as the canonical author handle. Git's
-    # display name (`%an`) is "Alastor Wu" but Phab's actor handle is
-    # "alwu" — using the create event keeps the namespace consistent.
+    # Author handle from the page header — always present, even for
+    # older revisions whose `created` event has paged off the timeline.
+    # Fall back to the create event's actor as a sanity check.
     create = next((e for e in events if e.action == "create"), None)
-    author = create.actor if create else None
+    author = extract_author_handle(html) or (create.actor if create else None)
     first = first_member_review_action(events, members=members, author=author)
     created_at = create.timestamp if create else None
     wait_seconds = (
@@ -283,8 +284,9 @@ def main() -> int:
         if author not in MEMBER_IDS:
             continue
         bucket = per_author.setdefault(author, {
-            "react_days": [], "accept_days": [],
+            "n_total": 0, "react_days": [], "accept_days": [],
         })
+        bucket["n_total"] += 1
         if raw.get("queue_seconds") is not None:
             bucket["react_days"].append(raw["queue_seconds"] / 86400.0)
         if raw.get("queue_to_accept_seconds") is not None:
@@ -303,6 +305,7 @@ def main() -> int:
 
     per_author_summary = {
         author: {
+            "n_total": b["n_total"],
             "n_react": len(b["react_days"]),
             "n_accept": len(b["accept_days"]),
             "react_p50": _pct(b["react_days"], 50),

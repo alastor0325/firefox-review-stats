@@ -6,7 +6,7 @@ Update by hand when membership changes.
 
 MEMBERS: dict[str, str] = {
     "alwu": "Alastor Wu",
-    "chunmin": "C.M.Chang",
+    "chunmin": "Chun-Min Chang",
     "jolin": "John Lin",
     "padenot": "Paul Adenot",
     "azebrowski": "azebrowski",

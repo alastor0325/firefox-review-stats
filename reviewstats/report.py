@@ -29,6 +29,27 @@ _TOP_N_FOR_TREND = 5
 _TOP_AUTHORS = 15
 
 
+def author_count_for_member(
+    member: str,
+    members: dict[str, str],
+    top_authors: list[dict],
+) -> int:
+    """Look up the patch-author count for a member, using the canonical
+    display name from `members` to match against `top_authors`.
+
+    The Member Profile view uses this to ensure the "patches authored"
+    tile equals the bar shown in the Top Authors chart for the same
+    person — same source, same alias collapsing, same number.
+    """
+    canonical = members.get(member)
+    if canonical is None:
+        return 0
+    for row in top_authors:
+        if row.get("name") == canonical:
+            return int(row.get("count", 0))
+    return 0
+
+
 def _pct(part: int, whole: int) -> float:
     return (part / whole) if whole else 0.0
 
@@ -79,6 +100,10 @@ def build_report(
     author_totals = author_patch_counts(commits)
     author_reviewers = author_reviewer_pairs(commits, members=MEMBER_IDS)
     by_member_authors = reviewer_to_authors(commits, members=MEMBER_IDS)
+    member_authored_counts = {
+        member: author_totals.get(canonical, 0)
+        for member, canonical in MEMBERS.items()
+    }
 
     weeks = _iso_weeks_between(window_start, window_end)
     num_weeks = max(len(weeks), 1)
@@ -144,4 +169,5 @@ def build_report(
             "reviewer_matrix": author_reviewer_matrix,
         },
         "per_member_authors": by_member_authors,
+        "member_authored_counts": member_authored_counts,
     }
