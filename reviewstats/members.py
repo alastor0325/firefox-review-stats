@@ -9,7 +9,6 @@ MEMBERS: dict[str, str] = {
     "chunmin": "C.M.Chang",
     "jolin": "John Lin",
     "padenot": "Paul Adenot",
-    "stransky": "Martin Stránský",
     "azebrowski": "azebrowski",
     "kinetik": "Matthew Gregan",
     "karlt": "Karl Tomlinson",
