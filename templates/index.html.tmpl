@@ -706,6 +706,11 @@ if (PHAB_DATA && PHAB_DATA.n > 0) {
     document.getElementById('profile-name-2').textContent = member;
     document.getElementById('profile-name-3').textContent = member;
 
+    // Per-member patches-authored count — same source as the Top
+    // Authors chart, declared up front so both the summary tile and
+    // the wait-time "X of Y" line use the same value.
+    const authoredCount = (DATA.member_authored_counts || {})[member] || 0;
+
     // Per-author wait-time tiles (only if PHAB_DATA is loaded).
     const waitSection = document.getElementById('profile-wait-section');
     const waitGrid = document.getElementById('profile-wait-grid');
@@ -751,10 +756,8 @@ if (PHAB_DATA && PHAB_DATA.n > 0) {
     grid.innerHTML = '';
     grid.appendChild(stat('Full name', DATA.members[member] || '—', null,
       'Display name from members.py.'));
-    // Patches authored — computed from the same git source as the
-    // "Top patch authors" bar chart so the two numbers always agree.
-    // Works for members below the top-15 cutoff too.
-    const authoredCount = (DATA.member_authored_counts || {})[member] || 0;
+    // Patches authored — same source as the Top Authors chart (see
+    // the `authoredCount` declaration at the top of this function).
     grid.appendChild(stat('Patches authored', authoredCount, null,
       'Same source / same alias collapse as the 6-Month View "Top patch authors" chart.'));
     grid.appendChild(stat('Total reviews (any tag)', total.total,
