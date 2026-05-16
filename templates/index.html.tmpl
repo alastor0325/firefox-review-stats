@@ -132,10 +132,36 @@
 
 </div>
 
+<!-- ============= WAIT-TIME SECTION (Phab Phase 2) ============= -->
+<div id="phab-section" style="display:none">
+  <h2 style="margin: 32px 0 12px; padding: 0 4px; font-size: 16px; color: #4b5563;">Review wait time (Phabricator data)</h2>
+
+  <section>
+    <h2>Summary</h2>
+    <div class="summary-grid" id="phab-summary-grid"></div>
+  </section>
+
+  <section>
+    <h2>Wait-time distribution (submit → first review action)</h2>
+    <div class="chart-box"><canvas id="chart-wait-hist"></canvas></div>
+  </section>
+
+  <section>
+    <h2>Median wait time per member (lower = faster)</h2>
+    <div class="chart-box"><canvas id="chart-wait-per-reviewer"></canvas></div>
+  </section>
+
+  <section>
+    <h2>Median wait time by week</h2>
+    <div class="chart-box"><canvas id="chart-wait-weekly"></canvas></div>
+  </section>
+</div>
+
 </main>
 
 <script>
 const DATA = __DATA_JSON__;
+const PHAB_DATA = __PHAB_DATA_JSON__;
 
 const fmtPct = v => (v * 100).toFixed(1) + '%';
 const fmtNum = v => (typeof v === 'number' && !Number.isInteger(v)) ? v.toFixed(1) : v;
@@ -359,6 +385,91 @@ new Chart(document.getElementById('chart-trend-all'), {
     maintainAspectRatio: false,
   },
 });
+
+// =============================================================
+// Wait-time section (only if Phabricator data was generated)
+// =============================================================
+if (PHAB_DATA && PHAB_DATA.n > 0) {
+  document.getElementById('phab-section').style.display = 'block';
+
+  // Summary tiles
+  const pg = document.getElementById('phab-summary-grid');
+  pg.appendChild(stat('Patches with wait data', PHAB_DATA.n));
+  pg.appendChild(stat('Median wait', PHAB_DATA.percentiles.p50.toFixed(1) + ' d'));
+  pg.appendChild(stat('P75 wait', PHAB_DATA.percentiles.p75.toFixed(1) + ' d'));
+  pg.appendChild(stat('P90 wait', PHAB_DATA.percentiles.p90.toFixed(1) + ' d'));
+
+  // Histogram
+  new Chart(document.getElementById('chart-wait-hist'), {
+    type: 'bar',
+    data: {
+      labels: PHAB_DATA.histogram.map(r => r.bucket),
+      datasets: [{
+        data: PHAB_DATA.histogram.map(r => r.count),
+        backgroundColor: '#0ea5e9',
+      }],
+    },
+    options: {
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: {
+          label: ctx => {
+            const row = PHAB_DATA.histogram[ctx.dataIndex];
+            return `${row.count} (${fmtPct(row.pct)})`;
+          },
+        }},
+      },
+      scales: { y: { beginAtZero: true } },
+      maintainAspectRatio: false,
+    },
+  });
+
+  // Per-reviewer median
+  new Chart(document.getElementById('chart-wait-per-reviewer'), {
+    type: 'bar',
+    data: {
+      labels: PHAB_DATA.per_reviewer.map(r => r.name),
+      datasets: [{
+        data: PHAB_DATA.per_reviewer.map(r => r.median_days),
+        backgroundColor: '#8b5cf6',
+      }],
+    },
+    options: {
+      indexAxis: 'y',
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: {
+          label: ctx => {
+            const row = PHAB_DATA.per_reviewer[ctx.dataIndex];
+            return `${row.median_days.toFixed(1)} d  (n=${row.count})`;
+          },
+        }},
+      },
+      scales: { x: { beginAtZero: true, title: { display: true, text: 'days' } } },
+      maintainAspectRatio: false,
+    },
+  });
+
+  // Weekly median
+  new Chart(document.getElementById('chart-wait-weekly'), {
+    type: 'line',
+    data: {
+      labels: PHAB_DATA.weekly_median.map(r => r.week),
+      datasets: [{
+        label: 'Median wait (days)',
+        data: PHAB_DATA.weekly_median.map(r => r.median_days),
+        borderColor: '#0ea5e9',
+        backgroundColor: '#0ea5e933',
+        tension: 0.25,
+      }],
+    },
+    options: {
+      plugins: { legend: { position: 'bottom' } },
+      scales: { y: { beginAtZero: true, title: { display: true, text: 'days' } } },
+      maintainAspectRatio: false,
+    },
+  });
+}
 </script>
 
 </body>
