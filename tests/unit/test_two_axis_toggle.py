@@ -128,22 +128,51 @@ class TestCSSMatrix:
             "missing rule: body[data-view=member] .team-only { display: none }"
         )
 
-    def test_weekly_only_hidden_when_period_total(self):
-        rule = re.search(
-            r'body\[data-period="total"\][^{]*\.weekly-only[^{]*\{[^}]*display:\s*none',
-            _render(),
+    def test_period_rules_are_scoped_to_team_view(self):
+        """Period axis must only apply when view=team. Otherwise
+        Member View would hide half its sections when the user happens
+        to have a period selected."""
+        html = _render()
+        # `weekly-only` hide rule must include `data-view="team"`.
+        weekly_rule = re.search(
+            r'(body[^{]*\.weekly-only[^{]*\{[^}]*display:\s*none[^}]*\})',
+            html,
         )
-        assert rule, (
-            "missing rule: body[data-period=total] .weekly-only { display: none }"
+        assert weekly_rule is not None
+        assert 'data-view="team"' in weekly_rule.group(0), (
+            "weekly-only hide rule must be scoped to data-view=team"
+        )
+        # Same for total-only.
+        total_rule = re.search(
+            r'(body[^{]*\.total-only[^{]*\{[^}]*display:\s*none[^}]*\})',
+            html,
+        )
+        assert total_rule is not None
+        assert 'data-view="team"' in total_rule.group(0), (
+            "total-only hide rule must be scoped to data-view=team"
         )
 
-    def test_total_only_hidden_when_period_weekly(self):
+    def test_period_toggle_hidden_in_member_view(self):
+        """The period buttons have no effect in Member View, so the
+        whole group is hidden to avoid confusing users."""
+        html = _render()
         rule = re.search(
-            r'body\[data-period="weekly"\][^{]*\.total-only[^{]*\{[^}]*display:\s*none',
-            _render(),
+            r'body\[data-view="member"\][^{]*\.toggle-group-period[^{]*\{[^}]*display:\s*none',
+            html,
         )
         assert rule, (
-            "missing rule: body[data-period=weekly] .total-only { display: none }"
+            "missing rule: body[data-view=member] .toggle-group-period "
+            "{ display: none }"
+        )
+
+    def test_period_toggle_group_marked_for_targeting(self):
+        """The CSS hide rule relies on the period group having the
+        `.toggle-group-period` class. Verify the markup carries it."""
+        html = _render()
+        assert 'class="toggle-group toggle-group-period"' in html or \
+               'class="toggle-group-period toggle-group"' in html, (
+            "Period <div class=toggle-group> must also have "
+            "`toggle-group-period` so the CSS can hide it in Member View."
         )
 
 

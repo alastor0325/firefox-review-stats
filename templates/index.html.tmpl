@@ -94,12 +94,19 @@
   }
   .toggle-bar button.active { background: var(--pill-active); color: var(--pill-active-fg); }
 
-  /* Two-axis visibility: data-view (team|member) x data-period (total|weekly).
-     Each section is tagged with at most one class from each axis. */
+  /* View axis: data-view (team|member) hides the opposite class. */
   body[data-view="team"]    .member-only,
-  body[data-view="member"]  .team-only,
-  body[data-period="total"]  .weekly-only,
-  body[data-period="weekly"] .total-only { display: none !important; }
+  body[data-view="member"]  .team-only { display: none !important; }
+
+  /* Period axis only applies inside Team View. In Member View, the
+     dashboard shows everything for the selected person on one page,
+     so both `.total-only` and `.weekly-only` sections stay visible. */
+  body[data-view="team"][data-period="total"]  .weekly-only,
+  body[data-view="team"][data-period="weekly"] .total-only { display: none !important; }
+
+  /* The period sub-toggle is meaningless in Member View; hide it. */
+  body[data-view="member"] .toggle-group-period,
+  body[data-view="member"] .toggle-sep { display: none; }
 
   .profile-select {
     font-size: 14px; padding: 6px 10px; border-radius: 6px;
@@ -120,7 +127,7 @@
       <button data-view="member" type="button">Member View</button>
     </div>
     <div class="toggle-sep" aria-hidden="true"></div>
-    <div class="toggle-group" role="tablist" aria-label="Period">
+    <div class="toggle-group toggle-group-period" role="tablist" aria-label="Period">
       <button data-period="total"  class="active" type="button">6-Month</button>
       <button data-period="weekly" type="button">Per-Week</button>
     </div>
