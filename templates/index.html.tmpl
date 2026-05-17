@@ -373,6 +373,41 @@ const color = i => PALETTE[i % PALETTE.length];
 
 function escAttr(s) { return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
 
+// Convert an ISO week label like "2026-W20" into the calendar range
+// "May 11 – May 17, 2026" so weekly-chart tooltips show real dates.
+function isoWeekToDateRange(label) {
+  const m = String(label).match(/^(\d{4})-W(\d{2})$/);
+  if (!m) return null;
+  const year = +m[1], week = +m[2];
+  // ISO 8601: week 1 is the week containing January 4th.
+  const jan4 = new Date(Date.UTC(year, 0, 4));
+  const dayOfWeek = (jan4.getUTCDay() + 6) % 7;  // 0 = Monday
+  const week1Monday = new Date(jan4);
+  week1Monday.setUTCDate(jan4.getUTCDate() - dayOfWeek);
+  const monday = new Date(week1Monday);
+  monday.setUTCDate(week1Monday.getUTCDate() + (week - 1) * 7);
+  const sunday = new Date(monday);
+  sunday.setUTCDate(monday.getUTCDate() + 6);
+  const fmt = d => d.toLocaleDateString('en-US', {
+    month: 'short', day: 'numeric', timeZone: 'UTC',
+  });
+  return `${fmt(monday)} – ${fmt(sunday)}, ${sunday.getUTCFullYear()}`;
+}
+
+// Tooltip title callback that prepends the calendar range to the ISO
+// week label so users can read both "what week is this" and "what
+// dates is this" at a glance.
+const weeklyTooltip = {
+  callbacks: {
+    title: (items) => {
+      if (!items.length) return '';
+      const label = items[0].label;
+      const range = isoWeekToDateRange(label);
+      return range ? `${label}  ·  ${range}` : label;
+    },
+  },
+};
+
 function stat(label, value, sub, info) {
   const d = document.createElement('div');
   d.className = 'stat';
@@ -664,7 +699,7 @@ new Chart(document.getElementById('chart-trend-top'), {
     })),
   },
   options: {
-    plugins: { legend: { position: 'bottom' } },
+    plugins: { legend: { position: 'bottom' }, tooltip: weeklyTooltip },
     scales: { y: { beginAtZero: true } },
     maintainAspectRatio: false,
   },
@@ -686,7 +721,7 @@ new Chart(document.getElementById('chart-trend-all'), {
     })),
   },
   options: {
-    plugins: { legend: { position: 'bottom' } },
+    plugins: { legend: { position: 'bottom' }, tooltip: weeklyTooltip },
     scales: { y: { beginAtZero: true } },
     maintainAspectRatio: false,
   },
@@ -748,7 +783,7 @@ if (PHAB_DATA && PHAB_DATA.n > 0) {
       }],
     },
     options: {
-      plugins: { legend: { position: 'bottom' } },
+      plugins: { legend: { position: 'bottom' }, tooltip: weeklyTooltip },
       scales: { y: { beginAtZero: true, title: { display: true, text: 'days' } } },
       maintainAspectRatio: false,
     },
@@ -928,7 +963,7 @@ if (PHAB_DATA && PHAB_DATA.n > 0) {
         type: 'line',
         data: { labels, datasets },
         options: {
-          plugins: { legend: { position: 'bottom' } },
+          plugins: { legend: { position: 'bottom' }, tooltip: weeklyTooltip },
           scales: { y: { beginAtZero: true } },
           maintainAspectRatio: false,
         },
