@@ -73,19 +73,6 @@ class TestChartsUseSharedTooltip:
     """Every weekly chart must opt into the shared `weeklyTooltip` so
     the date-range hover is consistent across the page."""
 
-    def test_top_5_trend_chart_uses_weekly_tooltip(self):
-        html = _render()
-        # Locate the chart-trend-top Chart constructor and assert it
-        # mentions weeklyTooltip inside its options.
-        m = re.search(
-            r"chart-trend-top.*?maintainAspectRatio",
-            html, re.DOTALL,
-        )
-        assert m is not None
-        assert "weeklyTooltip" in m.group(0), (
-            "Weekly trend (top-5) chart must use shared weeklyTooltip"
-        )
-
     def test_all_members_trend_chart_uses_weekly_tooltip(self):
         html = _render()
         m = re.search(

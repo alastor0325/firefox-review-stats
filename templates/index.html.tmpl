@@ -217,14 +217,9 @@
   </section>
 
   <section>
-    <h2>Weekly trend — top 5 listed members <span class="info" data-tip="Reviews per ISO week for the top 5 members by 6-month total."></span></h2>
-    <div class="chart-box tall"><canvas id="chart-trend-top"></canvas></div>
-  </section>
-
-  <section>
-    <h2>Weekly trend — all 8 listed members <span class="info" data-tip="Same metric for every listed member. Toggle individual series via the legend; the &quot;0&quot; lines are members inactive this period."></span></h2>
+    <h2>Weekly trend — listed members <span class="info" data-tip="Reviews per ISO week for every listed member, ordered top-to-bottom in the legend by total reviews over the 6-month window. Click a name in the legend to hide/show its line."></span></h2>
     <div class="chart-box tall"><canvas id="chart-trend-all"></canvas></div>
-    <div class="footer-note">Lower-volume reviewers can disappear behind the others — toggle individual series by clicking the legend.</div>
+    <div class="footer-note">Members are ordered by total reviews in the 6-month window. Lower-volume reviewers can disappear behind the others — toggle individual series by clicking the legend.</div>
   </section>
 
 </div>
@@ -684,29 +679,14 @@ new Chart(document.getElementById('chart-author-reviewer'), {
   },
 });
 
-// --- Weekly trend top 5 ---
-new Chart(document.getElementById('chart-trend-top'), {
-  type: 'line',
-  data: {
-    labels: DATA.weekly_trend.weeks,
-    datasets: DATA.weekly_trend.top_reviewers.map((name, i) => ({
-      label: name,
-      data: DATA.weekly_trend.all_members[name],
-      borderColor: color(i),
-      backgroundColor: color(i) + '33',
-      tension: 0.25,
-      fill: false,
-    })),
-  },
-  options: {
-    plugins: { legend: { position: 'bottom' }, tooltip: weeklyTooltip },
-    scales: { y: { beginAtZero: true } },
-    maintainAspectRatio: false,
-  },
+// --- Weekly trend, listed members ordered by total review count ---
+// Sort descending so the highest-volume reviewer's series is the
+// first colour assigned and the first item in the legend.
+const allMembers = Object.keys(DATA.weekly_trend.all_members).sort((a, b) => {
+  const sumA = DATA.weekly_trend.all_members[a].reduce((s, v) => s + v, 0);
+  const sumB = DATA.weekly_trend.all_members[b].reduce((s, v) => s + v, 0);
+  return sumB - sumA;
 });
-
-// --- Weekly trend all members ---
-const allMembers = Object.keys(DATA.weekly_trend.all_members);
 new Chart(document.getElementById('chart-trend-all'), {
   type: 'line',
   data: {
