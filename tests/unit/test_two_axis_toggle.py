@@ -53,12 +53,10 @@ def _render() -> str:
 class TestToggleBarMarkup:
     def test_has_view_axis_buttons(self):
         html = _render()
-        assert re.search(r'<button[^>]*data-view="team"', html), (
-            'expected a "team" view button'
-        )
-        assert re.search(r'<button[^>]*data-view="member"', html), (
-            'expected a "member" view button'
-        )
+        for v in ("team", "member", "queue"):
+            assert re.search(rf'<button[^>]*data-view="{v}"', html), (
+                f'expected a "{v}" view button'
+            )
 
     def test_has_period_axis_buttons(self):
         html = _render()
@@ -69,16 +67,15 @@ class TestToggleBarMarkup:
             'expected a "weekly" period button'
         )
 
-    def test_exactly_two_buttons_per_axis(self):
+    def test_button_count_per_axis(self):
         html = _render()
-        # Find toggle-bar block specifically.
         m = re.search(r'class="toggle-bar"(.*?)</nav>', html, re.DOTALL)
         assert m is not None, "toggle-bar nav missing"
         bar = m.group(1)
         view_buttons = re.findall(r'<button[^>]*data-view=', bar)
         period_buttons = re.findall(r'<button[^>]*data-period=', bar)
-        assert len(view_buttons) == 2, (
-            f"expected exactly 2 view buttons, found {len(view_buttons)}"
+        assert len(view_buttons) == 3, (
+            f"expected exactly 3 view buttons, found {len(view_buttons)}"
         )
         assert len(period_buttons) == 2, (
             f"expected exactly 2 period buttons, found {len(period_buttons)}"
@@ -152,18 +149,41 @@ class TestCSSMatrix:
             "total-only hide rule must be scoped to data-view=team"
         )
 
-    def test_period_toggle_hidden_in_member_view(self):
-        """The period buttons have no effect in Member View, so the
-        whole group is hidden to avoid confusing users."""
+    def test_period_toggle_hidden_in_non_team_views(self):
+        """The period buttons only apply in Team View; in Member and
+        Wait Queue views the group is hidden to avoid confusing users."""
         html = _render()
-        rule = re.search(
-            r'body\[data-view="member"\][^{]*\.toggle-group-period[^{]*\{[^}]*display:\s*none',
-            html,
-        )
-        assert rule, (
-            "missing rule: body[data-view=member] .toggle-group-period "
-            "{ display: none }"
-        )
+        for v in ("member", "queue"):
+            rule = re.search(
+                rf'body\[data-view="{v}"\][^{{]*\.toggle-group-period[^{{]*\{{[^}}]*display:\s*none',
+                html,
+            )
+            assert rule, (
+                f"missing rule: body[data-view={v}] .toggle-group-period "
+                "{ display: none }"
+            )
+
+    def test_queue_only_hidden_in_other_views(self):
+        html = _render()
+        for v in ("team", "member"):
+            rule = re.search(
+                rf'body\[data-view="{v}"\][^{{]*\.queue-only[^{{]*\{{[^}}]*display:\s*none',
+                html,
+            )
+            assert rule, (
+                f"missing rule: body[data-view={v}] .queue-only { '{' } display: none { '}' }"
+            )
+
+    def test_team_and_member_only_hidden_in_queue_view(self):
+        html = _render()
+        for cls in (".team-only", ".member-only"):
+            rule = re.search(
+                rf'body\[data-view="queue"\][^{{]*{re.escape(cls)}[^{{]*\{{[^}}]*display:\s*none',
+                html,
+            )
+            assert rule, (
+                f"missing rule: body[data-view=queue] {cls} {{ display: none }}"
+            )
 
     def test_period_toggle_group_marked_for_targeting(self):
         """The CSS hide rule relies on the period group having the
@@ -218,6 +238,35 @@ class TestSectionTagging:
             "Member dropdown should be in a `.member-only` section "
             "(without a period qualifier) so it's visible across both "
             "Member sub-views."
+        )
+
+
+class TestWaitQueueView:
+    def test_queue_section_present(self):
+        html = _render()
+        assert re.search(r'class="queue-only"', html), (
+            'expected a `.queue-only` section for the Wait Queue view'
+        )
+
+    def test_queue_table_skeleton(self):
+        html = _render()
+        # The table is rendered client-side from PHAB_DATA.patch_list,
+        # but the skeleton must exist in the template.
+        assert 'id="queue-table"' in html, "queue table id missing"
+        # The header row should advertise the columns we promised.
+        m = re.search(r'<thead>(.*?)</thead>', html, re.DOTALL)
+        assert m is not None
+        header = m.group(1)
+        for col in (
+            "#", "Revision", "Title", "Author",
+            "Accepted by", "Time to react", "Time to accept",
+        ):
+            assert col in header, f"queue table is missing column '{col}'"
+
+    def test_queue_renderer_consumes_patch_list(self):
+        html = _render()
+        assert "PHAB_DATA.patch_list" in html, (
+            "queue renderer should read from PHAB_DATA.patch_list"
         )
 
 

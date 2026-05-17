@@ -21,6 +21,7 @@ from pathlib import Path
 from reviewstats.github_commits import fetch_commits
 from reviewstats.members import MEMBER_IDS
 from reviewstats.metrics import iso_week
+from reviewstats.patch_list import build_patch_list
 from reviewstats.phab_html import (
     bulk_fetch_async,
     extract_author_handle,
@@ -389,8 +390,17 @@ def main() -> int:
         for author, b in per_author.items()
     }
 
+    # Build the Wait Queue per-revision list (sorted longest-wait first).
+    raw_entries_by_d: dict[str, dict] = {}
+    for d in d_numbers:
+        raw = _load_existing(d)
+        if raw is not None:
+            raw_entries_by_d[d] = raw
+    patch_rows = build_patch_list(raw_entries_by_d, commits_by_d)
+
     aggregated = aggregate_wait_times(per_revision)
     aggregated["per_author"] = per_author_summary
+    aggregated["patch_list"] = patch_rows
     aggregated["meta"] = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "n_commits": len(commits),

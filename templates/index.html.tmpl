@@ -94,19 +94,22 @@
   }
   .toggle-bar button.active { background: var(--pill-active); color: var(--pill-active-fg); }
 
-  /* View axis: data-view (team|member) hides the opposite class. */
-  body[data-view="team"]    .member-only,
-  body[data-view="member"]  .team-only { display: none !important; }
+  /* View axis: data-view ∈ {team, member, queue}. Each view hides the
+     other two views' sections. */
+  body[data-view="team"]    .member-only, body[data-view="team"]    .queue-only,
+  body[data-view="member"]  .team-only,   body[data-view="member"]  .queue-only,
+  body[data-view="queue"]   .team-only,   body[data-view="queue"]   .member-only
+    { display: none !important; }
 
-  /* Period axis only applies inside Team View. In Member View, the
-     dashboard shows everything for the selected person on one page,
-     so both `.total-only` and `.weekly-only` sections stay visible. */
+  /* Period axis only applies inside Team View. Other views show their
+     content on a single page regardless of period state. */
   body[data-view="team"][data-period="total"]  .weekly-only,
   body[data-view="team"][data-period="weekly"] .total-only { display: none !important; }
 
-  /* The period sub-toggle is meaningless in Member View; hide it. */
-  body[data-view="member"] .toggle-group-period,
-  body[data-view="member"] .toggle-sep { display: none; }
+  /* The period sub-toggle only applies in Team View; hide it elsewhere. */
+  body[data-view="member"] .toggle-group-period, body[data-view="member"] .toggle-sep,
+  body[data-view="queue"]  .toggle-group-period, body[data-view="queue"]  .toggle-sep
+    { display: none; }
 
   .profile-select {
     font-size: 14px; padding: 6px 10px; border-radius: 6px;
@@ -125,6 +128,7 @@
     <div class="toggle-group" role="tablist" aria-label="View">
       <button data-view="team"   class="active" type="button">Team View</button>
       <button data-view="member" type="button">Member View</button>
+      <button data-view="queue"  type="button">Wait Queue</button>
     </div>
     <div class="toggle-sep" aria-hidden="true"></div>
     <div class="toggle-group toggle-group-period" role="tablist" aria-label="Period">
@@ -251,6 +255,31 @@
     <div class="chart-box tall"><canvas id="chart-profile-weekly"></canvas></div>
   </section>
 
+</div>
+
+<!-- ============= WAIT QUEUE ============= -->
+<div class="queue-only">
+  <section>
+    <h2>Wait queue — slowest patches first <span class="info" data-tip="Every revision that touches dom/media (after filters), sorted by time from revision creation to the first member acceptance, longest wait first. Use this list to investigate what slowed each patch down."></span></h2>
+    <p style="margin: 0 0 12px; font-size: 13px; color: #4b5563;">
+      Patches in scope: <span id="queue-total"></span>
+    </p>
+    <table id="queue-table">
+      <thead>
+        <tr>
+          <th style="text-align:right; width: 50px">#</th>
+          <th style="width: 110px">Revision</th>
+          <th>Title</th>
+          <th style="width: 110px">Author</th>
+          <th style="width: 130px">Accepted by</th>
+          <th style="width: 110px; text-align:right">Time to react</th>
+          <th style="width: 110px; text-align:right">Time to accept</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <div class="footer-note">Time-to-react and time-to-accept are both anchored to the revision's creation timestamp. A blank "Accepted by" means the patch hasn't yet had a member accept (still open, or only got non-member feedback). Slowest open patches sort below the slowest accepted ones.</div>
+  </section>
 </div>
 
 <!-- ============= TEAM WAIT-TIME (shown only in Team view; both periods) ============= -->
@@ -895,6 +924,37 @@ if (PHAB_DATA && PHAB_DATA.n > 0) {
   if (ordered.length > 0) {
     select.value = ordered[0];
     render(ordered[0]);
+  }
+})();
+
+// =============================================================
+// Wait Queue view: per-revision audit table
+// =============================================================
+(function renderQueue() {
+  const rows = (PHAB_DATA && PHAB_DATA.patch_list) || [];
+  document.getElementById('queue-total').textContent =
+    `${rows.length} revisions`;
+  const tbody = document.querySelector('#queue-table tbody');
+  if (!tbody) return;
+  const fmtDays = v => v == null ? '—' : (
+    v < 1 ? `${(v * 24).toFixed(1)} h` : `${v.toFixed(2)} d`
+  );
+  const escape = s => String(s).replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  })[c]);
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i];
+    const tr = document.createElement('tr');
+    tr.innerHTML = (
+      `<td class="num">${i + 1}</td>` +
+      `<td><a href="${escape(r.url)}" target="_blank" rel="noopener">${escape(r.d_number)}</a></td>` +
+      `<td>${escape(r.title || '')}</td>` +
+      `<td>${escape(r.author || '—')}</td>` +
+      `<td>${escape(r.accept_actor || '—')}</td>` +
+      `<td class="num">${fmtDays(r.time_to_react_days)}</td>` +
+      `<td class="num">${fmtDays(r.time_to_accept_days)}</td>`
+    );
+    tbody.appendChild(tr);
   }
 })();
 
