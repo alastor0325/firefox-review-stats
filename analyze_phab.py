@@ -25,6 +25,7 @@ from reviewstats.phab_html import (
     bulk_fetch_async,
     extract_author_handle,
     first_member_review_action,
+    first_review_action,
     parse_timeline,
 )
 from reviewstats.wait_time import aggregate_wait_times
@@ -84,6 +85,23 @@ def _process_html(html: str, d_number: str, *, members: frozenset[str]) -> dict:
             first_accept = e
             break
 
+    # From-creation wait by ANY non-author non-bot reviewer (used in
+    # Member Profile per-author wait-time tiles — answers "how long
+    # does the author have to wait for a reaction on their patches,
+    # regardless of which reviewer ended up looking").
+    first_any_react = first_review_action(events, author=author)
+    first_any_accept = first_review_action(events, author=author, action="accept")
+    time_to_react_seconds = (
+        int((first_any_react.timestamp - created_at).total_seconds())
+        if (first_any_react and created_at)
+        else None
+    )
+    time_to_accept_seconds = (
+        int((first_any_accept.timestamp - created_at).total_seconds())
+        if (first_any_accept and created_at)
+        else None
+    )
+
     # Queue anchor: latest `add-reviewer: media-playback-reviewers`
     # event preceding the first member reaction. Answers "once the
     # team was put on the patch, how long until someone reacted /
@@ -126,6 +144,8 @@ def _process_html(html: str, d_number: str, *, members: frozenset[str]) -> dict:
         ),
         "queue_seconds": queue_seconds,
         "queue_to_accept_seconds": queue_to_accept_seconds,
+        "time_to_react_seconds": time_to_react_seconds,
+        "time_to_accept_seconds": time_to_accept_seconds,
         "first_member_accept": (
             {
                 "actor": first_accept.actor,
@@ -290,6 +310,11 @@ def main() -> int:
     # "How long does this author's patch wait for review?" — only
     # meaningful when the author IS the one waiting. Filtered to
     # members so we have a single bounded set in the report.
+    # Per-author wait-time uses the broader anchor: from revision
+    # creation to the first reaction/accept by ANY non-author non-bot
+    # reviewer. This covers all patches the author submitted, not
+    # just ones that went through `media-playback-reviewers` — which
+    # is what the Member Profile view shows ("my patches' wait time").
     per_author: dict[str, dict] = {}
     for d in d_numbers:
         raw = _load_existing(d)
@@ -302,11 +327,11 @@ def main() -> int:
             "n_total": 0, "react_days": [], "accept_days": [],
         })
         bucket["n_total"] += 1
-        if raw.get("queue_seconds") is not None:
-            bucket["react_days"].append(raw["queue_seconds"] / 86400.0)
-        if raw.get("queue_to_accept_seconds") is not None:
+        if raw.get("time_to_react_seconds") is not None:
+            bucket["react_days"].append(raw["time_to_react_seconds"] / 86400.0)
+        if raw.get("time_to_accept_seconds") is not None:
             bucket["accept_days"].append(
-                raw["queue_to_accept_seconds"] / 86400.0
+                raw["time_to_accept_seconds"] / 86400.0
             )
 
     def _pct(vals, p):

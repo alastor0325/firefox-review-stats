@@ -331,3 +331,27 @@ def first_member_review_action(
             continue
         return e
     return None
+
+
+def first_review_action(
+    events: Iterable[Event],
+    *,
+    author: str | None,
+    action: str | None = None,
+) -> Event | None:
+    """Like `first_member_review_action` but unconstrained on actor —
+    returns the earliest non-author, non-bot review (or accept, if
+    `action` is `"accept"`). Used to measure how long ANY of an
+    author's patches wait for a reaction, regardless of which group
+    or individual ended up being the reviewer.
+    """
+    for e in events:
+        if action is None:
+            if e.action not in _REVIEW_ACTIONS:
+                continue
+        elif e.action != action:
+            continue
+        if e.actor == author or e.actor in _BOT_HANDLES:
+            continue
+        return e
+    return None

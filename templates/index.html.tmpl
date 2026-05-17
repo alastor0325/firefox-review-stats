@@ -219,9 +219,9 @@
   </section>
 
   <section id="profile-wait-section" style="display:none">
-    <h2>Wait time when <span id="profile-name-3"></span> is the patch author <span class="info" data-tip="Time from when the media-playback-reviewers group was added to the revision, to when another listed member first reacted / accepted. Filtered to patches authored by the selected member."></span></h2>
+    <h2>Wait time when <span id="profile-name-3"></span> is the patch author <span class="info" data-tip="For every patch this member authored: time from revision creation in Phabricator to the first review action by any non-author, non-bot reviewer. Covers all their patches — not just the ones that went through media-playback-reviewers."></span></h2>
     <div class="summary-grid" id="profile-wait-grid"></div>
-    <div class="footer-note">"Time to react" = first comment / accept / request-changes by a listed member (excluding the author). "Time to accept" = first accept by a listed member.</div>
+    <div class="footer-note">Anchored at revision creation. "Time to react" = first comment / accept / request-changes by any non-author, non-bot reviewer. "Time to accept" = first accept by any non-author, non-bot reviewer.</div>
   </section>
 
 </div>
@@ -742,17 +742,19 @@ if (PHAB_DATA && PHAB_DATA.n > 0) {
       waitGrid.appendChild(stat(
         'Wait-time sample',
         `${myWait.n_react} of ${authoredCount}`,
-        'revisions with computable wait',
+        'revisions with measurable wait',
         `${myWait.n_react} of ${authoredCount} patches authored by this member had `
-        + `the media-playback-reviewers group added AND a reaction from `
-        + `another listed member — the subset where wait time is measurable.`
+        + `both a captured revision-creation timestamp AND at least one reaction `
+        + `from a non-author, non-bot reviewer — the subset where wait time is `
+        + `measurable. Older revisions whose create event has paged off the Phab `
+        + `timeline are not measurable.`
       ));
       waitGrid.appendChild(stat('Time to react (median)', fmtDays(myWait.react_p50), null,
-        'Median time from media-playback-reviewers being added, to first reaction by another listed member.'));
+        'Median time from revision creation to the first reaction by any non-author, non-bot reviewer.'));
       waitGrid.appendChild(stat('Time to react (P90)', fmtDays(myWait.react_p90), null,
         '90th percentile — the slow tail.'));
       waitGrid.appendChild(stat('Time to accept (median)', fmtDays(myWait.accept_p50), null,
-        'Median time from group added to first accept by a listed member.'));
+        'Median time from revision creation to the first accept by any non-author, non-bot reviewer.'));
       waitGrid.appendChild(stat('Time to accept (P90)', fmtDays(myWait.accept_p90), null,
         '90th percentile of time to accept.'));
     } else {
