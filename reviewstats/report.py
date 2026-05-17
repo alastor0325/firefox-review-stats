@@ -21,6 +21,7 @@ from reviewstats.metrics import (
     sole_reviewer_counts,
     top_n_share,
     total_reviews_per_member,
+    weekly_authored_per_member,
     weekly_counts_per_reviewer,
 )
 
@@ -115,6 +116,9 @@ def build_report(
         member: [weekly.get(wk, {}).get(member, 0) for wk in weeks]
         for member in MEMBER_IDS
     }
+    authored_per_member_weekly = weekly_authored_per_member(
+        commits, MEMBERS, weeks,
+    )
 
     ranked_authors = _ranked_pairs(author_totals)[:_TOP_AUTHORS]
     top_authors = [a for a, _ in ranked_authors]
@@ -161,6 +165,7 @@ def build_report(
             "weeks": weeks,
             "top_reviewers": top_reviewers,
             "all_members": all_members_weekly,
+            "authored_per_member": authored_per_member_weekly,
         },
         "total_reviews_per_member": total_reviews,
         "members": MEMBERS,

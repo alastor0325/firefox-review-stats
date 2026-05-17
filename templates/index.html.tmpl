@@ -874,8 +874,11 @@ if (PHAB_DATA && PHAB_DATA.n > 0) {
       null,
       "First → last ISO week with any review by this member."));
 
-    // Weekly chart with 4-week rolling average overlay
+    // Weekly chart: two activity series (reviews / patches submitted)
+    // with their 4-week rolling averages overlaid.
     const labels = DATA.weekly_trend.weeks;
+    const authoredWeekly =
+      (DATA.weekly_trend.authored_per_member || {})[member] || [];
     const datasets = [
       {
         label: 'Reviews / week',
@@ -884,13 +887,32 @@ if (PHAB_DATA && PHAB_DATA.n > 0) {
         backgroundColor: '#3b82f622',
         tension: 0.2,
         pointRadius: 2,
-        fill: true,
+        fill: false,
       },
       {
-        label: '4-week rolling avg',
+        label: 'Reviews — 4-week avg',
         data: rolling(weekly, 4),
-        borderColor: '#f59e0b',
-        backgroundColor: '#f59e0b00',
+        borderColor: '#3b82f6',
+        backgroundColor: 'transparent',
+        borderDash: [4, 4],
+        tension: 0.3,
+        pointRadius: 0,
+        fill: false,
+      },
+      {
+        label: 'Patches submitted / week',
+        data: authoredWeekly,
+        borderColor: '#10b981',
+        backgroundColor: '#10b98122',
+        tension: 0.2,
+        pointRadius: 2,
+        fill: false,
+      },
+      {
+        label: 'Submitted — 4-week avg',
+        data: rolling(authoredWeekly, 4),
+        borderColor: '#10b981',
+        backgroundColor: 'transparent',
         borderDash: [4, 4],
         tension: 0.3,
         pointRadius: 0,

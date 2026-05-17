@@ -139,6 +139,53 @@ def total_reviews_per_member(
     return rows
 
 
+def weekly_authored_per_member(
+    commits: Iterable[_CommitLike],
+    members: dict[str, str],
+    weeks: list[str],
+) -> dict[str, list[int]]:
+    """Per-(member, week) count of unique patches the member authored.
+
+    `members` is the {handle: display_name} dict from members.py.
+    Authors are matched via `canonicalize_author` so alastor0325 /
+    alwu / 'Alastor Wu' all map to the alwu handle.
+
+    Returns `{handle: [count per week]}` — every member appears,
+    every week aligned with the input `weeks` list (zero-filled).
+    Re-lands (multiple commits sharing one D-number) count once,
+    placed in the earliest week they landed in.
+
+    Used by the Member Profile / Weekly activity chart's "patches
+    submitted" line.
+    """
+    canonical_to_handle = {display: handle for handle, display in members.items()}
+    week_set = set(weeks)
+
+    # For each (handle, D-number), record the EARLIEST week it landed.
+    earliest_week: dict[tuple[str, str], str] = {}
+    for c in commits:
+        canon = canonicalize_author(c.author)
+        handle = canonical_to_handle.get(canon)
+        if handle is None:
+            continue
+        wk = iso_week(c.date)
+        if wk not in week_set:
+            continue
+        key = (handle, getattr(c, "differential_revision", None) or f"sha:{c.sha}")
+        prev = earliest_week.get(key)
+        if prev is None or wk < prev:
+            earliest_week[key] = wk
+
+    counts: dict[str, dict[str, int]] = {h: {} for h in members}
+    for (handle, _d), wk in earliest_week.items():
+        counts[handle][wk] = counts[handle].get(wk, 0) + 1
+
+    return {
+        handle: [counts[handle].get(wk, 0) for wk in weeks]
+        for handle in members
+    }
+
+
 def author_patch_counts(
     commits: Iterable[_CommitLike],
 ) -> dict[str, int]:
