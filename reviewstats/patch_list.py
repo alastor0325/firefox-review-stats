@@ -7,6 +7,7 @@ the table is where investigation should start.
 from typing import Mapping
 
 from reviewstats.git_log import Commit
+from reviewstats.wait_time import composite_wait_seconds
 
 
 _PHAB_BASE = "https://phabricator.services.mozilla.com"
@@ -68,9 +69,14 @@ def build_patch_list(
             continue
         events = raw.get("events", [])
         author = raw.get("author")
-        # Resolve actors from the events array directly so they match
-        # the `time_to_*` fields (which were computed with the same
-        # filter — any non-author, non-bot reactor).
+        react_s, accept_s, anchor = composite_wait_seconds(raw)
+        # Skip revisions where neither anchor is available — there's
+        # no wait time to display, and they'd just be noise in the
+        # table.
+        if react_s is None and accept_s is None:
+            continue
+        # Resolve actors from the events array directly so the
+        # attribution matches whichever anchor we ended up using.
         accept_actor = _first_actor(events, author=author, action_filter="accept")
         react_event = next(
             (e for e in events
@@ -88,12 +94,9 @@ def build_patch_list(
             "accept_actor": accept_actor,
             "react_actor": react_event.get("actor") if react_event else None,
             "react_action": react_event.get("action") if react_event else None,
-            "time_to_react_days": _seconds_to_days(
-                raw.get("time_to_react_seconds")
-            ),
-            "time_to_accept_days": _seconds_to_days(
-                raw.get("time_to_accept_seconds")
-            ),
+            "time_to_react_days": _seconds_to_days(react_s),
+            "time_to_accept_days": _seconds_to_days(accept_s),
+            "wait_anchor": anchor,
         })
 
     def _key(r: dict) -> tuple[int, float, float]:

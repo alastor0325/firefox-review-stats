@@ -7,6 +7,37 @@ from reviewstats.git_log import Commit
 from reviewstats.metrics import iso_week
 
 
+def composite_wait_seconds(raw: dict) -> tuple[int | None, int | None, str | None]:
+    """Pick the best-available wait timing for a revision.
+
+    Returns `(react_seconds, accept_seconds, anchor)`.
+
+    * Prefer creation-anchored timings (`time_to_react_seconds` /
+      `time_to_accept_seconds`) — those count from the moment the
+      patch was submitted to Phab, regardless of which reviewer was
+      tagged. Covers patches that never had `media-playback-reviewers`
+      added as a group reviewer (e.g. `r=padenot` only).
+    * Fall back to queue-anchored timings (`queue_seconds` /
+      `queue_to_accept_seconds`) when the creation timestamp is
+      missing — typically older revisions whose `create` event has
+      paged off Phab's rendered timeline.
+    * Returns `(None, None, None)` when neither anchor is available.
+
+    The composite ensures the team-level histogram and the Wait Queue
+    use the same wait number for every revision, so a long-wait patch
+    that shows up in one view also shows up in the other.
+    """
+    react_s = raw.get("time_to_react_seconds")
+    accept_s = raw.get("time_to_accept_seconds")
+    if react_s is not None or accept_s is not None:
+        return react_s, accept_s, "creation"
+    qs = raw.get("queue_seconds")
+    qas = raw.get("queue_to_accept_seconds")
+    if qs is not None or qas is not None:
+        return qs, qas, "queue-added"
+    return None, None, None
+
+
 def member_authored_wait_revisions(
     d_numbers: list[str],
     raw_for_d: Mapping[str, dict] | Callable[[str], dict | None],
@@ -39,8 +70,8 @@ def member_authored_wait_revisions(
             continue
         if raw.get("author") not in members:
             continue
-        qs = raw.get("queue_seconds")
-        if qs is None:
+        react_s, _accept_s, _anchor = composite_wait_seconds(raw)
+        if react_s is None:
             continue
         commit = commits_by_d.get(d)
         if commit is None:
@@ -48,7 +79,7 @@ def member_authored_wait_revisions(
         first_review = raw.get("first_member_review") or {}
         out.append({
             "d_number": d,
-            "wait_days": qs / 86400.0,
+            "wait_days": react_s / 86400.0,
             "reviewer": first_review.get("actor"),
             "week": iso_week(commit.date),
         })

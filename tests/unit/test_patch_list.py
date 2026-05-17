@@ -153,14 +153,38 @@ class TestRowFields:
         assert abs(row["time_to_react_days"] - (3600 / 86400.0)) < 1e-9
         assert row["time_to_accept_days"] == 2.0
 
-    def test_missing_fields_become_none(self):
+    def test_revision_with_no_wait_data_is_skipped(self):
+        """If neither creation nor queue anchor has timing data, the
+        row would just be a line of "—"s in the table — drop it
+        instead so the queue stays meaningful."""
         raw = {"D1": _raw("D1")}
         commits = {"D1": _commit("D1")}
+        result = build_patch_list(raw, commits)
+        assert result == []
+
+    def test_falls_back_to_queue_anchor_when_creation_missing(self):
+        """A revision whose `create` event was paginated off the Phab
+        timeline must still appear in the Wait Queue via the
+        queue-anchored fallback. Mirrors D276526 from real data."""
+        raw = {
+            "D1": {
+                "d_number": "D1",
+                "author": "azebrowski",
+                "events": [
+                    {"ts": "...", "actor": "padenot", "action": "accept"},
+                ],
+                "time_to_react_seconds": None,
+                "time_to_accept_seconds": None,
+                "queue_seconds": 78 * 86400,
+                "queue_to_accept_seconds": 80 * 86400,
+            }
+        }
+        commits = {"D1": _commit("D1")}
         row = build_patch_list(raw, commits)[0]
-        assert row["accept_actor"] is None
-        assert row["react_actor"] is None
-        assert row["time_to_react_days"] is None
-        assert row["time_to_accept_days"] is None
+        assert row["time_to_react_days"] == 78.0
+        assert row["time_to_accept_days"] == 80.0
+        assert row["wait_anchor"] == "queue-added"
+        assert row["accept_actor"] == "padenot"
 
     def test_accept_actor_can_be_non_member(self):
         """Author should be whoever actually accepted — including

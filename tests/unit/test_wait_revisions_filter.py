@@ -12,7 +12,10 @@ from datetime import datetime, timezone
 
 from reviewstats.git_log import Commit
 from reviewstats.parse import Reviewer
-from reviewstats.wait_time import member_authored_wait_revisions
+from reviewstats.wait_time import (
+    composite_wait_seconds,
+    member_authored_wait_revisions,
+)
 
 
 MEMBERS = frozenset({"alwu", "padenot"})
@@ -122,6 +125,80 @@ class TestMemberFilterContract:
         assert row["reviewer"] == "padenot"
         # iso_week formatting (YYYY-Www); just sanity-check the shape.
         assert row["week"].startswith("2026-W")
+
+
+class TestCompositeWait:
+    """The team-histogram and Wait Queue table use a composite anchor:
+    prefer creation-anchored timings, fall back to queue-anchored
+    when creation has paged off the timeline. This is what makes
+    every long-wait patch show up in both views consistently —
+    paginated-old patches don't disappear, freshly-created patches
+    without group-tag don't disappear either.
+    """
+
+    def test_prefers_creation_when_available(self):
+        raw = {
+            "time_to_react_seconds": 3600,
+            "time_to_accept_seconds": 7200,
+            "queue_seconds": 999_999,           # would be selected if we fell back
+            "queue_to_accept_seconds": 888_888,
+        }
+        react, accept, anchor = composite_wait_seconds(raw)
+        assert react == 3600 and accept == 7200 and anchor == "creation"
+
+    def test_falls_back_to_queue_when_creation_missing(self):
+        raw = {
+            "time_to_react_seconds": None,
+            "time_to_accept_seconds": None,
+            "queue_seconds": 48 * 86400,
+            "queue_to_accept_seconds": 50 * 86400,
+        }
+        react, accept, anchor = composite_wait_seconds(raw)
+        assert react == 48 * 86400
+        assert accept == 50 * 86400
+        assert anchor == "queue-added"
+
+    def test_returns_none_when_neither_anchor_available(self):
+        raw = {}
+        react, accept, anchor = composite_wait_seconds(raw)
+        assert react is None and accept is None and anchor is None
+
+    def test_creation_anchor_with_only_react_present(self):
+        """Patch reacted but not accepted yet — creation anchor still
+        valid, accept is just None."""
+        raw = {
+            "time_to_react_seconds": 100,
+            "time_to_accept_seconds": None,
+        }
+        react, accept, anchor = composite_wait_seconds(raw)
+        assert react == 100 and accept is None and anchor == "creation"
+
+
+class TestCompositeHistogramInclusion:
+    """End-to-end: a revision missing `created_at` (D276526-style)
+    must still surface in the team-level wait-time histogram via the
+    queue-anchored fallback."""
+
+    def test_paginated_old_revision_still_counted(self):
+        raw = {
+            "D-old": {
+                "author": "alwu",
+                # No time_to_* — create event was paginated out
+                "time_to_react_seconds": None,
+                "time_to_accept_seconds": None,
+                # But the queue-add event was captured
+                "queue_seconds": 70 * 86400,
+                "queue_to_accept_seconds": 75 * 86400,
+                "first_member_review": {"actor": "padenot", "action": "accept"},
+            }
+        }
+        commits = {"D-old": _commit("D-old")}
+        result = member_authored_wait_revisions(
+            ["D-old"], raw, commits, members=MEMBERS,
+        )
+        assert len(result) == 1
+        assert result[0]["wait_days"] == 70.0
+        assert result[0]["reviewer"] == "padenot"
 
 
 class TestEdgeCases:
