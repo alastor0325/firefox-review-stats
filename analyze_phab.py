@@ -15,10 +15,10 @@ This script writes:
 import argparse
 import asyncio
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from reviewstats.git_log import parse_git_log_output, run_git_log
+from reviewstats.github_commits import fetch_commits
 from reviewstats.members import MEMBER_IDS
 from reviewstats.metrics import iso_week
 from reviewstats.phab_html import (
@@ -30,9 +30,9 @@ from reviewstats.phab_html import (
 from reviewstats.wait_time import aggregate_wait_times
 
 
-_DEFAULT_REPO = str(Path.home() / "firefox")
+_DEFAULT_REPO = "mozilla-firefox/firefox"
 _DEFAULT_PATH = "dom/media"
-_DEFAULT_SINCE = "6 months ago"
+_DEFAULT_MONTHS = 6
 _DEFAULT_EXCLUDE = ("dom/media/webrtc",)
 _OUT_DIR = Path(__file__).resolve().parent
 _RAW_DIR = _OUT_DIR / "raw_data"
@@ -149,9 +149,18 @@ def _process_html(html: str, d_number: str, *, members: frozenset[str]) -> dict:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--repo", default=_DEFAULT_REPO)
+    parser.add_argument(
+        "--repo",
+        default=_DEFAULT_REPO,
+        help='GitHub repo "owner/name" (default: mozilla-firefox/firefox).',
+    )
     parser.add_argument("--path", default=_DEFAULT_PATH)
-    parser.add_argument("--since", default=_DEFAULT_SINCE)
+    parser.add_argument(
+        "--months",
+        type=int,
+        default=_DEFAULT_MONTHS,
+        help="Window size in months back from today.",
+    )
     parser.add_argument(
         "--concurrency",
         type=int,
@@ -165,10 +174,16 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    raw_log = run_git_log(
-        args.repo, args.path, args.since, exclude_paths=_DEFAULT_EXCLUDE
+    since = (
+        datetime.now(timezone.utc) - timedelta(days=30 * args.months)
+    ).strftime("%Y-%m-%dT%H:%M:%SZ")
+    print(f"Fetching commits from github.com/{args.repo} (since {since})...")
+    commits = fetch_commits(
+        repo=args.repo,
+        path=args.path,
+        since=since,
+        exclude_paths=_DEFAULT_EXCLUDE,
     )
-    commits = parse_git_log_output(raw_log)
     commits_by_d = {
         c.differential_revision: c
         for c in commits

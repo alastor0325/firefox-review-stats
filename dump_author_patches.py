@@ -1,21 +1,23 @@
 #!/usr/bin/env python3
 """Dump a hierarchical per-author patch listing for verification.
 
-Uses the same filters as analyze_git.py (skips Lando auto-format commits,
-merge commits). Output: author_patches.txt in the project root.
+Fetches commits directly from the GitHub mirror (no local clone).
+Same filter rules as analyze_git.py: webrtc subdir, Lando-author,
+merge, Revert subjects all skipped. Output: author_patches.txt in the
+project root.
 """
 
 import argparse
 from collections import defaultdict
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from reviewstats.aliases import AUTHOR_ALIASES
-from reviewstats.git_log import parse_git_log_output, run_git_log
+from reviewstats.github_commits import fetch_commits
 
 
-_DEFAULT_REPO = str(Path.home() / "firefox")
+_DEFAULT_REPO = "mozilla-firefox/firefox"
 PATH = "dom/media"
-SINCE = "6 months ago"
 EXCLUDE_PATHS = ("dom/media/webrtc",)
 OUT = Path(__file__).resolve().parent / "author_patches.txt"
 
@@ -23,9 +25,14 @@ OUT = Path(__file__).resolve().parent / "author_patches.txt"
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo", default=_DEFAULT_REPO)
+    parser.add_argument("--months", type=int, default=6)
     args = parser.parse_args()
-    raw = run_git_log(args.repo, PATH, SINCE, exclude_paths=EXCLUDE_PATHS)
-    commits = parse_git_log_output(raw)
+    since = (
+        datetime.now(timezone.utc) - timedelta(days=30 * args.months)
+    ).strftime("%Y-%m-%dT%H:%M:%SZ")
+    commits = fetch_commits(
+        repo=args.repo, path=PATH, since=since, exclude_paths=EXCLUDE_PATHS,
+    )
 
     by_author: dict[str, list] = defaultdict(list)
     for c in commits:
@@ -41,7 +48,7 @@ def main() -> None:
     lines: list[str] = []
     lines.append("=" * 78)
     lines.append("DOM/MEDIA AUTHOR-PATCH LISTING (raw author %an, no aliasing)")
-    lines.append(f"Path: {PATH}   Since: {SINCE}")
+    lines.append(f"Source: github.com/{args.repo}   Path: {PATH}   Since: {since}")
     lines.append(f"Excluded paths: {', '.join(EXCLUDE_PATHS)}")
     lines.append(
         f"Authors: {len(authors_sorted)}    Patches: {total}    "

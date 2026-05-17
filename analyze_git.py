@@ -13,26 +13,36 @@ also copies the JSON into archive/data_git_<YYYY-WW>.json.
 import argparse
 import json
 import shutil
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from reviewstats.git_log import parse_git_log_output, run_git_log
+from reviewstats.github_commits import fetch_commits
 from reviewstats.metrics import iso_week
 from reviewstats.render import render_html
 from reviewstats.report import build_report
 
 
-_DEFAULT_SINCE = "6 months ago"
+_DEFAULT_MONTHS = 6
 _DEFAULT_PATH = "dom/media"
 _DEFAULT_GROUP = "media-playback-reviewers"
 _EXCLUDE_PATHS = ("dom/media/webrtc",)
+_DEFAULT_REPO = "mozilla-firefox/firefox"
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--repo", default=str(Path.home() / "firefox"))
+    parser.add_argument(
+        "--repo",
+        default=_DEFAULT_REPO,
+        help='GitHub repo "owner/name" (default: mozilla-firefox/firefox).',
+    )
     parser.add_argument("--path", default=_DEFAULT_PATH)
-    parser.add_argument("--since", default=_DEFAULT_SINCE)
+    parser.add_argument(
+        "--months",
+        type=int,
+        default=_DEFAULT_MONTHS,
+        help="Window size in months back from today.",
+    )
     parser.add_argument("--group", default=_DEFAULT_GROUP)
     parser.add_argument(
         "--out", default=str(Path(__file__).resolve().parent)
@@ -43,10 +53,20 @@ def main(argv: list[str] | None = None) -> int:
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    raw = run_git_log(
-        args.repo, args.path, args.since, exclude_paths=_EXCLUDE_PATHS
+    # Fetch commits from GitHub directly — no local checkout needed.
+    # ~30 days per month is good enough for a "since" cutoff; commits
+    # within the actual window are then bounded by min/max of the
+    # returned set.
+    since = (
+        datetime.now(timezone.utc) - timedelta(days=30 * args.months)
+    ).strftime("%Y-%m-%dT%H:%M:%SZ")
+    print(f"Fetching commits from github.com/{args.repo} (since {since})...")
+    commits = fetch_commits(
+        repo=args.repo,
+        path=args.path,
+        since=since,
+        exclude_paths=_EXCLUDE_PATHS,
     )
-    commits = parse_git_log_output(raw)
     if not commits:
         print(f"No commits found under {args.path} since {args.since}.")
         return 1

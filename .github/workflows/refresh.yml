@@ -29,20 +29,15 @@ jobs:
       - name: Run unit tests
         run: python -m pytest tests/unit/
 
-      - name: Clone firefox mirror (shallow, no blobs)
-        run: |
-          git clone \
-            --filter=blob:none \
-            --no-checkout \
-            --shallow-since="7 months ago" \
-            https://github.com/mozilla-firefox/firefox \
-            /tmp/firefox
-
       - name: Generate report
-        run: python analyze_git.py --repo /tmp/firefox
+        run: python analyze_git.py
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Generate per-author listing
-        run: python dump_author_patches.py --repo /tmp/firefox
+        run: python dump_author_patches.py
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Commit & push if changed
         run: |
