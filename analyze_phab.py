@@ -29,7 +29,10 @@ from reviewstats.phab_html import (
     first_review_action,
     parse_timeline,
 )
-from reviewstats.wait_time import aggregate_wait_times
+from reviewstats.wait_time import (
+    aggregate_wait_times,
+    member_authored_wait_revisions,
+)
 
 
 _DEFAULT_REPO = "mozilla-firefox/firefox"
@@ -322,27 +325,11 @@ def main() -> int:
     # attribution is intentionally not used here — anyone in the
     # rotation could have responded; the first one's identity isn't
     # a measure of *their* responsiveness, just team responsiveness.
-    # Scope: only patches authored by a listed member. Non-member
-    # authors (cross-team contributors, drive-by patches) have their
-    # own review dynamics that aren't useful for analysing the team's
-    # wait time. See test_patch_list.py::test_filters_by_members.
-    per_revision: list[dict] = []
-    for d in d_numbers:
-        raw = _load_existing(d)
-        if raw is None:
-            continue
-        if raw.get("author") not in MEMBER_IDS:
-            continue
-        queue_s = raw.get("queue_seconds")
-        if queue_s is None:
-            continue
-        commit = commits_by_d[d]
-        per_revision.append({
-            "d_number": d,
-            "wait_days": queue_s / 86400.0,
-            "reviewer": (raw.get("first_member_review") or {}).get("actor"),
-            "week": iso_week(commit.date),
-        })
+    # Scope: only patches authored by a listed member. Filter contract
+    # pinned by test_wait_revisions_filter.py.
+    per_revision = member_authored_wait_revisions(
+        d_numbers, _load_existing, commits_by_d, members=MEMBER_IDS,
+    )
 
     # Per-author wait-time breakdown (for Member Profile view).
     # "How long does this author's patch wait for review?" — only

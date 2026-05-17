@@ -1,6 +1,58 @@
 """Pure functions for computing review wait time from Phab transactions."""
 
 import statistics
+from typing import Callable, Mapping
+
+from reviewstats.git_log import Commit
+from reviewstats.metrics import iso_week
+
+
+def member_authored_wait_revisions(
+    d_numbers: list[str],
+    raw_for_d: Mapping[str, dict] | Callable[[str], dict | None],
+    commits_by_d: Mapping[str, Commit],
+    *,
+    members: frozenset[str],
+) -> list[dict]:
+    """Return per-revision wait entries for `aggregate_wait_times`.
+
+    Filter contract:
+      * `raw['author']` MUST be in `members` — patches authored by
+        non-members never enter the team-level wait-time aggregate.
+      * `raw['queue_seconds']` MUST be non-None (queue-added → member
+        reacted is computable).
+      * Commits not in the active window (`commits_by_d`) are
+        skipped.
+
+    Pinned by tests in test_wait_revisions_filter.py so a regression
+    in the filtering logic surfaces in CI rather than silently
+    inflating the team-level wait-time histogram with non-member
+    patches.
+    """
+    fetch = (
+        raw_for_d if callable(raw_for_d) else raw_for_d.get
+    )
+    out: list[dict] = []
+    for d in d_numbers:
+        raw = fetch(d)
+        if raw is None:
+            continue
+        if raw.get("author") not in members:
+            continue
+        qs = raw.get("queue_seconds")
+        if qs is None:
+            continue
+        commit = commits_by_d.get(d)
+        if commit is None:
+            continue
+        first_review = raw.get("first_member_review") or {}
+        out.append({
+            "d_number": d,
+            "wait_days": qs / 86400.0,
+            "reviewer": first_review.get("actor"),
+            "week": iso_week(commit.date),
+        })
+    return out
 
 
 _REVIEW_TX_TYPES = frozenset({
