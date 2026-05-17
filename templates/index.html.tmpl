@@ -74,11 +74,17 @@
   /* View switcher — visually attached to the sticky `.top-bar`,
      no independent positioning. Even padding above and below. */
   .toggle-bar {
-    display: flex; gap: 4px;
+    display: flex; align-items: center; gap: 16px;
     max-width: 1180px;
     margin: 0 auto;
     padding: 14px 24px;
     background: var(--bg);
+  }
+  .toggle-group { display: flex; gap: 4px; }
+  .toggle-sep {
+    width: 1px; align-self: stretch;
+    background: var(--pill);
+    margin: 4px 0;
   }
   .toggle-bar button {
     background: var(--pill); color: var(--fg);
@@ -88,14 +94,12 @@
   }
   .toggle-bar button.active { background: var(--pill-active); color: var(--pill-active-fg); }
 
-  /* View visibility — controlled by body class */
-  body[data-view="total"]   .view-weekly,
-  body[data-view="total"]   .view-profile { display: none; }
-  body[data-view="weekly"]  .view-total,
-  body[data-view="weekly"]  .view-profile { display: none; }
-  body[data-view="profile"] .view-total,
-  body[data-view="profile"] .view-weekly,
-  body[data-view="profile"] .view-not-profile { display: none !important; }
+  /* Two-axis visibility: data-view (team|member) x data-period (total|weekly).
+     Each section is tagged with at most one class from each axis. */
+  body[data-view="team"]    .member-only,
+  body[data-view="member"]  .team-only,
+  body[data-period="total"]  .weekly-only,
+  body[data-period="weekly"] .total-only { display: none !important; }
 
   .profile-select {
     font-size: 14px; padding: 6px 10px; border-radius: 6px;
@@ -103,24 +107,30 @@
   }
 </style>
 </head>
-<body data-view="total">
+<body data-view="team" data-period="total">
 
 <div class="top-bar">
   <header>
     <h1>dom/media Reviewer Load — <span id="hdr-group"></span></h1>
     <div class="meta" id="hdr-meta"></div>
   </header>
-  <nav class="toggle-bar" role="tablist">
-    <button id="btn-total"   class="active" type="button">6-Month View</button>
-    <button id="btn-weekly"  type="button">Per-Week View</button>
-    <button id="btn-profile" type="button">Member Profile</button>
+  <nav class="toggle-bar" aria-label="View and period selectors">
+    <div class="toggle-group" role="tablist" aria-label="View">
+      <button data-view="team"   class="active" type="button">Team View</button>
+      <button data-view="member" type="button">Member View</button>
+    </div>
+    <div class="toggle-sep" aria-hidden="true"></div>
+    <div class="toggle-group" role="tablist" aria-label="Period">
+      <button data-period="total"  class="active" type="button">6-Month</button>
+      <button data-period="weekly" type="button">Per-Week</button>
+    </div>
   </nav>
 </div>
 
 <main>
 
-<!-- ============= 6-MONTH VIEW ============= -->
-<div class="view-total">
+<!-- ============= TEAM / 6-MONTH ============= -->
+<div class="team-only total-only">
 
   <section>
     <h2>Summary (6-month window)</h2>
@@ -167,8 +177,8 @@
 
 </div>
 
-<!-- ============= PER-WEEK VIEW ============= -->
-<div class="view-weekly">
+<!-- ============= TEAM / PER-WEEK ============= -->
+<div class="team-only weekly-only">
 
   <section>
     <h2>Latest week snapshot — <span id="weekly-summary-label"></span></h2>
@@ -195,21 +205,21 @@
 
 </div>
 
-<!-- ============= MEMBER PROFILE VIEW ============= -->
-<div class="view-profile">
+<!-- ============= MEMBER DROPDOWN (shared across both Member sub-views) ============= -->
+<section class="member-only">
+  <h2>Member profile</h2>
+  <p style="margin: 0 0 12px;">
+    <label for="profile-member" style="margin-right: 8px; font-size: 13px; color: #4b5563;">Member:</label>
+    <select id="profile-member" class="profile-select"></select>
+  </p>
+</section>
+
+<!-- ============= MEMBER / 6-MONTH ============= -->
+<div class="member-only total-only">
 
   <section>
-    <h2>Member profile</h2>
-    <p style="margin: 0 0 12px;">
-      <label for="profile-member" style="margin-right: 8px; font-size: 13px; color: #4b5563;">Member:</label>
-      <select id="profile-member" class="profile-select"></select>
-    </p>
+    <h2>Summary tiles</h2>
     <div class="summary-grid" id="profile-summary-grid"></div>
-  </section>
-
-  <section>
-    <h2>Weekly activity — <span id="profile-name-1"></span> <span class="info" data-tip="Reviews per ISO week for the selected member only. 4-week rolling average overlaid to smooth noise."></span></h2>
-    <div class="chart-box tall"><canvas id="chart-profile-weekly"></canvas></div>
   </section>
 
   <section>
@@ -226,8 +236,18 @@
 
 </div>
 
-<!-- ============= WAIT-TIME SECTION (Phab Phase 2) ============= -->
-<div id="phab-section" class="view-not-profile" style="display:none">
+<!-- ============= MEMBER / PER-WEEK ============= -->
+<div class="member-only weekly-only">
+
+  <section>
+    <h2>Weekly activity — <span id="profile-name-1"></span> <span class="info" data-tip="Reviews per ISO week for the selected member only. 4-week rolling average overlaid to smooth noise."></span></h2>
+    <div class="chart-box tall"><canvas id="chart-profile-weekly"></canvas></div>
+  </section>
+
+</div>
+
+<!-- ============= TEAM WAIT-TIME (shown only in Team view; both periods) ============= -->
+<div id="phab-section" class="team-only" style="display:none">
   <h2 style="margin: 32px 0 12px; padding: 0 4px; font-size: 16px; color: #4b5563;">Review wait time (Phabricator data) — team-level</h2>
 
   <section>
@@ -429,21 +449,22 @@ if (lastIdx >= 0) {
     'Listed members with any review activity this week.'));
 }
 
-// Toggle wiring (3 views)
-const viewButtons = {
-  total:   document.getElementById('btn-total'),
-  weekly:  document.getElementById('btn-weekly'),
-  profile: document.getElementById('btn-profile'),
-};
-function setView(v) {
-  document.body.dataset.view = v;
-  for (const [name, btn] of Object.entries(viewButtons)) {
-    btn.classList.toggle('active', name === v);
+// Two-axis toggle wiring: data-view (team|member) × data-period (total|weekly).
+// Buttons declare their axis + value via data attributes; one handler per axis.
+function bindToggle(axis) {
+  const buttons = document.querySelectorAll(`.toggle-bar button[data-${axis}]`);
+  function set(value) {
+    document.body.dataset[axis] = value;
+    for (const b of buttons) {
+      b.classList.toggle('active', b.dataset[axis] === value);
+    }
+  }
+  for (const b of buttons) {
+    b.addEventListener('click', () => set(b.dataset[axis]));
   }
 }
-for (const [name, btn] of Object.entries(viewButtons)) {
-  btn.addEventListener('click', () => setView(name));
-}
+bindToggle('view');
+bindToggle('period');
 
 function horizontalBar(canvasId, rows, fill) {
   const colors = (typeof fill === 'function')

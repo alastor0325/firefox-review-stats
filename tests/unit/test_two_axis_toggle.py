@@ -1,0 +1,212 @@
+"""Integration tests for the (view, period) two-axis toggle bar.
+
+The toggle bar exposes two independent dimensions:
+
+  * `data-view`   ∈ {team, member}
+  * `data-period` ∈ {total, weekly}
+
+So four combined states: team/total, team/weekly, member/total,
+member/weekly. Each `<section>` is tagged with at most one class per
+axis (`team-only`/`member-only`, `total-only`/`weekly-only`); sections
+that span an axis omit the class.
+
+These tests pin:
+
+  * markup: 2 buttons per axis with the correct `data-*` attrs
+  * CSS:    each `data-view`/`data-period` value has a hide rule for
+            the opposite class
+  * defaults: body starts at team / total
+  * each axis is independent (changing one doesn't affect the other)
+  * key sections are tagged for the right combination
+"""
+
+import re
+
+from reviewstats.render import render_html
+
+
+_MINIMAL_DATA = {
+    "meta": {"path": "dom/media", "group": "g", "window_start": "2025-11-15",
+             "window_end": "2026-05-15", "generated_at": "2026-05-15T00:00:00Z"},
+    "summary": {
+        "total_patches": 0, "group_tagged_patches": 0, "group_tagged_pct": 0,
+        "with_individual_named": 0, "with_individual_pct": 0,
+        "group_only": 0, "group_only_pct": 0,
+        "unique_individuals": 0, "avg_per_week": 0,
+    },
+    "concentration": {"top1_share": 0, "top3_share": 0, "top5_share": 0,
+                       "gini": 0, "bus_factor": 0},
+    "within_group_total": [], "sole_reviewer": [],
+    "total_reviews_per_member": [],
+    "weekly_trend": {"weeks": [], "top_reviewers": [], "all_members": {}},
+    "members": {},
+    "authors": {"top_total": [], "reviewer_matrix": {}},
+    "per_member_authors": {},
+    "member_authored_counts": {},
+}
+
+
+def _render() -> str:
+    return render_html(_MINIMAL_DATA)
+
+
+class TestToggleBarMarkup:
+    def test_has_view_axis_buttons(self):
+        html = _render()
+        assert re.search(r'<button[^>]*data-view="team"', html), (
+            'expected a "team" view button'
+        )
+        assert re.search(r'<button[^>]*data-view="member"', html), (
+            'expected a "member" view button'
+        )
+
+    def test_has_period_axis_buttons(self):
+        html = _render()
+        assert re.search(r'<button[^>]*data-period="total"', html), (
+            'expected a "total" (6-month) period button'
+        )
+        assert re.search(r'<button[^>]*data-period="weekly"', html), (
+            'expected a "weekly" period button'
+        )
+
+    def test_exactly_two_buttons_per_axis(self):
+        html = _render()
+        # Find toggle-bar block specifically.
+        m = re.search(r'class="toggle-bar"(.*?)</nav>', html, re.DOTALL)
+        assert m is not None, "toggle-bar nav missing"
+        bar = m.group(1)
+        view_buttons = re.findall(r'<button[^>]*data-view=', bar)
+        period_buttons = re.findall(r'<button[^>]*data-period=', bar)
+        assert len(view_buttons) == 2, (
+            f"expected exactly 2 view buttons, found {len(view_buttons)}"
+        )
+        assert len(period_buttons) == 2, (
+            f"expected exactly 2 period buttons, found {len(period_buttons)}"
+        )
+
+
+class TestDefaultState:
+    def test_body_starts_team_total(self):
+        html = _render()
+        m = re.search(r'<body[^>]*>', html)
+        assert m is not None
+        body_tag = m.group(0)
+        assert 'data-view="team"' in body_tag, (
+            'default view must be "team"'
+        )
+        assert 'data-period="total"' in body_tag, (
+            'default period must be "total" (6-month)'
+        )
+
+    def test_initial_active_buttons_match_default(self):
+        html = _render()
+        # First view button (team) is active by default.
+        assert re.search(
+            r'<button[^>]*data-view="team"[^>]*class="active"', html
+        ), 'team button should be marked active at load'
+        assert re.search(
+            r'<button[^>]*data-period="total"[^>]*class="active"', html
+        ), 'total (6-month) button should be marked active at load'
+
+
+class TestCSSMatrix:
+    def test_member_only_hidden_when_view_team(self):
+        rule = re.search(
+            r'body\[data-view="team"\][^{]*\.member-only[^{]*\{[^}]*display:\s*none',
+            _render(),
+        )
+        assert rule, (
+            "missing rule: body[data-view=team] .member-only { display: none }"
+        )
+
+    def test_team_only_hidden_when_view_member(self):
+        rule = re.search(
+            r'body\[data-view="member"\][^{]*\.team-only[^{]*\{[^}]*display:\s*none',
+            _render(),
+        )
+        assert rule, (
+            "missing rule: body[data-view=member] .team-only { display: none }"
+        )
+
+    def test_weekly_only_hidden_when_period_total(self):
+        rule = re.search(
+            r'body\[data-period="total"\][^{]*\.weekly-only[^{]*\{[^}]*display:\s*none',
+            _render(),
+        )
+        assert rule, (
+            "missing rule: body[data-period=total] .weekly-only { display: none }"
+        )
+
+    def test_total_only_hidden_when_period_weekly(self):
+        rule = re.search(
+            r'body\[data-period="weekly"\][^{]*\.total-only[^{]*\{[^}]*display:\s*none',
+            _render(),
+        )
+        assert rule, (
+            "missing rule: body[data-period=weekly] .total-only { display: none }"
+        )
+
+
+class TestSectionTagging:
+    def test_team_6month_sections_tagged(self):
+        html = _render()
+        # The 6-month team content (concentration, distribution, top authors, etc.)
+        # should sit inside a `team-only total-only` container.
+        assert re.search(
+            r'class="team-only total-only"', html
+        ), "expected a `.team-only.total-only` container for Team / 6-Month"
+
+    def test_team_perweek_sections_tagged(self):
+        html = _render()
+        assert re.search(
+            r'class="team-only weekly-only"', html
+        ), "expected a `.team-only.weekly-only` container for Team / Per-Week"
+
+    def test_member_6month_sections_tagged(self):
+        html = _render()
+        assert re.search(
+            r'class="member-only total-only"', html
+        ), "expected a `.member-only.total-only` container for Member / 6-Month"
+
+    def test_member_perweek_sections_tagged(self):
+        html = _render()
+        assert re.search(
+            r'class="member-only weekly-only"', html
+        ), "expected a `.member-only.weekly-only` container for Member / Per-Week"
+
+    def test_member_dropdown_only_in_member_view(self):
+        """Shared across both Member sub-views (any period), so tagged
+        `member-only` without a period qualifier."""
+        html = _render()
+        # The <select id="profile-member"> must sit inside a member-only
+        # container that has NO total-only or weekly-only.
+        m = re.search(
+            r'<section[^>]*class="member-only"[^>]*>([^<]|<(?!/section>))*'
+            r'<select[^>]*id="profile-member"',
+            html, re.DOTALL,
+        )
+        assert m is not None, (
+            "Member dropdown should be in a `.member-only` section "
+            "(without a period qualifier) so it's visible across both "
+            "Member sub-views."
+        )
+
+
+class TestAxisIndependence:
+    """The two axes change state independently; a `setMode` helper
+    shouldn't reset the other axis when toggled. The toggle JS
+    indexes by `data-axis` and never touches the other axis's state."""
+
+    def test_toggle_js_handles_each_axis_independently(self):
+        html = _render()
+        # The bindToggle/setMode JS must reference both axes separately.
+        assert "bindToggle('view')" in html
+        assert "bindToggle('period')" in html
+
+    def test_setmode_only_updates_one_axis(self):
+        html = _render()
+        # The handler `set(value)` only assigns `document.body.dataset[axis]`,
+        # not both. Look for the dataset assignment pattern.
+        assert re.search(
+            r"document\.body\.dataset\[axis\]\s*=\s*value", html
+        ), "toggle should update one axis at a time (dataset[axis] = value)"
