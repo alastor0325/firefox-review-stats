@@ -49,6 +49,41 @@ def _html_cache_path(d_number: str) -> Path:
     return _HTML_CACHE_DIR / f"{d_number}.html"
 
 
+def select_fetch_targets(
+    d_numbers: list[str],
+    *,
+    raw_dir: Path,
+    html_cache_dir: Path,
+    force: bool = False,
+) -> tuple[list[str], list[str], list[str]]:
+    """Split `d_numbers` into (skip, from_cache, to_fetch).
+
+    * skip       — `raw_data/D<n>.json` already exists; do nothing.
+    * from_cache — raw missing, but `.phab_html_cache/D<n>.html` exists;
+                   re-parse without hitting the network.
+    * to_fetch   — neither cached; need a Playwright fetch.
+
+    With `force=True`, the raw-data check is bypassed so every D-number
+    becomes a fetch (or HTML-cached re-parse) candidate. This is the
+    function that guarantees weekly refreshes don't re-pay the cost of
+    revisions we already have.
+    """
+    skip: list[str] = []
+    candidates: list[str] = []
+    for d in d_numbers:
+        if not force and (raw_dir / f"{d}.json").exists():
+            skip.append(d)
+        else:
+            candidates.append(d)
+    from_cache = [
+        d for d in candidates if (html_cache_dir / f"{d}.html").exists()
+    ]
+    to_fetch = [
+        d for d in candidates if not (html_cache_dir / f"{d}.html").exists()
+    ]
+    return skip, from_cache, to_fetch
+
+
 def _load_existing(d_number: str) -> dict | None:
     path = _raw_path(d_number)
     if not path.exists():
@@ -213,19 +248,15 @@ def main() -> int:
     print(f"Found {len(d_numbers)} commits with Differential Revision links.")
 
     _RAW_DIR.mkdir(parents=True, exist_ok=True)
-    candidates = [
-        d for d in d_numbers
-        if args.force or _load_existing(d) is None
-    ]
-
-    # Re-process anything with cached HTML synchronously — that's just
-    # a parse + write, no network needed. Only the remainder goes to
-    # Playwright.
-    from_cache = [d for d in candidates if _html_cache_path(d).exists()]
-    to_fetch = [d for d in candidates if not _html_cache_path(d).exists()]
+    skip, from_cache, to_fetch = select_fetch_targets(
+        d_numbers,
+        raw_dir=_RAW_DIR,
+        html_cache_dir=_HTML_CACHE_DIR,
+        force=args.force,
+    )
     print(
         f"Total {len(d_numbers)} revisions.  "
-        f"Cached raw_data: {len(d_numbers) - len(candidates)}.  "
+        f"Cached raw_data: {len(skip)}.  "
         f"Re-parse from cached HTML: {len(from_cache)}.  "
         f"Fetch via Playwright: {len(to_fetch)}."
     )
