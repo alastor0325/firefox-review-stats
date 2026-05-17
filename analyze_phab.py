@@ -322,10 +322,16 @@ def main() -> int:
     # attribution is intentionally not used here — anyone in the
     # rotation could have responded; the first one's identity isn't
     # a measure of *their* responsiveness, just team responsiveness.
+    # Scope: only patches authored by a listed member. Non-member
+    # authors (cross-team contributors, drive-by patches) have their
+    # own review dynamics that aren't useful for analysing the team's
+    # wait time. See test_patch_list.py::test_filters_by_members.
     per_revision: list[dict] = []
     for d in d_numbers:
         raw = _load_existing(d)
         if raw is None:
+            continue
+        if raw.get("author") not in MEMBER_IDS:
             continue
         queue_s = raw.get("queue_seconds")
         if queue_s is None:
@@ -391,12 +397,16 @@ def main() -> int:
     }
 
     # Build the Wait Queue per-revision list (sorted longest-wait first).
+    # Scoped to member-authored patches for the same reason as the
+    # per_revision aggregation above.
     raw_entries_by_d: dict[str, dict] = {}
     for d in d_numbers:
         raw = _load_existing(d)
         if raw is not None:
             raw_entries_by_d[d] = raw
-    patch_rows = build_patch_list(raw_entries_by_d, commits_by_d)
+    patch_rows = build_patch_list(
+        raw_entries_by_d, commits_by_d, members=MEMBER_IDS,
+    )
 
     aggregated = aggregate_wait_times(per_revision)
     aggregated["per_author"] = per_author_summary

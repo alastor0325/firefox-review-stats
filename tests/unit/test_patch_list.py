@@ -55,6 +55,44 @@ def _raw(
     }
 
 
+class TestMembersFilter:
+    """The Wait Queue / team-level wait-time analysis only includes
+    patches authored by listed members. Patches authored by
+    cross-team contributors have their own dynamics that aren't
+    useful for the team-scoped analysis."""
+
+    def test_filters_by_members_when_provided(self):
+        members = frozenset({"alwu", "padenot"})
+        raw = {
+            "D1": _raw("D1", author="alwu",     time_to_accept_seconds=86400),
+            "D2": _raw("D2", author="emilio",   time_to_accept_seconds=86400),
+            "D3": _raw("D3", author="padenot",  time_to_accept_seconds=86400),
+            "D4": _raw("D4", author=None,       time_to_accept_seconds=86400),
+        }
+        commits = {d: _commit(d) for d in raw}
+        result = build_patch_list(raw, commits, members=members)
+        d_numbers = [r["d_number"] for r in result]
+        assert set(d_numbers) == {"D1", "D3"}, (
+            "Only revisions authored by listed members should appear"
+        )
+
+    def test_no_filter_when_members_none(self):
+        """Back-compat: omitting the argument keeps all revisions."""
+        raw = {
+            "D1": _raw("D1", author="alwu",   time_to_accept_seconds=86400),
+            "D2": _raw("D2", author="emilio", time_to_accept_seconds=86400),
+        }
+        commits = {d: _commit(d) for d in raw}
+        result = build_patch_list(raw, commits)
+        assert len(result) == 2
+
+    def test_empty_members_set_excludes_everyone(self):
+        raw = {"D1": _raw("D1", author="alwu", time_to_accept_seconds=86400)}
+        commits = {"D1": _commit("D1")}
+        result = build_patch_list(raw, commits, members=frozenset())
+        assert result == []
+
+
 class TestSortOrder:
     def test_longest_accept_first(self):
         raw = {

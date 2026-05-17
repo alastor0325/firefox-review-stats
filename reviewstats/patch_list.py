@@ -46,17 +46,25 @@ def _first_actor(
 def build_patch_list(
     raw_entries: Mapping[str, dict],
     commits_by_d: Mapping[str, Commit],
+    *,
+    members: frozenset[str] | None = None,
 ) -> list[dict]:
     """Per-revision rows sorted by `time_to_accept_days` desc.
 
     Revisions without a captured accept go below the accepted ones,
     sorted internally by `time_to_react_days` desc so the slowest
     open patches surface next.
+
+    `members` (optional): if provided, only revisions whose `author`
+    (the Phab handle) is in the set are included. Used to scope the
+    Wait Queue / team-level wait analysis to member-authored patches.
     """
     rows: list[dict] = []
     for d, raw in raw_entries.items():
         commit = commits_by_d.get(d)
         if commit is None:
+            continue
+        if members is not None and raw.get("author") not in members:
             continue
         events = raw.get("events", [])
         author = raw.get("author")
