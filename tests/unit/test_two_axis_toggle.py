@@ -248,25 +248,82 @@ class TestWaitQueueView:
             'expected a `.queue-only` section for the Wait Queue view'
         )
 
-    def test_queue_table_skeleton(self):
+    def test_queue_table_columns_in_order(self):
+        """No # column, no Revision column (title is the link now).
+        Time-to-react and Time-to-accept come first."""
         html = _render()
-        # The table is rendered client-side from PHAB_DATA.patch_list,
-        # but the skeleton must exist in the template.
         assert 'id="queue-table"' in html, "queue table id missing"
-        # The header row should advertise the columns we promised.
-        m = re.search(r'<thead>(.*?)</thead>', html, re.DOTALL)
+        # Extract the queue table specifically (not other tables on the page).
+        m = re.search(
+            r'<table id="queue-table".*?</thead>', html, re.DOTALL,
+        )
         assert m is not None
-        header = m.group(1)
-        for col in (
-            "#", "Revision", "Title", "Author",
-            "Accepted by", "Time to react", "Time to accept",
-        ):
-            assert col in header, f"queue table is missing column '{col}'"
+        thead = m.group(0)
+        # The columns in order:
+        headers_in_order = re.findall(r'<th[^>]*>([^<]+)</th>', thead)
+        # Strip whitespace, drop any blank captures.
+        headers_in_order = [h.strip() for h in headers_in_order if h.strip()]
+        assert headers_in_order[:5] == [
+            "Time to react", "Time to accept", "Title", "Author", "Accepted by",
+        ], f"unexpected column order: {headers_in_order}"
+
+    def test_queue_table_omits_rank_and_revision_columns(self):
+        html = _render()
+        m = re.search(
+            r'<table id="queue-table".*?</thead>', html, re.DOTALL,
+        )
+        assert m is not None
+        thead = m.group(0)
+        headers = re.findall(r'<th[^>]*>([^<]+)</th>', thead)
+        text = " ".join(h.strip() for h in headers)
+        assert "Revision" not in text, "Revision column should be gone"
+        # The "#" rank header has been removed too.
+        assert not re.search(r'>\s*#\s*<', thead), "# column should be gone"
+
+    def test_queue_time_columns_are_sortable(self):
+        html = _render()
+        m = re.search(
+            r'<table id="queue-table".*?</thead>', html, re.DOTALL,
+        )
+        assert m is not None
+        thead = m.group(0)
+        # Both time columns must carry `sortable` class + `data-sort` attr
+        # pointing at the right field name.
+        assert re.search(
+            r'<th[^>]*class="sortable num"[^>]*data-sort="time_to_react_days"',
+            thead,
+        ), "Time-to-react header should be sortable"
+        assert re.search(
+            r'<th[^>]*class="sortable num"[^>]*data-sort="time_to_accept_days"',
+            thead,
+        ), "Time-to-accept header should be sortable"
 
     def test_queue_renderer_consumes_patch_list(self):
         html = _render()
         assert "PHAB_DATA.patch_list" in html, (
             "queue renderer should read from PHAB_DATA.patch_list"
+        )
+
+    def test_queue_renderer_supports_dynamic_sort(self):
+        """The JS render function must accept a sort key argument so
+        click handlers can re-sort without rebuilding from scratch."""
+        html = _render()
+        assert re.search(r"function render\(sortKey\)", html), (
+            "queue render should be parameterised by sortKey"
+        )
+
+    def test_queue_table_layout_is_responsive(self):
+        """Section box was bleeding because the table outgrew its
+        container. Lock layout with `table-layout: fixed` AND wrap in
+        a horizontal-scroll container so narrow viewports degrade
+        gracefully."""
+        html = _render()
+        assert "table-layout: fixed" in html, (
+            "tables should use fixed layout so columns honour widths"
+        )
+        assert "table-wrap" in html, (
+            "queue table should be wrapped in a `.table-wrap` (overflow-x: auto) "
+            "so narrow viewports scroll the table, not the section"
         )
 
 

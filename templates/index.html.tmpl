@@ -41,10 +41,23 @@
   .chart-box.square { height: 360px; max-width: 460px; margin: 0 auto; }
   .split { display: grid; grid-template-columns: 1.4fr 1fr; gap: 18px; align-items: center; }
   @media (max-width: 800px) { .split { grid-template-columns: 1fr; } }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #eee; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #eee; vertical-align: top; }
   th { font-weight: 600; color: var(--muted); }
-  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  th.num, td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  /* Title column wraps long subject lines instead of overflowing. */
+  #queue-table td.title { word-break: break-word; overflow-wrap: anywhere; }
+  /* Horizontal scroll if the viewport is narrower than the table's
+     min-content width, so the section box never bleeds. */
+  .table-wrap { overflow-x: auto; }
+  /* Sortable column headers */
+  th.sortable { cursor: pointer; user-select: none; }
+  th.sortable:hover { color: var(--fg); }
+  th.sortable.active-sort { color: var(--fg); }
+  th.sortable.active-sort::after {
+    content: " ↓";
+    font-weight: 700;
+  }
   .footer-note { font-size: 12px; color: var(--muted); margin-top: 10px; }
 
   /* Info icon + viewport-aware floating tooltip (positioned via JS) */
@@ -260,25 +273,33 @@
 <!-- ============= WAIT QUEUE ============= -->
 <div class="queue-only">
   <section>
-    <h2>Wait queue — slowest patches first <span class="info" data-tip="Every revision that touches dom/media (after filters), sorted by time from revision creation to the first member acceptance, longest wait first. Use this list to investigate what slowed each patch down."></span></h2>
+    <h2>Wait queue — member-authored patches by wait time <span class="info" data-tip="Patches authored by listed members, sorted by wait time anchored to revision creation. Click a time column header to reorder by that metric."></span></h2>
     <p style="margin: 0 0 12px; font-size: 13px; color: #4b5563;">
       Patches in scope: <span id="queue-total"></span>
+      &nbsp;·&nbsp; Click a "Time to ..." column header to reorder.
     </p>
-    <table id="queue-table">
-      <thead>
-        <tr>
-          <th style="text-align:right; width: 50px">#</th>
-          <th style="width: 110px">Revision</th>
-          <th>Title</th>
-          <th style="width: 110px">Author</th>
-          <th style="width: 130px">Accepted by</th>
-          <th style="width: 110px; text-align:right">Time to react</th>
-          <th style="width: 110px; text-align:right">Time to accept</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-    <div class="footer-note">Time-to-react and time-to-accept are both anchored to the revision's creation timestamp. A blank "Accepted by" means the patch hasn't yet had a member accept (still open, or only got non-member feedback). Slowest open patches sort below the slowest accepted ones.</div>
+    <div class="table-wrap">
+      <table id="queue-table">
+        <colgroup>
+          <col style="width: 90px">
+          <col style="width: 90px">
+          <col>
+          <col style="width: 110px">
+          <col style="width: 110px">
+        </colgroup>
+        <thead>
+          <tr>
+            <th class="sortable num" data-sort="time_to_react_days">Time to react</th>
+            <th class="sortable num" data-sort="time_to_accept_days">Time to accept</th>
+            <th>Title</th>
+            <th>Author</th>
+            <th>Accepted by</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="footer-note">Both times are anchored to the revision's creation timestamp. A blank "Accepted by" means the patch hasn't been accepted yet (still open or only had non-acceptance feedback).</div>
   </section>
 </div>
 
@@ -928,34 +949,54 @@ if (PHAB_DATA && PHAB_DATA.n > 0) {
 })();
 
 // =============================================================
-// Wait Queue view: per-revision audit table
+// Wait Queue view: per-revision audit table with sortable columns
 // =============================================================
-(function renderQueue() {
+(function setupQueue() {
   const rows = (PHAB_DATA && PHAB_DATA.patch_list) || [];
   document.getElementById('queue-total').textContent =
     `${rows.length} revisions`;
   const tbody = document.querySelector('#queue-table tbody');
+  const headers = document.querySelectorAll('#queue-table th.sortable');
   if (!tbody) return;
+
   const fmtDays = v => v == null ? '—' : (
     v < 1 ? `${(v * 24).toFixed(1)} h` : `${v.toFixed(2)} d`
   );
   const escape = s => String(s).replace(/[&<>"']/g, c => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
   })[c]);
-  for (let i = 0; i < rows.length; i++) {
-    const r = rows[i];
-    const tr = document.createElement('tr');
-    tr.innerHTML = (
-      `<td class="num">${i + 1}</td>` +
-      `<td><a href="${escape(r.url)}" target="_blank" rel="noopener">${escape(r.d_number)}</a></td>` +
-      `<td>${escape(r.title || '')}</td>` +
-      `<td>${escape(r.author || '—')}</td>` +
-      `<td>${escape(r.accept_actor || '—')}</td>` +
-      `<td class="num">${fmtDays(r.time_to_react_days)}</td>` +
-      `<td class="num">${fmtDays(r.time_to_accept_days)}</td>`
-    );
-    tbody.appendChild(tr);
+
+  // Render in current sort order. Missing values fall to the bottom.
+  function render(sortKey) {
+    const sorted = [...rows].sort((a, b) => {
+      const av = a[sortKey];
+      const bv = b[sortKey];
+      if (av == null && bv == null) return 0;
+      if (av == null) return 1;
+      if (bv == null) return -1;
+      return bv - av;
+    });
+    tbody.innerHTML = '';
+    for (const r of sorted) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = (
+        `<td class="num">${fmtDays(r.time_to_react_days)}</td>` +
+        `<td class="num">${fmtDays(r.time_to_accept_days)}</td>` +
+        `<td class="title"><a href="${escape(r.url)}" target="_blank" rel="noopener">${escape(r.title || r.d_number)}</a></td>` +
+        `<td>${escape(r.author || '—')}</td>` +
+        `<td>${escape(r.accept_actor || '—')}</td>`
+      );
+      tbody.appendChild(tr);
+    }
+    for (const th of headers) {
+      th.classList.toggle('active-sort', th.dataset.sort === sortKey);
+    }
   }
+
+  for (const th of headers) {
+    th.addEventListener('click', () => render(th.dataset.sort));
+  }
+  render('time_to_accept_days');  // default sort
 })();
 
 attachTooltips(document);
