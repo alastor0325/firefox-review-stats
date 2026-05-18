@@ -15,7 +15,7 @@ need to worry about the human-readable display strings.
 import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Iterable
+from typing import Callable, Iterable
 
 
 _HOST = "https://phabricator.services.mozilla.com"
@@ -128,7 +128,7 @@ async def bulk_fetch_async(
     *,
     concurrency: int = 5,
     timeout: float = 30.0,
-    on_each: callable | None = None,
+    on_each: Callable | None = None,
 ) -> dict[str, str | Exception]:
     """Fetch many revision pages concurrently using Playwright async.
 
