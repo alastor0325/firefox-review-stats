@@ -141,14 +141,6 @@ def build_report(
             "group_tagged_pct": _pct(
                 routing["group_tagged"], routing["total"]
             ),
-            "with_individual_named": routing["group_with_individual"],
-            "with_individual_pct": _pct(
-                routing["group_with_individual"], routing["group_tagged"]
-            ),
-            "group_only": routing["group_only"],
-            "group_only_pct": _pct(
-                routing["group_only"], routing["group_tagged"]
-            ),
             "unique_individuals": len(indiv_counts),
             "avg_per_week": routing["group_tagged"] / num_weeks,
         },

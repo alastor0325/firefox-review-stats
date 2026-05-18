@@ -76,8 +76,6 @@ class TestBuildReport:
         s = report["summary"]
         assert s["total_patches"] == 5
         assert s["group_tagged_patches"] == 4
-        assert s["with_individual_named"] == 3
-        assert s["group_only"] == 1
         assert s["unique_individuals"] == 2
 
     def test_within_group_distribution(self):
