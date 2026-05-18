@@ -201,4 +201,37 @@ def aggregate_wait_times(
             "p90": percentile_days(days, 90),
         },
         "weekly_median": weekly,
+        "last_week": _last_week_slice(by_week),
+    }
+
+
+def _last_week_slice(by_week: dict[str, list[float]]) -> dict | None:
+    """Most-recent week's wait-time data shaped like the top-level
+    aggregate (n / histogram / percentiles) plus the week label.
+
+    Returns None when no week has any samples.
+
+    Used by the Team / Per-Week view so the report can show "this week
+    only" stats rather than the 6-month rollup.
+    """
+    if not by_week:
+        return None
+    week = max(by_week)  # ISO `YYYY-Www` sorts lexically by recency
+    days = by_week[week]
+    histogram: dict[str, int] = {b: 0 for b in BUCKETS}
+    for d in days:
+        histogram[bucket_wait_days(d)] += 1
+    total = sum(histogram.values()) or 1
+    return {
+        "week": week,
+        "n": len(days),
+        "histogram": [
+            {"bucket": b, "count": histogram[b], "pct": histogram[b] / total}
+            for b in BUCKETS
+        ],
+        "percentiles": {
+            "p50": percentile_days(days, 50),
+            "p75": percentile_days(days, 75),
+            "p90": percentile_days(days, 90),
+        },
     }

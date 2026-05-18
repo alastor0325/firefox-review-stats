@@ -298,8 +298,8 @@
   </section>
 </div>
 
-<!-- ============= TEAM WAIT-TIME (shown only in Team view; both periods) ============= -->
-<div id="phab-section" class="team-only" style="display:none">
+<!-- ============= TEAM WAIT-TIME (6-month rollup) ============= -->
+<div id="phab-section" class="team-only total-only" style="display:none">
   <h2 style="margin: 32px 0 12px; padding: 0 4px; font-size: 16px; color: #4b5563;">Review wait time (Phabricator data) — team-level</h2>
 
   <section>
@@ -315,6 +315,21 @@
   <section>
     <h2>Median wait time by week <span class="info" data-tip="Median wait time computed within each ISO week. Use to spot trends — is the queue getting slower?"></span></h2>
     <div class="chart-box"><canvas id="chart-wait-weekly"></canvas></div>
+  </section>
+</div>
+
+<!-- ============= TEAM WAIT-TIME (most recent week only) ============= -->
+<div id="phab-section-week" class="team-only weekly-only" style="display:none">
+  <h2 style="margin: 32px 0 12px; padding: 0 4px; font-size: 16px; color: #4b5563;">Review wait time (Phabricator data) — most recent week</h2>
+
+  <section>
+    <h2>Summary <span id="phab-week-label" style="font-weight: normal; color: #6b7280;"></span></h2>
+    <div class="summary-grid" id="phab-week-summary-grid"></div>
+  </section>
+
+  <section>
+    <h2>Wait-time distribution (submit → first review action) <span class="info" data-tip="Histogram restricted to revisions whose wait-time anchor falls in the most recent ISO week with data."></span></h2>
+    <div class="chart-box"><canvas id="chart-wait-hist-week"></canvas></div>
   </section>
 </div>
 
@@ -768,6 +783,48 @@ if (PHAB_DATA && PHAB_DATA.n > 0) {
       maintainAspectRatio: false,
     },
   });
+
+  // --- Most-recent-week slice (team / per-week view) ---
+  const lw = PHAB_DATA.last_week;
+  if (lw && lw.n > 0) {
+    document.getElementById('phab-section-week').style.display = 'block';
+    const label = document.getElementById('phab-week-label');
+    label.textContent = ` — ${lw.week} (${isoWeekToDateRange(lw.week)})`;
+
+    const wg = document.getElementById('phab-week-summary-grid');
+    wg.appendChild(stat('Patches with wait data', lw.n, null,
+      'Patches in the most recent ISO week we could compute submit→first-review-action latency for.'));
+    wg.appendChild(stat('Median wait', lw.percentiles.p50.toFixed(1) + ' d', null,
+      '50th percentile within the most recent week.'));
+    wg.appendChild(stat('P75 wait', lw.percentiles.p75.toFixed(1) + ' d', null,
+      '75th percentile within the most recent week.'));
+    wg.appendChild(stat('P90 wait', lw.percentiles.p90.toFixed(1) + ' d', null,
+      '90th percentile within the most recent week.'));
+
+    new Chart(document.getElementById('chart-wait-hist-week'), {
+      type: 'bar',
+      data: {
+        labels: lw.histogram.map(r => r.bucket),
+        datasets: [{
+          data: lw.histogram.map(r => r.count),
+          backgroundColor: '#0ea5e9',
+        }],
+      },
+      options: {
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: {
+            label: ctx => {
+              const row = lw.histogram[ctx.dataIndex];
+              return `${row.count} (${fmtPct(row.pct)})`;
+            },
+          }},
+        },
+        scales: { y: { beginAtZero: true } },
+        maintainAspectRatio: false,
+      },
+    });
+  }
 }
 
 // =============================================================
