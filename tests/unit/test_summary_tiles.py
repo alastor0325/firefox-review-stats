@@ -84,6 +84,8 @@ def test_report_summary_omits_group_only_and_with_individual_fields():
         "total_patches",
         "group_tagged_patches",
         "group_tagged_pct",
+        "landed_without_team_review",
+        "landed_without_team_review_pct",
         "unique_individuals",
         "avg_per_week",
     }

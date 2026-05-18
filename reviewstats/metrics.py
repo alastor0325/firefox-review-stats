@@ -80,6 +80,29 @@ def routing_breakdown(commits: Iterable[_CommitLike], *, group: str) -> dict[str
     }
 
 
+def landed_without_team_review(
+    commits: Iterable[_CommitLike],
+    *,
+    group: str,
+    members: frozenset[str],
+) -> int:
+    """Count patches that landed with neither the team group tag nor any
+    listed-member individual reviewer.
+
+    A non-zero value signals patches reaching dom/media without anyone
+    on the listed-member roster checking the work — usually a queue
+    health red flag.
+    """
+    count = 0
+    for c in commits:
+        if _has_group(c, group):
+            continue
+        if any(name in members for name in _individuals(c)):
+            continue
+        count += 1
+    return count
+
+
 def sole_reviewer_counts(
     commits: Iterable[_CommitLike],
     *,

@@ -16,6 +16,7 @@ from reviewstats.metrics import (
     compute_gini,
     count_by_individual,
     iso_week,
+    landed_without_team_review,
     reviewer_to_authors,
     routing_breakdown,
     sole_reviewer_counts,
@@ -88,6 +89,9 @@ def build_report(
     commits = list(commits)
 
     routing = routing_breakdown(commits, group=group)
+    no_team_review = landed_without_team_review(
+        commits, group=group, members=MEMBER_IDS
+    )
     indiv_counts = count_by_individual(
         commits, group=group, members=MEMBER_IDS
     )
@@ -140,6 +144,10 @@ def build_report(
             "group_tagged_patches": routing["group_tagged"],
             "group_tagged_pct": _pct(
                 routing["group_tagged"], routing["total"]
+            ),
+            "landed_without_team_review": no_team_review,
+            "landed_without_team_review_pct": _pct(
+                no_team_review, routing["total"]
             ),
             "unique_individuals": len(indiv_counts),
             "avg_per_week": routing["group_tagged"] / num_weeks,
