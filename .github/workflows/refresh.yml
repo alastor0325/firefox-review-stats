@@ -12,7 +12,7 @@ permissions:
 jobs:
   refresh:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
 
     steps:
       - name: Checkout firefox-review-stats
@@ -23,14 +23,35 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install dev deps
-        run: python -m pip install --upgrade pip pytest
+      - name: Install Python deps
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pytest playwright
+
+      - name: Install Chromium for Playwright
+        run: python -m playwright install --with-deps chromium
+
+      - name: Restore Phabricator HTML cache
+        # Persists .phab_html_cache/ between weekly runs so analyze_phab.py
+        # only fetches new D-numbers via Playwright. Without this every run
+        # would re-scrape ~500 revisions and likely trip the Varnish 429.
+        uses: actions/cache@v4
+        with:
+          path: .phab_html_cache
+          key: phab-html-cache-${{ github.run_id }}
+          restore-keys: |
+            phab-html-cache-
 
       - name: Run unit tests
         run: python -m pytest tests/unit/
 
-      - name: Generate report
+      - name: Generate landing report (GitHub commits)
         run: python analyze_git.py
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate wait-time report (Phabricator timelines)
+        run: python analyze_phab.py
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -43,7 +64,7 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A data_git.json index.html author_patches.txt
+          git add -A data_git.json data_phab.json index.html author_patches.txt raw_data/
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else
