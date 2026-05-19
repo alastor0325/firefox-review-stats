@@ -80,6 +80,55 @@ def routing_breakdown(commits: Iterable[_CommitLike], *, group: str) -> dict[str
     }
 
 
+def primary_subdir(files: list[str], *, path: str) -> str | None:
+    """Pick the single bucket that best represents a commit, given the
+    files it touched and the root `path` we're scoped to (e.g.
+    'dom/media').
+
+    Rule: among files under `path/`, return the immediate subdirectory
+    with the most files. Top-level files (directly under `path/`) bucket
+    as '(top-level)'. Ties broken alphabetically — deterministic so the
+    classification is stable across regens.
+
+    Returns None when no file lies under `path/` (only possible if the
+    GitHub `files` array was truncated past the 300-entry cap).
+    """
+    counts: Counter[str] = Counter()
+    prefix = path.rstrip("/") + "/"
+    for fn in files:
+        if not fn.startswith(prefix):
+            continue
+        rest = fn[len(prefix):]
+        bucket = rest.split("/")[0] if "/" in rest else "(top-level)"
+        counts[bucket] += 1
+    if not counts:
+        return None
+    best_count = max(counts.values())
+    candidates = sorted(b for b, c in counts.items() if c == best_count)
+    return candidates[0]
+
+
+def classify_landed_without_team_review_by_subdir(
+    bad_commits: list[tuple[_CommitLike, list[str]]],
+    *,
+    path: str,
+) -> dict[str, int]:
+    """Aggregate (commit, files_changed) pairs into {subdir: count}.
+
+    Each commit contributes to exactly one subdir, picked by
+    `primary_subdir`. Useful for the team-view pie chart that splits
+    the 'Landed without team review' total by where the patches sit.
+    """
+    out: Counter[str] = Counter()
+    for _commit, files in bad_commits:
+        sub = primary_subdir(files, path=path)
+        if sub is None:
+            out["(unknown)"] += 1
+        else:
+            out[sub] += 1
+    return dict(out)
+
+
 def landed_without_team_review(
     commits: Iterable[_CommitLike],
     *,

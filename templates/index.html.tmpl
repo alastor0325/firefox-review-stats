@@ -161,6 +161,12 @@
     <div class="summary-grid" id="summary-grid"></div>
   </section>
 
+  <section id="landed-without-review-section" style="display:none">
+    <h2>Landed without team review — by primary dom/media subdirectory <span class="info" data-tip="Each patch is bucketed by the dom/media subdirectory it changes the most files in. Click a legend entry to hide/show that slice."></span></h2>
+    <div class="chart-box square"><canvas id="chart-no-team-review"></canvas></div>
+    <div class="footer-note">Helps tell apart 'real playback bypass' from 'lives under dom/media/ but owned by an adjacent team' (e.g. webspeech).</div>
+  </section>
+
   <section>
     <h2>Concentration metrics (6-month totals)</h2>
     <div class="summary-grid" id="concentration-grid"></div>
@@ -676,6 +682,36 @@ new Chart(document.getElementById('chart-distribution-pie'), {
     maintainAspectRatio: false,
   },
 });
+
+// --- Landed without team review: pie by primary dom/media subdir ---
+const ntrBySubdir = s.landed_without_team_review_by_subdir || {};
+const ntrEntries = Object.entries(ntrBySubdir).sort((a, b) => b[1] - a[1]);
+if (ntrEntries.length > 0) {
+  document.getElementById('landed-without-review-section').style.display = '';
+  const ntrTotal = ntrEntries.reduce((sum, [, n]) => sum + n, 0) || 1;
+  const ntrLabels = ntrEntries.map(([k]) => k);
+  const ntrCounts = ntrEntries.map(([, n]) => n);
+  new Chart(document.getElementById('chart-no-team-review'), {
+    type: 'doughnut',
+    data: {
+      labels: ntrLabels,
+      datasets: [{
+        data: ntrCounts,
+        backgroundColor: ntrLabels.map((_, i) => color(i)),
+        borderWidth: 1,
+      }],
+    },
+    options: {
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 12 } },
+        tooltip: { callbacks: {
+          label: ctx => `${ctx.label}: ${ctx.parsed} (${fmtPct(ctx.parsed / ntrTotal)})`,
+        }},
+      },
+      maintainAspectRatio: false,
+    },
+  });
+}
 
 // --- Author → reviewer matrix (stacked bar) ---
 const matrix = DATA.authors.reviewer_matrix;

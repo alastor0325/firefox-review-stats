@@ -16,8 +16,13 @@ import shutil
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from reviewstats.github_commits import fetch_commits
-from reviewstats.metrics import iso_week
+from reviewstats.commit_files import fetch_commit_files_cached
+from reviewstats.github_commits import _get_auth_token, fetch_commits
+from reviewstats.members import MEMBER_IDS
+from reviewstats.metrics import (
+    classify_landed_without_team_review_by_subdir,
+    iso_week,
+)
 from reviewstats.render import render_html
 from reviewstats.report import build_report
 
@@ -75,6 +80,39 @@ def main(argv: list[str] | None = None) -> int:
     window_start = min(c.date for c in commits)
     window_end = max(c.date for c in commits)
 
+    # For each commit that landed without any team-roster reviewer,
+    # fetch the file list (cached) so we can build a per-subdir
+    # breakdown for the pie chart.
+    bad_commits: list = []
+    for c in commits:
+        has_group = any(
+            r.is_group and r.name == args.group for r in c.reviewers
+        )
+        if has_group:
+            continue
+        if any(
+            r.name in MEMBER_IDS for r in c.reviewers if not r.is_group
+        ):
+            continue
+        bad_commits.append(c)
+
+    cache_dir = out_dir / ".commit_files_cache"
+    token = _get_auth_token()
+    bad_with_files: list = []
+    if bad_commits:
+        print(
+            f"Classifying {len(bad_commits)} 'without team review' "
+            f"commits by primary subdir..."
+        )
+    for c in bad_commits:
+        files = fetch_commit_files_cached(
+            args.repo, c.sha, cache_dir=cache_dir, token=token,
+        )
+        bad_with_files.append((c, files))
+    by_subdir = classify_landed_without_team_review_by_subdir(
+        bad_with_files, path=args.path,
+    )
+
     report = build_report(
         commits,
         group=args.group,
@@ -83,6 +121,7 @@ def main(argv: list[str] | None = None) -> int:
         window_end=window_end,
         generated_at=now,
         excludes=_EXCLUDE_PATHS,
+        no_team_review_by_subdir=by_subdir,
     )
 
     json_path = out_dir / "data_git.json"

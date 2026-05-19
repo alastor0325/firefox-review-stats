@@ -53,6 +53,13 @@ def test_caches_phab_html_cache(workflow_text):
     assert ".phab_html_cache" in workflow_text
 
 
+def test_caches_commit_files_cache(workflow_text):
+    """The per-subdir pie chart needs file paths for each
+    'without team review' commit (~100 SHAs). Caching avoids paying
+    that many GitHub round-trips on every weekly run."""
+    assert ".commit_files_cache" in workflow_text
+
+
 def test_runs_analyze_phab(workflow_text):
     assert "analyze_phab.py" in workflow_text, (
         "Wait-time data (data_phab.json, raw_data/) only refreshes "
