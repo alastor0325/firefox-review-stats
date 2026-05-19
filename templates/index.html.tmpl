@@ -36,6 +36,16 @@
   .stat .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
   .stat .value { font-size: 22px; font-weight: 600; margin-top: 4px; }
   .stat .sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .stat.expandable { cursor: pointer; transition: background 0.15s; }
+  .stat.expandable:hover { background: #f1f5f9; }
+  .stat.expandable .label::after {
+    content: " ▸";
+    color: var(--muted);
+    font-size: 10px;
+    display: inline-block;
+    transition: transform 0.15s;
+  }
+  .stat.expandable.is-open .label::after { transform: rotate(90deg); }
   .chart-box { position: relative; height: 360px; }
   .chart-box.tall { height: 480px; }
   .chart-box.square { height: 360px; max-width: 460px; margin: 0 auto; }
@@ -498,8 +508,11 @@ sg.appendChild(stat('Tagged with group', s.group_tagged_patches, fmtPct(s.group_
   'Patches whose r= line includes "media-playback-reviewers".'));
 sg.appendChild(stat('Listed members reviewing', DATA.within_group_total.length, 'of ' + Object.keys(DATA.members).length + ' on the list',
   'How many listed members reviewed at least one patch in the 6-month window.'));
-sg.appendChild(stat('Landed without team review', s.landed_without_team_review, fmtPct(s.landed_without_team_review_pct) + ' of total',
-  'Patches in dom/media that landed with neither the media-playback-reviewers group tag nor any listed member as a reviewer. A non-zero value means dom/media changes are landing without team oversight.'));
+const noTeamTile = stat('Landed without team review', s.landed_without_team_review, fmtPct(s.landed_without_team_review_pct) + ' of total',
+  'Patches in dom/media that landed with neither the media-playback-reviewers group tag nor any listed member as a reviewer. A non-zero value means dom/media changes are landing without team oversight. Click to see the per-subdirectory breakdown.');
+noTeamTile.classList.add('expandable');
+noTeamTile.addEventListener('click', toggleNoTeamReviewSection);
+sg.appendChild(noTeamTile);
 sg.appendChild(stat('Avg group-tagged / week', fmtNum(s.avg_per_week), null,
   'Group-tagged patches landed per ISO week, averaged across the window.'));
 
@@ -684,14 +697,30 @@ new Chart(document.getElementById('chart-distribution-pie'), {
 });
 
 // --- Landed without team review: pie by primary dom/media subdir ---
-const ntrBySubdir = s.landed_without_team_review_by_subdir || {};
-const ntrEntries = Object.entries(ntrBySubdir).sort((a, b) => b[1] - a[1]);
-if (ntrEntries.length > 0) {
-  document.getElementById('landed-without-review-section').style.display = '';
+// Hidden behind a click on the corresponding summary tile so the
+// Team view stays focused on headline metrics. Chart is built on
+// first reveal to avoid Chart.js init for users who never expand.
+let noTeamReviewChart = null;
+function toggleNoTeamReviewSection() {
+  const section = document.getElementById('landed-without-review-section');
+  const ntrBySubdir = s.landed_without_team_review_by_subdir || {};
+  const ntrEntries = Object.entries(ntrBySubdir).sort((a, b) => b[1] - a[1]);
+  if (ntrEntries.length === 0) {
+    return;  // nothing to show
+  }
+  const open = section.style.display !== 'none' && section.style.display !== '';
+  if (open) {
+    section.style.display = 'none';
+    noTeamTile.classList.remove('is-open');
+    return;
+  }
+  section.style.display = 'block';
+  noTeamTile.classList.add('is-open');
+  if (noTeamReviewChart) return;  // already rendered
   const ntrTotal = ntrEntries.reduce((sum, [, n]) => sum + n, 0) || 1;
   const ntrLabels = ntrEntries.map(([k]) => k);
   const ntrCounts = ntrEntries.map(([, n]) => n);
-  new Chart(document.getElementById('chart-no-team-review'), {
+  noTeamReviewChart = new Chart(document.getElementById('chart-no-team-review'), {
     type: 'doughnut',
     data: {
       labels: ntrLabels,

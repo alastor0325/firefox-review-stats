@@ -134,4 +134,11 @@ def test_pie_renders_when_data_present():
     assert "chart-no-team-review" in html
     assert "landed-without-review-section" in html
     # JS short-circuits when there are no entries.
-    assert "if (ntrEntries.length > 0)" in html
+    assert "if (ntrEntries.length === 0)" in html
+    # The chart is lazy — built inside the toggle function, not on
+    # initial render — so the 'Landed without team review' tile is
+    # tagged expandable and wires a click handler.
+    assert "noTeamTile.classList.add('expandable')" in html
+    assert "noTeamTile.addEventListener('click', toggleNoTeamReviewSection)" in html
+    # Pie chart is created lazily; one instance only.
+    assert "let noTeamReviewChart = null;" in html
