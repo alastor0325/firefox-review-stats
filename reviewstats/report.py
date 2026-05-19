@@ -87,6 +87,7 @@ def build_report(
     generated_at: datetime,
     excludes: tuple[str, ...] = (),
     no_team_review_by_subdir: dict[str, int] | None = None,
+    no_team_review_list: list[dict] | None = None,
 ) -> dict:
     commits = list(commits)
 
@@ -154,6 +155,8 @@ def build_report(
             ),
             "landed_without_team_review_by_subdir":
                 dict(no_team_review_by_subdir) if no_team_review_by_subdir else {},
+            "landed_without_team_review_list":
+                list(no_team_review_list) if no_team_review_list else [],
             "unique_individuals": len(indiv_counts),
             "avg_per_week": routing["group_tagged"] / num_weeks,
         },

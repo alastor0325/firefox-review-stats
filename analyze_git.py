@@ -22,6 +22,7 @@ from reviewstats.members import MEMBER_IDS
 from reviewstats.metrics import (
     classify_landed_without_team_review_by_subdir,
     iso_week,
+    primary_subdir,
 )
 from reviewstats.render import render_html
 from reviewstats.report import build_report
@@ -112,6 +113,23 @@ def main(argv: list[str] | None = None) -> int:
     by_subdir = classify_landed_without_team_review_by_subdir(
         bad_with_files, path=args.path,
     )
+    no_team_review_list = [
+        {
+            "sha": c.sha,
+            "short_sha": c.sha[:12],
+            "date": c.date.date().isoformat(),
+            "author": c.author,
+            "subject": c.subject,
+            "reviewers": [
+                {"name": r.name, "is_group": r.is_group}
+                for r in c.reviewers
+            ],
+            "differential_revision": c.differential_revision,
+            "primary_subdir": primary_subdir(files, path=args.path) or "(unknown)",
+        }
+        for c, files in bad_with_files
+    ]
+    no_team_review_list.sort(key=lambda r: r["date"], reverse=True)
 
     report = build_report(
         commits,
@@ -122,6 +140,7 @@ def main(argv: list[str] | None = None) -> int:
         generated_at=now,
         excludes=_EXCLUDE_PATHS,
         no_team_review_by_subdir=by_subdir,
+        no_team_review_list=no_team_review_list,
     )
 
     json_path = out_dir / "data_git.json"

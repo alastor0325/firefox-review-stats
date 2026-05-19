@@ -87,6 +87,7 @@ def test_report_summary_omits_group_only_and_with_individual_fields():
         "landed_without_team_review",
         "landed_without_team_review_pct",
         "landed_without_team_review_by_subdir",
+        "landed_without_team_review_list",
         "unique_individuals",
         "avg_per_week",
     }

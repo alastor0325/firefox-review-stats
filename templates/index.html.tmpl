@@ -105,6 +105,59 @@
     color: var(--accent);
     background: #eff6ff;
   }
+  /* Sub-sub-section — one indent deeper than .nested-detail.
+     Uses native <details>/<summary> for built-in folding. */
+  .sub-details {
+    margin: 12px 0 0 16px;
+    padding: 8px 12px;
+    border-left: 2px solid #cbd5e1;
+    background: #ffffff;
+    border-radius: 0 4px 4px 0;
+  }
+  .sub-details > summary {
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    color: #334155;
+    list-style: none;
+    user-select: none;
+    padding: 2px 0;
+  }
+  .sub-details > summary::-webkit-details-marker { display: none; }
+  .sub-details > summary::before {
+    content: "▸ ";
+    color: var(--accent);
+    display: inline-block;
+    transition: transform 0.15s;
+    width: 1em;
+  }
+  .sub-details[open] > summary::before { content: "▾ "; }
+  .sub-details table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 8px;
+    font-size: 12px;
+  }
+  .sub-details th, .sub-details td {
+    text-align: left;
+    padding: 4px 8px;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: top;
+  }
+  .sub-details th {
+    background: #f8fafc;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    font-size: 10px;
+    letter-spacing: 0.04em;
+  }
+  .sub-details td.subject { max-width: 380px; overflow-wrap: anywhere; }
+  .sub-details td.subdir-cell {
+    font-family: ui-monospace, SFMono-Regular, monospace;
+    color: var(--accent);
+    white-space: nowrap;
+  }
   .chart-box { position: relative; height: 360px; }
   .chart-box.tall { height: 480px; }
   .chart-box.square { height: 360px; max-width: 460px; margin: 0 auto; }
@@ -235,6 +288,10 @@
     <h3>Breakdown by primary dom/media subdirectory <span class="info" data-tip="Each patch is bucketed by the dom/media subdirectory it changes the most files in. Click a legend entry to hide/show that slice."></span></h3>
     <div class="chart-box square"><canvas id="chart-no-team-review"></canvas></div>
     <div class="footer-note">Helps tell apart 'real playback bypass' from 'lives under dom/media/ but owned by an adjacent team' (e.g. webspeech).</div>
+    <details class="sub-details" id="no-team-review-list-details">
+      <summary>Full patch list (<span id="no-team-review-list-count">0</span>)</summary>
+      <div id="no-team-review-list-container"></div>
+    </details>
   </div>
 
   <section>
@@ -458,6 +515,7 @@ const PALETTE = [
 const color = i => PALETTE[i % PALETTE.length];
 
 function escAttr(s) { return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 // Convert an ISO week label like "2026-W20" into the calendar range
 // "May 11 – May 17, 2026" so weekly-chart tooltips show real dates.
@@ -760,10 +818,53 @@ new Chart(document.getElementById('chart-distribution-pie'), {
   },
 });
 
-// --- Landed without team review: pie by primary dom/media subdir ---
-// Hidden behind a click on the corresponding summary tile so the
-// Team view stays focused on headline metrics. Chart is built on
-// first reveal to avoid Chart.js init for users who never expand.
+// --- Landed without team review: pie + full patch list ---
+// Both hidden behind a click on the corresponding summary tile so
+// the Team view stays focused on headline metrics. Pie + table are
+// each rendered on first reveal of their containers.
+const noTeamReviewList = s.landed_without_team_review_list || [];
+document.getElementById('no-team-review-list-count').textContent = noTeamReviewList.length;
+
+let noTeamReviewTableBuilt = false;
+function buildNoTeamReviewTable() {
+  if (noTeamReviewTableBuilt) return;
+  noTeamReviewTableBuilt = true;
+  const container = document.getElementById('no-team-review-list-container');
+  if (!noTeamReviewList.length) {
+    container.innerHTML = '<div class="footer-note">No patches to list.</div>';
+    return;
+  }
+  const t = document.createElement('table');
+  const headers = ['Date', 'Subdir', 'Patch', 'Author', 'Reviewers'];
+  t.innerHTML = '<thead><tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr></thead>';
+  const tbody = document.createElement('tbody');
+  for (const row of noTeamReviewList) {
+    const phabUrl = row.differential_revision
+      ? `https://phabricator.services.mozilla.com/${escAttr(row.differential_revision)}`
+      : null;
+    const subjectCell = phabUrl
+      ? `<a href="${phabUrl}" target="_blank" rel="noopener">${escHtml(row.subject)}</a>`
+      : escHtml(row.subject);
+    const reviewers = row.reviewers
+      .map(r => r.name + (r.is_group ? ' (group)' : ''))
+      .join(', ') || '(none)';
+    const tr = document.createElement('tr');
+    tr.innerHTML = (
+      `<td>${escHtml(row.date)}</td>` +
+      `<td class="subdir-cell">${escHtml(row.primary_subdir)}</td>` +
+      `<td class="subject">${subjectCell}</td>` +
+      `<td>${escHtml(row.author)}</td>` +
+      `<td>${escHtml(reviewers)}</td>`
+    );
+    tbody.appendChild(tr);
+  }
+  t.appendChild(tbody);
+  container.appendChild(t);
+}
+document.getElementById('no-team-review-list-details').addEventListener('toggle', (e) => {
+  if (e.target.open) buildNoTeamReviewTable();
+});
+
 let noTeamReviewChart = null;
 function setNoTeamReviewOpen(open) {
   const section = document.getElementById('landed-without-review-section');
