@@ -40,10 +40,17 @@ def test_head_declares_inline_svg_favicon():
     assert "href=\"data:image/svg+xml;utf8," in html
 
 
-def test_favicon_uses_brand_accent_colour():
-    """The favicon should visually match the rest of the page so it
-    reads as part of this dashboard in a tab strip — pin to the same
-    accent blue used by other UI elements."""
+def test_favicon_uses_mozilla_red():
+    """The favicon should read as Mozilla-branded in a tab strip —
+    pin to Mozilla's primary red (#FF0039)."""
     html = render_html(_MINIMAL_DATA)
-    # %233b82f6 is `#3b82f6` URL-encoded — the --accent variable.
-    assert "%233b82f6" in html
+    # %23FF0039 is `#FF0039` URL-encoded.
+    assert "%23FF0039" in html
+
+
+def test_favicon_carries_m_letterform():
+    """A lowercase `m` inside the icon ties it back to the Mozilla
+    wordmark style. Lock the letter so a future cosmetic tweak can't
+    silently turn it back into a generic shape."""
+    html = render_html(_MINIMAL_DATA)
+    assert "text-anchor='middle'>m</text>" in html
