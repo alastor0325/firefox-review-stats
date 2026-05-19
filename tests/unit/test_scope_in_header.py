@@ -88,6 +88,39 @@ def test_header_js_renders_excludes_in_scope_string():
     assert "excluding" in html
 
 
+def test_header_renders_scope_and_time_on_separate_lines():
+    """Header meta is split into two child divs so the scope clause
+    doesn't run into the window/generated-at clause when the exclude
+    list is long. textContent on adjacent block elements gives a
+    natural visual line break without needing CSS to wrap text."""
+    minimal = {
+        "meta": {"path": "dom/media", "group": "g",
+                 "excludes": ["dom/media/webrtc"],
+                 "window_start": "2026-05-01", "window_end": "2026-05-15",
+                 "generated_at": "2026-05-15T00:00:00Z"},
+        "summary": {"total_patches": 0, "group_tagged_patches": 0,
+                    "group_tagged_pct": 0,
+                    "landed_without_team_review": 0,
+                    "landed_without_team_review_pct": 0,
+                    "unique_individuals": 0, "avg_per_week": 0},
+        "concentration": {"top1_share": 0, "top3_share": 0, "top5_share": 0,
+                           "gini": 0, "bus_factor": 0},
+        "within_group_total": [], "sole_reviewer": [],
+        "total_reviews_per_member": [],
+        "weekly_trend": {"weeks": [], "top_reviewers": [],
+                          "all_members": {}, "authored_per_member": {}},
+        "members": {}, "authors": {"top_total": [], "reviewer_matrix": {}},
+        "per_member_authors": {}, "member_authored_counts": {},
+    }
+    html = render_html(minimal)
+    # Two block-level children are appended via appendChild — pin the
+    # createElement('div') calls so a future refactor can't silently
+    # collapse the layout back to one line.
+    assert html.count("document.createElement('div')") >= 2
+    assert "hdrMeta.appendChild(scopeLine)" in html
+    assert "hdrMeta.appendChild(timeLine)" in html
+
+
 def test_header_js_graceful_when_excludes_missing():
     """If `excludes` is undefined / empty, the header must still
     render the path cleanly — no `undefined` leaking through."""

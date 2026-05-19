@@ -473,8 +473,15 @@ const excludes = (DATA.meta.excludes || []);
 const scope = excludes.length
   ? `${DATA.meta.path} (excluding ${excludes.join(', ')})`
   : DATA.meta.path;
-document.getElementById('hdr-meta').textContent =
-  `${scope} · ${DATA.meta.window_start} → ${DATA.meta.window_end} · generated ${DATA.meta.generated_at}`;
+const hdrMeta = document.getElementById('hdr-meta');
+hdrMeta.innerHTML = '';
+const scopeLine = document.createElement('div');
+scopeLine.textContent = scope;
+const timeLine = document.createElement('div');
+timeLine.textContent =
+  `${DATA.meta.window_start} → ${DATA.meta.window_end} · generated ${DATA.meta.generated_at}`;
+hdrMeta.appendChild(scopeLine);
+hdrMeta.appendChild(timeLine);
 
 // Summary grid
 const s = DATA.summary;
