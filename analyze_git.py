@@ -25,7 +25,7 @@ from reviewstats.report import build_report
 _DEFAULT_MONTHS = 6
 _DEFAULT_PATH = "dom/media"
 _DEFAULT_GROUP = "media-playback-reviewers"
-_EXCLUDE_PATHS = ("dom/media/webrtc",)
+_EXCLUDE_PATHS = ("dom/media/webrtc", "dom/media/systemservices")
 _DEFAULT_REPO = "mozilla-firefox/firefox"
 
 
@@ -82,6 +82,7 @@ def main(argv: list[str] | None = None) -> int:
         window_start=window_start,
         window_end=window_end,
         generated_at=now,
+        excludes=_EXCLUDE_PATHS,
     )
 
     json_path = out_dir / "data_git.json"

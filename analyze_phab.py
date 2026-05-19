@@ -38,7 +38,7 @@ from reviewstats.wait_time import (
 _DEFAULT_REPO = "mozilla-firefox/firefox"
 _DEFAULT_PATH = "dom/media"
 _DEFAULT_MONTHS = 6
-_DEFAULT_EXCLUDE = ("dom/media/webrtc",)
+_DEFAULT_EXCLUDE = ("dom/media/webrtc", "dom/media/systemservices")
 _OUT_DIR = Path(__file__).resolve().parent
 _RAW_DIR = _OUT_DIR / "raw_data"
 _HTML_CACHE_DIR = _OUT_DIR / ".phab_html_cache"

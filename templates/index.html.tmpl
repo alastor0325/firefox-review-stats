@@ -469,8 +469,12 @@ function weekStats(weekIndex) {
 
 // Header
 document.getElementById('hdr-group').textContent = DATA.meta.group;
+const excludes = (DATA.meta.excludes || []);
+const scope = excludes.length
+  ? `${DATA.meta.path} (excluding ${excludes.join(', ')})`
+  : DATA.meta.path;
 document.getElementById('hdr-meta').textContent =
-  `${DATA.meta.path} · ${DATA.meta.window_start} → ${DATA.meta.window_end} · generated ${DATA.meta.generated_at}`;
+  `${scope} · ${DATA.meta.window_start} → ${DATA.meta.window_end} · generated ${DATA.meta.generated_at}`;
 
 // Summary grid
 const s = DATA.summary;

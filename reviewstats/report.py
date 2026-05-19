@@ -85,6 +85,7 @@ def build_report(
     window_start: datetime,
     window_end: datetime,
     generated_at: datetime,
+    excludes: tuple[str, ...] = (),
 ) -> dict:
     commits = list(commits)
 
@@ -135,6 +136,7 @@ def build_report(
         "meta": {
             "path": path,
             "group": group,
+            "excludes": list(excludes),
             "window_start": window_start.date().isoformat(),
             "window_end": window_end.date().isoformat(),
             "generated_at": generated_at.isoformat(),
