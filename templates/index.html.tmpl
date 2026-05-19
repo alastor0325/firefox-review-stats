@@ -36,16 +36,74 @@
   .stat .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
   .stat .value { font-size: 22px; font-weight: 600; margin-top: 4px; }
   .stat .sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
-  .stat.expandable { cursor: pointer; transition: background 0.15s; }
-  .stat.expandable:hover { background: #f1f5f9; }
+  .stat.expandable {
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+    border: 1px dashed #cbd5e1;
+    position: relative;
+  }
+  .stat.expandable:hover {
+    background: #eff6ff;
+    border-color: var(--accent);
+    box-shadow: 0 2px 6px rgba(59, 130, 246, 0.15);
+  }
   .stat.expandable .label::after {
     content: " ▸";
-    color: var(--muted);
-    font-size: 10px;
+    color: var(--accent);
+    font-size: 11px;
     display: inline-block;
     transition: transform 0.15s;
+    font-weight: 700;
+  }
+  .stat.expandable.is-open {
+    background: #eff6ff;
+    border-style: solid;
+    border-color: var(--accent);
   }
   .stat.expandable.is-open .label::after { transform: rotate(90deg); }
+  .stat.expandable .hint {
+    font-size: 10px;
+    color: var(--accent);
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 600;
+  }
+  /* Nested detail section — visually subordinate to the summary
+     grid above it. Indented + accent border + smaller heading. */
+  .nested-detail {
+    margin: 8px 0 0 24px;
+    padding: 12px 16px 16px;
+    border-left: 3px solid var(--accent);
+    background: #fbfdff;
+    border-radius: 0 6px 6px 0;
+    position: relative;
+  }
+  .nested-detail h3 {
+    font-size: 13px;
+    margin: 0 0 8px;
+    color: #334155;
+    font-weight: 600;
+  }
+  .nested-detail .chart-box.square { max-width: 320px; margin: 0 auto; }
+  .nested-detail .close-detail {
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    background: none;
+    border: 1px solid #cbd5e1;
+    color: var(--muted);
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    line-height: 1.4;
+  }
+  .nested-detail .close-detail:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: #eff6ff;
+  }
   .chart-box { position: relative; height: 360px; }
   .chart-box.tall { height: 480px; }
   .chart-box.square { height: 360px; max-width: 460px; margin: 0 auto; }
@@ -171,11 +229,12 @@
     <div class="summary-grid" id="summary-grid"></div>
   </section>
 
-  <section id="landed-without-review-section" style="display:none">
-    <h2>Landed without team review — by primary dom/media subdirectory <span class="info" data-tip="Each patch is bucketed by the dom/media subdirectory it changes the most files in. Click a legend entry to hide/show that slice."></span></h2>
+  <div id="landed-without-review-section" class="nested-detail" style="display:none">
+    <button type="button" class="close-detail" id="close-no-team-review" aria-label="Collapse details">✕ Collapse</button>
+    <h3>Breakdown by primary dom/media subdirectory <span class="info" data-tip="Each patch is bucketed by the dom/media subdirectory it changes the most files in. Click a legend entry to hide/show that slice."></span></h3>
     <div class="chart-box square"><canvas id="chart-no-team-review"></canvas></div>
     <div class="footer-note">Helps tell apart 'real playback bypass' from 'lives under dom/media/ but owned by an adjacent team' (e.g. webspeech).</div>
-  </section>
+  </div>
 
   <section>
     <h2>Concentration metrics (6-month totals)</h2>
@@ -511,6 +570,10 @@ sg.appendChild(stat('Listed members reviewing', DATA.within_group_total.length, 
 const noTeamTile = stat('Landed without team review', s.landed_without_team_review, fmtPct(s.landed_without_team_review_pct) + ' of total',
   'Patches in dom/media that landed with neither the media-playback-reviewers group tag nor any listed member as a reviewer. A non-zero value means dom/media changes are landing without team oversight. Click to see the per-subdirectory breakdown.');
 noTeamTile.classList.add('expandable');
+const noTeamHint = document.createElement('div');
+noTeamHint.className = 'hint';
+noTeamHint.textContent = 'Click to view breakdown';
+noTeamTile.appendChild(noTeamHint);
 noTeamTile.addEventListener('click', toggleNoTeamReviewSection);
 sg.appendChild(noTeamTile);
 sg.appendChild(stat('Avg group-tagged / week', fmtNum(s.avg_per_week), null,
@@ -701,6 +764,16 @@ new Chart(document.getElementById('chart-distribution-pie'), {
 // Team view stays focused on headline metrics. Chart is built on
 // first reveal to avoid Chart.js init for users who never expand.
 let noTeamReviewChart = null;
+function setNoTeamReviewOpen(open) {
+  const section = document.getElementById('landed-without-review-section');
+  section.style.display = open ? 'block' : 'none';
+  noTeamTile.classList.toggle('is-open', open);
+  noTeamHint.textContent = open ? 'Click to hide' : 'Click to view breakdown';
+}
+document.getElementById('close-no-team-review').addEventListener('click', (e) => {
+  e.stopPropagation();
+  setNoTeamReviewOpen(false);
+});
 function toggleNoTeamReviewSection() {
   const section = document.getElementById('landed-without-review-section');
   const ntrBySubdir = s.landed_without_team_review_by_subdir || {};
@@ -710,12 +783,10 @@ function toggleNoTeamReviewSection() {
   }
   const open = section.style.display !== 'none' && section.style.display !== '';
   if (open) {
-    section.style.display = 'none';
-    noTeamTile.classList.remove('is-open');
+    setNoTeamReviewOpen(false);
     return;
   }
-  section.style.display = 'block';
-  noTeamTile.classList.add('is-open');
+  setNoTeamReviewOpen(true);
   if (noTeamReviewChart) return;  // already rendered
   const ntrTotal = ntrEntries.reduce((sum, [, n]) => sum + n, 0) || 1;
   const ntrLabels = ntrEntries.map(([k]) => k);

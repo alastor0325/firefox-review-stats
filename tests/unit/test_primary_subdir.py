@@ -142,3 +142,73 @@ def test_pie_renders_when_data_present():
     assert "noTeamTile.addEventListener('click', toggleNoTeamReviewSection)" in html
     # Pie chart is created lazily; one instance only.
     assert "let noTeamReviewChart = null;" in html
+
+
+def test_expandable_tile_has_visible_click_hint():
+    """The tile must carry an explicit 'Click to view' hint inside
+    it — the small ▸ glyph alone isn't enough of a visual cue that
+    the tile is interactive."""
+    from reviewstats.render import render_html
+
+    minimal = {
+        "meta": {"path": "dom/media", "group": "g", "excludes": [],
+                 "window_start": "2026-05-01", "window_end": "2026-05-15",
+                 "generated_at": "2026-05-15T00:00:00Z"},
+        "summary": {"total_patches": 0, "group_tagged_patches": 0,
+                    "group_tagged_pct": 0,
+                    "landed_without_team_review": 0,
+                    "landed_without_team_review_pct": 0,
+                    "landed_without_team_review_by_subdir": {},
+                    "unique_individuals": 0, "avg_per_week": 0},
+        "concentration": {"top1_share": 0, "top3_share": 0, "top5_share": 0,
+                           "gini": 0, "bus_factor": 0},
+        "within_group_total": [], "sole_reviewer": [],
+        "total_reviews_per_member": [],
+        "weekly_trend": {"weeks": [], "top_reviewers": [],
+                          "all_members": {}, "authored_per_member": {}},
+        "members": {}, "authors": {"top_total": [], "reviewer_matrix": {}},
+        "per_member_authors": {}, "member_authored_counts": {},
+    }
+    html = render_html(minimal)
+    assert "Click to view breakdown" in html
+    assert "Click to hide" in html  # set when section is open
+    # CSS that makes the hint visually obvious as a call-to-action.
+    assert ".stat.expandable .hint" in html
+
+
+def test_expanded_section_renders_as_nested_detail_with_close_button():
+    """When the section is open it must look subordinate to the
+    summary grid (smaller heading, indented, accent border-left) and
+    expose a visible 'Collapse' button so the user has a clear way
+    out beyond clicking the tile again."""
+    from reviewstats.render import render_html
+
+    minimal = {
+        "meta": {"path": "dom/media", "group": "g", "excludes": [],
+                 "window_start": "2026-05-01", "window_end": "2026-05-15",
+                 "generated_at": "2026-05-15T00:00:00Z"},
+        "summary": {"total_patches": 0, "group_tagged_patches": 0,
+                    "group_tagged_pct": 0,
+                    "landed_without_team_review": 0,
+                    "landed_without_team_review_pct": 0,
+                    "landed_without_team_review_by_subdir": {},
+                    "unique_individuals": 0, "avg_per_week": 0},
+        "concentration": {"top1_share": 0, "top3_share": 0, "top5_share": 0,
+                           "gini": 0, "bus_factor": 0},
+        "within_group_total": [], "sole_reviewer": [],
+        "total_reviews_per_member": [],
+        "weekly_trend": {"weeks": [], "top_reviewers": [],
+                          "all_members": {}, "authored_per_member": {}},
+        "members": {}, "authors": {"top_total": [], "reviewer_matrix": {}},
+        "per_member_authors": {}, "member_authored_counts": {},
+    }
+    html = render_html(minimal)
+    # Nested visual treatment
+    assert 'class="nested-detail"' in html
+    assert ".nested-detail" in html  # CSS rule
+    assert "border-left: 3px solid var(--accent)" in html
+    # Smaller heading (h3, not h2) inside the detail
+    assert "<h3>Breakdown by primary dom/media subdirectory" in html
+    # Visible close button
+    assert 'id="close-no-team-review"' in html
+    assert "Collapse" in html
