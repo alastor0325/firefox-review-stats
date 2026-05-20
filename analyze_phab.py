@@ -24,6 +24,7 @@ from reviewstats.metrics import iso_week
 from reviewstats.teams import PLAYBACK_TEAM
 from reviewstats.patch_list import build_patch_list
 from reviewstats.phab_html import (
+    Event,
     bulk_fetch_async,
     extract_author_handle,
     first_member_review_action,
@@ -100,36 +101,26 @@ def _load_existing(d_number: str) -> dict | None:
         return None
 
 
-def _process_html(html: str, d_number: str, *, members: frozenset[str]) -> dict:
+def parse_html_to_raw(html: str, d_number: str) -> dict:
+    """Parse a Phab revision page into a team-agnostic dict.
+
+    The returned shape is what we persist to raw_data/D<n>.json so
+    the same file is reusable for any team that has this revision
+    in scope. Team-specific metrics (queue anchor, first-member
+    actions) are NOT included here — they're recomputed at
+    aggregation time by `compute_team_metrics`.
+
+    Fields are intentionally limited to:
+      * d_number / author / created_at / events
+      * time_to_react_seconds, time_to_accept_seconds — the
+        "first ANY non-author non-bot" anchor, which doesn't
+        depend on which team is asking.
+    """
     events = parse_timeline(html)
-    # Author handle from the page header — always present, even for
-    # older revisions whose `created` event has paged off the timeline.
-    # Fall back to the create event's actor as a sanity check.
     create = next((e for e in events if e.action == "create"), None)
     author = extract_author_handle(html) or (create.actor if create else None)
-    first = first_member_review_action(events, members=members, author=author)
     created_at = create.timestamp if create else None
-    wait_seconds = (
-        int((first.timestamp - created_at).total_seconds())
-        if (first and created_at)
-        else None
-    )
 
-    # First accept by a listed member (subset of review actions).
-    first_accept = None
-    for e in events:
-        if (
-            e.action == "accept"
-            and e.actor != author
-            and e.actor in members
-        ):
-            first_accept = e
-            break
-
-    # From-creation wait by ANY non-author non-bot reviewer (used in
-    # Member Profile per-author wait-time tiles — answers "how long
-    # does the author have to wait for a reaction on their patches,
-    # regardless of which reviewer ended up looking").
     first_any_react = first_review_action(events, author=author)
     first_any_accept = first_review_action(events, author=author, action="accept")
     time_to_react_seconds = (
@@ -143,30 +134,6 @@ def _process_html(html: str, d_number: str, *, members: frozenset[str]) -> dict:
         else None
     )
 
-    # Queue anchor: latest `add-reviewer: media-playback-reviewers`
-    # event preceding the first member reaction. Answers "once the
-    # team was put on the patch, how long until someone reacted /
-    # accepted?"
-    queue_added_at = None
-    queue_seconds = None
-    queue_to_accept_seconds = None
-    if first:
-        for e in events:
-            if e.timestamp > first.timestamp:
-                break
-            if (
-                e.action == "add-reviewer"
-                and e.target == "media-playback-reviewers"
-            ):
-                queue_added_at = e.timestamp
-        if queue_added_at:
-            queue_seconds = int(
-                (first.timestamp - queue_added_at).total_seconds()
-            )
-            if first_accept:
-                queue_to_accept_seconds = int(
-                    (first_accept.timestamp - queue_added_at).total_seconds()
-                )
     return {
         "d_number": d_number,
         "author": author,
@@ -180,13 +147,75 @@ def _process_html(html: str, d_number: str, *, members: frozenset[str]) -> dict:
             }
             for e in events
         ],
+        "time_to_react_seconds": time_to_react_seconds,
+        "time_to_accept_seconds": time_to_accept_seconds,
+    }
+
+
+def compute_team_metrics(raw: dict, *, group: str, members: frozenset[str]) -> dict:
+    """Derive team-specific metrics from a team-agnostic raw entry.
+
+    Returns the dict shape that the wait-time aggregator + Wait Queue
+    builders consume — `queue_added_at`, `queue_seconds`,
+    `queue_to_accept_seconds`, `first_member_review`, `first_member_accept`.
+
+    Called per (revision, team) at aggregation time; the result is
+    NOT persisted, so adding/removing a team or editing its roster
+    only requires recomputing in memory, never refetching from Phab.
+    """
+    author = raw.get("author")
+    created_at_iso = raw.get("created_at")
+    created_at = (
+        datetime.fromisoformat(created_at_iso) if created_at_iso else None
+    )
+    events = [
+        Event(
+            timestamp=datetime.fromisoformat(e["ts"]),
+            actor=e.get("actor") or "",
+            action=e["action"],
+            raw_verb="",  # not persisted; not used by review-action helpers
+            target=e.get("target"),
+        )
+        for e in raw.get("events", [])
+    ]
+    first = first_member_review_action(events, members=members, author=author)
+    wait_seconds = (
+        int((first.timestamp - created_at).total_seconds())
+        if (first and created_at)
+        else None
+    )
+    first_accept = None
+    for e in events:
+        if (
+            e.action == "accept"
+            and e.actor != author
+            and e.actor in members
+        ):
+            first_accept = e
+            break
+    queue_added_at = None
+    queue_seconds = None
+    queue_to_accept_seconds = None
+    if first:
+        for e in events:
+            if e.timestamp > first.timestamp:
+                break
+            if e.action == "add-reviewer" and e.target == group:
+                queue_added_at = e.timestamp
+        if queue_added_at:
+            queue_seconds = int(
+                (first.timestamp - queue_added_at).total_seconds()
+            )
+            if first_accept:
+                queue_to_accept_seconds = int(
+                    (first_accept.timestamp - queue_added_at).total_seconds()
+                )
+    return {
         "queue_added_at": (
             queue_added_at.isoformat() if queue_added_at else None
         ),
         "queue_seconds": queue_seconds,
         "queue_to_accept_seconds": queue_to_accept_seconds,
-        "time_to_react_seconds": time_to_react_seconds,
-        "time_to_accept_seconds": time_to_accept_seconds,
         "first_member_accept": (
             {
                 "actor": first_accept.actor,
@@ -206,6 +235,17 @@ def _process_html(html: str, d_number: str, *, members: frozenset[str]) -> dict:
             else None
         ),
     }
+
+
+def _process_html(html: str, d_number: str, *, group: str, members: frozenset[str]) -> dict:
+    """Backwards-compatible combiner — returns the full per-revision
+    dict (agnostic + team-specific) for the supplied team. Kept so
+    on-disk raw_data files written before the M9 split don't have to
+    be regenerated; new writes use `parse_html_to_raw` directly.
+    """
+    raw = parse_html_to_raw(html, d_number)
+    team_metrics = compute_team_metrics(raw, group=group, members=members)
+    return {**raw, **team_metrics}
 
 
 def main() -> int:
@@ -272,7 +312,7 @@ def main() -> int:
     for d in from_cache:
         try:
             html = _html_cache_path(d).read_text(encoding="utf-8")
-            payload = _process_html(html, d, members=MEMBER_IDS)
+            payload = _process_html(html, d, group=_DEFAULT_TEAM.group, members=MEMBER_IDS)
             _raw_path(d).write_text(
                 json.dumps(payload, indent=2), encoding="utf-8"
             )
@@ -292,7 +332,7 @@ def main() -> int:
             _HTML_CACHE_DIR.mkdir(parents=True, exist_ok=True)
             _html_cache_path(d).write_text(result, encoding="utf-8")
             try:
-                payload = _process_html(result, d, members=MEMBER_IDS)
+                payload = _process_html(result, d, group=_DEFAULT_TEAM.group, members=MEMBER_IDS)
                 _raw_path(d).write_text(
                     json.dumps(payload, indent=2), encoding="utf-8"
                 )
