@@ -80,19 +80,40 @@ def routing_breakdown(commits: Iterable[_CommitLike], *, group: str) -> dict[str
     }
 
 
-def primary_subdir(files: list[str], *, path: str) -> str | None:
+def primary_subdir(
+    files: list[str],
+    *,
+    path: str | None = None,
+    paths: tuple[str, ...] | None = None,
+) -> str | None:
     """Pick the single bucket that best represents a commit, given the
-    files it touched and the root `path` we're scoped to (e.g.
-    'dom/media').
+    files it touched and the root path(s) we're scoped to.
 
-    Rule: among files under `path/`, return the immediate subdirectory
-    with the most files. Top-level files (directly under `path/`) bucket
-    as '(top-level)'. Ties broken alphabetically — deterministic so the
-    classification is stable across regens.
+    Single-root mode (`path="dom/media"`): return the immediate
+    subdirectory of `path` with the most files changed. Top-level
+    files (directly under `path/`) bucket as '(top-level)'.
 
-    Returns None when no file lies under `path/` (only possible if the
-    GitHub `files` array was truncated past the 300-entry cap).
+    Multi-root mode (`paths=("dom/media/webrtc", "...")`): return the
+    root path itself (e.g. "dom/media/webrtc") that the commit
+    touches most. Coarser than splitting by subdir-within-each-root,
+    intentional — for a multi-path team like WebRTC the more useful
+    question is "did this land in webrtc proper, systemservices, or
+    libwebrtc?", not "which audio sub-subdir".
+
+    Ties broken alphabetically for determinism. Returns None when no
+    file lies under any of the supplied path(s).
+
+    Pass exactly one of `path` or `paths` — both is a programming
+    error (TypeError).
     """
+    if (path is None) == (paths is None):
+        raise TypeError("Pass exactly one of `path` or `paths`")
+    if path is not None:
+        return _primary_subdir_single(files, path=path)
+    return _primary_root(files, paths=paths)
+
+
+def _primary_subdir_single(files: list[str], *, path: str) -> str | None:
     counts: Counter[str] = Counter()
     prefix = path.rstrip("/") + "/"
     for fn in files:
@@ -108,20 +129,39 @@ def primary_subdir(files: list[str], *, path: str) -> str | None:
     return candidates[0]
 
 
+def _primary_root(files: list[str], *, paths: tuple[str, ...]) -> str | None:
+    # Sort longer prefixes first so 'dom/media/webrtc' wins over
+    # 'dom/media' when both are in the team's paths.
+    prefixes = sorted(paths, key=len, reverse=True)
+    counts: Counter[str] = Counter()
+    for fn in files:
+        for p in prefixes:
+            prefix = p.rstrip("/") + "/"
+            if fn.startswith(prefix) or fn == p:
+                counts[p] += 1
+                break
+    if not counts:
+        return None
+    best_count = max(counts.values())
+    candidates = sorted(b for b, c in counts.items() if c == best_count)
+    return candidates[0]
+
+
 def classify_landed_without_team_review_by_subdir(
     bad_commits: list[tuple[_CommitLike, list[str]]],
     *,
-    path: str,
+    path: str | None = None,
+    paths: tuple[str, ...] | None = None,
 ) -> dict[str, int]:
-    """Aggregate (commit, files_changed) pairs into {subdir: count}.
+    """Aggregate (commit, files_changed) pairs into {bucket: count}.
 
-    Each commit contributes to exactly one subdir, picked by
-    `primary_subdir`. Useful for the team-view pie chart that splits
-    the 'Landed without team review' total by where the patches sit.
+    Bucket scheme follows `primary_subdir`: single-root mode buckets
+    by immediate subdir; multi-root mode buckets by which root path
+    each commit touches most.
     """
     out: Counter[str] = Counter()
     for _commit, files in bad_commits:
-        sub = primary_subdir(files, path=path)
+        sub = primary_subdir(files, path=path, paths=paths)
         if sub is None:
             out["(unknown)"] += 1
         else:
