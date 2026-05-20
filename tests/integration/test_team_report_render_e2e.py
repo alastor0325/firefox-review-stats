@@ -203,8 +203,10 @@ class TestWebRtcIntegrationMultiPath:
 
     def test_header_meta_line_lists_both_paths(self):
         """The page-header JS joins meta.paths with ', ' and writes it
-        into #hdr-paths. The actual JS runs in the browser, but the
-        template + embedded data should both surface the value."""
+        into the meta subtitle (hdr-meta). The H1 now shows just the
+        group — paths only appear in the subtitle. The actual JS
+        runs in the browser, but the embedded data must surface the
+        path strings somewhere in the page."""
         html, _ = _render_for(
             self._commits(), group=WEBRTC_GROUP,
             paths=self.paths, members=self.members,

@@ -288,7 +288,7 @@
 
 <div class="top-bar">
   <header>
-    <h1><a href="../index.html" style="color:inherit;text-decoration:none;opacity:0.6;font-weight:400;margin-right:8px" title="Back to team picker">←</a><span id="hdr-paths"></span> Reviewer Load — <span id="hdr-group"></span></h1>
+    <h1><a href="../index.html" style="color:inherit;text-decoration:none;opacity:0.6;font-weight:400;margin-right:8px" title="Back to team picker">←</a>Reviewer Load — <span id="hdr-group"></span></h1>
     <div class="meta" id="hdr-meta"></div>
   </header>
   <nav class="toggle-bar" aria-label="View and period selectors">
@@ -646,8 +646,9 @@ const excludes = (DATA.meta.excludes || []);
 // owns). meta.path is the legacy singular field, kept for older
 // data files; falls back to that when meta.paths is missing.
 const watched = (DATA.meta.paths || [DATA.meta.path]).join(', ');
-document.getElementById('hdr-paths').textContent = watched;
-document.title = `${watched} — ${DATA.meta.group}`;
+// Title shows the group; the paths live in the meta subtitle so
+// the H1 stays readable when a team owns several roots.
+document.title = `Reviewer Load — ${DATA.meta.group}`;
 const scope = excludes.length
   ? `${watched} (excluding ${excludes.join(', ')})`
   : watched;

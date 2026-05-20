@@ -56,21 +56,26 @@ def test_template_title_is_generic_and_filled_in_via_js():
     assert "document.title = " in html
 
 
-def test_h1_is_built_from_meta_paths_and_meta_group():
-    """The visible H1 must show what paths the dashboard is
-    monitoring + the review group, both pulled from meta. No
-    hardcoded 'dom/media' from when the dashboard was playback-
-    only."""
+def test_h1_shows_group_only_paths_live_in_subtitle():
+    """The H1 reads 'Reviewer Load — <group>' — short and stable
+    across multi-path teams. The paths line lives in the meta
+    subtitle below, so repeating them in the H1 would be redundant
+    and hard to read when a team owns several roots."""
     html = render_html(_minimal_data(
         paths=["dom/media/webrtc", "dom/media/systemservices"],
         group="webrtc-reviewers",
     ))
-    # The hardcoded 'dom/media Reviewer Load' string is gone.
+    # No hardcoded path string in the H1 anywhere.
     assert "dom/media Reviewer Load" not in html
-    # Both halves of the H1 are JS-populated.
-    assert "id=\"hdr-paths\"" in html
+    # The group half is JS-populated; the paths half no longer
+    # appears inside the H1.
     assert "id=\"hdr-group\"" in html
-    assert "hdr-paths').textContent =" in html
+    assert "id=\"hdr-paths\"" not in html, (
+        "Paths shouldn't appear in the H1 — they live in the "
+        "subtitle (hdr-meta) only."
+    )
+    # The static H1 text is the team-agnostic 'Reviewer Load — '.
+    assert "Reviewer Load — <span id=\"hdr-group\">" in html
 
 
 def test_header_has_back_link_to_landing_picker():
