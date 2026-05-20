@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>dom/media Reviewer Load — media-playback-reviewers</title>
+<title>Reviewer Load Dashboard</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='12' fill='%23FF0039'/><text x='32' y='49' font-family='-apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif' font-weight='900' font-size='52' fill='white' text-anchor='middle'>m</text></svg>">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
@@ -288,7 +288,7 @@
 
 <div class="top-bar">
   <header>
-    <h1>dom/media Reviewer Load — <span id="hdr-group"></span></h1>
+    <h1><a href="../index.html" style="color:inherit;text-decoration:none;opacity:0.6;font-weight:400;margin-right:8px" title="Back to team picker">←</a><span id="hdr-paths"></span> Reviewer Load — <span id="hdr-group"></span></h1>
     <div class="meta" id="hdr-meta"></div>
   </header>
   <nav class="toggle-bar" aria-label="View and period selectors">
@@ -646,6 +646,8 @@ const excludes = (DATA.meta.excludes || []);
 // owns). meta.path is the legacy singular field, kept for older
 // data files; falls back to that when meta.paths is missing.
 const watched = (DATA.meta.paths || [DATA.meta.path]).join(', ');
+document.getElementById('hdr-paths').textContent = watched;
+document.title = `${watched} — ${DATA.meta.group}`;
 const scope = excludes.length
   ? `${watched} (excluding ${excludes.join(', ')})`
   : watched;
