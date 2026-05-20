@@ -15,6 +15,7 @@ test file — this one only certifies the playback team didn't drift.
 import pytest
 
 from reviewstats.teams import (
+    GFX_TEAM,
     PLAYBACK_TEAM,
     TEAMS,
     Team,
@@ -129,6 +130,80 @@ def test_playback_and_webrtc_paths_are_disjoint():
         )
     # WebRTC's paths don't include the bare dom/media root.
     assert "dom/media" not in WEBRTC_TEAM.paths
+
+
+def test_gfx_team_matches_user_spec():
+    """Scope from the design discussion: gfx + image + dom/canvas +
+    dom/webgpu (Option A — what gfx-reviewers actually review day to
+    day). Vendored upstreams excluded; gfx/qcms kept in scope."""
+    assert GFX_TEAM.slug == "gfx"
+    assert GFX_TEAM.group == "gfx-reviewers"
+    assert GFX_TEAM.paths == ("gfx", "image", "dom/canvas", "dom/webgpu")
+    assert GFX_TEAM.excludes == (
+        "gfx/angle",
+        "gfx/cairo",
+        "gfx/skia",
+        "gfx/harfbuzz",
+        "gfx/ots",
+        "gfx/sfntly",
+        "gfx/graphite2",
+    )
+    # qcms intentionally NOT excluded — maintained in-tree, not a
+    # bulk-import sync.
+    assert "gfx/qcms" not in GFX_TEAM.excludes
+
+
+def test_gfx_team_roster_matches_phab_project_screenshot():
+    """13 active members from the Phab project members page. The
+    14th member is inactive and intentionally not listed."""
+    assert GFX_TEAM.members == {
+        "jrmuizel": "Jeff Muizelaar",
+        "nical": "Nicolas Silva",
+        "gw": "Glenn Watson",
+        "jnicol": "Jamie Nicol",
+        "aosmond": "Andrew Osmond",
+        "jimb": "Jim Blandy",
+        "bradwerth": "Brad Werth",
+        "lsalzman": "Lee Salzman",
+        "sotaro": "Sotaro Ikeda",
+        "ahale": "Ashley Hale",
+        "ErichDonGubler": "Erich Gubler",
+        "teoxoy": "Teodor Tanasoaia",
+        "tnikkel": "Timothy Nikkel",
+    }
+    assert len(GFX_TEAM.members) == 13
+
+
+def test_gfx_is_registered():
+    assert TEAMS["gfx"] is GFX_TEAM
+    assert get_team("gfx") is GFX_TEAM
+
+
+def test_gfx_paths_do_not_overlap_with_playback_or_webrtc():
+    """gfx's roots are entirely disjoint from playback's `dom/media`
+    and webrtc's `dom/media/webrtc` + `dom/media/systemservices`.
+    A commit can't end up double-counted in two teams' git-side
+    reports just because the path scopes overlap."""
+    other_paths = set(PLAYBACK_TEAM.paths) | set(WEBRTC_TEAM.paths)
+    for gp in GFX_TEAM.paths:
+        for op in other_paths:
+            assert not gp.startswith(op + "/"), (
+                f"gfx path {gp!r} is nested under {op!r} (other team)."
+            )
+            assert not op.startswith(gp + "/"), (
+                f"Other team path {op!r} is nested under gfx {gp!r}."
+            )
+            assert gp != op, (
+                f"gfx and another team share root {gp!r}."
+            )
+
+
+def test_aosmond_listed_in_both_playback_and_gfx():
+    """Documented overlap: aosmond reviews image work in both trees.
+    Pin it explicitly so a future edit that drops him from one
+    roster does so deliberately, not accidentally."""
+    assert "aosmond" in PLAYBACK_TEAM.members
+    assert "aosmond" in GFX_TEAM.members
 
 
 def test_members_dict_is_a_plain_dict_for_easy_consumption():

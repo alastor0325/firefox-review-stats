@@ -71,9 +71,55 @@ WEBRTC_TEAM = Team(
 )
 
 
+GFX_TEAM = Team(
+    slug="gfx",
+    display_name="gfx-reviewers",
+    group="gfx-reviewers",
+    # Scope matches what the gfx team actually reviews day-to-day:
+    # the gfx tree plus image (decoders), dom/canvas, and dom/webgpu.
+    # Restricting to gfx/ alone would miss image (aosmond, tnikkel),
+    # canvas, and WebGPU (ErichDonGubler, teoxoy) work that this
+    # roster regularly approves.
+    paths=("gfx", "image", "dom/canvas", "dom/webgpu"),
+    # Vendored upstreams: bulk auto-sync, not really reviewed in the
+    # usual sense — same reasoning as `third_party/libwebrtc` for
+    # the WebRTC team. qcms intentionally kept in scope (maintained
+    # in-tree, not bulk-synced).
+    excludes=(
+        "gfx/angle",
+        "gfx/cairo",
+        "gfx/skia",
+        "gfx/harfbuzz",
+        "gfx/ots",
+        "gfx/sfntly",
+        "gfx/graphite2",
+    ),
+    # Source: Phab project members page (13 active members; 14th is
+    # inactive and intentionally not listed). aosmond also appears
+    # in PLAYBACK_TEAM — the two rosters are independent dicts; each
+    # dashboard counts his reviews only within its own paths.
+    members={
+        "jrmuizel": "Jeff Muizelaar",
+        "nical": "Nicolas Silva",
+        "gw": "Glenn Watson",
+        "jnicol": "Jamie Nicol",
+        "aosmond": "Andrew Osmond",
+        "jimb": "Jim Blandy",
+        "bradwerth": "Brad Werth",
+        "lsalzman": "Lee Salzman",
+        "sotaro": "Sotaro Ikeda",
+        "ahale": "Ashley Hale",
+        "ErichDonGubler": "Erich Gubler",
+        "teoxoy": "Teodor Tanasoaia",
+        "tnikkel": "Timothy Nikkel",
+    },
+)
+
+
 TEAMS: dict[str, Team] = {
     PLAYBACK_TEAM.slug: PLAYBACK_TEAM,
     WEBRTC_TEAM.slug: WEBRTC_TEAM,
+    GFX_TEAM.slug: GFX_TEAM,
 }
 
 
