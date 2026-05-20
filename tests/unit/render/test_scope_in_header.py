@@ -117,8 +117,8 @@ def test_header_renders_scope_and_time_on_separate_lines():
     # createElement('div') calls so a future refactor can't silently
     # collapse the layout back to one line.
     assert html.count("document.createElement('div')") >= 2
-    assert "hdrMeta.appendChild(scopeLine)" in html
-    assert "hdrMeta.appendChild(timeLine)" in html
+    assert "headerMeta.appendChild(scopeLine)" in html
+    assert "headerMeta.appendChild(timeLine)" in html
 
 
 def test_header_js_graceful_when_excludes_missing():

@@ -288,8 +288,8 @@
 
 <div class="top-bar">
   <header>
-    <h1><a href="../index.html" style="color:inherit;text-decoration:none;opacity:0.6;font-weight:400;margin-right:8px" title="Back to team picker">←</a>Reviewer Load — <span id="hdr-group"></span></h1>
-    <div class="meta" id="hdr-meta"></div>
+    <h1><a href="../index.html" style="color:inherit;text-decoration:none;opacity:0.6;font-weight:400;margin-right:8px" title="Back to team picker">←</a>Reviewer Load — <span id="header-group"></span></h1>
+    <div class="meta" id="header-meta"></div>
   </header>
   <nav class="toggle-bar" aria-label="View and period selectors">
     <div class="toggle-group" role="tablist" aria-label="View">
@@ -321,9 +321,9 @@
 
   <div id="landed-without-review-section" class="nested-detail" style="display:none">
     <button type="button" class="close-detail" id="close-no-team-review" aria-label="Collapse details">✕ Collapse</button>
-    <h3>Breakdown by primary dom/media subdirectory <span class="info" data-tip="Each patch is bucketed by the dom/media subdirectory it changes the most files in. Click a legend entry to hide/show that slice."></span></h3>
+    <h3>Breakdown by primary subdirectory <span class="info" data-tip="Each patch is bucketed by the subdirectory under the team's owned paths it changes the most files in. Click a legend entry to hide/show that slice."></span></h3>
     <div class="chart-box square"><canvas id="chart-no-team-review"></canvas></div>
-    <div class="footer-note">Helps tell apart 'real playback bypass' from 'lives under dom/media/ but owned by an adjacent team' (e.g. webspeech).</div>
+    <div class="footer-note">Helps tell apart real team-scope bypasses from patches that live in the team's tree but are owned by an adjacent team.</div>
     <details class="sub-details" id="no-team-review-list-details">
       <summary>Full patch list (<span id="no-team-review-list-count">0</span>)</summary>
       <div id="no-team-review-list-container"></div>
@@ -337,7 +337,7 @@
   </section>
 
   <section>
-    <h2>Within-group distribution — listed members only <span class="info" data-tip="Reviews per listed member on patches tagged with media-playback-reviewers. Only the 8 rotation members are counted; outside reviewers are excluded."></span></h2>
+    <h2>Within-group distribution — listed members only <span class="info" data-tip="Reviews per listed member on patches tagged with the team's review group. Only roster members are counted; outside reviewers are excluded."></span></h2>
     <div class="split">
       <div class="chart-box"><canvas id="chart-distribution"></canvas></div>
       <div class="chart-box square"><canvas id="chart-distribution-pie"></canvas></div>
@@ -351,15 +351,15 @@
   </section>
 
   <section>
-    <h2>Total reviews per member (sole + co-reviewed, any tag) <span class="info" data-tip="All dom/media patches each member reviewed, split by whether the patch was tagged with media-playback-reviewers (blue, &quot;our&quot; work) or not (gray, drive-by / cross-domain)."></span></h2>
+    <h2>Total reviews per member (sole + co-reviewed, any tag) <span class="info" data-tip="All in-scope patches each member reviewed, split by whether the patch was tagged with the team's review group (blue, &quot;our&quot; work) or not (gray, drive-by / cross-domain)."></span></h2>
     <div class="chart-box"><canvas id="chart-total-reviews"></canvas></div>
-    <div class="footer-note">All dom/media patches each member reviewed in the window. Blue = patches tagged with <code>media-playback-reviewers</code>; gray = other dom/media patches (drive-by / cross-domain reviews).</div>
+    <div class="footer-note">All in-scope patches each member reviewed in the window. Blue = patches tagged with the team's review group; gray = other in-scope patches (drive-by / cross-domain reviews).</div>
   </section>
 
   <section>
-    <h2>Top patch authors in dom/media <span class="info" data-tip="Authors of patches touching dom/media in the window. Aliases collapsed (e.g. alastor0325 / alwu → Alastor Wu)."></span></h2>
+    <h2>Top patch authors <span class="info" data-tip="Authors of in-scope patches in the window. Aliases collapsed (e.g. alastor0325 / alwu → Alastor Wu)."></span></h2>
     <div class="chart-box tall"><canvas id="chart-authors"></canvas></div>
-    <div class="footer-note">All authors of patches touching dom/media in the window (any reviewer).</div>
+    <div class="footer-note">All authors of in-scope patches in the window (any reviewer).</div>
   </section>
 
   <section>
@@ -413,11 +413,11 @@
   <section>
     <h2>Authors whose patches <span id="profile-name-2"></span> reviewed <span class="info" data-tip="For the selected member, count of patches reviewed grouped by author of those patches. Top 15."></span></h2>
     <div class="chart-box tall"><canvas id="chart-profile-authors"></canvas></div>
-    <div class="footer-note">Includes all dom/media patches the member reviewed (group-tagged and non-tagged), with author aliases collapsed.</div>
+    <div class="footer-note">Includes all in-scope patches the member reviewed (group-tagged and non-tagged), with author aliases collapsed.</div>
   </section>
 
   <section id="profile-wait-section" style="display:none">
-    <h2>Wait time when <span id="profile-name-3"></span> is the patch author <span class="info" data-tip="For every patch this member authored: time from revision creation in Phabricator to the first review action by any non-author, non-bot reviewer. Covers all their patches — not just the ones that went through media-playback-reviewers."></span></h2>
+    <h2>Wait time when <span id="profile-name-3"></span> is the patch author <span class="info" data-tip="For every patch this member authored: time from revision creation in Phabricator to the first review action by any non-author, non-bot reviewer. Covers all their patches — not just the ones that went through the team's review group."></span></h2>
     <div class="summary-grid" id="profile-wait-grid"></div>
     <div class="footer-note">Anchored at revision creation. "Time to react" = first comment / accept / request-changes by any non-author, non-bot reviewer. "Time to accept" = first accept by any non-author, non-bot reviewer.</div>
   </section>
@@ -640,7 +640,7 @@ function weekStats(weekIndex) {
 }
 
 // Header
-document.getElementById('hdr-group').textContent = DATA.meta.group;
+document.getElementById('header-group').textContent = DATA.meta.group;
 const excludes = (DATA.meta.excludes || []);
 // meta.paths is the multi-root list (one or more roots the team
 // owns). meta.path is the legacy singular field, kept for older
@@ -652,27 +652,29 @@ document.title = `Reviewer Load — ${DATA.meta.group}`;
 const scope = excludes.length
   ? `${watched} (excluding ${excludes.join(', ')})`
   : watched;
-const hdrMeta = document.getElementById('hdr-meta');
-hdrMeta.innerHTML = '';
+const headerMeta = document.getElementById('header-meta');
+headerMeta.innerHTML = '';
 const scopeLine = document.createElement('div');
 scopeLine.textContent = scope;
 const timeLine = document.createElement('div');
 timeLine.textContent =
   `${DATA.meta.window_start} → ${DATA.meta.window_end} · generated ${DATA.meta.generated_at}`;
-hdrMeta.appendChild(scopeLine);
-hdrMeta.appendChild(timeLine);
+headerMeta.appendChild(scopeLine);
+headerMeta.appendChild(timeLine);
 
 // Summary grid
 const s = DATA.summary;
 const sg = document.getElementById('summary-grid');
-sg.appendChild(stat('Total dom/media patches', s.total_patches, null,
-  'All landings touching dom/media in the last 6 months, excluding dom/media/webrtc, Lando-bot, Revert, merge, and code-format commits.'));
+sg.appendChild(stat('Total in-scope patches', s.total_patches, null,
+  `All landings touching ${watched} in the last 6 months` +
+  (excludes.length ? `, excluding ${excludes.join(', ')}` : '') +
+  ', plus Lando-bot / Revert / merge / code-format commits skipped.'));
 sg.appendChild(stat('Tagged with group', s.group_tagged_patches, fmtPct(s.group_tagged_pct) + ' of total',
-  'Patches whose r= line includes "media-playback-reviewers".'));
+  `Patches whose r= line includes "${DATA.meta.group}".`));
 sg.appendChild(stat('Listed members reviewing', DATA.within_group_total.length, 'of ' + Object.keys(DATA.members).length + ' on the list',
   'How many listed members reviewed at least one patch in the 6-month window.'));
 const noTeamTile = stat('Landed without team review', s.landed_without_team_review, fmtPct(s.landed_without_team_review_pct) + ' of total',
-  'Patches in dom/media that landed with neither the media-playback-reviewers group tag nor any listed member as a reviewer. A non-zero value means dom/media changes are landing without team oversight. Click to see the per-subdirectory breakdown.');
+  `In-scope patches that landed with neither the ${DATA.meta.group} group tag nor any listed member as a reviewer. A non-zero value means changes in the team's paths are landing without team oversight. Click to see the per-subdirectory breakdown.`);
 noTeamTile.classList.add('expandable');
 const noTeamHint = document.createElement('div');
 noTeamHint.className = 'hint';
@@ -808,12 +810,12 @@ new Chart(document.getElementById('chart-total-reviews'), {
     labels: DATA.total_reviews_per_member.map(r => r.name),
     datasets: [
       {
-        label: 'media-playback-tagged',
+        label: `${DATA.meta.group}-tagged`,
         data: DATA.total_reviews_per_member.map(r => r.in_group),
         backgroundColor: '#3b82f6',
       },
       {
-        label: 'other dom/media',
+        label: 'other in-scope',
         data: DATA.total_reviews_per_member.map(r => r.out_of_group),
         backgroundColor: '#9ca3af',
       },
@@ -1224,7 +1226,7 @@ if (PHAB_DATA && PHAB_DATA.n > 0) {
       'Same source / same alias collapse as the 6-Month View "Top patch authors" chart.'));
     grid.appendChild(stat('Total reviews (any tag)', total.total,
       `${total.in_group} in-group · ${total.out_of_group} other`,
-      'All dom/media patches this member reviewed in the 6-month window.'));
+      'All in-scope patches this member reviewed in the 6-month window.'));
     grid.appendChild(stat('Sole-reviewer patches', sole.count, null,
       'Patches where this member was the only reviewer named (no group, no co-reviewer).'));
     grid.appendChild(stat('Rank (within-group)',

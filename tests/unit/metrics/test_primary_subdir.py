@@ -207,8 +207,10 @@ def test_expanded_section_renders_as_nested_detail_with_close_button():
     assert 'class="nested-detail"' in html
     assert ".nested-detail" in html  # CSS rule
     assert "border-left: 3px solid var(--accent)" in html
-    # Smaller heading (h3, not h2) inside the detail
-    assert "<h3>Breakdown by primary dom/media subdirectory" in html
+    # Smaller heading (h3, not h2) inside the detail.
+    # Heading is team-agnostic now — the same template renders for
+    # playback, webrtc, and gfx.
+    assert "<h3>Breakdown by primary subdirectory" in html
     # Visible close button
     assert 'id="close-no-team-review"' in html
     assert "Collapse" in html

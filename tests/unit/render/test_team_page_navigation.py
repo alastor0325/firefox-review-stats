@@ -69,13 +69,19 @@ def test_h1_shows_group_only_paths_live_in_subtitle():
     assert "dom/media Reviewer Load" not in html
     # The group half is JS-populated; the paths half no longer
     # appears inside the H1.
-    assert "id=\"hdr-group\"" in html
-    assert "id=\"hdr-paths\"" not in html, (
+    assert "id=\"header-group\"" in html
+    assert "id=\"header-paths\"" not in html, (
         "Paths shouldn't appear in the H1 — they live in the "
-        "subtitle (hdr-meta) only."
+        "subtitle (header-meta) only."
     )
+    # The 'hdr-' prefix used to live here and is genuinely ambiguous
+    # in a media/graphics dashboard (reads as 'High Dynamic Range').
+    # Pin the rename so a future revert doesn't quietly bring back
+    # the misleading abbreviation.
+    assert "hdr-group" not in html
+    assert "hdr-meta" not in html
     # The static H1 text is the team-agnostic 'Reviewer Load — '.
-    assert "Reviewer Load — <span id=\"hdr-group\">" in html
+    assert "Reviewer Load — <span id=\"header-group\">" in html
 
 
 def test_header_has_back_link_to_landing_picker():
