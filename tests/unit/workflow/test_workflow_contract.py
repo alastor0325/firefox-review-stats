@@ -97,3 +97,32 @@ def test_commits_landing_index_at_root(workflow_text):
     # specific git add line by matching the surrounding shape.
     assert "git add" in workflow_text
     assert "index.html" in workflow_text
+
+
+def test_runs_integration_tests(workflow_text):
+    """tests/integration/ contains the end-to-end value-side checks
+    (build_report → render_html assertions). A workflow that only
+    runs tests/unit/ would silently skip them. Pin the broader
+    `pytest tests/` invocation so adding more integration tests
+    in the future doesn't require a workflow edit."""
+    assert "pytest tests/" in workflow_text, (
+        "Workflow must run `pytest tests/` (not just tests/unit/) "
+        "so the integration suite runs in CI."
+    )
+
+
+def test_git_add_line_does_not_stage_root_author_patches(workflow_text):
+    """dump_author_patches.py now writes per-team
+    `<slug>/author_patches.txt`. The old root-level path no longer
+    exists — staging it in `git add` would be a no-op and a
+    maintenance trap. The per-team files are covered by `<slug>/`."""
+    git_add_lines = [
+        line for line in workflow_text.splitlines()
+        if line.lstrip().startswith("git add")
+    ]
+    assert git_add_lines, "Workflow has no git-add line at all?"
+    for line in git_add_lines:
+        assert "author_patches.txt" not in line, (
+            "git add still references root author_patches.txt — "
+            "per-team files are picked up by `<slug>/`."
+        )

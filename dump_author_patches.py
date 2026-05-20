@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Dump a hierarchical per-author patch listing for verification.
+"""Dump hierarchical per-author patch listings — one per registered
+team — for verification.
 
 Fetches commits directly from the GitHub mirror (no local clone).
-Same filter rules as analyze_git.py: webrtc subdir, Lando-author,
-merge, Revert subjects all skipped. Output: author_patches.txt in the
-project root.
+Same filter rules as analyze_git.py: team-specific excludes,
+Lando-author, merge, Revert subjects all skipped. Output: a
+`<slug>/author_patches.txt` file per team.
 """
 
 import argparse
@@ -14,25 +15,23 @@ from pathlib import Path
 
 from reviewstats.aliases import AUTHOR_ALIASES
 from reviewstats.github_commits import fetch_commits
+from reviewstats.teams import TEAMS, Team
 
 
 _DEFAULT_REPO = "mozilla-firefox/firefox"
-PATH = "dom/media"
-EXCLUDE_PATHS = ("dom/media/webrtc",)
-OUT = Path(__file__).resolve().parent / "author_patches.txt"
+_OUT_DIR = Path(__file__).resolve().parent
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--repo", default=_DEFAULT_REPO)
-    parser.add_argument("--months", type=int, default=6)
-    args = parser.parse_args()
-    since = (
-        datetime.now(timezone.utc) - timedelta(days=30 * args.months)
-    ).strftime("%Y-%m-%dT%H:%M:%SZ")
+def _dump_for_team(team: Team, *, repo: str, since: str) -> None:
     commits = fetch_commits(
-        repo=args.repo, path=PATH, since=since, exclude_paths=EXCLUDE_PATHS,
+        repo=repo,
+        paths=team.paths,
+        since=since,
+        exclude_paths=team.excludes,
     )
+    if not commits:
+        print(f"[{team.slug}] No commits found; skipping.")
+        return
 
     by_author: dict[str, list] = defaultdict(list)
     for c in commits:
@@ -45,11 +44,16 @@ def main() -> None:
     )
 
     total = sum(len(v) for v in by_author.values())
+    paths_str = ", ".join(team.paths)
+    excludes_str = ", ".join(team.excludes) if team.excludes else "(none)"
     lines: list[str] = []
     lines.append("=" * 78)
-    lines.append("DOM/MEDIA AUTHOR-PATCH LISTING (raw author %an, no aliasing)")
-    lines.append(f"Source: github.com/{args.repo}   Path: {PATH}   Since: {since}")
-    lines.append(f"Excluded paths: {', '.join(EXCLUDE_PATHS)}")
+    lines.append(
+        f"{team.display_name.upper()} AUTHOR-PATCH LISTING "
+        "(raw author %an, no aliasing)"
+    )
+    lines.append(f"Source: github.com/{repo}   Paths: {paths_str}   Since: {since}")
+    lines.append(f"Excluded paths: {excludes_str}")
     lines.append(
         f"Authors: {len(authors_sorted)}    Patches: {total}    "
         "(Lando-format / Lando-author / merge / Revert commits already excluded)"
@@ -78,8 +82,27 @@ def main() -> None:
             lines.append(f"      {date_only}  {c.sha[:12]}  {c.subject}")
         lines.append("")
 
-    OUT.write_text("\n".join(lines), encoding="utf-8")
-    print(f"Wrote {OUT}  ({total} patches across {len(authors_sorted)} authors)")
+    team_dir = _OUT_DIR / team.slug
+    team_dir.mkdir(parents=True, exist_ok=True)
+    out_path = team_dir / "author_patches.txt"
+    out_path.write_text("\n".join(lines), encoding="utf-8")
+    print(
+        f"[{team.slug}] Wrote {out_path.relative_to(_OUT_DIR)}  "
+        f"({total} patches across {len(authors_sorted)} authors)"
+    )
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--repo", default=_DEFAULT_REPO)
+    parser.add_argument("--months", type=int, default=6)
+    args = parser.parse_args()
+    since = (
+        datetime.now(timezone.utc) - timedelta(days=30 * args.months)
+    ).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    for team in TEAMS.values():
+        _dump_for_team(team, repo=args.repo, since=since)
 
 
 if __name__ == "__main__":

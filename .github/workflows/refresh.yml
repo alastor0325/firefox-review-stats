@@ -54,8 +54,8 @@ jobs:
           restore-keys: |
             commit-files-cache-
 
-      - name: Run unit tests
-        run: python -m pytest tests/unit/
+      - name: Run unit + integration tests
+        run: python -m pytest tests/
 
       - name: Generate landing report (GitHub commits)
         run: python analyze_git.py
@@ -78,9 +78,10 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           # Per-team analyzer output lives in <slug>/; the landing
           # page sits at root. raw_data/ is shared across teams and
-          # tracked in git. author_patches.txt is the global dump
-          # from dump_author_patches.py.
-          git add -A index.html playback/ webrtc/ author_patches.txt raw_data/
+          # tracked in git. dump_author_patches.py now writes
+          # author_patches.txt into each team's subfolder, so the
+          # playback/ + webrtc/ adds pick those up too.
+          git add -A index.html playback/ webrtc/ raw_data/
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else
