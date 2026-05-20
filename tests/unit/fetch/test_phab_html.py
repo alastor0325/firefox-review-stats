@@ -15,8 +15,10 @@ from reviewstats.phab_html import (
 )
 
 
+# tests/fixtures/ lives under the `tests/` root, two up from this
+# file (tests/unit/fetch/ → tests/).
 _FIXTURE = (
-    Path(__file__).resolve().parent.parent
+    Path(__file__).resolve().parents[2]
     / "fixtures"
     / "D299302.html"
 )

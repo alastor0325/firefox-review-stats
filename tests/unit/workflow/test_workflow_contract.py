@@ -17,7 +17,8 @@ from pathlib import Path
 import pytest
 
 
-_WORKFLOW = Path(__file__).resolve().parents[2] / ".github" / "workflows" / "refresh.yml"
+# Test now lives at tests/unit/workflow/, so .parents[3] is repo root.
+_WORKFLOW = Path(__file__).resolve().parents[3] / ".github" / "workflows" / "refresh.yml"
 
 
 @pytest.fixture(scope="module")
