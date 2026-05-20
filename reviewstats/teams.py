@@ -4,19 +4,15 @@ Each `Team` bundles the four knobs every report needs:
 
 * `group`     — the Phabricator review group tag we scan for
   (e.g. `media-playback-reviewers`).
-* `path`      — the source directory the team owns (e.g. `dom/media`).
-* `excludes`  — sub-paths under `path` to drop from the scan
-  (sibling-team territory that happens to live in the same tree).
+* `paths`     — the source directories the team owns. A tuple
+  because some teams (e.g. WebRTC) span multiple top-level trees.
+* `excludes`  — sub-paths under any of `paths` to drop from the
+  scan (sibling-team territory that happens to live alongside).
 * `members`   — `{handle: display_name}` for the team's listed
   reviewers (sourced from the Phab project membership page).
 
-The slug is used as a CLI argument value and, in a future
-multi-team layout, as an output subdirectory name.
-
-Today the dashboard only ships data for the playback team — but
-the analyzers, member lookup, and renderer all consume this
-registry so adding `webrtc-reviewers` or `gfx-reviewers` later is
-config-only.
+The slug is used as the output subdirectory name (each team gets
+its own /<slug>/index.html under the site root).
 """
 
 from dataclasses import dataclass
@@ -27,7 +23,7 @@ class Team:
     slug: str
     display_name: str
     group: str
-    path: str
+    paths: tuple[str, ...]
     excludes: tuple[str, ...]
     members: dict[str, str]
 
@@ -36,7 +32,7 @@ PLAYBACK_TEAM = Team(
     slug="playback",
     display_name="media-playback-reviewers",
     group="media-playback-reviewers",
-    path="dom/media",
+    paths=("dom/media",),
     # dom/media/webrtc and dom/media/systemservices live in dom/media/
     # but are owned by the WebRTC team — review there goes to
     # pehrsons/jib, not the playback roster.

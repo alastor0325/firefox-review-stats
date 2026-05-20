@@ -44,7 +44,10 @@ def main(argv: list[str] | None = None) -> int:
         default=_DEFAULT_REPO,
         help='GitHub repo "owner/name" (default: mozilla-firefox/firefox).',
     )
-    parser.add_argument("--path", default=_DEFAULT_TEAM.path)
+    # CLI takes a single path; multi-path teams use _DEFAULT_TEAM.paths
+    # directly in the loop in main(). This flag exists for ad-hoc one-
+    # offs and intentionally degrades to the team's first path.
+    parser.add_argument("--path", default=_DEFAULT_TEAM.paths[0])
     parser.add_argument(
         "--months",
         type=int,

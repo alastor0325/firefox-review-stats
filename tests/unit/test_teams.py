@@ -21,7 +21,7 @@ def test_team_is_frozen_dataclass():
     """Frozen so analyzer code can't mutate the registry by accident
     (e.g. patching excludes in one code path leaking to others)."""
     with pytest.raises(Exception):
-        PLAYBACK_TEAM.path = "somewhere/else"  # type: ignore[misc]
+        PLAYBACK_TEAM.paths = ("somewhere/else",)  # type: ignore[misc]
 
 
 def test_playback_team_matches_existing_constants():
@@ -30,11 +30,18 @@ def test_playback_team_matches_existing_constants():
     from PLAYBACK_TEAM in Task C can't silently change behavior."""
     assert PLAYBACK_TEAM.slug == "playback"
     assert PLAYBACK_TEAM.group == "media-playback-reviewers"
-    assert PLAYBACK_TEAM.path == "dom/media"
+    assert PLAYBACK_TEAM.paths == ("dom/media",)
     assert PLAYBACK_TEAM.excludes == (
         "dom/media/webrtc",
         "dom/media/systemservices",
     )
+
+
+def test_team_paths_is_a_tuple_not_a_string():
+    """Catch the common mistake of writing `paths="dom/media"` —
+    Python would iterate it char-by-char and the analyzer would
+    fetch `d`, `o`, `m`, … as separate path filters."""
+    assert isinstance(PLAYBACK_TEAM.paths, tuple)
 
 
 def test_playback_team_member_roster_matches_existing_members():

@@ -215,7 +215,7 @@ def main() -> int:
         default=_DEFAULT_REPO,
         help='GitHub repo "owner/name" (default: mozilla-firefox/firefox).',
     )
-    parser.add_argument("--path", default=_DEFAULT_TEAM.path)
+    parser.add_argument("--path", default=_DEFAULT_TEAM.paths[0])
     parser.add_argument(
         "--months",
         type=int,
