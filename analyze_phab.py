@@ -21,6 +21,7 @@ from pathlib import Path
 from reviewstats.github_commits import fetch_commits
 from reviewstats.members import MEMBER_IDS
 from reviewstats.metrics import iso_week
+from reviewstats.teams import PLAYBACK_TEAM
 from reviewstats.patch_list import build_patch_list
 from reviewstats.phab_html import (
     bulk_fetch_async,
@@ -35,10 +36,11 @@ from reviewstats.wait_time import (
 )
 
 
+# Path / excludes flow from the team registry — see analyze_git.py
+# for the same pattern. Adding a second team is a config-only change.
+_DEFAULT_TEAM = PLAYBACK_TEAM
 _DEFAULT_REPO = "mozilla-firefox/firefox"
-_DEFAULT_PATH = "dom/media"
 _DEFAULT_MONTHS = 6
-_DEFAULT_EXCLUDE = ("dom/media/webrtc", "dom/media/systemservices")
 _OUT_DIR = Path(__file__).resolve().parent
 _RAW_DIR = _OUT_DIR / "raw_data"
 _HTML_CACHE_DIR = _OUT_DIR / ".phab_html_cache"
@@ -213,7 +215,7 @@ def main() -> int:
         default=_DEFAULT_REPO,
         help='GitHub repo "owner/name" (default: mozilla-firefox/firefox).',
     )
-    parser.add_argument("--path", default=_DEFAULT_PATH)
+    parser.add_argument("--path", default=_DEFAULT_TEAM.path)
     parser.add_argument(
         "--months",
         type=int,
@@ -241,7 +243,7 @@ def main() -> int:
         repo=args.repo,
         path=args.path,
         since=since,
-        exclude_paths=_DEFAULT_EXCLUDE,
+        exclude_paths=_DEFAULT_TEAM.excludes,
     )
     commits_by_d = {
         c.differential_revision: c

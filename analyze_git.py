@@ -26,12 +26,14 @@ from reviewstats.metrics import (
 )
 from reviewstats.render import render_html
 from reviewstats.report import build_report
+from reviewstats.teams import PLAYBACK_TEAM
 
 
+# Path / group / excludes flow from the team registry so adding a
+# second team later is a pure config change — no constants to keep
+# in sync across analyzers.
+_DEFAULT_TEAM = PLAYBACK_TEAM
 _DEFAULT_MONTHS = 6
-_DEFAULT_PATH = "dom/media"
-_DEFAULT_GROUP = "media-playback-reviewers"
-_EXCLUDE_PATHS = ("dom/media/webrtc", "dom/media/systemservices")
 _DEFAULT_REPO = "mozilla-firefox/firefox"
 
 
@@ -42,14 +44,14 @@ def main(argv: list[str] | None = None) -> int:
         default=_DEFAULT_REPO,
         help='GitHub repo "owner/name" (default: mozilla-firefox/firefox).',
     )
-    parser.add_argument("--path", default=_DEFAULT_PATH)
+    parser.add_argument("--path", default=_DEFAULT_TEAM.path)
     parser.add_argument(
         "--months",
         type=int,
         default=_DEFAULT_MONTHS,
         help="Window size in months back from today.",
     )
-    parser.add_argument("--group", default=_DEFAULT_GROUP)
+    parser.add_argument("--group", default=_DEFAULT_TEAM.group)
     parser.add_argument(
         "--out", default=str(Path(__file__).resolve().parent)
     )
@@ -71,7 +73,7 @@ def main(argv: list[str] | None = None) -> int:
         repo=args.repo,
         path=args.path,
         since=since,
-        exclude_paths=_EXCLUDE_PATHS,
+        exclude_paths=_DEFAULT_TEAM.excludes,
     )
     if not commits:
         print(f"No commits found under {args.path} since {args.since}.")
@@ -138,7 +140,7 @@ def main(argv: list[str] | None = None) -> int:
         window_start=window_start,
         window_end=window_end,
         generated_at=now,
-        excludes=_EXCLUDE_PATHS,
+        excludes=_DEFAULT_TEAM.excludes,
         no_team_review_by_subdir=by_subdir,
         no_team_review_list=no_team_review_list,
     )
