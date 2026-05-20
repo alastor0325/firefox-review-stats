@@ -1,13 +1,18 @@
 #!/usr/bin/env python3
-"""Generate the dom/media reviewer-load report from git log only.
+"""Generate the reviewer-load reports — one per registered team.
 
-Reads commits from a local Firefox checkout, computes the metrics, and
-writes:
-  - data_git.json  : machine-readable report data
-  - index.html     : self-contained HTML with Chart.js (CDN)
+For each `Team` in `reviewstats.teams.TEAMS` we fetch commits from
+GitHub for that team's paths, build the report, and write:
 
-For the weekly cadence, run via refresh.sh; an `--archive-week` flag
-also copies the JSON into archive/data_git_<YYYY-WW>.json.
+    <out>/<slug>/data_git.json
+    <out>/<slug>/index.html
+
+raw_data/ and the on-disk caches (.commit_files_cache,
+.phab_html_cache) stay flat at the project root — they're keyed by
+SHA / D-number and are safely shared across teams.
+
+For the weekly cadence, run via refresh.sh; an `--archive-week`
+flag also copies each team's JSON into archive/<slug>/data_git_<YYYY-WW>.json.
 """
 
 import argparse
@@ -18,7 +23,6 @@ from pathlib import Path
 
 from reviewstats.commit_files import fetch_commit_files_cached
 from reviewstats.github_commits import _get_auth_token, fetch_commits
-from reviewstats.members import MEMBER_IDS
 from reviewstats.metrics import (
     classify_landed_without_team_review_by_subdir,
     iso_week,
@@ -26,98 +30,92 @@ from reviewstats.metrics import (
 )
 from reviewstats.render import render_html
 from reviewstats.report import build_report
-from reviewstats.teams import PLAYBACK_TEAM
+from reviewstats.teams import TEAMS, Team
 
 
-# Path / group / excludes flow from the team registry so adding a
-# second team later is a pure config change — no constants to keep
-# in sync across analyzers.
-_DEFAULT_TEAM = PLAYBACK_TEAM
 _DEFAULT_MONTHS = 6
 _DEFAULT_REPO = "mozilla-firefox/firefox"
 
 
-def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--repo",
-        default=_DEFAULT_REPO,
-        help='GitHub repo "owner/name" (default: mozilla-firefox/firefox).',
+def _generate_for_team(
+    team: Team,
+    *,
+    repo: str,
+    since: str,
+    out_dir: Path,
+    cache_dir: Path,
+    archive_week: bool,
+    now: datetime,
+) -> None:
+    """Build one team's report from scratch and write it to
+    `<out_dir>/<team.slug>/`. raw_data/ and caches are shared
+    across teams, hence the explicit `cache_dir` parameter so the
+    caller controls placement (root, not per-team)."""
+    print(
+        f"[{team.slug}] Fetching commits from {repo} "
+        f"paths={list(team.paths)} excludes={list(team.excludes)} "
+        f"since {since}..."
     )
-    # CLI takes a single path; multi-path teams use _DEFAULT_TEAM.paths
-    # directly in the loop in main(). This flag exists for ad-hoc one-
-    # offs and intentionally degrades to the team's first path.
-    parser.add_argument("--path", default=_DEFAULT_TEAM.paths[0])
-    parser.add_argument(
-        "--months",
-        type=int,
-        default=_DEFAULT_MONTHS,
-        help="Window size in months back from today.",
-    )
-    parser.add_argument("--group", default=_DEFAULT_TEAM.group)
-    parser.add_argument(
-        "--out", default=str(Path(__file__).resolve().parent)
-    )
-    parser.add_argument("--archive-week", action="store_true")
-    args = parser.parse_args(argv)
-
-    out_dir = Path(args.out)
-    out_dir.mkdir(parents=True, exist_ok=True)
-
-    # Fetch commits from GitHub directly — no local checkout needed.
-    # ~30 days per month is good enough for a "since" cutoff; commits
-    # within the actual window are then bounded by min/max of the
-    # returned set.
-    since = (
-        datetime.now(timezone.utc) - timedelta(days=30 * args.months)
-    ).strftime("%Y-%m-%dT%H:%M:%SZ")
-    print(f"Fetching commits from github.com/{args.repo} (since {since})...")
     commits = fetch_commits(
-        repo=args.repo,
-        path=args.path,
+        repo=repo,
+        paths=team.paths,
         since=since,
-        exclude_paths=_DEFAULT_TEAM.excludes,
+        exclude_paths=team.excludes,
     )
     if not commits:
-        print(f"No commits found under {args.path} since {args.since}.")
-        return 1
+        print(f"[{team.slug}] No commits found; skipping.")
+        return
+    # Only create the team subfolder once we know we'll write to it —
+    # an empty <slug>/ directory on disk is a misleading signal that
+    # the report exists but is broken.
+    team_dir = out_dir / team.slug
+    team_dir.mkdir(parents=True, exist_ok=True)
 
-    now = datetime.now(timezone.utc)
     window_start = min(c.date for c in commits)
     window_end = max(c.date for c in commits)
 
-    # For each commit that landed without any team-roster reviewer,
-    # fetch the file list (cached) so we can build a per-subdir
-    # breakdown for the pie chart.
-    bad_commits: list = []
+    # Identify commits that landed without any team-roster reviewer.
+    member_ids = frozenset(team.members)
+    bad_commits = []
     for c in commits:
         has_group = any(
-            r.is_group and r.name == args.group for r in c.reviewers
+            r.is_group and r.name == team.group for r in c.reviewers
         )
         if has_group:
             continue
         if any(
-            r.name in MEMBER_IDS for r in c.reviewers if not r.is_group
+            r.name in member_ids for r in c.reviewers if not r.is_group
         ):
             continue
         bad_commits.append(c)
 
-    cache_dir = out_dir / ".commit_files_cache"
     token = _get_auth_token()
     bad_with_files: list = []
     if bad_commits:
         print(
-            f"Classifying {len(bad_commits)} 'without team review' "
-            f"commits by primary subdir..."
+            f"[{team.slug}] Classifying {len(bad_commits)} 'without team "
+            f"review' commits by primary subdir..."
         )
     for c in bad_commits:
         files = fetch_commit_files_cached(
-            args.repo, c.sha, cache_dir=cache_dir, token=token,
+            repo, c.sha, cache_dir=cache_dir, token=token,
         )
         bad_with_files.append((c, files))
-    by_subdir = classify_landed_without_team_review_by_subdir(
-        bad_with_files, path=args.path,
-    )
+
+    # Single-path teams bucket by sub-subdirectory; multi-path teams
+    # bucket by which root path the patch touches most (coarser, but
+    # the more useful distinction when a team spans multiple trees).
+    if len(team.paths) == 1:
+        by_subdir = classify_landed_without_team_review_by_subdir(
+            bad_with_files, path=team.paths[0],
+        )
+        subdir_of = lambda fs: primary_subdir(fs, path=team.paths[0])
+    else:
+        by_subdir = classify_landed_without_team_review_by_subdir(
+            bad_with_files, paths=team.paths,
+        )
+        subdir_of = lambda fs: primary_subdir(fs, paths=team.paths)
+
     no_team_review_list = [
         {
             "sha": c.sha,
@@ -130,7 +128,7 @@ def main(argv: list[str] | None = None) -> int:
                 for r in c.reviewers
             ],
             "differential_revision": c.differential_revision,
-            "primary_subdir": primary_subdir(files, path=args.path) or "(unknown)",
+            "primary_subdir": subdir_of(files) or "(unknown)",
         }
         for c, files in bad_with_files
     ]
@@ -138,48 +136,88 @@ def main(argv: list[str] | None = None) -> int:
 
     report = build_report(
         commits,
-        group=args.group,
-        path=args.path,
+        group=team.group,
+        paths=team.paths,
         window_start=window_start,
         window_end=window_end,
         generated_at=now,
-        excludes=_DEFAULT_TEAM.excludes,
+        excludes=team.excludes,
         no_team_review_by_subdir=by_subdir,
         no_team_review_list=no_team_review_list,
-        members=_DEFAULT_TEAM.members,
+        members=team.members,
     )
 
-    json_path = out_dir / "data_git.json"
+    json_path = team_dir / "data_git.json"
     json_path.write_text(
         json.dumps(report, indent=2, default=str), encoding="utf-8"
     )
 
-    phab_path = out_dir / "data_phab.json"
+    phab_path = team_dir / "data_phab.json"
     phab_data = (
         json.loads(phab_path.read_text(encoding="utf-8"))
         if phab_path.exists()
         else None
     )
 
-    html_path = out_dir / "index.html"
+    html_path = team_dir / "index.html"
     html_path.write_text(
         render_html(report, phab_data=phab_data), encoding="utf-8"
     )
 
-    if args.archive_week:
-        archive_dir = out_dir / "archive"
+    if archive_week:
+        archive_dir = out_dir / "archive" / team.slug
         archive_dir.mkdir(parents=True, exist_ok=True)
         week_slug = iso_week(now)
         archived = archive_dir / f"data_git_{week_slug}.json"
         shutil.copyfile(json_path, archived)
 
     print(
-        f"Wrote {json_path.relative_to(out_dir)} "
+        f"[{team.slug}] Wrote {json_path.relative_to(out_dir)} "
         f"and {html_path.relative_to(out_dir)} "
         f"({report['summary']['total_patches']} patches, "
         f"{report['summary']['group_tagged_patches']} tagged with "
-        f"{args.group})"
+        f"{team.group})"
     )
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--repo",
+        default=_DEFAULT_REPO,
+        help='GitHub repo "owner/name" (default: mozilla-firefox/firefox).',
+    )
+    parser.add_argument(
+        "--months",
+        type=int,
+        default=_DEFAULT_MONTHS,
+        help="Window size in months back from today.",
+    )
+    parser.add_argument(
+        "--out", default=str(Path(__file__).resolve().parent)
+    )
+    parser.add_argument("--archive-week", action="store_true")
+    args = parser.parse_args(argv)
+
+    out_dir = Path(args.out)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    cache_dir = out_dir / ".commit_files_cache"
+
+    since = (
+        datetime.now(timezone.utc) - timedelta(days=30 * args.months)
+    ).strftime("%Y-%m-%dT%H:%M:%SZ")
+    now = datetime.now(timezone.utc)
+
+    for team in TEAMS.values():
+        _generate_for_team(
+            team,
+            repo=args.repo,
+            since=since,
+            out_dir=out_dir,
+            cache_dir=cache_dir,
+            archive_week=args.archive_week,
+            now=now,
+        )
     return 0
 
 

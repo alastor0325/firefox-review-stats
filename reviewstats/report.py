@@ -81,7 +81,8 @@ def build_report(
     commits: Iterable[Commit],
     *,
     group: str,
-    path: str,
+    path: str | None = None,
+    paths: tuple[str, ...] | None = None,
     window_start: datetime,
     window_end: datetime,
     generated_at: datetime,
@@ -90,6 +91,17 @@ def build_report(
     no_team_review_list: list[dict] | None = None,
     members: dict[str, str] | None = None,
 ) -> dict:
+    # Both `path` (singular, kept for older callers) and `paths`
+    # (plural, used by multi-path teams) are supported. If `paths` is
+    # given it wins; otherwise we lift the singular `path` into a
+    # one-tuple. Meta carries both fields so templates and tests can
+    # read either without churn.
+    if paths is None:
+        if path is None:
+            raise TypeError("build_report requires `path` or `paths`")
+        paths = (path,)
+    elif path is None:
+        path = paths[0]
     commits = list(commits)
     # Caller can pass a team-specific roster; defaults to the playback
     # roster so existing callers keep working unchanged.
@@ -142,6 +154,7 @@ def build_report(
     return {
         "meta": {
             "path": path,
+            "paths": list(paths),
             "group": group,
             "excludes": list(excludes),
             "window_start": window_start.date().isoformat(),

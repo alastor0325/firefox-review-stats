@@ -409,7 +409,13 @@ def main() -> int:
         "partial": bool(failures),
     }
 
-    out_path = _OUT_DIR / "data_phab.json"
+    # For now Phab analysis is playback-only; lands in the playback
+    # subfolder so the per-team index.html picks it up. Multi-team
+    # support comes in a follow-up commit that refactors
+    # _process_html to compute team-specific metrics on demand.
+    team_dir = _OUT_DIR / _DEFAULT_TEAM.slug
+    team_dir.mkdir(parents=True, exist_ok=True)
+    out_path = team_dir / "data_phab.json"
     out_path.write_text(
         json.dumps(aggregated, indent=2, default=str), encoding="utf-8"
     )

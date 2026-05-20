@@ -642,9 +642,13 @@ function weekStats(weekIndex) {
 // Header
 document.getElementById('hdr-group').textContent = DATA.meta.group;
 const excludes = (DATA.meta.excludes || []);
+// meta.paths is the multi-root list (one or more roots the team
+// owns). meta.path is the legacy singular field, kept for older
+// data files; falls back to that when meta.paths is missing.
+const watched = (DATA.meta.paths || [DATA.meta.path]).join(', ');
 const scope = excludes.length
-  ? `${DATA.meta.path} (excluding ${excludes.join(', ')})`
-  : DATA.meta.path;
+  ? `${watched} (excluding ${excludes.join(', ')})`
+  : watched;
 const hdrMeta = document.getElementById('hdr-meta');
 hdrMeta.innerHTML = '';
 const scopeLine = document.createElement('div');
