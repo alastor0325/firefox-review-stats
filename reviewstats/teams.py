@@ -50,8 +50,30 @@ PLAYBACK_TEAM = Team(
 )
 
 
+WEBRTC_TEAM = Team(
+    slug="webrtc",
+    display_name="webrtc-reviewers",
+    group="webrtc-reviewers",
+    # WebRTC code lives in two trees under dom/media. third_party/
+    # libwebrtc is a synced upstream and intentionally out of scope
+    # — its commits are mostly bulk-import noise.
+    paths=("dom/media/webrtc", "dom/media/systemservices"),
+    excludes=(),
+    # Source: https://phabricator.services.mozilla.com/project/members/155/
+    members={
+        "ng": "Nico Grunbaum",
+        "bwc": "Byron Campen",
+        "mjf": "Michael Froman",
+        "pehrsons": "Andreas Pehrson",
+        "jib": "Jan-Ivar Bruaroey",
+        "dbaker": "Daniel Baker",
+    },
+)
+
+
 TEAMS: dict[str, Team] = {
     PLAYBACK_TEAM.slug: PLAYBACK_TEAM,
+    WEBRTC_TEAM.slug: WEBRTC_TEAM,
 }
 
 

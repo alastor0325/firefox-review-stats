@@ -14,7 +14,13 @@ test file — this one only certifies the playback team didn't drift.
 
 import pytest
 
-from reviewstats.teams import PLAYBACK_TEAM, TEAMS, Team, get_team
+from reviewstats.teams import (
+    PLAYBACK_TEAM,
+    TEAMS,
+    Team,
+    WEBRTC_TEAM,
+    get_team,
+)
 
 
 def test_team_is_frozen_dataclass():
@@ -74,6 +80,55 @@ def test_get_team_raises_keyerror_for_unknown_slug():
     than silently fall through to an unintended team."""
     with pytest.raises(KeyError, match="Unknown team slug"):
         get_team("nonexistent")
+
+
+def test_webrtc_team_matches_user_spec():
+    """The WebRTC team owns dom/media/webrtc + dom/media/systemservices.
+    third_party/libwebrtc is intentionally out of scope (bulk-import
+    noise). Pinned values per the design discussion."""
+    assert WEBRTC_TEAM.slug == "webrtc"
+    assert WEBRTC_TEAM.group == "webrtc-reviewers"
+    assert WEBRTC_TEAM.paths == (
+        "dom/media/webrtc",
+        "dom/media/systemservices",
+    )
+    assert WEBRTC_TEAM.excludes == ()
+
+
+def test_webrtc_team_roster_matches_phab_project_155():
+    """Roster sourced from the Phab project-members page (project 155).
+    6 names; pinning prevents accidental drift on edits."""
+    assert WEBRTC_TEAM.members == {
+        "ng": "Nico Grunbaum",
+        "bwc": "Byron Campen",
+        "mjf": "Michael Froman",
+        "pehrsons": "Andreas Pehrson",
+        "jib": "Jan-Ivar Bruaroey",
+        "dbaker": "Daniel Baker",
+    }
+
+
+def test_webrtc_is_registered():
+    assert TEAMS["webrtc"] is WEBRTC_TEAM
+    assert get_team("webrtc") is WEBRTC_TEAM
+
+
+def test_playback_and_webrtc_paths_are_disjoint():
+    """A commit touching only dom/media/webrtc must not appear in the
+    playback report — playback's excludes drop it. Conversely, a
+    commit touching only dom/media (e.g. mediacapabilities) doesn't
+    land in the webrtc report because webrtc's paths don't include
+    that root. Pin both ends so a future config edit can't quietly
+    overlap the teams."""
+    # Playback owns dom/media but excludes the webrtc-owned subtrees.
+    assert PLAYBACK_TEAM.paths == ("dom/media",)
+    for ex in WEBRTC_TEAM.paths:
+        assert ex in PLAYBACK_TEAM.excludes, (
+            f"Playback should exclude every WebRTC root ({ex!r}) "
+            "to avoid double-counting."
+        )
+    # WebRTC's paths don't include the bare dom/media root.
+    assert "dom/media" not in WEBRTC_TEAM.paths
 
 
 def test_members_dict_is_a_plain_dict_for_easy_consumption():
