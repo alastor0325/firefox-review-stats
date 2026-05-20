@@ -1,18 +1,15 @@
-"""Hardcoded membership of the media-playback-reviewers Phabricator project.
+"""Listed members of the media-playback-reviewers Phabricator project.
 
-Source: https://phabricator.services.mozilla.com/project/members/<project>/
-Update by hand when membership changes.
+The data lives in `reviewstats.teams.PLAYBACK_TEAM.members` — this
+module is a thin compatibility shim so existing imports keep working
+while later commits migrate callers to read the team config directly.
+
+Update the roster by editing PLAYBACK_TEAM in `teams.py`. Source of
+truth: https://phabricator.services.mozilla.com/project/members/<project>/
 """
 
-MEMBERS: dict[str, str] = {
-    "alwu": "Alastor Wu",
-    "chunmin": "Chun-Min Chang",
-    "jolin": "John Lin",
-    "padenot": "Paul Adenot",
-    "azebrowski": "azebrowski",
-    "kinetik": "Matthew Gregan",
-    "karlt": "Karl Tomlinson",
-    "aosmond": "Andrew Osmond",
-}
+from reviewstats.teams import PLAYBACK_TEAM
 
+
+MEMBERS: dict[str, str] = PLAYBACK_TEAM.members
 MEMBER_IDS: frozenset[str] = frozenset(MEMBERS.keys())
