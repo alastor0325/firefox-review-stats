@@ -23,6 +23,7 @@ from pathlib import Path
 
 from reviewstats.commit_files import fetch_commit_files_cached
 from reviewstats.github_commits import _get_auth_token, fetch_commits
+from reviewstats.landing import render_landing_page
 from reviewstats.metrics import (
     classify_landed_without_team_review_by_subdir,
     iso_week,
@@ -218,6 +219,12 @@ def main(argv: list[str] | None = None) -> int:
             archive_week=args.archive_week,
             now=now,
         )
+
+    landing_path = out_dir / "index.html"
+    landing_path.write_text(
+        render_landing_page(list(TEAMS.values())), encoding="utf-8"
+    )
+    print(f"Wrote {landing_path.relative_to(out_dir)} (landing page).")
     return 0
 
 
