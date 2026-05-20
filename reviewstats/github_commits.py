@@ -103,12 +103,18 @@ def _api_commit_to_commit(api: dict) -> Commit:
 def fetch_commits(
     *,
     repo: str = _DEFAULT_REPO,
-    path: str,
+    path: str | None = None,
+    paths: tuple[str, ...] | None = None,
     since: str,
     exclude_paths: tuple[str, ...] = (),
 ) -> list[Commit]:
-    """Return commits touching `path` since `since`, excluding any
-    that also touch one of `exclude_paths`.
+    """Return commits touching any of `paths` since `since`, excluding
+    any that also touch one of `exclude_paths`.
+
+    Either `path` (singular, kept for backwards compatibility with
+    ad-hoc CLI runs) or `paths` (tuple, for multi-path teams) must be
+    supplied. When a commit touches multiple of `paths` it's still
+    returned exactly once — dedup is by SHA.
 
     `since` must already be a GitHub-acceptable ISO 8601 timestamp
     (e.g. "2025-11-15T00:00:00Z"). The caller converts "6 months ago"
@@ -117,10 +123,21 @@ def fetch_commits(
     Applies the same skip rules as the git-log path: Lando-format /
     merge / Revert subjects, Lando-authored commits.
     """
+    if paths is None:
+        if path is None:
+            raise TypeError("fetch_commits requires either `path` or `paths`")
+        paths = (path,)
     token = _get_auth_token()
+    seen_shas: set[str] = set()
     raw_commits: list[dict] = []
-    for page in _iter_pages(repo, path, since, token):
-        raw_commits.extend(page)
+    for p in paths:
+        for page in _iter_pages(repo, p, since, token):
+            for api in page:
+                sha = api["sha"]
+                if sha in seen_shas:
+                    continue
+                seen_shas.add(sha)
+                raw_commits.append(api)
     excluded_shas: set[str] = set()
     for ex in exclude_paths:
         excluded_shas |= _shas_for_path(repo, ex, since, token)

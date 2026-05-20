@@ -146,3 +146,68 @@ class TestFetchCommits:
         )
         shas = {c.sha for c in result}
         assert shas == {"ok"}  # revert / merge / Lando-author all filtered
+
+
+class TestFetchCommitsMultiPath:
+    @patch("reviewstats.github_commits._get_auth_token", return_value="tok")
+    @patch("reviewstats.github_commits.urllib.request.urlopen")
+    def test_paths_runs_one_query_per_path(self, urlopen, _):
+        """Multi-path teams (WebRTC owns dom/media/webrtc +
+        dom/media/systemservices) need one GitHub query per path —
+        the API only filters by one `path` at a time."""
+        page_a = [_fake_api_commit("sha-a", "X", "2026-05-15T10:00:00Z",
+                                    "Bug 1. r=jib")]
+        page_b = [_fake_api_commit("sha-b", "X", "2026-05-15T10:00:00Z",
+                                    "Bug 2. r=jib")]
+        urlopen.side_effect = [_mk_response(page_a), _mk_response(page_b)]
+        result = fetch_commits(
+            repo="mozilla-firefox/firefox",
+            paths=("dom/media/webrtc", "dom/media/systemservices"),
+            since="2025-11-15T00:00:00Z",
+        )
+        shas = {c.sha for c in result}
+        assert shas == {"sha-a", "sha-b"}
+        # One query per path.
+        assert urlopen.call_count == 2
+        first_url = urlopen.call_args_list[0].args[0].full_url
+        second_url = urlopen.call_args_list[1].args[0].full_url
+        assert "dom%2Fmedia%2Fwebrtc" in first_url
+        assert "dom%2Fmedia%2Fsystemservices" in second_url
+
+    @patch("reviewstats.github_commits._get_auth_token", return_value="tok")
+    @patch("reviewstats.github_commits.urllib.request.urlopen")
+    def test_commit_touching_multiple_paths_appears_once(self, urlopen, _):
+        """A commit touching dom/media/webrtc AND
+        dom/media/systemservices is returned by both path queries —
+        dedup by SHA so it's not double-counted."""
+        page_a = [
+            _fake_api_commit("sha-shared", "X", "2026-05-15T10:00:00Z",
+                             "Bug 1. r=jib"),
+            _fake_api_commit("sha-a-only", "X", "2026-05-15T10:00:00Z",
+                             "Bug 2. r=jib"),
+        ]
+        page_b = [
+            _fake_api_commit("sha-shared", "X", "2026-05-15T10:00:00Z",
+                             "Bug 1. r=jib"),  # duplicate
+            _fake_api_commit("sha-b-only", "X", "2026-05-15T10:00:00Z",
+                             "Bug 3. r=jib"),
+        ]
+        urlopen.side_effect = [_mk_response(page_a), _mk_response(page_b)]
+        result = fetch_commits(
+            repo="mozilla-firefox/firefox",
+            paths=("dom/media/webrtc", "dom/media/systemservices"),
+            since="2025-11-15T00:00:00Z",
+        )
+        shas = [c.sha for c in result]
+        assert shas.count("sha-shared") == 1
+        assert set(shas) == {"sha-shared", "sha-a-only", "sha-b-only"}
+
+    def test_requires_path_or_paths(self):
+        """Forgetting both is a programming error, not a silent
+        full-repo scan."""
+        import pytest
+        with pytest.raises(TypeError, match="path"):
+            fetch_commits(
+                repo="mozilla-firefox/firefox",
+                since="2025-11-15T00:00:00Z",
+            )
