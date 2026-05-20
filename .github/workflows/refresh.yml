@@ -76,7 +76,11 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A data_git.json data_phab.json index.html author_patches.txt raw_data/
+          # Per-team analyzer output lives in <slug>/; the landing
+          # page sits at root. raw_data/ is shared across teams and
+          # tracked in git. author_patches.txt is the global dump
+          # from dump_author_patches.py.
+          git add -A index.html playback/ webrtc/ author_patches.txt raw_data/
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else

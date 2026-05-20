@@ -68,7 +68,31 @@ def test_runs_analyze_phab(workflow_text):
 
 
 def test_commits_phab_outputs(workflow_text):
-    """The commit step must stage data_phab.json and raw_data/, "
-    otherwise wait-time updates never make it to GH Pages."""
-    assert "data_phab.json" in workflow_text
+    """The commit step must stage raw_data/ so wait-time updates make
+    it to GH Pages. analyze_phab.py is still referenced even though
+    per-team data_phab.json files live under each <slug>/ — covered
+    by `test_commits_per_team_subfolders`."""
+    assert "analyze_phab.py" in workflow_text
     assert "raw_data" in workflow_text
+
+
+def test_commits_per_team_subfolders(workflow_text):
+    """The commit step must stage every registered team's subfolder
+    so their data_git.json / data_phab.json / index.html land in
+    the auto-publish push. A future team added to TEAMS that's
+    missing here will silently never appear on the live site."""
+    from reviewstats.teams import TEAMS
+    for slug in TEAMS:
+        assert f"{slug}/" in workflow_text, (
+            f"workflow doesn't commit the {slug}/ subfolder — its "
+            "data will never make it to GH Pages."
+        )
+
+
+def test_commits_landing_index_at_root(workflow_text):
+    """The root index.html (landing picker) needs to be committed
+    too — it's regenerated each run by analyze_git.py."""
+    # `index.html` shows up in the cache-key comments too; pin the
+    # specific git add line by matching the surrounding shape.
+    assert "git add" in workflow_text
+    assert "index.html" in workflow_text
