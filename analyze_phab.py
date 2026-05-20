@@ -21,7 +21,7 @@ from pathlib import Path
 from reviewstats.github_commits import fetch_commits
 from reviewstats.members import MEMBER_IDS
 from reviewstats.metrics import iso_week
-from reviewstats.teams import PLAYBACK_TEAM
+from reviewstats.teams import PLAYBACK_TEAM, TEAMS
 from reviewstats.patch_list import build_patch_list
 from reviewstats.phab_html import (
     Event,
@@ -248,6 +248,192 @@ def _process_html(html: str, d_number: str, *, group: str, members: frozenset[st
     return {**raw, **team_metrics}
 
 
+def _pct(vals, p):
+    if not vals:
+        return None
+    s = sorted(vals)
+    k = (len(s) - 1) * p / 100.0
+    f = int(k)
+    c = min(f + 1, len(s) - 1)
+    return s[f] + (s[c] - s[f]) * (k - f)
+
+
+def _analyze_for_team(
+    team,
+    *,
+    repo: str,
+    since: str,
+    concurrency: int,
+    force: bool,
+    failures: dict[str, str],
+) -> None:
+    """Build one team's data_phab.json. raw_data + the HTML cache
+    are shared across teams (keyed by D-number, team-agnostic), so
+    if playback already fetched a revision the webrtc run reuses it
+    without paying again."""
+    print(f"[{team.slug}] Fetching commits from {repo} since {since}...")
+    commits = fetch_commits(
+        repo=repo,
+        paths=team.paths,
+        since=since,
+        exclude_paths=team.excludes,
+    )
+    commits_by_d = {
+        c.differential_revision: c
+        for c in commits
+        if c.differential_revision
+    }
+    d_numbers = sorted(commits_by_d.keys())
+    print(
+        f"[{team.slug}] Found {len(d_numbers)} commits with "
+        "Differential Revision links."
+    )
+
+    _RAW_DIR.mkdir(parents=True, exist_ok=True)
+    skip, from_cache, to_fetch = select_fetch_targets(
+        d_numbers,
+        raw_dir=_RAW_DIR,
+        html_cache_dir=_HTML_CACHE_DIR,
+        force=force,
+    )
+    print(
+        f"[{team.slug}] Total {len(d_numbers)} revisions.  "
+        f"Cached raw_data: {len(skip)}.  "
+        f"Re-parse from cached HTML: {len(from_cache)}.  "
+        f"Fetch via Playwright: {len(to_fetch)}."
+    )
+
+    for d in from_cache:
+        try:
+            html = _html_cache_path(d).read_text(encoding="utf-8")
+            payload = parse_html_to_raw(html, d)
+            _raw_path(d).write_text(
+                json.dumps(payload, indent=2), encoding="utf-8"
+            )
+        except Exception as e:
+            failures[d] = f"{type(e).__name__}: {e}"
+    if from_cache:
+        print(f"[{team.slug}] Re-parsed {len(from_cache)} from cached HTML.")
+
+    progress = {"i": 0}
+
+    def on_each(d: str, result) -> None:
+        progress["i"] += 1
+        i = progress["i"]
+        if isinstance(result, Exception):
+            failures[d] = f"{type(result).__name__}: {result}"
+        else:
+            _HTML_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+            _html_cache_path(d).write_text(result, encoding="utf-8")
+            try:
+                payload = parse_html_to_raw(result, d)
+                _raw_path(d).write_text(
+                    json.dumps(payload, indent=2), encoding="utf-8"
+                )
+            except Exception as e:
+                failures[d] = f"{type(e).__name__}: {e}"
+        if i % 25 == 0 or i == len(to_fetch):
+            print(
+                f"[{team.slug}]   {i}/{len(to_fetch)}  "
+                f"(ok={i - len(failures)}, fail={len(failures)})"
+            )
+
+    if to_fetch:
+        asyncio.run(
+            bulk_fetch_async(
+                to_fetch,
+                concurrency=concurrency,
+                on_each=on_each,
+            )
+        )
+
+    # Per-team aggregation. Raw entries on disk are team-agnostic
+    # (M9); we lift them into the legacy combined shape on the fly
+    # for the wait_time + patch_list helpers, which still expect
+    # queue_seconds / first_member_review keys.
+    members = frozenset(team.members)
+
+    def _load_with_team_metrics(d_number: str) -> dict | None:
+        raw = _load_existing(d_number)
+        if raw is None:
+            return None
+        team_metrics = compute_team_metrics(
+            raw, group=team.group, members=members,
+        )
+        return {**raw, **team_metrics}
+
+    per_revision = member_authored_wait_revisions(
+        d_numbers, _load_with_team_metrics, commits_by_d, members=members,
+    )
+
+    per_author: dict[str, dict] = {}
+    for d in d_numbers:
+        raw = _load_existing(d)
+        if raw is None:
+            continue
+        author = raw.get("author")
+        if author not in members:
+            continue
+        bucket = per_author.setdefault(author, {
+            "n_total": 0, "react_days": [], "accept_days": [],
+        })
+        bucket["n_total"] += 1
+        if raw.get("time_to_react_seconds") is not None:
+            bucket["react_days"].append(raw["time_to_react_seconds"] / 86400.0)
+        if raw.get("time_to_accept_seconds") is not None:
+            bucket["accept_days"].append(
+                raw["time_to_accept_seconds"] / 86400.0
+            )
+
+    per_author_summary = {
+        author: {
+            "n_total": b["n_total"],
+            "n_react": len(b["react_days"]),
+            "n_accept": len(b["accept_days"]),
+            "react_p50": _pct(b["react_days"], 50),
+            "react_p75": _pct(b["react_days"], 75),
+            "react_p90": _pct(b["react_days"], 90),
+            "accept_p50": _pct(b["accept_days"], 50),
+            "accept_p75": _pct(b["accept_days"], 75),
+            "accept_p90": _pct(b["accept_days"], 90),
+        }
+        for author, b in per_author.items()
+    }
+
+    raw_entries_by_d: dict[str, dict] = {}
+    for d in d_numbers:
+        merged = _load_with_team_metrics(d)
+        if merged is not None:
+            raw_entries_by_d[d] = merged
+    patch_rows = build_patch_list(
+        raw_entries_by_d, commits_by_d, members=members,
+    )
+
+    aggregated = aggregate_wait_times(per_revision)
+    aggregated["per_author"] = per_author_summary
+    aggregated["patch_list"] = patch_rows
+    aggregated["meta"] = {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "n_commits": len(commits),
+        "n_with_revision": len(d_numbers),
+        "n_with_wait_time": aggregated["n"],
+        "n_failures": len(failures),
+        "partial": bool(failures),
+    }
+
+    team_dir = _OUT_DIR / team.slug
+    team_dir.mkdir(parents=True, exist_ok=True)
+    out_path = team_dir / "data_phab.json"
+    out_path.write_text(
+        json.dumps(aggregated, indent=2, default=str), encoding="utf-8"
+    )
+    print(
+        f"[{team.slug}] Wrote {out_path.relative_to(_OUT_DIR)}  "
+        f"(n={aggregated['n']}, failures={len(failures)}, "
+        f"partial={aggregated['meta']['partial']})"
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -255,7 +441,6 @@ def main() -> int:
         default=_DEFAULT_REPO,
         help='GitHub repo "owner/name" (default: mozilla-firefox/firefox).',
     )
-    parser.add_argument("--path", default=_DEFAULT_TEAM.paths[0])
     parser.add_argument(
         "--months",
         type=int,
@@ -278,79 +463,16 @@ def main() -> int:
     since = (
         datetime.now(timezone.utc) - timedelta(days=30 * args.months)
     ).strftime("%Y-%m-%dT%H:%M:%SZ")
-    print(f"Fetching commits from github.com/{args.repo} (since {since})...")
-    commits = fetch_commits(
-        repo=args.repo,
-        path=args.path,
-        since=since,
-        exclude_paths=_DEFAULT_TEAM.excludes,
-    )
-    commits_by_d = {
-        c.differential_revision: c
-        for c in commits
-        if c.differential_revision
-    }
-    d_numbers = sorted(commits_by_d.keys())
-    print(f"Found {len(d_numbers)} commits with Differential Revision links.")
-
-    _RAW_DIR.mkdir(parents=True, exist_ok=True)
-    skip, from_cache, to_fetch = select_fetch_targets(
-        d_numbers,
-        raw_dir=_RAW_DIR,
-        html_cache_dir=_HTML_CACHE_DIR,
-        force=args.force,
-    )
-    print(
-        f"Total {len(d_numbers)} revisions.  "
-        f"Cached raw_data: {len(skip)}.  "
-        f"Re-parse from cached HTML: {len(from_cache)}.  "
-        f"Fetch via Playwright: {len(to_fetch)}."
-    )
 
     failures: dict[str, str] = {}
-
-    for d in from_cache:
-        try:
-            html = _html_cache_path(d).read_text(encoding="utf-8")
-            payload = _process_html(html, d, group=_DEFAULT_TEAM.group, members=MEMBER_IDS)
-            _raw_path(d).write_text(
-                json.dumps(payload, indent=2), encoding="utf-8"
-            )
-        except Exception as e:
-            failures[d] = f"{type(e).__name__}: {e}"
-    if from_cache:
-        print(f"Re-parsed {len(from_cache) - len(failures)} from cached HTML.")
-
-    progress = {"i": 0}
-
-    def on_each(d: str, result) -> None:
-        progress["i"] += 1
-        i = progress["i"]
-        if isinstance(result, Exception):
-            failures[d] = f"{type(result).__name__}: {result}"
-        else:
-            _HTML_CACHE_DIR.mkdir(parents=True, exist_ok=True)
-            _html_cache_path(d).write_text(result, encoding="utf-8")
-            try:
-                payload = _process_html(result, d, group=_DEFAULT_TEAM.group, members=MEMBER_IDS)
-                _raw_path(d).write_text(
-                    json.dumps(payload, indent=2), encoding="utf-8"
-                )
-            except Exception as e:
-                failures[d] = f"{type(e).__name__}: {e}"
-        if i % 25 == 0 or i == len(to_fetch):
-            print(
-                f"  {i}/{len(to_fetch)}  "
-                f"(ok={i - len(failures)}, fail={len(failures)})"
-            )
-
-    if to_fetch:
-        asyncio.run(
-            bulk_fetch_async(
-                to_fetch,
-                concurrency=args.concurrency,
-                on_each=on_each,
-            )
+    for team in TEAMS.values():
+        _analyze_for_team(
+            team,
+            repo=args.repo,
+            since=since,
+            concurrency=args.concurrency,
+            force=args.force,
+            failures=failures,
         )
 
     if failures:
@@ -360,109 +482,6 @@ def main() -> int:
     elif _FAILURES_PATH.exists():
         _FAILURES_PATH.unlink()
 
-    # Aggregate from raw_data/*.json (no further API calls).
-    # `queue_seconds` is our headline metric: time from when
-    # `media-playback-reviewers` was added to the revision's reviewer
-    # list, to when the first listed member reacted. Per-member
-    # attribution is intentionally not used here — anyone in the
-    # rotation could have responded; the first one's identity isn't
-    # a measure of *their* responsiveness, just team responsiveness.
-    # Scope: only patches authored by a listed member. Filter contract
-    # pinned by test_wait_revisions_filter.py.
-    per_revision = member_authored_wait_revisions(
-        d_numbers, _load_existing, commits_by_d, members=MEMBER_IDS,
-    )
-
-    # Per-author wait-time breakdown (for Member Profile view).
-    # "How long does this author's patch wait for review?" — only
-    # meaningful when the author IS the one waiting. Filtered to
-    # members so we have a single bounded set in the report.
-    # Per-author wait-time uses the broader anchor: from revision
-    # creation to the first reaction/accept by ANY non-author non-bot
-    # reviewer. This covers all patches the author submitted, not
-    # just ones that went through `media-playback-reviewers` — which
-    # is what the Member Profile view shows ("my patches' wait time").
-    per_author: dict[str, dict] = {}
-    for d in d_numbers:
-        raw = _load_existing(d)
-        if raw is None:
-            continue
-        author = raw.get("author")
-        if author not in MEMBER_IDS:
-            continue
-        bucket = per_author.setdefault(author, {
-            "n_total": 0, "react_days": [], "accept_days": [],
-        })
-        bucket["n_total"] += 1
-        if raw.get("time_to_react_seconds") is not None:
-            bucket["react_days"].append(raw["time_to_react_seconds"] / 86400.0)
-        if raw.get("time_to_accept_seconds") is not None:
-            bucket["accept_days"].append(
-                raw["time_to_accept_seconds"] / 86400.0
-            )
-
-    def _pct(vals, p):
-        if not vals:
-            return None
-        s = sorted(vals)
-        k = (len(s) - 1) * p / 100.0
-        f = int(k)
-        c = min(f + 1, len(s) - 1)
-        return s[f] + (s[c] - s[f]) * (k - f)
-
-    per_author_summary = {
-        author: {
-            "n_total": b["n_total"],
-            "n_react": len(b["react_days"]),
-            "n_accept": len(b["accept_days"]),
-            "react_p50": _pct(b["react_days"], 50),
-            "react_p75": _pct(b["react_days"], 75),
-            "react_p90": _pct(b["react_days"], 90),
-            "accept_p50": _pct(b["accept_days"], 50),
-            "accept_p75": _pct(b["accept_days"], 75),
-            "accept_p90": _pct(b["accept_days"], 90),
-        }
-        for author, b in per_author.items()
-    }
-
-    # Build the Wait Queue per-revision list (sorted longest-wait first).
-    # Scoped to member-authored patches for the same reason as the
-    # per_revision aggregation above.
-    raw_entries_by_d: dict[str, dict] = {}
-    for d in d_numbers:
-        raw = _load_existing(d)
-        if raw is not None:
-            raw_entries_by_d[d] = raw
-    patch_rows = build_patch_list(
-        raw_entries_by_d, commits_by_d, members=MEMBER_IDS,
-    )
-
-    aggregated = aggregate_wait_times(per_revision)
-    aggregated["per_author"] = per_author_summary
-    aggregated["patch_list"] = patch_rows
-    aggregated["meta"] = {
-        "generated_at": datetime.now(timezone.utc).isoformat(),
-        "n_commits": len(commits),
-        "n_with_revision": len(d_numbers),
-        "n_with_wait_time": aggregated["n"],
-        "n_failures": len(failures),
-        "partial": bool(failures),
-    }
-
-    # For now Phab analysis is playback-only; lands in the playback
-    # subfolder so the per-team index.html picks it up. Multi-team
-    # support comes in a follow-up commit that refactors
-    # _process_html to compute team-specific metrics on demand.
-    team_dir = _OUT_DIR / _DEFAULT_TEAM.slug
-    team_dir.mkdir(parents=True, exist_ok=True)
-    out_path = team_dir / "data_phab.json"
-    out_path.write_text(
-        json.dumps(aggregated, indent=2, default=str), encoding="utf-8"
-    )
-    print(
-        f"Wrote {out_path}  (n={aggregated['n']}, "
-        f"failures={len(failures)}, partial={aggregated['meta']['partial']})"
-    )
     return 0
 
 
