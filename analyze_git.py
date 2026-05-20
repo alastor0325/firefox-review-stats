@@ -143,6 +143,7 @@ def main(argv: list[str] | None = None) -> int:
         excludes=_DEFAULT_TEAM.excludes,
         no_team_review_by_subdir=by_subdir,
         no_team_review_list=no_team_review_list,
+        members=_DEFAULT_TEAM.members,
     )
 
     json_path = out_dir / "data_git.json"

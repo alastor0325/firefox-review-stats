@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from typing import Iterable
 
 from reviewstats.git_log import Commit
-from reviewstats.members import MEMBERS, MEMBER_IDS
+from reviewstats.members import MEMBERS as _DEFAULT_MEMBERS
 from reviewstats.metrics import (
     author_patch_counts,
     author_reviewer_pairs,
@@ -88,29 +88,34 @@ def build_report(
     excludes: tuple[str, ...] = (),
     no_team_review_by_subdir: dict[str, int] | None = None,
     no_team_review_list: list[dict] | None = None,
+    members: dict[str, str] | None = None,
 ) -> dict:
     commits = list(commits)
+    # Caller can pass a team-specific roster; defaults to the playback
+    # roster so existing callers keep working unchanged.
+    members_dict = _DEFAULT_MEMBERS if members is None else members
+    member_ids = frozenset(members_dict)
 
     routing = routing_breakdown(commits, group=group)
     no_team_review = landed_without_team_review(
-        commits, group=group, members=MEMBER_IDS
+        commits, group=group, members=member_ids
     )
     indiv_counts = count_by_individual(
-        commits, group=group, members=MEMBER_IDS
+        commits, group=group, members=member_ids
     )
-    sole_counts = sole_reviewer_counts(commits, members=MEMBER_IDS)
+    sole_counts = sole_reviewer_counts(commits, members=member_ids)
     weekly = weekly_counts_per_reviewer(
-        commits, group=group, members=MEMBER_IDS
+        commits, group=group, members=member_ids
     )
     total_reviews = total_reviews_per_member(
-        commits, group=group, members=MEMBER_IDS
+        commits, group=group, members=member_ids
     )
     author_totals = author_patch_counts(commits)
-    author_reviewers = author_reviewer_pairs(commits, members=MEMBER_IDS)
-    by_member_authors = reviewer_to_authors(commits, members=MEMBER_IDS)
+    author_reviewers = author_reviewer_pairs(commits, members=member_ids)
+    by_member_authors = reviewer_to_authors(commits, members=member_ids)
     member_authored_counts = {
         member: author_totals.get(canonical, 0)
-        for member, canonical in MEMBERS.items()
+        for member, canonical in members_dict.items()
     }
 
     weeks = _iso_weeks_between(window_start, window_end)
@@ -121,10 +126,10 @@ def build_report(
 
     all_members_weekly = {
         member: [weekly.get(wk, {}).get(member, 0) for wk in weeks]
-        for member in MEMBER_IDS
+        for member in member_ids
     }
     authored_per_member_weekly = weekly_authored_per_member(
-        commits, MEMBERS, weeks,
+        commits, members_dict, weeks,
     )
 
     ranked_authors = _ranked_pairs(author_totals)[:_TOP_AUTHORS]
@@ -176,7 +181,7 @@ def build_report(
             "authored_per_member": authored_per_member_weekly,
         },
         "total_reviews_per_member": total_reviews,
-        "members": MEMBERS,
+        "members": members_dict,
         "authors": {
             "top_total": _to_ranked_list(ranked_authors),
             "reviewer_matrix": author_reviewer_matrix,
