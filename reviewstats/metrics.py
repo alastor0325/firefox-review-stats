@@ -19,6 +19,20 @@ def iso_week(date: datetime) -> str:
     return f"{iso.year}-W{iso.week:02d}"
 
 
+def filter_commits_within(
+    commits: Iterable[_CommitLike],
+    *,
+    window_start: datetime,
+    window_end: datetime,
+) -> list[_CommitLike]:
+    """Return commits with `window_start <= c.date <= window_end`.
+
+    Inclusive on both ends. Accepts any iterable so callers can pass a
+    generator straight through without materialising it.
+    """
+    return [c for c in commits if window_start <= c.date <= window_end]
+
+
 def _has_group(commit: _CommitLike, group: str) -> bool:
     return any(r.is_group and r.name == group for r in commit.reviewers)
 

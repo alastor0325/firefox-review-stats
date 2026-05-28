@@ -4,6 +4,7 @@ Output shape is documented in
 ~/firefox-bug-investigation/dom-media-reviewer-bottleneck-investigation.md §5.
 """
 
+from collections import Counter
 from datetime import datetime, timedelta
 from typing import Iterable
 
@@ -15,6 +16,7 @@ from reviewstats.metrics import (
     bus_factor,
     compute_gini,
     count_by_individual,
+    filter_commits_within,
     iso_week,
     landed_without_team_review,
     reviewer_to_authors,
@@ -29,6 +31,18 @@ from reviewstats.metrics import (
 
 _TOP_N_FOR_TREND = 5
 _TOP_AUTHORS = 15
+
+# Period axis on the Team View. Keys are the data-period attribute
+# values the rendered HTML uses; values are months-back from
+# window_end. 6m is the canonical six-month window that drives
+# top-level fields too — 1m / 3m are extra slices added in the
+# 1-month / 3-month period toggle.
+TEAM_VIEW_WINDOWS = {
+    "1m": 1,
+    "3m": 3,
+    "6m": 6,
+}
+_DAYS_PER_MONTH = 30
 
 
 def author_count_for_member(
@@ -77,6 +91,121 @@ def _iso_weeks_between(start: datetime, end: datetime) -> list[str]:
     return weeks
 
 
+def _filter_no_team_review_list(
+    rows: list[dict],
+    *,
+    window_start: datetime,
+    window_end: datetime,
+) -> list[dict]:
+    """Filter pre-built bad-commit rows by their ISO `date` string.
+
+    The rows are constructed in analyze_git.py with `c.date.date().isoformat()`
+    so a plain string comparison against the window's start/end dates
+    keeps the same inclusivity contract as `filter_commits_within`.
+    """
+    start = window_start.date().isoformat()
+    end = window_end.date().isoformat()
+    return [r for r in rows if start <= r["date"] <= end]
+
+
+def build_team_view(
+    commits: Iterable[Commit],
+    *,
+    group: str,
+    members: dict[str, str],
+    window_start: datetime,
+    window_end: datetime,
+    no_team_review_list: list[dict] | None = None,
+) -> dict:
+    """Compute the per-window team-view fields shown by the Team toggle.
+
+    Returns only the fields that vary by window (summary, concentration,
+    within_group_total, sole_reviewer, total_reviews_per_member, authors),
+    plus the window dates. Cross-window fields (weekly_trend, members,
+    per-member views) live at the top of the report — including them
+    here would triple the rendered JSON for no benefit.
+
+    `no_team_review_list` is the FULL bad-commit list (built once from
+    the 6-month commit fetch). We filter it by date here so 1-month
+    and 3-month slices show only patches landed inside the window;
+    the per-subdir bucket counts are re-derived from the filtered list.
+    """
+    in_window = filter_commits_within(
+        commits, window_start=window_start, window_end=window_end
+    )
+    member_ids = frozenset(members)
+
+    routing = routing_breakdown(in_window, group=group)
+    no_team_review = landed_without_team_review(
+        in_window, group=group, members=member_ids
+    )
+    indiv_counts = count_by_individual(
+        in_window, group=group, members=member_ids
+    )
+    sole_counts = sole_reviewer_counts(in_window, members=member_ids)
+    total_reviews = total_reviews_per_member(
+        in_window, group=group, members=member_ids
+    )
+    author_totals = author_patch_counts(in_window)
+    author_reviewers = author_reviewer_pairs(in_window, members=member_ids)
+
+    ranked_individuals = _ranked_pairs(indiv_counts)
+    ranked_authors = _ranked_pairs(author_totals)[:_TOP_AUTHORS]
+    top_authors = [a for a, _ in ranked_authors]
+    author_reviewer_matrix = {
+        author: author_reviewers.get(author, {})
+        for author in top_authors
+    }
+
+    weeks = _iso_weeks_between(window_start, window_end)
+    num_weeks = max(len(weeks), 1)
+
+    filtered_list = (
+        _filter_no_team_review_list(
+            no_team_review_list,
+            window_start=window_start,
+            window_end=window_end,
+        )
+        if no_team_review_list
+        else []
+    )
+    by_subdir = Counter(r["primary_subdir"] for r in filtered_list)
+
+    return {
+        "window_start": window_start.date().isoformat(),
+        "window_end": window_end.date().isoformat(),
+        "summary": {
+            "total_patches": routing["total"],
+            "group_tagged_patches": routing["group_tagged"],
+            "group_tagged_pct": _pct(
+                routing["group_tagged"], routing["total"]
+            ),
+            "landed_without_team_review": no_team_review,
+            "landed_without_team_review_pct": _pct(
+                no_team_review, routing["total"]
+            ),
+            "landed_without_team_review_by_subdir": dict(by_subdir),
+            "landed_without_team_review_list": filtered_list,
+            "unique_individuals": len(indiv_counts),
+            "avg_per_week": routing["group_tagged"] / num_weeks,
+        },
+        "within_group_total": _to_ranked_list(ranked_individuals),
+        "concentration": {
+            "top1_share": top_n_share(indiv_counts, 1),
+            "top3_share": top_n_share(indiv_counts, 3),
+            "top5_share": top_n_share(indiv_counts, 5),
+            "gini": compute_gini(list(indiv_counts.values())),
+            "bus_factor": bus_factor(indiv_counts, threshold=0.5),
+        },
+        "sole_reviewer": _to_ranked_list(_ranked_pairs(sole_counts)),
+        "total_reviews_per_member": total_reviews,
+        "authors": {
+            "top_total": _to_ranked_list(ranked_authors),
+            "reviewer_matrix": author_reviewer_matrix,
+        },
+    }
+
+
 def build_report(
     commits: Iterable[Commit],
     *,
@@ -108,33 +237,46 @@ def build_report(
     members_dict = _DEFAULT_MEMBERS if members is None else members
     member_ids = frozenset(members_dict)
 
-    routing = routing_breakdown(commits, group=group)
-    no_team_review = landed_without_team_review(
-        commits, group=group, members=member_ids
-    )
-    indiv_counts = count_by_individual(
-        commits, group=group, members=member_ids
-    )
-    sole_counts = sole_reviewer_counts(commits, members=member_ids)
+    # Per-window team-view aggregates: same content as the top-level
+    # 6m fields but recomputed over a shorter slice for the 1-Month /
+    # 3-Month period toggle. The "6m" slot keeps the full window the
+    # caller passed in — i.e. min(commit.date) → max(commit.date) —
+    # so the top-level fields (which alias `team_views["6m"]`) match
+    # the pre-window-toggle behaviour exactly.
+    team_views: dict[str, dict] = {}
+    for key, months in TEAM_VIEW_WINDOWS.items():
+        if key == "6m":
+            sub_start = window_start
+        else:
+            sub_start = max(
+                window_start,
+                window_end - timedelta(days=_DAYS_PER_MONTH * months),
+            )
+        team_views[key] = build_team_view(
+            commits,
+            group=group,
+            members=members_dict,
+            window_start=sub_start,
+            window_end=window_end,
+            no_team_review_list=no_team_review_list,
+        )
+
+    six_month_view = team_views["6m"]
+
+    # Cross-window fields: weekly_trend and the member-profile data
+    # live at the top level because they're already 6m-wide.
     weekly = weekly_counts_per_reviewer(
         commits, group=group, members=member_ids
     )
-    total_reviews = total_reviews_per_member(
-        commits, group=group, members=member_ids
-    )
-    author_totals = author_patch_counts(commits)
-    author_reviewers = author_reviewer_pairs(commits, members=member_ids)
     by_member_authors = reviewer_to_authors(commits, members=member_ids)
+    author_totals = author_patch_counts(commits)
     member_authored_counts = {
         member: author_totals.get(canonical, 0)
         for member, canonical in members_dict.items()
     }
 
     weeks = _iso_weeks_between(window_start, window_end)
-    num_weeks = max(len(weeks), 1)
-
-    ranked_individuals = _ranked_pairs(indiv_counts)
-    top_reviewers = [name for name, _ in ranked_individuals[:_TOP_N_FOR_TREND]]
+    top_reviewers = [r["name"] for r in six_month_view["within_group_total"][:_TOP_N_FOR_TREND]]
 
     all_members_weekly = {
         member: [weekly.get(wk, {}).get(member, 0) for wk in weeks]
@@ -143,13 +285,6 @@ def build_report(
     authored_per_member_weekly = weekly_authored_per_member(
         commits, members_dict, weeks,
     )
-
-    ranked_authors = _ranked_pairs(author_totals)[:_TOP_AUTHORS]
-    top_authors = [a for a, _ in ranked_authors]
-    author_reviewer_matrix = {
-        author: author_reviewers.get(author, {})
-        for author in top_authors
-    }
 
     return {
         "meta": {
@@ -161,44 +296,26 @@ def build_report(
             "window_end": window_end.date().isoformat(),
             "generated_at": generated_at.isoformat(),
         },
-        "summary": {
-            "total_patches": routing["total"],
-            "group_tagged_patches": routing["group_tagged"],
-            "group_tagged_pct": _pct(
-                routing["group_tagged"], routing["total"]
-            ),
-            "landed_without_team_review": no_team_review,
-            "landed_without_team_review_pct": _pct(
-                no_team_review, routing["total"]
-            ),
-            "landed_without_team_review_by_subdir":
-                dict(no_team_review_by_subdir) if no_team_review_by_subdir else {},
-            "landed_without_team_review_list":
-                list(no_team_review_list) if no_team_review_list else [],
-            "unique_individuals": len(indiv_counts),
-            "avg_per_week": routing["group_tagged"] / num_weeks,
-        },
-        "within_group_total": _to_ranked_list(ranked_individuals),
-        "concentration": {
-            "top1_share": top_n_share(indiv_counts, 1),
-            "top3_share": top_n_share(indiv_counts, 3),
-            "top5_share": top_n_share(indiv_counts, 5),
-            "gini": compute_gini(list(indiv_counts.values())),
-            "bus_factor": bus_factor(indiv_counts, threshold=0.5),
-        },
-        "sole_reviewer": _to_ranked_list(_ranked_pairs(sole_counts)),
+        # Top-level mirrors the 6m team_view so older clients (and
+        # any test that pre-dates `team_views`) read the same numbers.
+        "summary": six_month_view["summary"],
+        "within_group_total": six_month_view["within_group_total"],
+        "concentration": six_month_view["concentration"],
+        "sole_reviewer": six_month_view["sole_reviewer"],
         "weekly_trend": {
             "weeks": weeks,
             "top_reviewers": top_reviewers,
             "all_members": all_members_weekly,
             "authored_per_member": authored_per_member_weekly,
         },
-        "total_reviews_per_member": total_reviews,
+        "total_reviews_per_member": six_month_view["total_reviews_per_member"],
         "members": members_dict,
-        "authors": {
-            "top_total": _to_ranked_list(ranked_authors),
-            "reviewer_matrix": author_reviewer_matrix,
-        },
+        "authors": six_month_view["authors"],
         "per_member_authors": by_member_authors,
         "member_authored_counts": member_authored_counts,
+        # Per-window slices for the Team-View period toggle. Top-level
+        # fields above carry the 6m numbers (backward compat);
+        # `team_views["1m"]` / `team_views["3m"]` are the same shape
+        # with a narrower commit slice.
+        "team_views": team_views,
     }

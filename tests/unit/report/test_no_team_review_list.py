@@ -122,8 +122,20 @@ def test_template_visually_nests_list_under_detail_panel():
     """The list block must wear `.sub-details` styling (one indent
     deeper than `.nested-detail`) so the hierarchy reads as
     summary → detail panel → list, not as three peer sections."""
+    import re
     html = render_html(_minimal_data())
     assert ".sub-details {" in html
-    # border-left thinner than the parent's 3px accent border so
-    # the visual hierarchy is unambiguous.
-    assert "border-left: 2px solid #cbd5e1;" in html
+    # The hierarchy is conveyed by a hairline above the list — not
+    # the parent's accent left-border — so a future style change can
+    # swap technique (e.g. border-top vs border-left) without forcing
+    # a brittle pin on which side carries the separator. The invariant
+    # is just: there's a visible hairline against the rule colour.
+    rule_block_match = re.search(
+        r"\.sub-details\s*\{([^}]+)\}", html, re.DOTALL
+    )
+    assert rule_block_match is not None
+    rule_block = rule_block_match.group(1)
+    assert re.search(
+        r"border-(?:top|left)\s*:\s*\d+px\s+solid\s+var\(--rule\)",
+        rule_block,
+    ), rule_block

@@ -1,7 +1,8 @@
 """Pure functions for computing review wait time from Phab transactions."""
 
 import statistics
-from typing import Callable, Mapping
+from datetime import datetime
+from typing import Callable, Iterable, Mapping
 
 from reviewstats.git_log import Commit
 from reviewstats.metrics import iso_week
@@ -82,7 +83,41 @@ def member_authored_wait_revisions(
             "wait_days": react_s / 86400.0,
             "reviewer": first_review.get("actor"),
             "week": iso_week(commit.date),
+            # Date carried alongside `week` so windowed slices (1m/3m)
+            # can filter at day precision without losing partial weeks
+            # at the window edges. Stored as ISO string so the dict
+            # round-trips through JSON without extra encoders.
+            "date": commit.date.date().isoformat(),
         })
+    return out
+
+
+def filter_wait_revisions_within(
+    per_revision: Iterable[dict],
+    *,
+    window_start: datetime,
+    window_end: datetime,
+) -> list[dict]:
+    """Filter `per_revision` records by their `date` field to the given
+    window (inclusive on both ends).
+
+    Records carry `date` either as an ISO date string (the on-disk
+    shape written by `member_authored_wait_revisions`) or as a
+    `datetime`. A record without a `date` field can't be windowed
+    reliably and is dropped — silently keeping it would double-count
+    it in every sub-window aggregate.
+    """
+    start_iso = window_start.date().isoformat()
+    end_iso = window_end.date().isoformat()
+    out: list[dict] = []
+    for rec in per_revision:
+        d = rec.get("date")
+        if d is None:
+            continue
+        if isinstance(d, datetime):
+            d = d.date().isoformat()
+        if start_iso <= d <= end_iso:
+            out.append(rec)
     return out
 
 

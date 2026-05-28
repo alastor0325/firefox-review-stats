@@ -156,6 +156,57 @@ class TestBuildReport:
                     f"but Top Authors row {canonical!r} = {top_by_name[canonical]}"
                 )
 
+    def test_team_views_keys(self):
+        report = build_report(
+            _make_commits(),
+            group=GROUP,
+            path="dom/media",
+            window_start=datetime(2025, 11, 15, tzinfo=timezone.utc),
+            window_end=datetime(2026, 5, 15, tzinfo=timezone.utc),
+            generated_at=datetime(2026, 5, 15, tzinfo=timezone.utc),
+        )
+        assert set(report["team_views"].keys()) == {"1m", "3m", "6m"}
+
+    def test_six_month_view_matches_top_level(self):
+        # Top-level fields alias `team_views["6m"]` — the 6-Month
+        # period toggle reads from there, so any drift would mean the
+        # default page render and the 6-Month button show different
+        # numbers for the same data. Anchoring the 6m slot at the
+        # caller's window_start (not a strict 180-day cap) is what
+        # makes this invariant hold.
+        report = build_report(
+            _make_commits(),
+            group=GROUP,
+            path="dom/media",
+            window_start=datetime(2025, 11, 15, tzinfo=timezone.utc),
+            window_end=datetime(2026, 5, 15, tzinfo=timezone.utc),
+            generated_at=datetime(2026, 5, 15, tzinfo=timezone.utc),
+        )
+        six_m = report["team_views"]["6m"]
+        assert six_m["summary"] == report["summary"]
+        assert six_m["concentration"] == report["concentration"]
+        assert six_m["within_group_total"] == report["within_group_total"]
+        assert six_m["sole_reviewer"] == report["sole_reviewer"]
+        assert six_m["total_reviews_per_member"] == report["total_reviews_per_member"]
+        assert six_m["authors"] == report["authors"]
+
+    def test_one_month_view_is_narrower_than_six(self):
+        # 1m slot drops the older `2026-04-01` commits — verifying the
+        # narrowing actually fires, not just that the field exists.
+        report = build_report(
+            _make_commits(),
+            group=GROUP,
+            path="dom/media",
+            window_start=datetime(2025, 11, 15, tzinfo=timezone.utc),
+            window_end=datetime(2026, 5, 15, tzinfo=timezone.utc),
+            generated_at=datetime(2026, 5, 15, tzinfo=timezone.utc),
+        )
+        one_m = report["team_views"]["1m"]
+        six_m = report["team_views"]["6m"]
+        # 6m sees all 5 commits; 1m only the three from May.
+        assert six_m["summary"]["total_patches"] == 5
+        assert one_m["summary"]["total_patches"] == 3
+
     def test_per_member_authors_present(self):
         report = build_report(
             _make_commits(),

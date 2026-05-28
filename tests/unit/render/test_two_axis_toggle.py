@@ -77,9 +77,16 @@ class TestToggleBarMarkup:
         assert len(view_buttons) == 3, (
             f"expected exactly 3 view buttons, found {len(view_buttons)}"
         )
-        assert len(period_buttons) == 2, (
-            f"expected exactly 2 period buttons, found {len(period_buttons)}"
+        # Period axis: 1-Month / 3-Month / 6-Month (data-period="total")
+        # / Per-Week. 1m and 3m were added alongside the windowed
+        # `team_views` data so the user can drill in tighter than 6m.
+        assert len(period_buttons) == 4, (
+            f"expected exactly 4 period buttons, found {len(period_buttons)}"
         )
+        for v in ("1m", "3m", "total", "weekly"):
+            assert re.search(rf'<button[^>]*data-period="{v}"', bar), (
+                f'expected a "{v}" period button'
+            )
 
 
 class TestDefaultState:

@@ -33,8 +33,16 @@ from reviewstats.phab_html import (
 )
 from reviewstats.wait_time import (
     aggregate_wait_times,
+    filter_wait_revisions_within,
     member_authored_wait_revisions,
 )
+
+
+# Same months-back keys as report.TEAM_VIEW_WINDOWS so the period
+# toggle's 1-Month / 3-Month / 6-Month buttons line up between DATA
+# (git-side) and PHAB_DATA (Phab-side).
+_PHAB_WINDOWS = {"1m": 1, "3m": 3, "6m": 6}
+_DAYS_PER_MONTH = 30
 
 
 # Path / excludes flow from the team registry — see analyze_git.py
@@ -412,6 +420,30 @@ def _analyze_for_team(
     aggregated = aggregate_wait_times(per_revision)
     aggregated["per_author"] = per_author_summary
     aggregated["patch_list"] = patch_rows
+
+    # Windowed wait-time aggregates for the Team View period toggle.
+    # The "6m" slot reuses the unfiltered aggregate so it matches the
+    # top-level `n` / histogram / percentiles exactly — that aliasing
+    # is what the legacy fallback path in the frontend relies on, and
+    # narrowing it to a strict 180-day cap here would silently drop
+    # revisions older than that from the 6-Month view.
+    if commits:
+        window_end = max(c.date for c in commits)
+        window_start_6m = min(c.date for c in commits)
+        team_windows: dict[str, dict] = {"6m": aggregate_wait_times(per_revision)}
+        for key, months in _PHAB_WINDOWS.items():
+            if key == "6m":
+                continue
+            sub_start = max(
+                window_start_6m,
+                window_end - timedelta(days=_DAYS_PER_MONTH * months),
+            )
+            sub_revs = filter_wait_revisions_within(
+                per_revision, window_start=sub_start, window_end=window_end,
+            )
+            team_windows[key] = aggregate_wait_times(sub_revs)
+        aggregated["team_windows"] = team_windows
+
     aggregated["meta"] = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "n_commits": len(commits),

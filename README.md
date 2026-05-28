@@ -14,7 +14,7 @@ Per-team reviewer-load dashboards for Mozilla. Each dashboard covers the past 6 
 
 Each per-team page has three views, toggled at the top:
 
-- **Team View** — Headline summary (in-scope patch count, group-tagged %, listed-members reviewing, "landed without team review" with a foldable drill-down pie + patch list). Within-group reviewer distribution, concentration metrics (Gini, bus factor), sole-reviewer-risk, total reviews per member, top patch authors, author→reviewer mapping. Two periods: **6-Month** rollup and **Per-Week** (most-recent-week slice for wait-time data).
+- **Team View** — Headline summary (in-scope patch count, group-tagged %, listed-members reviewing, "landed without team review" with a foldable drill-down pie + patch list). Within-group reviewer distribution, concentration metrics (Gini, bus factor), sole-reviewer-risk, total reviews per member, top patch authors, author→reviewer mapping. Four periods: **1-Month** / **3-Month** / **6-Month** rollups (same content, narrower commit slices) and **Per-Week** (most-recent-week slice for wait-time data).
 - **Member View** — Per-member profile: weekly activity (reviews + patches submitted), authors whose patches they reviewed, wait-time tiles when they're the author.
 - **Wait Queue** — Per-revision table of in-scope, member-authored patches sorted by longest wait first. Links straight into Phabricator.
 

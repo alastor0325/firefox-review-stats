@@ -101,7 +101,7 @@
   .toggle-bar {
     display: flex; align-items: baseline;
     max-width: 1200px; margin: 0 auto;
-    padding: 2px 40px 12px;
+    padding: 8px 40px 8px;
   }
   .toggle-group { display: flex; }
   .toggle-sep {
@@ -274,7 +274,7 @@
     padding: 14px 20px 16px;
     background: var(--surface);
     border: 1px solid var(--rule);
-    border-left: 3px solid var(--red);
+    border-left: 3px solid var(--accent);
     border-radius: 0 2px 2px 0;
     position: relative;
   }
@@ -493,7 +493,11 @@
   body[data-view="queue"]   .team-only,   body[data-view="queue"]   .member-only
     { display: none !important; }
 
-  body[data-view="team"][data-period="total"]  .weekly-only,
+  /* Period axis: `.total-only` covers the 1m / 3m / 6m (data-period=total)
+     aggregate views; `.weekly-only` is just the Per-Week trend page. */
+  body[data-view="team"][data-period="1m"]    .weekly-only,
+  body[data-view="team"][data-period="3m"]    .weekly-only,
+  body[data-view="team"][data-period="total"] .weekly-only,
   body[data-view="team"][data-period="weekly"] .total-only { display: none !important; }
 
   body[data-view="member"] .toggle-group-period, body[data-view="member"] .toggle-sep,
@@ -552,6 +556,8 @@
     </div>
     <div class="toggle-sep" aria-hidden="true"></div>
     <div class="toggle-group toggle-group-period" role="tablist" aria-label="Period">
+      <button data-period="1m" type="button">1-Month</button>
+      <button data-period="3m" type="button">3-Month</button>
       <button data-period="total"  class="active" type="button">6-Month</button>
       <button data-period="weekly" type="button">Per-Week</button>
     </div>
@@ -925,42 +931,133 @@ timeLine.textContent =
 headerMeta.appendChild(scopeLine);
 headerMeta.appendChild(timeLine);
 
-// Summary grid
-const s = DATA.summary;
-const sg = document.getElementById('summary-grid');
-sg.appendChild(stat('Total in-scope patches', s.total_patches, null,
-  `All landings touching ${watched} in the last 6 months` +
-  (excludes.length ? `, excluding ${excludes.join(', ')}` : '') +
-  ', plus Lando-bot / Revert / merge / code-format commits skipped.'));
-sg.appendChild(stat('Tagged with group', s.group_tagged_patches, fmtPct(s.group_tagged_pct) + ' of total',
-  `Patches whose r= line includes "${DATA.meta.group}".`));
-sg.appendChild(stat('Listed members reviewing', DATA.within_group_total.length, 'of ' + Object.keys(DATA.members).length + ' on the list',
-  'How many listed members reviewed at least one patch in the 6-month window.'));
-const noTeamTile = stat('Landed without team review', s.landed_without_team_review, fmtPct(s.landed_without_team_review_pct) + ' of total',
-  `In-scope patches that landed with neither the ${DATA.meta.group} group tag nor any listed member as a reviewer. A non-zero value means changes in the team's paths are landing without team oversight. Click to see the per-subdirectory breakdown.`);
-noTeamTile.classList.add('expandable');
-const noTeamHint = document.createElement('div');
-noTeamHint.className = 'hint';
-noTeamHint.textContent = 'Click to view breakdown';
-noTeamTile.appendChild(noTeamHint);
-noTeamTile.addEventListener('click', toggleNoTeamReviewSection);
-sg.appendChild(noTeamTile);
-sg.appendChild(stat('Avg group-tagged / week', fmtNum(s.avg_per_week), null,
-  'Group-tagged patches landed per ISO week, averaged across the window.'));
+// =============================================================
+// Team / Aggregate (1m / 3m / 6m) — single set of DOM nodes, re-rendered
+// from the data slice that matches the current period toggle.
+//
+// Backed by `DATA.team_views[key]` and `PHAB_DATA.team_windows[key]`
+// where key ∈ {"1m","3m","6m"}. Both blocks fall back to the top-level
+// DATA / PHAB_DATA shape when the report was generated before the
+// per-window slices were introduced — that fallback always reads as
+// 6m, and the 1m / 3m buttons are hidden in that case.
+// =============================================================
 
-// Concentration grid
-const c = DATA.concentration;
-const cg = document.getElementById('concentration-grid');
-cg.appendChild(stat('Top-1 share', fmtPct(c.top1_share), null,
-  'Share of all member-reviews done by the single top member.'));
-cg.appendChild(stat('Top-3 share', fmtPct(c.top3_share), null,
-  'Share done by the top 3 members combined.'));
-cg.appendChild(stat('Top-5 share', fmtPct(c.top5_share), null,
-  'Share done by the top 5 members combined.'));
-cg.appendChild(stat('Gini coefficient', c.gini.toFixed(2), null,
-  'Inequality measure. 0 = perfectly even, 1 = one person does everything. ~0.5+ = significant concentration.'));
-cg.appendChild(stat('Bus factor (≥50%)', c.bus_factor, null,
-  'Smallest number of members whose absence leaves >50% of reviews uncovered. Lower = more single-point-of-failure risk.'));
+const PERIOD_TO_KEY = { 'total': '6m', '1m': '1m', '3m': '3m' };
+
+// Track Chart instances so re-renders can destroy them before
+// creating a replacement on the same <canvas> — Chart.js otherwise
+// errors out with "Canvas is already in use by chart #N".
+const teamCharts = {};
+function resetChart(id) {
+  if (teamCharts[id]) {
+    teamCharts[id].destroy();
+    delete teamCharts[id];
+  }
+}
+
+function teamViewFor(periodKey) {
+  if (DATA.team_views && DATA.team_views[periodKey]) {
+    return DATA.team_views[periodKey];
+  }
+  // Older data files predate `team_views`; assemble the same shape
+  // from the top-level fields so this path still renders something
+  // (always reads as 6m — the 1m / 3m buttons are hidden in this case).
+  return {
+    summary: DATA.summary,
+    concentration: DATA.concentration,
+    within_group_total: DATA.within_group_total,
+    sole_reviewer: DATA.sole_reviewer,
+    total_reviews_per_member: DATA.total_reviews_per_member,
+    authors: DATA.authors,
+  };
+}
+function phabWindowFor(periodKey) {
+  if (PHAB_DATA && PHAB_DATA.team_windows && PHAB_DATA.team_windows[periodKey]) {
+    return PHAB_DATA.team_windows[periodKey];
+  }
+  return PHAB_DATA;
+}
+
+// Module-level state mutated by `renderTeamTotalView`. The no-team
+// review handlers (`toggleNoTeamReviewSection`, `setNoTeamReviewOpen`,
+// `buildNoTeamReviewTable`) read these so a period change updates
+// their behaviour without re-binding listeners.
+let s = null;
+let noTeamTile = null;
+let noTeamHint = null;
+let noTeamReviewList = [];
+let noTeamReviewChart = null;
+let noTeamReviewTableBuilt = false;
+
+function renderTeamTotalView(periodKey) {
+  const view = teamViewFor(periodKey);
+  s = view.summary;
+  const c = view.concentration;
+
+  // Summary grid
+  const sg = document.getElementById('summary-grid');
+  sg.innerHTML = '';
+  sg.appendChild(stat('Total in-scope patches', s.total_patches, null,
+    `All landings touching ${watched} in the selected window` +
+    (excludes.length ? `, excluding ${excludes.join(', ')}` : '') +
+    ', plus Lando-bot / Revert / merge / code-format commits skipped.'));
+  sg.appendChild(stat('Tagged with group', s.group_tagged_patches, fmtPct(s.group_tagged_pct) + ' of total',
+    `Patches whose r= line includes "${DATA.meta.group}".`));
+  sg.appendChild(stat('Listed members reviewing', view.within_group_total.length, 'of ' + Object.keys(DATA.members).length + ' on the list',
+    'How many listed members reviewed at least one patch in the selected window.'));
+  noTeamTile = stat('Landed without team review', s.landed_without_team_review, fmtPct(s.landed_without_team_review_pct) + ' of total',
+    `In-scope patches that landed with neither the ${DATA.meta.group} group tag nor any listed member as a reviewer. A non-zero value means changes in the team's paths are landing without team oversight. Click to see the per-subdirectory breakdown.`);
+  noTeamTile.classList.add('expandable');
+  noTeamHint = document.createElement('div');
+  noTeamHint.className = 'hint';
+  noTeamHint.textContent = 'Click to view breakdown';
+  noTeamTile.appendChild(noTeamHint);
+  noTeamTile.addEventListener('click', toggleNoTeamReviewSection);
+  sg.appendChild(noTeamTile);
+  sg.appendChild(stat('Avg group-tagged / week', fmtNum(s.avg_per_week), null,
+    'Group-tagged patches landed per ISO week, averaged across the selected window.'));
+
+  // Concentration grid
+  const cg = document.getElementById('concentration-grid');
+  cg.innerHTML = '';
+  cg.appendChild(stat('Top-1 share', fmtPct(c.top1_share), null,
+    'Share of all member-reviews done by the single top member.'));
+  cg.appendChild(stat('Top-3 share', fmtPct(c.top3_share), null,
+    'Share done by the top 3 members combined.'));
+  cg.appendChild(stat('Top-5 share', fmtPct(c.top5_share), null,
+    'Share done by the top 5 members combined.'));
+  cg.appendChild(stat('Gini coefficient', c.gini.toFixed(2), null,
+    'Inequality measure. 0 = perfectly even, 1 = one person does everything. ~0.5+ = significant concentration.'));
+  cg.appendChild(stat('Bus factor (≥50%)', c.bus_factor, null,
+    'Smallest number of members whose absence leaves >50% of reviews uncovered. Lower = more single-point-of-failure risk.'));
+
+  // Charts
+  renderTeamCharts(view);
+
+  // No-team-review summary tile + lazy section
+  noTeamReviewList = s.landed_without_team_review_list || [];
+  document.getElementById('no-team-review-list-count').textContent = noTeamReviewList.length;
+  resetNoTeamReviewSection();
+
+  // Phab section for the same window
+  renderPhabTotalView(periodKey);
+
+  attachTooltips(document);
+}
+
+function resetNoTeamReviewSection() {
+  // Collapse the nested-detail panel, throw away its lazy chart, and
+  // mark the lazy table for rebuild. Called on every period change so
+  // the panel doesn't carry stale rows / a stale pie across windows.
+  resetChart('chart-no-team-review');
+  noTeamReviewChart = null;
+  noTeamReviewTableBuilt = false;
+  const container = document.getElementById('no-team-review-list-container');
+  if (container) container.innerHTML = '';
+  const detailsEl = document.getElementById('no-team-review-list-details');
+  if (detailsEl) detailsEl.open = false;
+  setNoTeamReviewOpen(false);
+}
 
 // --- Weekly summary + concentration (latest week vs previous) ---
 const lastIdx = DATA.weekly_trend.weeks.length - 1;
@@ -1013,14 +1110,21 @@ if (lastIdx >= 0) {
     'Listed members with any review activity this week.'));
 }
 
-// Two-axis toggle wiring: data-view (team|member) × data-period (total|weekly).
-// Buttons declare their axis + value via data attributes; one handler per axis.
+// Two-axis toggle wiring: data-view (team|member|queue) × data-period
+// (1m|3m|total|weekly). Buttons declare their axis + value via data
+// attributes; one handler per axis. When the period changes to one of
+// the aggregate slices (1m / 3m / total≡6m), re-render the team-total
+// view from the matching `DATA.team_views[*]` slice.
 function bindToggle(axis) {
   const buttons = document.querySelectorAll(`.toggle-bar button[data-${axis}]`);
   function set(value) {
     document.body.dataset[axis] = value;
     for (const b of buttons) {
       b.classList.toggle('active', b.dataset[axis] === value);
+    }
+    if (axis === 'period') {
+      const key = PERIOD_TO_KEY[value];
+      if (key) renderTeamTotalView(key);
     }
   }
   for (const b of buttons) {
@@ -1029,6 +1133,21 @@ function bindToggle(axis) {
 }
 bindToggle('view');
 bindToggle('period');
+
+// If the report was generated before `team_views` was introduced,
+// only 6m data is available — hide the 1m / 3m buttons so the user
+// doesn't click them and see the same numbers as 6m. The next weekly
+// refresh fills `team_views` in and the buttons reappear.
+if (!DATA.team_views) {
+  document.querySelectorAll(
+    '.toggle-bar button[data-period="1m"], .toggle-bar button[data-period="3m"]'
+  ).forEach(b => { b.style.display = 'none'; });
+}
+
+// Initial team-total render — reads the HTML's default data-period
+// (set to "total"; maps to "6m") and renders the matching slice.
+// bindToggle takes over from here on every subsequent click.
+renderTeamTotalView(PERIOD_TO_KEY[document.body.dataset.period] || '6m');
 
 function horizontalBar(canvasId, rows, fill) {
   const colors = (typeof fill === 'function')
@@ -1062,80 +1181,118 @@ function horizontalBar(canvasId, rows, fill) {
   });
 }
 
-horizontalBar('chart-distribution', DATA.within_group_total, color);
-horizontalBar('chart-sole',         DATA.sole_reviewer,       COLOR_RED);
-horizontalBar('chart-authors',      DATA.authors.top_total,   COLOR_FOREST);
+function renderTeamCharts(view) {
+  resetChart('chart-distribution');
+  teamCharts['chart-distribution'] = horizontalBar(
+    'chart-distribution', view.within_group_total, color);
 
-// --- Total reviews per member (stacked: in-group vs out-of-group) ---
-new Chart(document.getElementById('chart-total-reviews'), {
-  type: 'bar',
-  data: {
-    labels: DATA.total_reviews_per_member.map(r => r.name),
-    datasets: [
-      {
-        label: `${DATA.meta.group}-tagged`,
-        data: DATA.total_reviews_per_member.map(r => r.in_group),
-        backgroundColor: COLOR_NAVY,
-      },
-      {
-        label: 'other in-scope',
-        data: DATA.total_reviews_per_member.map(r => r.out_of_group),
-        backgroundColor: COLOR_GRAY,
-      },
-    ],
-  },
-  options: {
-    indexAxis: 'y',
-    plugins: {
-      legend: { position: 'bottom' },
-      tooltip: {
-        mode: 'index',
-        callbacks: {
-          footer: items => {
-            const row = DATA.total_reviews_per_member[items[0].dataIndex];
-            return `Total: ${row.total}`;
+  resetChart('chart-sole');
+  teamCharts['chart-sole'] = horizontalBar(
+    'chart-sole', view.sole_reviewer, COLOR_RED);
+
+  resetChart('chart-authors');
+  teamCharts['chart-authors'] = horizontalBar(
+    'chart-authors', view.authors.top_total, COLOR_FOREST);
+
+  // --- Total reviews per member (stacked: in-group vs out-of-group) ---
+  resetChart('chart-total-reviews');
+  teamCharts['chart-total-reviews'] = new Chart(document.getElementById('chart-total-reviews'), {
+    type: 'bar',
+    data: {
+      labels: view.total_reviews_per_member.map(r => r.name),
+      datasets: [
+        {
+          label: `${DATA.meta.group}-tagged`,
+          data: view.total_reviews_per_member.map(r => r.in_group),
+          backgroundColor: COLOR_NAVY,
+        },
+        {
+          label: 'other in-scope',
+          data: view.total_reviews_per_member.map(r => r.out_of_group),
+          backgroundColor: COLOR_GRAY,
+        },
+      ],
+    },
+    options: {
+      indexAxis: 'y',
+      plugins: {
+        legend: { position: 'bottom' },
+        tooltip: {
+          mode: 'index',
+          callbacks: {
+            footer: items => {
+              const row = view.total_reviews_per_member[items[0].dataIndex];
+              return `Total: ${row.total}`;
+            },
           },
         },
       },
+      scales: {
+        x: { stacked: true, beginAtZero: true },
+        y: { stacked: true },
+      },
+      maintainAspectRatio: false,
     },
-    scales: {
-      x: { stacked: true, beginAtZero: true },
-      y: { stacked: true },
-    },
-    maintainAspectRatio: false,
-  },
-});
+  });
 
-// --- Within-group distribution (doughnut) ---
-new Chart(document.getElementById('chart-distribution-pie'), {
-  type: 'doughnut',
-  data: {
-    labels: DATA.within_group_total.map(r => r.name),
-    datasets: [{
-      data: DATA.within_group_total.map(r => r.count),
-      backgroundColor: DATA.within_group_total.map((_, i) => color(i)),
-      borderWidth: 1,
-    }],
-  },
-  options: {
-    plugins: {
-      legend: { position: 'bottom', labels: { boxWidth: 12 } },
-      tooltip: { callbacks: {
-        label: ctx => `${ctx.label}: ${ctx.parsed} (${fmtPct(DATA.within_group_total[ctx.dataIndex].pct)})`,
-      }},
+  // --- Within-group distribution (doughnut) ---
+  resetChart('chart-distribution-pie');
+  teamCharts['chart-distribution-pie'] = new Chart(document.getElementById('chart-distribution-pie'), {
+    type: 'doughnut',
+    data: {
+      labels: view.within_group_total.map(r => r.name),
+      datasets: [{
+        data: view.within_group_total.map(r => r.count),
+        backgroundColor: view.within_group_total.map((_, i) => color(i)),
+        borderWidth: 1,
+      }],
     },
-    maintainAspectRatio: false,
-  },
-});
+    options: {
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 12 } },
+        tooltip: { callbacks: {
+          label: ctx => `${ctx.label}: ${ctx.parsed} (${fmtPct(view.within_group_total[ctx.dataIndex].pct)})`,
+        }},
+      },
+      maintainAspectRatio: false,
+    },
+  });
+
+  // --- Author → reviewer matrix (stacked bar) ---
+  resetChart('chart-author-reviewer');
+  const matrix = view.authors.reviewer_matrix;
+  const matrixAuthors = Object.keys(matrix);
+  const memberIds = Object.keys(DATA.members);
+  teamCharts['chart-author-reviewer'] = new Chart(document.getElementById('chart-author-reviewer'), {
+    type: 'bar',
+    data: {
+      labels: matrixAuthors,
+      datasets: memberIds.map((m, i) => ({
+        label: m,
+        data: matrixAuthors.map(a => (matrix[a] || {})[m] || 0),
+        backgroundColor: color(i),
+      })),
+    },
+    options: {
+      indexAxis: 'y',
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 12 } },
+        tooltip: { mode: 'index' },
+      },
+      scales: {
+        x: { stacked: true, beginAtZero: true },
+        y: { stacked: true },
+      },
+      maintainAspectRatio: false,
+    },
+  });
+}
 
 // --- Landed without team review: pie + full patch list ---
 // Both hidden behind a click on the corresponding summary tile so
 // the Team view stays focused on headline metrics. Pie + table are
 // each rendered on first reveal of their containers.
-const noTeamReviewList = s.landed_without_team_review_list || [];
-document.getElementById('no-team-review-list-count').textContent = noTeamReviewList.length;
 
-let noTeamReviewTableBuilt = false;
 function buildNoTeamReviewTable() {
   if (noTeamReviewTableBuilt) return;
   noTeamReviewTableBuilt = true;
@@ -1175,12 +1332,11 @@ document.getElementById('no-team-review-list-details').addEventListener('toggle'
   if (e.target.open) buildNoTeamReviewTable();
 });
 
-let noTeamReviewChart = null;
 function setNoTeamReviewOpen(open) {
   const section = document.getElementById('landed-without-review-section');
   section.style.display = open ? 'block' : 'none';
-  noTeamTile.classList.toggle('is-open', open);
-  noTeamHint.textContent = open ? 'Click to hide' : 'Click to view breakdown';
+  if (noTeamTile) noTeamTile.classList.toggle('is-open', open);
+  if (noTeamHint) noTeamHint.textContent = open ? 'Click to hide' : 'Click to view breakdown';
 }
 document.getElementById('close-no-team-review').addEventListener('click', (e) => {
   e.stopPropagation();
@@ -1223,35 +1379,8 @@ function toggleNoTeamReviewSection() {
       maintainAspectRatio: false,
     },
   });
+  teamCharts['chart-no-team-review'] = noTeamReviewChart;
 }
-
-// --- Author → reviewer matrix (stacked bar) ---
-const matrix = DATA.authors.reviewer_matrix;
-const matrixAuthors = Object.keys(matrix);
-const memberIds = Object.keys(DATA.members);
-new Chart(document.getElementById('chart-author-reviewer'), {
-  type: 'bar',
-  data: {
-    labels: matrixAuthors,
-    datasets: memberIds.map((m, i) => ({
-      label: m,
-      data: matrixAuthors.map(a => (matrix[a] || {})[m] || 0),
-      backgroundColor: color(i),
-    })),
-  },
-  options: {
-    indexAxis: 'y',
-    plugins: {
-      legend: { position: 'bottom', labels: { boxWidth: 12 } },
-      tooltip: { mode: 'index' },
-    },
-    scales: {
-      x: { stacked: true, beginAtZero: true },
-      y: { stacked: true },
-    },
-    maintainAspectRatio: false,
-  },
-});
 
 // --- Weekly trend, listed members ordered by total review count ---
 // Sort descending so the highest-volume reviewer's series is the
@@ -1284,27 +1413,35 @@ new Chart(document.getElementById('chart-trend-all'), {
 // =============================================================
 // Wait-time section (only if Phabricator data was generated)
 // =============================================================
-if (PHAB_DATA && PHAB_DATA.n > 0) {
-  document.getElementById('phab-section').style.display = 'block';
+function renderPhabTotalView(periodKey) {
+  const phabSection = document.getElementById('phab-section');
+  const win = phabWindowFor(periodKey);
+  if (!win || !win.n) {
+    phabSection.style.display = 'none';
+    return;
+  }
+  phabSection.style.display = 'block';
 
   // Summary tiles
   const pg = document.getElementById('phab-summary-grid');
-  pg.appendChild(stat('Patches with wait data', PHAB_DATA.n, null,
+  pg.innerHTML = '';
+  pg.appendChild(stat('Patches with wait data', win.n, null,
     'Patches we could compute submit→first-review-action latency for (excludes those with no non-author transactions yet).'));
-  pg.appendChild(stat('Median wait', PHAB_DATA.percentiles.p50.toFixed(1) + ' d', null,
+  pg.appendChild(stat('Median wait', win.percentiles.p50.toFixed(1) + ' d', null,
     '50th percentile: half of patches waited longer than this, half shorter.'));
-  pg.appendChild(stat('P75 wait', PHAB_DATA.percentiles.p75.toFixed(1) + ' d', null,
+  pg.appendChild(stat('P75 wait', win.percentiles.p75.toFixed(1) + ' d', null,
     '75th percentile: a quarter of patches waited longer than this.'));
-  pg.appendChild(stat('P90 wait', PHAB_DATA.percentiles.p90.toFixed(1) + ' d', null,
+  pg.appendChild(stat('P90 wait', win.percentiles.p90.toFixed(1) + ' d', null,
     '90th percentile: a tenth of patches waited longer than this (the "slow tail").'));
 
   // Histogram
-  new Chart(document.getElementById('chart-wait-hist'), {
+  resetChart('chart-wait-hist');
+  teamCharts['chart-wait-hist'] = new Chart(document.getElementById('chart-wait-hist'), {
     type: 'bar',
     data: {
-      labels: PHAB_DATA.histogram.map(r => r.bucket),
+      labels: win.histogram.map(r => r.bucket),
       datasets: [{
-        data: PHAB_DATA.histogram.map(r => r.count),
+        data: win.histogram.map(r => r.count),
         backgroundColor: COLOR_NAVY,
       }],
     },
@@ -1313,7 +1450,7 @@ if (PHAB_DATA && PHAB_DATA.n > 0) {
         legend: { display: false },
         tooltip: { callbacks: {
           label: ctx => {
-            const row = PHAB_DATA.histogram[ctx.dataIndex];
+            const row = win.histogram[ctx.dataIndex];
             return `${row.count} (${fmtPct(row.pct)})`;
           },
         }},
@@ -1324,13 +1461,14 @@ if (PHAB_DATA && PHAB_DATA.n > 0) {
   });
 
   // Weekly median
-  new Chart(document.getElementById('chart-wait-weekly'), {
+  resetChart('chart-wait-weekly');
+  teamCharts['chart-wait-weekly'] = new Chart(document.getElementById('chart-wait-weekly'), {
     type: 'line',
     data: {
-      labels: PHAB_DATA.weekly_median.map(r => r.week),
+      labels: win.weekly_median.map(r => r.week),
       datasets: [{
         label: 'Median wait (days)',
-        data: PHAB_DATA.weekly_median.map(r => r.median_days),
+        data: win.weekly_median.map(r => r.median_days),
         borderColor: COLOR_NAVY,
         backgroundColor: COLOR_NAVY + '33',
         tension: 0.25,
@@ -1342,8 +1480,12 @@ if (PHAB_DATA && PHAB_DATA.n > 0) {
       maintainAspectRatio: false,
     },
   });
+}
 
-  // --- Most-recent-week slice (team / per-week view) ---
+if (PHAB_DATA && PHAB_DATA.n > 0) {
+  // --- Most-recent-week slice (team / per-week view) — window-independent,
+  // always anchored at the latest ISO week with data so the Per-Week
+  // toggle reads the same regardless of the 1m / 3m / 6m selection.
   const lw = PHAB_DATA.last_week;
   if (lw && lw.n > 0) {
     document.getElementById('phab-section-week').style.display = 'block';

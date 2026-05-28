@@ -80,8 +80,18 @@ def test_h1_shows_group_only_paths_live_in_subtitle():
     # the misleading abbreviation.
     assert "hdr-group" not in html
     assert "hdr-meta" not in html
-    # The static H1 text is the team-agnostic 'Reviewer Load — '.
-    assert "Reviewer Load — <span id=\"header-group\">" in html
+    # The static H1 text leads with the team-agnostic 'Reviewer Load',
+    # then a decorative separator, then the JS-populated group span.
+    # The separator glyph is a presentation detail — pinning the literal
+    # em-dash was too brittle when the editorial redesign swapped in a
+    # serif middle-dot — so just assert order and ID presence.
+    import re
+    h1_match = re.search(r"<h1[^>]*>(.*?)</h1>", html, re.DOTALL)
+    assert h1_match is not None, "no <h1> in rendered page"
+    h1 = h1_match.group(1)
+    assert "Reviewer Load" in h1
+    assert 'id="header-group"' in h1
+    assert h1.index("Reviewer Load") < h1.index('id="header-group"')
 
 
 def test_header_has_back_link_to_landing_picker():
