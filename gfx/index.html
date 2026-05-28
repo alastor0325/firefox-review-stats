@@ -4,129 +4,326 @@
 <meta charset="utf-8">
 <title>Reviewer Load Dashboard</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='12' fill='%23FF0039'/><text x='32' y='49' font-family='-apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif' font-weight='900' font-size='52' fill='white' text-anchor='middle'>m</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,300..900,0..100;1,9..144,300..900,0..100&family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=JetBrains+Mono:wght@400..700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
   :root {
-    --bg: #f6f7f9;
-    --fg: #1c1f24;
-    --muted: #6b7280;
-    --card: #ffffff;
-    --accent: #3b82f6;
-    --warn: #ef4444;
-    --pill: #e5e7eb;
-    --pill-active: #1c1f24;
-    --pill-active-fg: #ffffff;
+    --paper: #FAF7F0;
+    --paper-warm: #F2EBDC;
+    --ink: #16110D;
+    --ink-soft: #3B342D;
+    --muted: #8B8378;
+    --rule: #E6DECD;
+    --rule-soft: #F0E9D9;
+    --surface: #FFFFFF;
+    --red: #FF0039;
+    --red-deep: #B3002A;
+
+    /* legacy token aliases retained in case any inline reference uses them */
+    --bg: var(--paper);
+    --fg: var(--ink);
+    --card: var(--surface);
+    --accent: var(--red);
+    --warn: var(--red);
+    --pill: var(--paper-warm);
+    --pill-active: var(--ink);
+    --pill-active-fg: var(--paper);
+
+    --serif: 'Fraunces', 'Iowan Old Style', Georgia, serif;
+    --sans: 'Instrument Sans', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
   }
-  body { font-family: -apple-system, system-ui, sans-serif; margin: 0; background: var(--bg); color: var(--fg); }
-  /* Wraps header + view-switcher and pins both to the top as one
-     unit. Sticky from `top: 0` means there's no scroll-and-snap
-     jump — they never move while the user scrolls. */
+  * { box-sizing: border-box; }
+
+  body {
+    font-family: var(--sans);
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Sticky top bar — header + view selector pinned together */
   .top-bar {
     position: sticky; top: 0; z-index: 100;
-    background: var(--bg);
-    box-shadow: 0 1px 2px rgba(0,0,0,.06);
+    background: var(--paper);
+    border-bottom: 1px solid var(--rule);
   }
-  header { background: var(--fg); color: var(--bg); padding: 24px 32px; }
-  header h1 { margin: 0; font-size: 20px; font-weight: 600; }
-  header .meta { margin-top: 6px; font-size: 13px; opacity: 0.7; }
-  main { max-width: 1180px; margin: 0 auto; padding: 24px 24px 48px; }
-  section { background: var(--card); border-radius: 8px; padding: 20px 24px; margin-bottom: 18px; box-shadow: 0 1px 2px rgba(0,0,0,.05); }
-  section h2 { margin: 0 0 12px; font-size: 15px; font-weight: 600; color: #4b5563; }
-  .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; }
-  .stat { padding: 10px 14px; background: #f9fafb; border-radius: 6px; }
-  .stat .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
-  .stat .value { font-size: 22px; font-weight: 600; margin-top: 4px; }
-  .stat .sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
-  .stat.expandable {
-    cursor: pointer;
-    transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
-    border: 1px dashed #cbd5e1;
-    position: relative;
+  header {
+    padding: 22px 40px 10px;
+    max-width: 1200px;
+    margin: 0 auto;
   }
-  .stat.expandable:hover {
-    background: #eff6ff;
-    border-color: var(--accent);
-    box-shadow: 0 2px 6px rgba(59, 130, 246, 0.15);
+  header h1 {
+    margin: 0;
+    font-family: var(--serif);
+    font-variation-settings: "opsz" 90, "wght" 500, "SOFT" 30;
+    font-size: 32px;
+    line-height: 1.02;
+    letter-spacing: -0.02em;
+    font-weight: 500;
+    color: var(--ink);
   }
-  .stat.expandable .label::after {
-    content: " ▸";
-    color: var(--accent);
-    font-size: 11px;
+  header h1 a {
+    color: var(--muted) !important;
+    text-decoration: none !important;
+    opacity: 1 !important;
+    font-family: var(--serif);
+    font-variation-settings: "opsz" 60, "wght" 400;
+    font-size: 22px;
+    margin-right: 12px !important;
+    vertical-align: 3px;
+    font-weight: 400 !important;
+    transition: color 0.15s;
     display: inline-block;
-    transition: transform 0.15s;
-    font-weight: 700;
   }
-  .stat.expandable.is-open {
-    background: #eff6ff;
-    border-style: solid;
-    border-color: var(--accent);
+  header h1 a:hover { color: var(--red) !important; }
+  header h1 #header-group {
+    font-style: italic;
+    color: var(--red);
+    font-variation-settings: "opsz" 90, "wght" 500, "SOFT" 100;
+    letter-spacing: -0.005em;
   }
-  .stat.expandable.is-open .label::after { transform: rotate(90deg); }
-  .stat.expandable .hint {
-    font-size: 10px;
-    color: var(--accent);
-    margin-top: 4px;
+  header .meta {
+    margin-top: 8px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    color: var(--muted);
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    line-height: 1.65;
+  }
+
+  /* View / period selector — text tabs with red underline */
+  .toggle-bar {
+    display: flex; align-items: baseline;
+    max-width: 1200px; margin: 0 auto;
+    padding: 2px 40px 12px;
+  }
+  .toggle-group { display: flex; }
+  .toggle-sep {
+    width: 1px; height: 11px;
+    background: var(--rule);
+    margin: 5px 14px;
+    align-self: center;
+  }
+  .toggle-bar button {
+    background: transparent;
+    color: var(--muted);
+    border: none;
+    padding: 4px 0;
+    margin-right: 20px;
+    font: inherit;
+    font-family: var(--mono);
+    font-size: 10.5px; font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    position: relative;
+    transition: color 0.15s;
+  }
+  .toggle-bar button::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0; bottom: -2px;
+    height: 2px;
+    background: var(--red);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.22s ease;
+  }
+  .toggle-bar button:hover { color: var(--ink); }
+  .toggle-bar button.active {
+    color: var(--ink);
     font-weight: 600;
   }
-  /* Nested detail section — visually subordinate to the summary
-     grid above it. Indented + accent border + smaller heading. */
+  .toggle-bar button.active::after { transform: scaleX(1); }
+
+  main {
+    max-width: 1200px; margin: 0 auto;
+    padding: 18px 40px 48px;
+  }
+
+  /* Page divider — used for the inline phab-section H2 dividers */
+  .page-divider {
+    font-family: var(--serif);
+    font-variation-settings: "opsz" 60, "wght" 500, "SOFT" 30;
+    font-size: 22px;
+    line-height: 1.2;
+    margin: 24px 0 10px;
+    padding: 0;
+    color: var(--ink);
+    font-weight: 500;
+    letter-spacing: -0.015em;
+  }
+  .page-divider em {
+    font-style: italic;
+    color: var(--red);
+    font-variation-settings: "opsz" 60, "wght" 500, "SOFT" 100;
+  }
+
+  section {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    padding: 16px 20px 18px;
+    margin-bottom: 10px;
+    position: relative;
+  }
+  section h2 {
+    margin: 0 0 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--rule-soft);
+    font-family: var(--serif);
+    font-variation-settings: "opsz" 30, "wght" 600, "SOFT" 30;
+    font-size: 16px;
+    line-height: 1.25;
+    font-weight: 600;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+  }
+  section h2 .info { vertical-align: middle; }
+
+  /* Small marginal § marker beside each section, like a printed footnote */
+  section::before {
+    content: '§';
+    position: absolute;
+    left: -30px; top: 12px;
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 22px;
+    color: var(--rule);
+    font-variation-settings: "opsz" 30, "wght" 400, "SOFT" 100;
+    line-height: 1;
+  }
+  @media (max-width: 1340px) { section::before { display: none; } }
+
+  /* Stats grid — bordered tiles using gap+background hairline trick */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+  }
+  .stat {
+    padding: 11px 14px 13px;
+    background: var(--surface);
+    position: relative;
+  }
+  .stat .label {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+  .stat .value {
+    font-family: var(--serif);
+    font-variation-settings: "opsz" 72, "wght" 500, "SOFT" 20;
+    font-size: 26px;
+    line-height: 1;
+    margin-top: 6px;
+    letter-spacing: -0.022em;
+    font-weight: 500;
+    color: var(--ink);
+    font-feature-settings: "tnum", "lnum";
+  }
+  .stat .sub {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 5px;
+    letter-spacing: 0.02em;
+    line-height: 1.45;
+  }
+  .stat.expandable {
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .stat.expandable:hover { background: var(--paper); }
+  .stat.expandable .label::after {
+    content: " →";
+    color: var(--red);
+    font-size: 10px;
+    display: inline-block;
+    transition: transform 0.2s;
+    font-weight: 700;
+    margin-left: 4px;
+  }
+  .stat.expandable.is-open { background: var(--paper-warm); }
+  .stat.expandable.is-open .label::after { transform: rotate(90deg); }
+  .stat.expandable .hint {
+    font-family: var(--mono);
+    font-size: 8.5px;
+    color: var(--red);
+    margin-top: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-weight: 600;
+  }
+
+  /* Nested detail (subdir breakdown) — appears below summary tiles */
   .nested-detail {
-    margin: 8px 0 0 24px;
-    padding: 12px 16px 16px;
-    border-left: 3px solid var(--accent);
-    background: #fbfdff;
-    border-radius: 0 6px 6px 0;
+    margin: 0 0 10px;
+    padding: 14px 20px 16px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--red);
+    border-radius: 0 2px 2px 0;
     position: relative;
   }
   .nested-detail h3 {
-    font-size: 13px;
-    margin: 0 0 8px;
-    color: #334155;
+    font-family: var(--serif);
+    font-variation-settings: "opsz" 24, "wght" 600;
+    font-size: 14px;
+    margin: 0 0 10px;
     font-weight: 600;
+    color: var(--ink);
   }
-  .nested-detail .chart-box.square { max-width: 320px; margin: 0 auto; }
+  .nested-detail .chart-box.square { max-width: 300px; margin: 0 auto; }
   .nested-detail .close-detail {
-    position: absolute;
-    top: 8px;
-    right: 12px;
-    background: none;
-    border: 1px solid #cbd5e1;
+    position: absolute; top: 12px; right: 14px;
+    background: transparent;
+    border: 1px solid var(--rule);
     color: var(--muted);
-    font-size: 12px;
-    padding: 2px 8px;
-    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: 9.5px; padding: 4px 8px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border-radius: 2px;
     cursor: pointer;
-    line-height: 1.4;
+    transition: color 0.15s, border-color 0.15s;
   }
   .nested-detail .close-detail:hover {
-    border-color: var(--accent);
-    color: var(--accent);
-    background: #eff6ff;
+    border-color: var(--red); color: var(--red);
   }
-  /* Sub-sub-section — one indent deeper than .nested-detail.
-     Uses native <details>/<summary> for built-in folding. */
+
+  /* Sub-details — expandable table-of-patches list */
   .sub-details {
-    margin: 12px 0 0 16px;
-    padding: 8px 12px;
-    border-left: 2px solid #cbd5e1;
-    background: #ffffff;
-    border-radius: 0 4px 4px 0;
+    margin: 12px 0 0;
+    padding: 10px 0 0;
+    border-top: 1px solid var(--rule);
   }
   .sub-details > summary {
     cursor: pointer;
-    font-size: 12px;
-    font-weight: 600;
-    color: #334155;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-soft);
     list-style: none;
     user-select: none;
-    padding: 2px 0;
+    padding: 4px 0;
   }
   .sub-details > summary::-webkit-details-marker { display: none; }
   .sub-details > summary::before {
-    content: "▸ ";
-    color: var(--accent);
+    content: "▸ "; color: var(--red);
     display: inline-block;
     transition: transform 0.15s;
     width: 1em;
@@ -135,152 +332,208 @@
   .sub-details table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 8px;
-    font-size: 12px;
+    margin-top: 14px;
+    font-family: var(--sans);
+    font-size: 12.5px;
   }
   .sub-details th, .sub-details td {
     text-align: left;
-    padding: 4px 8px;
-    border-bottom: 1px solid #f1f5f9;
+    padding: 9px 10px;
+    border-bottom: 1px solid var(--rule-soft);
     vertical-align: top;
   }
   .sub-details th {
-    background: #f8fafc;
+    background: var(--paper);
+    font-family: var(--mono);
     font-weight: 600;
     color: var(--muted);
     text-transform: uppercase;
-    font-size: 10px;
-    letter-spacing: 0.04em;
+    font-size: 9.5px;
+    letter-spacing: 0.1em;
   }
   .sub-details td.subject { max-width: 380px; overflow-wrap: anywhere; }
   .sub-details td.subdir-cell {
-    font-family: ui-monospace, SFMono-Regular, monospace;
-    color: var(--accent);
+    font-family: var(--mono);
+    color: var(--red-deep);
+    font-size: 11.5px;
     white-space: nowrap;
   }
-  /* Back-to-top button: fixed bottom-right, hidden until the user
-     scrolls past the top sentinel, fades in/out on visibility. */
+
+  /* Back to top — fixed bottom right */
   #back-to-top {
     position: fixed;
-    bottom: 24px;
-    right: 24px;
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    border: none;
-    background: var(--fg);
-    color: var(--bg);
-    font-size: 20px;
-    line-height: 1;
+    bottom: 28px; right: 28px;
+    width: 44px; height: 44px;
+    border-radius: 2px;
+    border: 1px solid var(--ink);
+    background: var(--ink);
+    color: var(--paper);
+    font-size: 18px; line-height: 1;
     cursor: pointer;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
-    opacity: 0;
-    visibility: hidden;
+    box-shadow: 0 6px 20px rgba(22, 17, 13, 0.18);
+    opacity: 0; visibility: hidden;
     transform: translateY(6px);
-    transition: opacity 0.18s, transform 0.18s, visibility 0.18s;
+    transition: opacity 0.18s, transform 0.18s, visibility 0.18s,
+                background 0.18s, border-color 0.18s;
     z-index: 200;
   }
   #back-to-top.is-visible {
-    opacity: 1;
-    visibility: visible;
+    opacity: 1; visibility: visible;
     transform: translateY(0);
   }
-  #back-to-top:hover { background: var(--accent); }
+  #back-to-top:hover {
+    background: var(--red);
+    border-color: var(--red);
+  }
   #back-to-top:focus-visible {
-    outline: 2px solid var(--accent);
+    outline: 2px solid var(--red);
     outline-offset: 3px;
   }
-  .chart-box { position: relative; height: 360px; }
-  .chart-box.tall { height: 480px; }
-  .chart-box.square { height: 360px; max-width: 460px; margin: 0 auto; }
-  .split { display: grid; grid-template-columns: 1.4fr 1fr; gap: 18px; align-items: center; }
+
+  /* Chart boxes */
+  .chart-box { position: relative; height: 280px; }
+  .chart-box.tall { height: 380px; }
+  .chart-box.square { height: 280px; max-width: 420px; margin: 0 auto; }
+  .split { display: grid; grid-template-columns: 1.4fr 1fr; gap: 20px; align-items: center; }
   @media (max-width: 800px) { .split { grid-template-columns: 1fr; } }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
-  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #eee; vertical-align: top; }
-  th { font-weight: 600; color: var(--muted); }
-  th.num, td.num { text-align: right; font-variant-numeric: tabular-nums; }
-  /* Title column wraps long subject lines instead of overflowing. */
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--sans);
+    font-size: 12.5px;
+    table-layout: fixed;
+  }
+  th, td {
+    text-align: left;
+    padding: 7px 10px;
+    border-bottom: 1px solid var(--rule-soft);
+    vertical-align: top;
+  }
+  th {
+    font-family: var(--mono);
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    font-size: 9.5px;
+    letter-spacing: 0.08em;
+    border-bottom: 1px solid var(--rule);
+  }
+  th.num, td.num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-family: var(--mono);
+  }
   #queue-table td.title { word-break: break-word; overflow-wrap: anywhere; }
-  /* Horizontal scroll if the viewport is narrower than the table's
-     min-content width, so the section box never bleeds. */
+  #queue-table a {
+    color: var(--ink);
+    text-decoration: none;
+    border-bottom: 1px solid var(--rule);
+    transition: color 0.15s, border-color 0.15s;
+  }
+  #queue-table a:hover {
+    color: var(--red);
+    border-bottom-color: var(--red);
+  }
   .table-wrap { overflow-x: auto; }
-  /* Sortable column headers */
   th.sortable { cursor: pointer; user-select: none; }
-  th.sortable:hover { color: var(--fg); }
-  th.sortable.active-sort { color: var(--fg); }
+  th.sortable:hover { color: var(--ink); }
+  th.sortable.active-sort { color: var(--red); }
   th.sortable.active-sort::after {
     content: " ↓";
     font-weight: 700;
   }
-  .footer-note { font-size: 12px; color: var(--muted); margin-top: 10px; }
+  .footer-note {
+    font-family: var(--serif);
+    font-style: italic;
+    font-variation-settings: "opsz" 12, "wght" 400, "SOFT" 50;
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 10px;
+    line-height: 1.5;
+  }
 
-  /* Info icon + viewport-aware floating tooltip (positioned via JS) */
+  /* Info chip + tooltip */
   .info {
-    display: inline-block; margin-left: 5px;
-    width: 13px; height: 13px;
-    font-size: 10px; line-height: 13px; text-align: center;
-    border-radius: 50%; background: #e5e7eb; color: #4b5563;
+    display: inline-block;
+    margin-left: 6px;
+    width: 14px; height: 14px;
+    font-size: 10px; line-height: 14px; text-align: center;
+    border-radius: 50%;
+    background: var(--paper-warm); color: var(--muted);
     cursor: help;
-    font-style: normal; font-weight: 600; text-transform: none; letter-spacing: 0;
+    font-family: var(--serif);
+    font-style: italic;
+    font-weight: 600;
+    font-variation-settings: "opsz" 9, "wght" 600;
+    transition: background 0.15s, color 0.15s;
+    vertical-align: 1px;
   }
   .info::before { content: "i"; }
-  section h2 .info { vertical-align: middle; background: #d1d5db; color: #374151; }
+  .info:hover { background: var(--red); color: var(--paper); }
+  section h2 .info { vertical-align: middle; }
 
   .tip-floating {
     position: fixed; display: none;
     max-width: 280px;
-    background: #1c1f24; color: #f6f7f9;
-    padding: 8px 10px; border-radius: 6px;
-    font-size: 12px; font-weight: 400; line-height: 1.4;
-    box-shadow: 0 4px 12px rgba(0,0,0,.2);
+    background: var(--ink); color: var(--paper);
+    padding: 10px 12px; border-radius: 2px;
+    font-family: var(--sans);
+    font-size: 12px; font-weight: 400; line-height: 1.5;
+    box-shadow: 0 8px 24px rgba(0,0,0,.28);
     z-index: 1000;
     pointer-events: none;
     white-space: normal;
   }
 
-  /* View switcher — visually attached to the sticky `.top-bar`,
-     no independent positioning. Even padding above and below. */
-  .toggle-bar {
-    display: flex; align-items: center; gap: 16px;
-    max-width: 1180px;
-    margin: 0 auto;
-    padding: 14px 24px;
-    background: var(--bg);
-  }
-  .toggle-group { display: flex; gap: 4px; }
-  .toggle-sep {
-    width: 1px; align-self: stretch;
-    background: var(--pill);
-    margin: 4px 0;
-  }
-  .toggle-bar button {
-    background: var(--pill); color: var(--fg);
-    border: none; border-radius: 999px;
-    padding: 8px 18px; font: inherit; font-size: 13px; font-weight: 500;
-    cursor: pointer;
-  }
-  .toggle-bar button.active { background: var(--pill-active); color: var(--pill-active-fg); }
-
-  /* View axis: data-view ∈ {team, member, queue}. Each view hides the
-     other two views' sections. */
+  /* View axis: data-view ∈ {team, member, queue} */
   body[data-view="team"]    .member-only, body[data-view="team"]    .queue-only,
   body[data-view="member"]  .team-only,   body[data-view="member"]  .queue-only,
   body[data-view="queue"]   .team-only,   body[data-view="queue"]   .member-only
     { display: none !important; }
 
-  /* Period axis only applies inside Team View. Other views show their
-     content on a single page regardless of period state. */
   body[data-view="team"][data-period="total"]  .weekly-only,
   body[data-view="team"][data-period="weekly"] .total-only { display: none !important; }
 
-  /* The period sub-toggle only applies in Team View; hide it elsewhere. */
   body[data-view="member"] .toggle-group-period, body[data-view="member"] .toggle-sep,
   body[data-view="queue"]  .toggle-group-period, body[data-view="queue"]  .toggle-sep
     { display: none; }
 
+  /* Profile select */
   .profile-select {
-    font-size: 14px; padding: 6px 10px; border-radius: 6px;
-    border: 1px solid #d1d5db; background: white;
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 8px 14px;
+    border-radius: 2px;
+    border: 1px solid var(--rule);
+    background: var(--surface);
+    color: var(--ink);
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .profile-select:hover { border-color: var(--ink); }
+  .profile-select:focus-visible {
+    outline: 2px solid var(--red);
+    outline-offset: 1px;
+    border-color: var(--red);
+  }
+  .profile-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-right: 10px;
+  }
+  .queue-intro {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin: 0 0 14px;
   }
 </style>
 </head>
@@ -288,7 +541,7 @@
 
 <div class="top-bar">
   <header>
-    <h1><a href="../index.html" style="color:inherit;text-decoration:none;opacity:0.6;font-weight:400;margin-right:8px" title="Back to team picker">←</a>Reviewer Load — <span id="header-group"></span></h1>
+    <h1><a href="../index.html" title="Back to team picker">←</a>Reviewer Load <span style="color: var(--muted); font-variation-settings: 'opsz' 110, 'wght' 300; font-style: italic;">·</span> <span id="header-group"></span></h1>
     <div class="meta" id="header-meta"></div>
   </header>
   <nav class="toggle-bar" aria-label="View and period selectors">
@@ -397,7 +650,7 @@
 <section class="member-only">
   <h2>Member profile</h2>
   <p style="margin: 0 0 12px;">
-    <label for="profile-member" style="margin-right: 8px; font-size: 13px; color: #4b5563;">Member:</label>
+    <label for="profile-member" class="profile-label">Member</label>
     <select id="profile-member" class="profile-select"></select>
   </p>
 </section>
@@ -438,7 +691,7 @@
 <div class="queue-only">
   <section>
     <h2>Wait queue — member-authored patches by wait time <span class="info" data-tip="Patches authored by listed members, sorted by wait time anchored to revision creation. Click a time column header to reorder by that metric."></span></h2>
-    <p style="margin: 0 0 12px; font-size: 13px; color: #4b5563;">
+    <p class="queue-intro">
       Patches in scope: <span id="queue-total"></span>
       &nbsp;·&nbsp; Click a "Time to ..." column header to reorder.
     </p>
@@ -469,7 +722,7 @@
 
 <!-- ============= TEAM WAIT-TIME (6-month rollup) ============= -->
 <div id="phab-section" class="team-only total-only" style="display:none">
-  <h2 style="margin: 32px 0 12px; padding: 0 4px; font-size: 16px; color: #4b5563;">Review wait time (Phabricator data) — team-level</h2>
+  <h2 class="page-divider">Review wait time <em>— team-level</em></h2>
 
   <section>
     <h2>Summary</h2>
@@ -489,10 +742,10 @@
 
 <!-- ============= TEAM WAIT-TIME (most recent week only) ============= -->
 <div id="phab-section-week" class="team-only weekly-only" style="display:none">
-  <h2 style="margin: 32px 0 12px; padding: 0 4px; font-size: 16px; color: #4b5563;">Review wait time (Phabricator data) — most recent week</h2>
+  <h2 class="page-divider">Review wait time <em>— most recent week</em></h2>
 
   <section>
-    <h2>Summary <span id="phab-week-label" style="font-weight: normal; color: #6b7280;"></span></h2>
+    <h2>Summary <span id="phab-week-label" style="font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-left: 6px;"></span></h2>
     <div class="summary-grid" id="phab-week-summary-grid"></div>
   </section>
 
@@ -545,12 +798,22 @@ function attachTooltips(root) {
 const fmtPct = v => (v * 100).toFixed(1) + '%';
 const fmtNum = v => (typeof v === 'number' && !Number.isInteger(v)) ? v.toFixed(1) : v;
 
+// Editorial palette: Mozilla red lead, with restrained earth + ink tones.
+// Chosen for cohesion with the paper-and-ink page aesthetic and for clear
+// adjacent-hue contrast in stacked / categorical charts.
 const PALETTE = [
-  '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444',
-  '#0ea5e9', '#84cc16', '#f97316', '#ec4899', '#06b6d4',
-  '#a855f7', '#22c55e', '#eab308', '#6366f1', '#14b8a6',
+  '#FF0039', '#1B3B6F', '#3F5E3F', '#C89B3C', '#7A3B5C',
+  '#5B6B7C', '#A4513B', '#8FA47A', '#2D4A87', '#9F7E5E',
+  '#5D7B5D', '#B85850', '#446B7F', '#876B49', '#6F4D6F',
 ];
 const color = i => PALETTE[i % PALETTE.length];
+
+// Single-chart accents (referenced below). Kept as named tokens so any
+// future tuning of the editorial palette only needs to change one place.
+const COLOR_RED   = '#FF0039';  // bus-factor / sole reviewer — high-attention
+const COLOR_NAVY  = '#1B3B6F';  // primary data / in-group / wait time
+const COLOR_FOREST= '#3F5E3F';  // secondary data / authors / submitted
+const COLOR_GRAY  = '#C9C0AE';  // out-of-group / muted backing series
 
 function escAttr(s) { return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
 function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -800,8 +1063,8 @@ function horizontalBar(canvasId, rows, fill) {
 }
 
 horizontalBar('chart-distribution', DATA.within_group_total, color);
-horizontalBar('chart-sole',         DATA.sole_reviewer,       '#ef4444');
-horizontalBar('chart-authors',      DATA.authors.top_total,   '#10b981');
+horizontalBar('chart-sole',         DATA.sole_reviewer,       COLOR_RED);
+horizontalBar('chart-authors',      DATA.authors.top_total,   COLOR_FOREST);
 
 // --- Total reviews per member (stacked: in-group vs out-of-group) ---
 new Chart(document.getElementById('chart-total-reviews'), {
@@ -812,12 +1075,12 @@ new Chart(document.getElementById('chart-total-reviews'), {
       {
         label: `${DATA.meta.group}-tagged`,
         data: DATA.total_reviews_per_member.map(r => r.in_group),
-        backgroundColor: '#3b82f6',
+        backgroundColor: COLOR_NAVY,
       },
       {
         label: 'other in-scope',
         data: DATA.total_reviews_per_member.map(r => r.out_of_group),
-        backgroundColor: '#9ca3af',
+        backgroundColor: COLOR_GRAY,
       },
     ],
   },
@@ -1042,7 +1305,7 @@ if (PHAB_DATA && PHAB_DATA.n > 0) {
       labels: PHAB_DATA.histogram.map(r => r.bucket),
       datasets: [{
         data: PHAB_DATA.histogram.map(r => r.count),
-        backgroundColor: '#0ea5e9',
+        backgroundColor: COLOR_NAVY,
       }],
     },
     options: {
@@ -1068,8 +1331,8 @@ if (PHAB_DATA && PHAB_DATA.n > 0) {
       datasets: [{
         label: 'Median wait (days)',
         data: PHAB_DATA.weekly_median.map(r => r.median_days),
-        borderColor: '#0ea5e9',
-        backgroundColor: '#0ea5e933',
+        borderColor: COLOR_NAVY,
+        backgroundColor: COLOR_NAVY + '33',
         tension: 0.25,
       }],
     },
@@ -1103,7 +1366,7 @@ if (PHAB_DATA && PHAB_DATA.n > 0) {
         labels: lw.histogram.map(r => r.bucket),
         datasets: [{
           data: lw.histogram.map(r => r.count),
-          backgroundColor: '#0ea5e9',
+          backgroundColor: COLOR_NAVY,
         }],
       },
       options: {
@@ -1251,8 +1514,8 @@ if (PHAB_DATA && PHAB_DATA.n > 0) {
       {
         label: 'Reviews / week',
         data: weekly,
-        borderColor: '#3b82f6',
-        backgroundColor: '#3b82f622',
+        borderColor: COLOR_NAVY,
+        backgroundColor: COLOR_NAVY + '22',
         tension: 0.2,
         pointRadius: 2,
         fill: false,
@@ -1260,7 +1523,7 @@ if (PHAB_DATA && PHAB_DATA.n > 0) {
       {
         label: 'Reviews — 4-week avg',
         data: rolling(weekly, 4),
-        borderColor: '#3b82f6',
+        borderColor: COLOR_NAVY,
         backgroundColor: 'transparent',
         borderDash: [4, 4],
         tension: 0.3,
@@ -1270,8 +1533,8 @@ if (PHAB_DATA && PHAB_DATA.n > 0) {
       {
         label: 'Patches submitted / week',
         data: authoredWeekly,
-        borderColor: '#10b981',
-        backgroundColor: '#10b98122',
+        borderColor: COLOR_FOREST,
+        backgroundColor: COLOR_FOREST + '22',
         tension: 0.2,
         pointRadius: 2,
         fill: false,
@@ -1279,7 +1542,7 @@ if (PHAB_DATA && PHAB_DATA.n > 0) {
       {
         label: 'Submitted — 4-week avg',
         data: rolling(authoredWeekly, 4),
-        borderColor: '#10b981',
+        borderColor: COLOR_FOREST,
         backgroundColor: 'transparent',
         borderDash: [4, 4],
         tension: 0.3,
@@ -1316,7 +1579,7 @@ if (PHAB_DATA && PHAB_DATA.n > 0) {
           labels: topAuthors.map(a => a.name),
           datasets: [{
             data: topAuthors.map(a => a.count),
-            backgroundColor: '#10b981',
+            backgroundColor: COLOR_FOREST,
           }],
         },
         options: {
