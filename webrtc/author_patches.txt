@@ -1,8 +1,8 @@
 ==============================================================================
 WEBRTC-REVIEWERS AUTHOR-PATCH LISTING (raw author %an, no aliasing)
-Source: github.com/mozilla-firefox/firefox   Paths: dom/media/webrtc, dom/media/systemservices   Since: 2025-11-26T12:32:30Z
+Source: github.com/mozilla-firefox/firefox   Paths: dom/media/webrtc, dom/media/systemservices   Since: 2025-11-29T17:42:10Z
 Excluded paths: (none)
-Authors: 42    Patches: 326    (Lando-format / Lando-author / merge / Revert commits already excluded)
+Authors: 43    Patches: 331    (Lando-format / Lando-author / merge / Revert commits already excluded)
 ==============================================================================
 
 Known aliases (applied in HTML report, NOT below):
@@ -158,8 +158,9 @@ Known aliases (applied in HTML report, NOT below):
       2025-12-03  4ac7d1d31ca9  Bug 1995481 - Set simulcast layer max bitrate as constrained by JS. r=bwc
       2025-12-03  8410c12bb1b6  Bug 1995481 - Improve bitrate logging. r=bwc
 
-[ 3] Byron Campen  —  36 patch(es)
+[ 3] Byron Campen  —  37 patch(es)
     ----------------------------------------------------------------------
+      2026-05-27  a6ffbe2601d5  Bug 2036464: Make this mainthread only. r=mjf
       2026-05-01  9b8d8e148152  Bug 2035836: Work around https URL parser returning port -1 instead of 443. r=mjf
       2026-05-01  0bd7526ac03c  Bug 2035836: Test that turns URLs with port 443 don't end up using 5349. r=mjf
       2026-04-29  7852384f99d9  Bug 2035898: Add an allowlist for setParameters compat mode, and put google on it. r=jib
@@ -197,8 +198,10 @@ Known aliases (applied in HTML report, NOT below):
       2026-01-20  86047ac8bdee  Bug 2006096: Ensure that we announce open when we've received a data message before the open ack. r=ng
       2026-01-14  86c6fee7cd54  Bug 2005074: Dispatch the release of mWorkerRef, after mSelfRef is released. r=ng,asuth
 
-[ 4] serge-sans-paille  —  33 patch(es)
+[ 4] serge-sans-paille  —  35 patch(es)
     ----------------------------------------------------------------------
+      2026-05-27  a3de9e7e8744  Bug 2040927 - Activate performance-inefficient-string-concatenation clang-tidy check r=emilio,webrtc-reviewers,bwc
+      2026-05-25  03b0f2574ced  Bug 2040876 - Activate modernize-use-bool-literals clang-tidy check r=emilio,webrtc-reviewers,cookie-reviewers,places-reviewers,layout-reviewers,mak,bwc
       2026-05-06  4fae7b79cb6e  Bug 2034832 - Apply clang-tidy checks to headers that were previously skipped r=necko-reviewers,webrtc-reviewers,emilio,bwc,valentin
       2026-04-30  8c77b8ef8d25  Bug 2034846 - Make dom/ headers compatible with current static analysis r=dom-core,smaug
       2026-04-25  d5ac896490e6  Bug 2033992 - Remove unused include of <deque> r=emilio
@@ -308,24 +311,25 @@ Known aliases (applied in HTML report, NOT below):
       2026-05-06  8dcf681e2ead  Bug 1825286 - Part 9: Add functions to expose default WebRTC audio/video codecs. r=pehrsons
       2026-03-16  d4ff4b1fbfef  Bug 2001319 - Part 2: Unprovision MediaDRM origins when clearing browsing data. r=aosmond,media-playback-reviewers,webrtc-reviewers,jib
 
-[12] Valentin Gosu  —  4 patch(es)
+[12] Alex Franchuk  —  4 patch(es)
+    ----------------------------------------------------------------------
+      2026-05-27  3fe4cdbf48a0  Bug 2011922 - Add more IPCMessageUtils specializations for STL types r=nika,necko-reviewers,media-playback-reviewers,webrtc-reviewers,bwc,aosmond
+      2026-04-15  e595961cde08  Bug 2023271 p2 - Improve NrIceStunAddr serialization by unpacking nr_local_addr r=bwc,ipc-reviewers,nika
+      2026-04-14  cbd064501f3f  Bug 2023271 p2 - Improve NrIceStunAddr serialization by unpacking nr_local_addr r=bwc,ipc-reviewers,nika
+      2026-04-14  92f74ccdc927  Bug 2023271 - Improve NrIceStunAddr serialization by unpacking nr_local_addr r=bwc,ipc-reviewers,nika
+
+[13] Valentin Gosu  —  4 patch(es)
     ----------------------------------------------------------------------
       2026-02-16  ee334bd83462  Bug 2009372 - Mark TRR connections and sockets r=necko-reviewers,kershaw,webrtc-reviewers,mjf
       2026-02-12  0fd8e2d182e1  Bug 2009372 - Mark TRR connections and sockets r=necko-reviewers,kershaw,webrtc-reviewers,mjf
       2026-02-04  2844ea52e1d1  Bug 2013964 - Avoid including nsHttpResponseHead.h in other headers r=necko-reviewers,webrtc-reviewers,mjf,jesup
       2026-02-04  66363a0c9744  Bug 2013964 - Avoid including nsHttpResponseHead.h in other headers r=necko-reviewers,webrtc-reviewers,mjf,jesup
 
-[13] Alastor Wu  —  3 patch(es)
+[14] Alastor Wu  —  3 patch(es)
     ----------------------------------------------------------------------
       2026-05-20  54692bdeb17e  Bug 2034990 - Part 2: Migrate query-only PDMFactory call sites to PDMFactorySupport. r=media-playback-reviewers,padenot
       2026-03-30  d47f194b61bf  Bug 2025502 - Serialize MediaSystemResourceService shutdown on the compositor thread. r=media-playback-reviewers,padenot
       2026-02-11  894cf1a51c74  Bug 2010427 - part6 : update test_getUserMedia_audioCapture. r=webrtc-reviewers,pehrsons
-
-[14] Alex Franchuk  —  3 patch(es)
-    ----------------------------------------------------------------------
-      2026-04-15  e595961cde08  Bug 2023271 p2 - Improve NrIceStunAddr serialization by unpacking nr_local_addr r=bwc,ipc-reviewers,nika
-      2026-04-14  cbd064501f3f  Bug 2023271 p2 - Improve NrIceStunAddr serialization by unpacking nr_local_addr r=bwc,ipc-reviewers,nika
-      2026-04-14  92f74ccdc927  Bug 2023271 - Improve NrIceStunAddr serialization by unpacking nr_local_addr r=bwc,ipc-reviewers,nika
 
 [15] Alex Hochheiden  —  3 patch(es)
     ----------------------------------------------------------------------
@@ -423,42 +427,46 @@ Known aliases (applied in HTML report, NOT below):
     ----------------------------------------------------------------------
       2026-04-22  30206d36267f  Bug 2027154 - Remove FrameRelay callbacks. r=pehrsons,jesup
 
-[33] Jonathan Moss  —  1 patch(es)
+[33] Jeff Muizelaar  —  1 patch(es)
+    ----------------------------------------------------------------------
+      2026-05-26  60f9222ce5fa  Bug 1654642 - Enable transport-cc for audio codecs; r=bwc,dbaker
+
+[34] Jonathan Moss  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-02-27  1e4695f22896  Bug 2019745 - Add Win11 25H2 (11.26200) skip annotations to TOML manifests r=webcompat-reviewers,media-playback-reviewers,credential-management-reviewers,search-reviewers,devtools-reviewers,places-reviewers,urlbar-reviewers,profiles-reviewers,dom-worker-reviewers,twisniewski,hneiva,aryx,scunnane,asuth,dimi,mossop,padenot
 
-[34] Kershaw Chang  —  1 patch(es)
+[35] Kershaw Chang  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-04-30  6104f2138b73  Bug 1978895 - Ensure CONNECT-only work with MASQUE proxy, r=necko-reviewers,webrtc-reviewers,valentin,bwc
 
-[35] Landry Breuil  —  1 patch(es)
+[36] Landry Breuil  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-03-11  504db5fb75d4  Bug 2021362: fix build on BSD after bug 2013730 r=mjf
 
-[36] Makoto Kato  —  1 patch(es)
+[37] Makoto Kato  —  1 patch(es)
     ----------------------------------------------------------------------
       2025-12-05  d70d4d689c78  Bug 2003417 - Remove AndroidBridge::GetGlobalContextRef. r=jolin,geckoview-reviewers,webrtc-reviewers,pehrsons,ohall
 
-[37] Mike Hommey  —  1 patch(es)
+[38] Mike Hommey  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-03-26  52098a85b6e3  Bug 2026021 - Avoid races in test_nr_socket_ice_unittest. r=webrtc-reviewers,bwc
 
-[38] Nika Layzell  —  1 patch(es)
+[39] Nika Layzell  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-03-24  5f0f9dd22a69  Bug 2020817 - Part 4: Annotate & clean up nsACString callers of BeginReading/Data, r=xpcom-reviewers,media-playback-reviewers,webrtc-reviewers,cookie-reviewers,profiler-reviewers,win-reviewers,dom-storage-reviewers,permissions-reviewers,toolkit-telemetry-reviewers-rotation,layout-reviewers,dom-worker-reviewers,gfx-reviewers,webgpu-reviewers,necko-reviewers,dom-core,smaug,handyman,emilio,pehrsons,kershaw,timhuang,edenchuang,padenot,bradwerth
 
-[39] Randell Jesup  —  1 patch(es)
+[40] Randell Jesup  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-04-07  4a84bc322b7f  Bug 2025489: avoid overflows r=pehrsons,bwc,jib
 
-[40] Sandor Molnar  —  1 patch(es)
+[41] Sandor Molnar  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-04-14  586be5758bd3  Bug 2030403 - Update disable to include test_peerConnection_simulcastAnswer_oldSetParameters.html
 
-[41] Vinit Jangir  —  1 patch(es)
+[42] Vinit Jangir  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-05-08  61c84c2e3eb2  Bug 790194 - Changed all instances in dom/media/webrtc to std::from_chars r=bwc
 
-[42] WSchmalstieg  —  1 patch(es)
+[43] WSchmalstieg  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-05-15  9f0213c204ae  Bug 2036515 - Fix comment spelling errors;r=ng
