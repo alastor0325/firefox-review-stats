@@ -816,10 +816,16 @@ const color = i => PALETTE[i % PALETTE.length];
 
 // Single-chart accents (referenced below). Kept as named tokens so any
 // future tuning of the editorial palette only needs to change one place.
-const COLOR_RED   = '#FF0039';  // bus-factor / sole reviewer — high-attention
-const COLOR_NAVY  = '#1B3B6F';  // primary data / in-group / wait time
-const COLOR_FOREST= '#3F5E3F';  // secondary data / authors / submitted
-const COLOR_GRAY  = '#C9C0AE';  // out-of-group / muted backing series
+const COLOR_RED    = '#FF0039';  // bus-factor / sole reviewer — high-attention
+const COLOR_NAVY   = '#1B3B6F';  // primary data / in-group / wait time
+const COLOR_FOREST = '#3F5E3F';  // top-authors bar (standalone)
+const COLOR_GRAY   = '#C9C0AE';  // out-of-group / muted backing series
+// Warm complement to NAVY used as the second series in the Member /
+// Weekly chart. Forest was visually too close to navy when both lines
+// overlap; mustard splits warm/cool so reviews-vs-submitted reads
+// cleanly even on a small viewport or for users with red-green
+// colour vision deficiency.
+const COLOR_MUSTARD = '#C89B3C';
 
 function escAttr(s) { return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
 function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -1675,8 +1681,8 @@ if (PHAB_DATA && PHAB_DATA.n > 0) {
       {
         label: 'Patches submitted / week',
         data: authoredWeekly,
-        borderColor: COLOR_FOREST,
-        backgroundColor: COLOR_FOREST + '22',
+        borderColor: COLOR_MUSTARD,
+        backgroundColor: COLOR_MUSTARD + '22',
         tension: 0.2,
         pointRadius: 2,
         fill: false,
@@ -1684,7 +1690,7 @@ if (PHAB_DATA && PHAB_DATA.n > 0) {
       {
         label: 'Submitted — 4-week avg',
         data: rolling(authoredWeekly, 4),
-        borderColor: COLOR_FOREST,
+        borderColor: COLOR_MUSTARD,
         backgroundColor: 'transparent',
         borderDash: [4, 4],
         tension: 0.3,
