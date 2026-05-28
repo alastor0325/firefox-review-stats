@@ -57,13 +57,19 @@ jobs:
       - name: Run unit + integration tests
         run: python -m pytest tests/
 
-      - name: Generate landing report (GitHub commits)
-        run: python analyze_git.py
+      # Phab first, then Git. analyze_git.py embeds the on-disk
+      # data_phab.json into each team's index.html as the inline
+      # `PHAB_DATA` constant — running it AFTER analyze_phab.py is
+      # what guarantees the rendered page reads the current week's
+      # phab numbers (and any new fields like `team_windows`) rather
+      # than the previous run's stale copy.
+      - name: Generate wait-time report (Phabricator timelines)
+        run: python analyze_phab.py
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Generate wait-time report (Phabricator timelines)
-        run: python analyze_phab.py
+      - name: Generate landing report (GitHub commits)
+        run: python analyze_git.py
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
