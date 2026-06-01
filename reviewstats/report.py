@@ -5,8 +5,9 @@ Output shape is documented in
 """
 
 from collections import Counter
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from typing import Iterable
+from zoneinfo import ZoneInfo
 
 from reviewstats.git_log import Commit
 from reviewstats.members import MEMBERS as _DEFAULT_MEMBERS
@@ -31,6 +32,25 @@ from reviewstats.metrics import (
 
 _TOP_N_FOR_TREND = 5
 _TOP_AUTHORS = 15
+
+# The dashboard's audience works out of Portland; the refresh runs in
+# CI under UTC. Render the human-readable "generated" stamp in Pacific
+# time so it reads correctly regardless of where it was produced.
+_DISPLAY_TZ = ZoneInfo("America/Los_Angeles")
+
+
+def format_generated_at(dt: datetime) -> str:
+    """Format `dt` as a Pacific-time display string, e.g.
+    "Jun 1, 2026, 10:30 AM PDT".
+
+    A tz-naive `dt` is assumed to be UTC (CI passes aware UTC datetimes,
+    but this keeps a dev box from accidentally stamping local time).
+    DST is handled by the zone: PDT in summer, PST in winter.
+    """
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    local = dt.astimezone(_DISPLAY_TZ)
+    return local.strftime("%b %-d, %Y, %-I:%M %p %Z")
 
 # Period axis on the Team View. Keys are the data-period attribute
 # values the rendered HTML uses; values are months-back from
@@ -295,6 +315,7 @@ def build_report(
             "window_start": window_start.date().isoformat(),
             "window_end": window_end.date().isoformat(),
             "generated_at": generated_at.isoformat(),
+            "generated_at_display": format_generated_at(generated_at),
         },
         # Top-level mirrors the 6m team_view so older clients (and
         # any test that pre-dates `team_views`) read the same numbers.
