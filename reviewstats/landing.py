@@ -191,24 +191,21 @@ main {
   background: var(--red);
   transition: width 0.28s ease;
 }
-/* Hover always wins; the keyboard-focus highlight only shows when no
-   row is being hovered (`main:not(:has(.team-row:hover))`), so a hovered
-   row and a separately focused row never light up at the same time. */
-.team-row:hover,
-main:not(:has(.team-row:hover)) .team-row:focus {
+/* Exactly one row is highlighted at a time — the "selection". Both
+   hovering and the Up/Down keys set it via JS (`.is-selected`), so
+   there's only ever one highlight and the keyboard stays in control
+   even while the cursor rests over the list. Using a JS-driven class
+   instead of CSS :hover/:focus is what avoids two rows lighting up. */
+.team-row.is-selected {
   background: var(--paper-warm);
   padding-left: 14px;
 }
-/* Drop the default ring — the highlight above (warm bg + the full-width
-   red top rule + red name/arrow) is the visible focus indicator,
-   identical to hover. */
+/* Drop the default ring — the selection highlight (warm bg + full-width
+   red top rule + red name/arrow) is the visible focus indicator. */
 .team-row:focus { outline: none; }
-.team-row:hover::after,
-main:not(:has(.team-row:hover)) .team-row:focus::after { width: 100%; }
-.team-row:hover .row-arrow,
-main:not(:has(.team-row:hover)) .team-row:focus .row-arrow { transform: translateX(6px); color: var(--red); }
-.team-row:hover .row-name,
-main:not(:has(.team-row:hover)) .team-row:focus .row-name { color: var(--red); }
+.team-row.is-selected::after { width: 100%; }
+.team-row.is-selected .row-arrow { transform: translateX(6px); color: var(--red); }
+.team-row.is-selected .row-name { color: var(--red); }
 
 .row-num {
   font-family: var(--serif);
@@ -397,23 +394,35 @@ def render_landing_page(teams: list[Team]) -> str:
 </footer>
 
 <script>
-// Up / Down move a focus highlight through the team rows so the picker
-// is keyboard-drivable like the per-team dashboards. Enter follows the
-// focused link natively (it's an <a>), so no extra handling needed.
+// Up / Down move the selection highlight through the team rows so the
+// picker is keyboard-drivable like the per-team dashboards. Mouse and
+// keyboard share ONE selection (last interaction wins): hovering a row
+// selects it, and the arrows step from wherever the selection is — so
+// only one row is ever highlighted and the keyboard keeps working even
+// while the cursor rests over the list. Enter follows the selected
+// row's link natively (each row is a focused <a>).
 (function teamKeyboardNav() {{
   const rows = Array.from(document.querySelectorAll('a.team-row'));
   if (!rows.length) return;
+  let sel = -1;  // index of the highlighted row; -1 = nothing yet
+  function select(i) {{
+    rows.forEach((r, j) => r.classList.toggle('is-selected', j === i));
+    sel = i;
+    rows[i].focus({{ preventScroll: true }});
+  }}
+  // Hovering a row makes it the selection (mouseenter, not CSS :hover,
+  // so it can't fight the keyboard highlight).
+  rows.forEach((r, i) => r.addEventListener('mouseenter', () => select(i)));
   document.addEventListener('keydown', (e) => {{
     if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
     // Leave OS/browser-reserved arrow combos alone.
     if (e.metaKey || e.altKey || e.ctrlKey || e.shiftKey) return;
     const dir = e.key === 'ArrowDown' ? 1 : -1;
-    const i = rows.indexOf(document.activeElement);
     // Nothing selected yet: Down → first row, Up → last row.
-    const next = i === -1
+    const next = sel === -1
       ? (dir === 1 ? 0 : rows.length - 1)
-      : (i + dir + rows.length) % rows.length;
-    rows[next].focus();
+      : (sel + dir + rows.length) % rows.length;
+    select(next);
     e.preventDefault();
   }});
 }})();

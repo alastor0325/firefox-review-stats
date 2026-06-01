@@ -87,7 +87,7 @@ class TestTeamKeyboardNav:
         )
         # Operates on the team-row anchors and moves focus between them.
         assert "a.team-row" in html
-        assert ".focus()" in html
+        assert ".focus(" in html
         assert "preventDefault" in html, (
             "handled arrows must preventDefault so the page doesn't scroll"
         )
@@ -105,20 +105,36 @@ class TestTeamKeyboardNav:
         for mod in ("metaKey", "altKey", "ctrlKey", "shiftKey"):
             assert mod in html, f"{mod} must be left to the OS/browser"
 
-    def test_focus_highlight_style_present(self):
+    def test_highlight_is_a_single_js_toggled_selection_class(self):
+        """One row at a time is highlighted via an `is-selected` class
+        that JS toggles — not a CSS `:hover`/`:focus` rule. This is what
+        keeps exactly one row lit and lets the keyboard stay in control."""
         html = render_landing_page([PLAYBACK_TEAM])
-        assert ".team-row:focus" in html, (
-            "the selected team needs a visible focus style"
+        assert ".team-row.is-selected" in html, (
+            "the highlight should be a single `.is-selected` CSS rule"
+        )
+        assert "classList.toggle('is-selected'" in html, (
+            "JS should drive the highlight by toggling `is-selected`"
         )
 
-    def test_hover_wins_over_focus_so_only_one_row_highlights(self):
-        """If a row holds keyboard focus and the user hovers a *different*
-        row, only the hovered row may light up. The focus highlight is
-        gated behind 'no row hovered' so the two never co-highlight."""
+    def test_hover_sets_the_single_selection(self):
+        """Hovering a row makes it the one highlighted row (mouseenter
+        sets the shared selection), so a hovered row and a keyboard-
+        selected row can never both light up."""
         html = render_landing_page([PLAYBACK_TEAM])
-        assert "main:not(:has(.team-row:hover)) .team-row:focus" in html, (
-            "focus highlight must be suppressed while any row is hovered "
-            "so hover and focus don't both show"
+        assert "addEventListener('mouseenter'" in html, (
+            "hovering a row should set the selection"
+        )
+
+    def test_keyboard_highlight_not_suppressed_by_hover(self):
+        """Regression: a previous fix suppressed the focus highlight
+        whenever any row was hovered (`:has(.team-row:hover)`), which hid
+        keyboard movement while the cursor rested over the list — Up/Down
+        looked dead. The highlight is now a JS-toggled class, independent
+        of hover state, so the keyboard stays visibly in control."""
+        html = render_landing_page([PLAYBACK_TEAM])
+        assert ":has(.team-row:hover)" not in html, (
+            "hover must not gate the highlight's visibility"
         )
 
 
