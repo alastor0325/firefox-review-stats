@@ -191,19 +191,24 @@ main {
   background: var(--red);
   transition: width 0.28s ease;
 }
-.team-row:hover, .team-row:focus {
+/* Hover always wins; the keyboard-focus highlight only shows when no
+   row is being hovered (`main:not(:has(.team-row:hover))`), so a hovered
+   row and a separately focused row never light up at the same time. */
+.team-row:hover,
+main:not(:has(.team-row:hover)) .team-row:focus {
   background: var(--paper-warm);
   padding-left: 14px;
 }
-/* Drop the default ring — the focus highlight below (warm bg + the
-   full-width red top rule + red name/arrow) is the visible focus
-   indicator, identical to hover. */
+/* Drop the default ring — the highlight above (warm bg + the full-width
+   red top rule + red name/arrow) is the visible focus indicator,
+   identical to hover. */
 .team-row:focus { outline: none; }
-.team-row:hover::after, .team-row:focus::after { width: 100%; }
+.team-row:hover::after,
+main:not(:has(.team-row:hover)) .team-row:focus::after { width: 100%; }
 .team-row:hover .row-arrow,
-.team-row:focus .row-arrow { transform: translateX(6px); color: var(--red); }
+main:not(:has(.team-row:hover)) .team-row:focus .row-arrow { transform: translateX(6px); color: var(--red); }
 .team-row:hover .row-name,
-.team-row:focus .row-name { color: var(--red); }
+main:not(:has(.team-row:hover)) .team-row:focus .row-name { color: var(--red); }
 
 .row-num {
   font-family: var(--serif);

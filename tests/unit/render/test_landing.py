@@ -111,6 +111,16 @@ class TestTeamKeyboardNav:
             "the selected team needs a visible focus style"
         )
 
+    def test_hover_wins_over_focus_so_only_one_row_highlights(self):
+        """If a row holds keyboard focus and the user hovers a *different*
+        row, only the hovered row may light up. The focus highlight is
+        gated behind 'no row hovered' so the two never co-highlight."""
+        html = render_landing_page([PLAYBACK_TEAM])
+        assert "main:not(:has(.team-row:hover)) .team-row:focus" in html, (
+            "focus highlight must be suppressed while any row is hovered "
+            "so hover and focus don't both show"
+        )
+
 
 def test_landing_page_includes_every_registered_team_when_called_from_main():
     """End-to-end: rendering from the actual TEAMS registry includes
