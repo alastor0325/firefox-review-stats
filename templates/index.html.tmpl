@@ -1136,9 +1136,10 @@ function bindToggle(axis) {
   for (const b of buttons) {
     b.addEventListener('click', () => set(b.dataset[axis]));
   }
+  return set;
 }
-bindToggle('view');
-bindToggle('period');
+const setView = bindToggle('view');
+const setPeriod = bindToggle('period');
 
 // If the report was generated before `team_views` was introduced,
 // only 6m data is available — hide the 1m / 3m buttons so the user
@@ -1154,6 +1155,46 @@ if (!DATA.team_views) {
 // (set to "total"; maps to "6m") and renders the matching slice.
 // bindToggle takes over from here on every subsequent click.
 renderTeamTotalView(PERIOD_TO_KEY[document.body.dataset.period] || '6m');
+
+// Keyboard navigation mirroring the toggle bar:
+//   Left / Right        → cycle the view axis (Team → Member → Wait Queue)
+//   Ctrl + Left / Right → cycle the period axis (Team View only)
+// Ordered values come from the *visible* buttons, so hidden options
+// (e.g. 1m / 3m on legacy reports) are skipped without special-casing.
+function visibleAxisValues(axis) {
+  return Array.from(
+    document.querySelectorAll(`.toggle-bar button[data-${axis}]`)
+  ).filter(b => b.offsetParent !== null).map(b => b.dataset[axis]);
+}
+function cycleValue(values, current, dir) {
+  const i = values.indexOf(current);
+  if (i === -1) return values[0];
+  return values[(i + dir + values.length) % values.length];
+}
+function isTypingTarget(el) {
+  if (!el) return false;
+  const tag = el.tagName;
+  return tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA' ||
+         el.isContentEditable;
+}
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+  // Leave browser-reserved combos (Cmd/Meta back-forward, Alt word motion,
+  // Shift selection) and in-field arrowing alone.
+  if (e.metaKey || e.altKey || e.shiftKey) return;
+  if (isTypingTarget(e.target)) return;
+  const dir = e.key === 'ArrowRight' ? 1 : -1;
+  if (e.ctrlKey) {
+    // Period only applies in Team View — elsewhere it's a no-op.
+    if (document.body.dataset.view !== 'team') return;
+    const values = visibleAxisValues('period');
+    setPeriod(cycleValue(values, document.body.dataset.period, dir));
+  } else {
+    const values = visibleAxisValues('view');
+    setView(cycleValue(values, document.body.dataset.view, dir));
+  }
+  e.preventDefault();
+});
 
 function horizontalBar(canvasId, rows, fill) {
   const colors = (typeof fill === 'function')

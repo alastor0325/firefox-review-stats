@@ -18,6 +18,8 @@ Each per-team page has three views, toggled at the top:
 - **Member View** — Per-member profile: weekly activity (reviews + patches submitted), authors whose patches they reviewed, wait-time tiles when they're the author.
 - **Wait Queue** — Per-revision table of in-scope, member-authored patches sorted by longest wait first. Links straight into Phabricator.
 
+**Keyboard navigation:** on a team page, **←/→** cycle the view (Team → Member → Wait Queue) and **Ctrl+←/→** cycle the period (1-Month → 3-Month → 6-Month → Per-Week, Team View only). Arrows are ignored while typing in a field, and Cmd/Alt+arrow are left to the browser.
+
 The landing page is a static picker that lists every registered team and links into its subfolder.
 
 ## Architecture
