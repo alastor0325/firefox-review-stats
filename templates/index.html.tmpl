@@ -1157,10 +1157,12 @@ if (!DATA.team_views) {
 renderTeamTotalView(PERIOD_TO_KEY[document.body.dataset.period] || '6m');
 
 // Keyboard navigation mirroring the toggle bar:
-//   Left / Right        → cycle the view axis (Team → Member → Wait Queue)
-//   Ctrl + Left / Right → cycle the period axis (Team View only)
-// Ordered values come from the *visible* buttons, so hidden options
-// (e.g. 1m / 3m on legacy reports) are skipped without special-casing.
+//   Left / Right         → cycle the view axis (Team → Member → Wait Queue)
+//   Shift + Left / Right → cycle the period axis (Team View only)
+// Shift is the period modifier rather than Ctrl: Ctrl+Arrow is the macOS
+// Spaces switch, which the OS grabs before the page sees it. Ordered
+// values come from the *visible* buttons, so hidden options (e.g. 1m /
+// 3m on legacy reports) are skipped without special-casing.
 function visibleAxisValues(axis) {
   return Array.from(
     document.querySelectorAll(`.toggle-bar button[data-${axis}]`)
@@ -1179,12 +1181,12 @@ function isTypingTarget(el) {
 }
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
-  // Leave browser-reserved combos (Cmd/Meta back-forward, Alt word motion,
-  // Shift selection) and in-field arrowing alone.
-  if (e.metaKey || e.altKey || e.shiftKey) return;
+  // Leave OS/browser-reserved combos alone: Cmd/Meta (back-forward),
+  // Alt (word motion), Ctrl (macOS Spaces switch). Shift is ours.
+  if (e.metaKey || e.altKey || e.ctrlKey) return;
   if (isTypingTarget(e.target)) return;
   const dir = e.key === 'ArrowRight' ? 1 : -1;
-  if (e.ctrlKey) {
+  if (e.shiftKey) {
     // Period only applies in Team View — elsewhere it's a no-op.
     if (document.body.dataset.view !== 'team') return;
     const values = visibleAxisValues('period');

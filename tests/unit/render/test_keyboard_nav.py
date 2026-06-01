@@ -5,13 +5,15 @@ and `data-period` (1m|3m|total|weekly) on `<body>`. This feature adds a
 global `keydown` handler so the keyboard mirrors the click toggles:
 
   * Left / Right            → cycle the VIEW axis (team → member → queue)
-  * Ctrl + Left / Right     → cycle the PERIOD axis, Team View only
+  * Shift + Left / Right    → cycle the PERIOD axis, Team View only
 
-Cycling wraps around (right past the last lands on the first), the
-ordered values are read from the *visible* toggle buttons (so the
-legacy-report case where 1m/3m are hidden is skipped automatically),
-and the handler stays out of the way when the user is typing in a field
-or holding a browser-reserved modifier (Cmd/Alt).
+Shift (not Ctrl) is the period modifier: Ctrl+Arrow is the macOS Spaces
+shortcut, so the OS swallows it before the page sees it. Cycling wraps
+around (right past the last lands on the first), the ordered values are
+read from the *visible* toggle buttons (so the legacy-report case where
+1m/3m are hidden is skipped automatically), and the handler stays out of
+the way when the user is typing in a field or holding an OS/browser
+reserved modifier (Cmd / Alt / Ctrl).
 
 As with the other JS-behaviour tests in this directory, we can't run the
 JS here, so we pin the structural pieces of the emitted handler.
@@ -54,11 +56,12 @@ class TestKeydownHandler:
             "handler must react to ArrowLeft / ArrowRight"
         )
 
-    def test_ctrl_selects_period_axis_plain_selects_view(self):
+    def test_shift_selects_period_axis_plain_selects_view(self):
         html = _render()
-        # Ctrl distinguishes the two axes.
-        assert re.search(r"\bctrlKey\b", html), (
-            "Ctrl must select the period axis vs the view axis"
+        # Shift distinguishes the two axes (Ctrl+Arrow is the macOS
+        # Spaces shortcut, so it can't drive the period).
+        assert re.search(r"if\s*\(\s*e\.shiftKey\s*\)", html), (
+            "period nav must branch on e.shiftKey"
         )
         assert re.search(r"setPeriod\(", html), "period nav must call setPeriod"
         assert re.search(r"setView\(", html), "view nav must call setView"
@@ -108,13 +111,19 @@ class TestDoesNotHijackTyping:
                 f"arrow nav must not fire while focused in a {tok} field"
             )
 
-    def test_ignores_browser_reserved_modifiers(self):
-        """Cmd/Alt + Left/Right are browser back/forward & word motion —
-        the handler must not swallow them."""
+    def test_modifier_guard_ignores_os_combos_but_not_shift(self):
+        """Cmd+Arrow (browser back/forward), Alt+Arrow (word motion) and
+        Ctrl+Arrow (macOS Spaces) must pass through untouched. Shift is
+        the period modifier, so it must NOT be in the ignore guard."""
         html = _render()
-        assert re.search(r"\bmetaKey\b", html), (
-            "must ignore Cmd/Meta so browser back/forward still works"
+        guards = re.findall(
+            r"if \(([^)]*(?:metaKey|altKey|ctrlKey|shiftKey)[^)]*)\)\s*return;",
+            html,
         )
-        assert re.search(r"\baltKey\b", html), (
-            "must ignore Alt so word-motion / browser nav still works"
+        assert guards, "expected a modifier early-return guard"
+        guard = guards[0]
+        for mod in ("metaKey", "altKey", "ctrlKey"):
+            assert mod in guard, f"{mod} must be in the ignore guard: {guard!r}"
+        assert "shiftKey" not in guard, (
+            "Shift is the period modifier — it must not be ignored"
         )
