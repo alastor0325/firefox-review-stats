@@ -13,8 +13,9 @@ lives in `reviewstats.metrics`.
 """
 
 import json
-import urllib.request
 from pathlib import Path
+
+from reviewstats import github_http
 
 
 _API = "https://api.github.com"
@@ -31,12 +32,7 @@ def fetch_commit_files(repo: str, sha: str, *, token: str | None) -> list[str]:
     a 300+-file mega-refactor is going to be the same either way.
     """
     url = f"{_API}/repos/{repo}/commits/{sha}"
-    headers = {"Accept": "application/vnd.github+json"}
-    if token:
-        headers["Authorization"] = f"token {token}"
-    req = urllib.request.Request(url, headers=headers)
-    with urllib.request.urlopen(req, timeout=30) as r:
-        data = json.loads(r.read().decode())
+    data = github_http.get_json(url, token=token)
     return [f["filename"] for f in data.get("files", [])]
 
 

@@ -70,7 +70,7 @@ class TestApiCommitToCommit:
 
 class TestFetchCommits:
     @patch("reviewstats.github_commits._get_auth_token", return_value="tok")
-    @patch("reviewstats.github_commits.urllib.request.urlopen")
+    @patch("reviewstats.github_http.urllib.request.urlopen")
     def test_paginates_until_page_smaller_than_limit(self, urlopen, _):
         # Two pages: 100 items then 5 items → stop.
         page1 = [
@@ -100,7 +100,7 @@ class TestFetchCommits:
         assert "page=2" in urlopen.call_args_list[1].args[0].full_url
 
     @patch("reviewstats.github_commits._get_auth_token", return_value="tok")
-    @patch("reviewstats.github_commits.urllib.request.urlopen")
+    @patch("reviewstats.github_http.urllib.request.urlopen")
     def test_excludes_by_subtracting_other_path(self, urlopen, _):
         included = [
             _fake_api_commit("sha-a", "X", "2026-05-15T10:00:00Z",
@@ -126,7 +126,7 @@ class TestFetchCommits:
         assert shas == {"sha-a", "sha-c"}
 
     @patch("reviewstats.github_commits._get_auth_token", return_value="tok")
-    @patch("reviewstats.github_commits.urllib.request.urlopen")
+    @patch("reviewstats.github_http.urllib.request.urlopen")
     def test_filters_revert_and_merge_via_should_skip(self, urlopen, _):
         commits = [
             _fake_api_commit("ok", "X", "2026-05-15T10:00:00Z",
@@ -150,7 +150,7 @@ class TestFetchCommits:
 
 class TestFetchCommitsMultiPath:
     @patch("reviewstats.github_commits._get_auth_token", return_value="tok")
-    @patch("reviewstats.github_commits.urllib.request.urlopen")
+    @patch("reviewstats.github_http.urllib.request.urlopen")
     def test_paths_runs_one_query_per_path(self, urlopen, _):
         """Multi-path teams (WebRTC owns dom/media/webrtc +
         dom/media/systemservices) need one GitHub query per path —
@@ -175,7 +175,7 @@ class TestFetchCommitsMultiPath:
         assert "dom%2Fmedia%2Fsystemservices" in second_url
 
     @patch("reviewstats.github_commits._get_auth_token", return_value="tok")
-    @patch("reviewstats.github_commits.urllib.request.urlopen")
+    @patch("reviewstats.github_http.urllib.request.urlopen")
     def test_commit_touching_multiple_paths_appears_once(self, urlopen, _):
         """A commit touching dom/media/webrtc AND
         dom/media/systemservices is returned by both path queries —

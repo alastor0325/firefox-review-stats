@@ -12,14 +12,13 @@ limit is 60/hour), but using the auth pool gives us 5000/hour
 headroom for free.
 """
 
-import json
 import os
 import subprocess
 import urllib.parse
-import urllib.request
 from datetime import datetime
 from typing import Iterator
 
+from reviewstats import github_http
 from reviewstats.git_log import Commit
 from reviewstats.parse import (
     extract_differential_revision,
@@ -62,12 +61,7 @@ def _iter_pages(
             "page": page,
         })
         url = f"{_API}/repos/{repo}/commits?{params}"
-        headers = {"Accept": "application/vnd.github+json"}
-        if token:
-            headers["Authorization"] = f"token {token}"
-        req = urllib.request.Request(url, headers=headers)
-        with urllib.request.urlopen(req, timeout=30) as r:
-            payload = json.load(r) if hasattr(r, "load") else json.loads(r.read().decode())
+        payload = github_http.get_json(url, token=token)
         if not payload:
             break
         yield payload
