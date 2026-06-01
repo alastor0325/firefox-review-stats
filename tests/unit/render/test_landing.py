@@ -2,8 +2,8 @@
 
 Multi-team layout puts each team in `<slug>/index.html`. The site
 root (`/index.html`) is a small picker that lists every registered
-team as a card. Playback is marked as the default so a first-time
-visitor knows where to land.
+team as a card. Up/Down arrows move a focus highlight through the
+teams (Enter follows the focused link).
 """
 
 from dataclasses import replace
@@ -44,17 +44,15 @@ def test_landing_page_renders_each_team_as_a_card():
     assert "dom/example" in html
 
 
-def test_landing_page_marks_playback_as_default():
-    """Playback gets a visible 'Default' badge so first-time visitors
-    know which view they probably want."""
+def test_landing_page_has_no_default_badge():
+    """The 'Default' badge was removed from the playback row — it
+    didn't help anyone pick a team. Guard the removal so the badge
+    (and its now-dead CSS class) can't creep back."""
     html = render_landing_page([PLAYBACK_TEAM, _hypothetical_team()])
-    # Roughly: the 'Default' badge appears near the playback card,
-    # not near the other one.
-    playback_card_idx = html.index('href="playback/index.html"')
-    other_card_idx = html.index('href="example/index.html"')
-    default_idx = html.index("Default")
-    # The badge sits between the playback href and the next card.
-    assert playback_card_idx < default_idx < other_card_idx
+    # Target the badge markup specifically — a bare "Default" substring
+    # check would false-positive on JS like `preventDefault`.
+    assert "default-badge" not in html
+    assert ">Default</span>" not in html
 
 
 def test_landing_page_shows_roster_size_hint():
@@ -71,6 +69,47 @@ def test_landing_page_carries_mozilla_favicon():
     html = render_landing_page([PLAYBACK_TEAM])
     assert "%23FF0039" in html  # Mozilla red, URL-encoded
     assert "text-anchor='middle'>m</text>" in html
+
+
+class TestTeamKeyboardNav:
+    """Up/Down arrows move a focus highlight through the team rows so
+    the landing page is keyboard-drivable like the per-team dashboards.
+    As with the other JS-behaviour tests we pin the emitted handler's
+    structural pieces rather than running it."""
+
+    def test_keydown_handler_navigates_team_rows(self):
+        html = render_landing_page([PLAYBACK_TEAM, _hypothetical_team()])
+        assert "addEventListener('keydown'" in html, (
+            "landing page should register a keydown handler"
+        )
+        assert "ArrowDown" in html and "ArrowUp" in html, (
+            "Up/Down should drive team navigation"
+        )
+        # Operates on the team-row anchors and moves focus between them.
+        assert "a.team-row" in html
+        assert ".focus()" in html
+        assert "preventDefault" in html, (
+            "handled arrows must preventDefault so the page doesn't scroll"
+        )
+
+    def test_navigation_wraps_around(self):
+        html = render_landing_page([PLAYBACK_TEAM, _hypothetical_team()])
+        assert "% rows.length" in html, (
+            "Down past the last row should wrap to the first (modulo)"
+        )
+
+    def test_ignores_modifier_combos(self):
+        """Cmd/Alt/Ctrl/Shift + arrow are reserved by the OS/browser —
+        don't hijack them on the landing page either."""
+        html = render_landing_page([PLAYBACK_TEAM])
+        for mod in ("metaKey", "altKey", "ctrlKey", "shiftKey"):
+            assert mod in html, f"{mod} must be left to the OS/browser"
+
+    def test_focus_highlight_style_present(self):
+        html = render_landing_page([PLAYBACK_TEAM])
+        assert ".team-row:focus" in html, (
+            "the selected team needs a visible focus style"
+        )
 
 
 def test_landing_page_includes_every_registered_team_when_called_from_main():

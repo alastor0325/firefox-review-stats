@@ -20,7 +20,7 @@ Each per-team page has three views, toggled at the top:
 
 **Keyboard navigation:** on a team page, **←/→** cycle the view (Team → Member → Wait Queue) and **Shift+←/→** cycle the period (1-Month → 3-Month → 6-Month → Per-Week, Team View only). Arrows are ignored while typing in a field, and Cmd/Alt/Ctrl+arrow are left to the OS/browser (Ctrl+← / → is the macOS Spaces switch, which is why Shift — not Ctrl — drives the period).
 
-The landing page is a static picker that lists every registered team and links into its subfolder.
+The landing page is a static picker that lists every registered team and links into its subfolder. **↑/↓** move a focus highlight through the teams; **Enter** opens the highlighted one.
 
 ## Architecture
 
