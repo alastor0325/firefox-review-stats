@@ -77,7 +77,7 @@ class TestToggleBarMarkup:
         assert len(view_buttons) == 3, (
             f"expected exactly 3 view buttons, found {len(view_buttons)}"
         )
-        # Period axis: 1-Month / 3-Month / 6-Month (data-period="total")
+        # Period axis: 6-Month (data-period="total") / 3-Month / 1-Month
         # / Per-Week. 1m and 3m were added alongside the windowed
         # `team_views` data so the user can drill in tighter than 6m.
         assert len(period_buttons) == 4, (
@@ -87,6 +87,20 @@ class TestToggleBarMarkup:
             assert re.search(rf'<button[^>]*data-period="{v}"', bar), (
                 f'expected a "{v}" period button'
             )
+
+    def test_period_buttons_ordered_by_descending_span(self):
+        """Period buttons read longest-window-first so the time axis is
+        monotonic: 6-Month → 3-Month → 1-Month → Per-Week (per-week, the
+        finest slice, sits last). Adding Per-Week after an ascending
+        1/3/6 run read backwards."""
+        html = _render()
+        m = re.search(r'class="toggle-bar"(.*?)</nav>', html, re.DOTALL)
+        assert m is not None, "toggle-bar nav missing"
+        bar = m.group(1)
+        order = re.findall(r'<button[^>]*data-period="([^"]+)"', bar)
+        assert order == ["total", "3m", "1m", "weekly"], (
+            f"period buttons should be 6m→3m→1m→weekly, got {order}"
+        )
 
 
 class TestDefaultState:
