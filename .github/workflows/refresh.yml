@@ -68,23 +68,16 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Restore recent-change summary cache
-        # Stores per-feature LLM summaries (one JSON per content hash) so
-        # the weekly run only pays the Anthropic API for feature-sets it
-        # hasn't summarized before. Safe to drop — a miss just re-summarizes.
-        uses: actions/cache@v4
-        with:
-          path: .summary_cache
-          key: summary-cache-${{ github.run_id }}
-          restore-keys: |
-            summary-cache-
-
       - name: Generate landing report (GitHub commits)
+        # The Recent Changes per-area overviews come from .summary_cache/,
+        # which is committed to git — so this run REUSES overviews generated
+        # locally (where the Anthropic key lives) without needing the key in
+        # CI. Only feature-areas never summarized locally show blank until
+        # the next local refresh. If ANTHROPIC_API_KEY *is* present it also
+        # fills any gaps; absent, the step still succeeds.
         run: python analyze_git.py
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Enables the Recent Changes "what we did" summaries. If the
-          # secret is unset the step still succeeds — summaries are skipped.
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
       - name: Generate per-author listing
@@ -100,8 +93,9 @@ jobs:
           # page sits at root. raw_data/ is shared across teams and
           # tracked in git. dump_author_patches.py now writes
           # author_patches.txt into each team's subfolder, so the
-          # playback/ + webrtc/ adds pick those up too.
-          git add -A index.html playback/ webrtc/ gfx/ raw_data/
+          # playback/ + webrtc/ adds pick those up too. .summary_cache/ is
+          # tracked so any overview reuse/gap-fill is captured.
+          git add -A index.html playback/ webrtc/ gfx/ raw_data/ .summary_cache/
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else

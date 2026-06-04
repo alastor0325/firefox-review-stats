@@ -112,13 +112,15 @@ def summarize_features(
 ) -> None:
     """Fill each feature's `summary` across all recent-changes windows.
 
-    `summarize_fn(label, patches)` returns the overview text, or None on
-    failure (failures are left un-cached so a later run can retry). When
-    `summarize_fn` is None (e.g. no API key configured) this is a no-op —
-    the tab falls back to showing the change lists without overviews.
+    Resolution order per feature area: in-run memo → on-disk cache
+    (`.summary_cache/`, committed to git) → `summarize_fn`. The disk cache
+    is consulted **even when `summarize_fn` is None** — so a run without an
+    API key (e.g. CI) still fills any overview previously generated and
+    committed locally, leaving only never-seen feature-areas blank. When a
+    key *is* present, freshly-generated overviews are written back to the
+    cache so they can be committed. `summarize_fn` returning None (failure)
+    is left un-cached so a later run can retry.
     """
-    if summarize_fn is None:
-        return
     cache_dir = Path(cache_dir)
     memo: dict[str, Optional[str]] = {}
     for window in windows.values():
@@ -130,11 +132,13 @@ def summarize_features(
             if key in memo:
                 summary = memo[key]
             else:
-                summary = _read_cached(cache_dir, key) or summarize_fn(
-                    feature["label"], feature["patches"]
-                )
-                if summary:
-                    _write_cached(cache_dir, key, summary)
+                summary = _read_cached(cache_dir, key)
+                if summary is None and summarize_fn is not None:
+                    summary = summarize_fn(
+                        feature["label"], feature["patches"]
+                    )
+                    if summary:
+                        _write_cached(cache_dir, key, summary)
                 memo[key] = summary
             if summary:
                 feature["summary"] = summary

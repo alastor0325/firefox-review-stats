@@ -102,10 +102,21 @@ class TestSummarizeFeatures:
         summarize_features(windows, cache_dir=tmp_path, summarize_fn=boom)
         assert windows["1w"]["features"][0]["summary"] == "cached"
 
-    def test_none_fn_is_noop(self, tmp_path):
+    def test_none_fn_with_empty_cache_leaves_blank(self, tmp_path):
+        # No key and nothing cached → the area stays blank (CI fallback).
         windows = self._windows()
         summarize_features(windows, cache_dir=tmp_path, summarize_fn=None)
         assert "summary" not in windows["1w"]["features"][0]
+
+    def test_none_fn_still_fills_from_committed_cache(self, tmp_path):
+        # The hybrid model: a run without a key (CI) reuses an overview a
+        # local run already generated and committed to .summary_cache.
+        windows = self._windows()
+        key = summary_cache_key("eme", ["D1"])
+        (tmp_path / f"{key}.json").write_text(json.dumps({"summary": "from cache"}))
+
+        summarize_features(windows, cache_dir=tmp_path, summarize_fn=None)
+        assert windows["1w"]["features"][0]["summary"] == "from cache"
 
     def test_failed_summary_left_absent_and_uncached(self, tmp_path):
         windows = self._windows()
