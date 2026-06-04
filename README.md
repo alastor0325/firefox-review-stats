@@ -127,6 +127,10 @@ The Recent Changes tab's per-area overviews are generated in `analyze_git.py`. T
 
 **`.summary_cache/` is tracked in git** — each overview is cached by content hash (feature area + its set of patches), so any backend reuses overviews already generated (within a run and across runs when the same patch set recurs) and only generates genuinely-new areas. Delete the directory to force a full re-summarize.
 
+**This content hash is the regeneration guard** — generation is *content-based*, not time-based. Re-running on the same day with no new landings makes **zero** LLM calls (every area is a cache hit); the next time a component's patch list changes (e.g. the window slides a day later, or new patches land) only the *changed* areas are regenerated. Each run logs `[summary] N generated, M reused from cache, K failed`.
+
+**On generation failure**, that one area is left **without an overview** (it still shows its heading + patch list), the failure is **not cached** (so the next run retries it), and the refresh as a whole **still succeeds** — one flaky area never blocks the others or the run.
+
 Past overviews are snapshotted under [`summary-baselines/`](summary-baselines/) (text + the inputs they were generated from) so different models can be compared.
 
 ## Tests

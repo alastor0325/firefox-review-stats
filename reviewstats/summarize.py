@@ -131,6 +131,7 @@ def summarize_features(
     """
     cache_dir = Path(cache_dir)
     memo: dict[str, Optional[str]] = {}
+    reused = generated = failed = 0  # counted per unique content hash
     for window in windows.values():
         for feature in window.get("features", []):
             key = summary_cache_key(
@@ -141,15 +142,23 @@ def summarize_features(
                 summary = memo[key]
             else:
                 summary = _read_cached(cache_dir, key)
-                if summary is None and summarize_fn is not None:
-                    summary = summarize_fn(
-                        feature["label"], feature["patches"]
-                    )
+                if summary is not None:
+                    reused += 1  # unchanged content → no LLM call (the guard)
+                elif summarize_fn is not None:
+                    summary = summarize_fn(feature["label"], feature["patches"])
                     if summary:
                         _write_cached(cache_dir, key, summary)
+                        generated += 1
+                    else:
+                        failed += 1  # left blank + un-cached → retried next run
                 memo[key] = summary
             if summary:
                 feature["summary"] = summary
+    if generated or reused or failed:
+        print(
+            f"  [summary] {generated} generated, {reused} reused from cache, "
+            f"{failed} failed (left blank, will retry next run)"
+        )
 
 
 def make_anthropic_summarizer(
