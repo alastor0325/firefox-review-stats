@@ -9,8 +9,8 @@
     "excludes": [],
     "window_start": "2025-11-19",
     "window_end": "2026-06-03",
-    "generated_at": "2026-06-04T21:51:31.512117+00:00",
-    "generated_at_display": "Jun 4, 2026, 2:51 PM PDT"
+    "generated_at": "2026-06-04T22:15:18.762808+00:00",
+    "generated_at_display": "Jun 4, 2026, 3:15 PM PDT"
   },
   "summary": {
     "total_patches": 362,
@@ -1451,7 +1451,7 @@
       "ng"
     ],
     "all_members": {
-      "dbaker": [
+      "jib": [
         0,
         0,
         0,
@@ -1461,68 +1461,6 @@
         0,
         0,
         0,
-        0,
-        0,
-        1,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        1,
-        0,
-        4,
-        0,
-        3,
-        0
-      ],
-      "mjf": [
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        3,
-        0,
-        0,
-        0,
-        2,
-        1,
-        1,
-        0,
-        0,
-        0,
-        0,
-        2,
-        0,
-        0,
-        0,
-        1,
-        3,
-        1,
-        0,
-        0,
-        0,
-        0
-      ],
-      "ng": [
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        4,
-        1,
         0,
         0,
         0,
@@ -1537,7 +1475,7 @@
         0,
         0,
         0,
-        2,
+        0,
         0,
         0,
         0,
@@ -1606,13 +1544,38 @@
         5,
         10
       ],
-      "jib": [
+      "ng": [
         0,
         0,
         0,
         0,
         0,
         0,
+        0,
+        4,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "dbaker": [
         0,
         0,
         0,
@@ -1632,6 +1595,43 @@
         0,
         0,
         0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        4,
+        0,
+        3,
+        0
+      ],
+      "mjf": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        3,
+        0,
+        0,
+        0,
+        2,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        2,
+        0,
+        0,
+        0,
+        1,
+        3,
+        1,
         0,
         0,
         0,
@@ -5298,7 +5298,7 @@
               "primary_subdir": "dom/media/webrtc/jsapi"
             }
           ],
-          "summary": "Work on the public WebRTC API pages use (RTCPeerConnection, RTCDataChannel) \u2014 fixes to connection teardown and data-channel worker lifetimes, exposing the default audio/video codecs, enabling transport-wide congestion control for audio, and general modernisation."
+          "summary": "Recent updates to the WebRTC web API, particularly around **RTCPeerConnection** (the core class used for establishing connections in video calls), focused on improving performance and reliability. Key changes include ensuring that closed updates are reported for transport connections that are terminated, even if they weren't active, enhancing the responsiveness of the API. Additionally, the implementation has been refined by adopting modern memory management techniques, like using `std::make_unique` and `MakeRefPtr`, which help prevent memory leaks and improve stability. Most notably, **audio codecs now support transport-cc**, a feature that optimizes the transmission of audio by providing real-time feedback on network conditions, ultimately leading to a better experience during calls."
         },
         {
           "feature": "dom/media/webrtc/transport",
@@ -5366,7 +5366,7 @@
               "primary_subdir": "dom/media/webrtc/transport"
             }
           ],
-          "summary": "Improvements to the WebRTC connection layer (ICE/DTLS) \u2014 richer connection statistics such as TLS version, cipher and candidate details, plus threading and ownership clean-ups."
+          "summary": "Recent changes in the connection transport area of Firefox, particularly for WebRTC (the technology behind video calls), focus on improving stability and performance. By employing a more modern memory allocation method, **the browser now utilizes 'MakeUnique' instead of 'new' for memory management**, which can enhance safety and efficiency. Additionally, updates to transport statistics now allow detailed tracking of security features such as the TLS version and cipher methods used for encrypting data, improving our understanding of the connection's security. These enhancements, all executed on the main thread, aim to streamline browser operations and boost the reliability of real-time communications, making Firefox a more robust platform for online interaction."
         },
         {
           "feature": "dom/media/webrtc/libwebrtcglue",
@@ -5424,7 +5424,7 @@
               "primary_subdir": "dom/media/webrtc/libwebrtcglue"
             }
           ],
-          "summary": "Glue between Firefox and the upstream libwebrtc library \u2014 better gating of hardware H.264 encode/decode, audio bitrate and bandwidth configuration, and more accurate Media Capabilities answers for real-time codecs."
+          "summary": "Recent updates to Firefox's integration with **WebRTC**, the technology behind video calls, focus on enhancing the way the browser handles video codecs and media capabilities. The integration of the H.264 FMTP (Format Parameter Set) parser improves how the browser communicates its capabilities for video streaming, ensuring better compatibility with various video formats. Additionally, improvements to the accuracy of media capability support queries\u2014based on resolution and framerate\u2014will enhance the browser's ability to adapt to different streaming conditions, potentially providing users with smoother video experiences. Configuring audio send stream bitrate and bandwidth allocation also aims to optimize audio quality during calls. Together, these changes make Firefox better equipped for efficient video communication in real-time situations, which is increasingly important as online interactions continue to grow."
         },
         {
           "feature": "dom/media/webrtc/sdp",
@@ -5472,7 +5472,7 @@
               "primary_subdir": "dom/media/webrtc/sdp"
             }
           ],
-          "summary": "Refactoring of the SDP layer (the text format that negotiates a call's media) toward safer memory ownership, with formatting and lint clean-up."
+          "summary": "Recent changes to the session negotiation process within Firefox focus on improving memory management related to handling Session Description Protocol (SDP) attributes, which are essential for establishing multimedia sessions like video calls. By using **UniquePtrs**, a smart pointer that automatically manages memory, Firefox enhances safety and efficiency, reducing the risk of memory leaks associated with traditional pointer usage. These modifications mainly involve how SDP attributes are created, stored, and copied within the underlying code, fostering a cleaner and more robust implementation while _not changing any visible user features_."
         },
         {
           "feature": "dom/media/webrtc/jsep",
@@ -5510,7 +5510,7 @@
               "primary_subdir": "dom/media/webrtc/jsep"
             }
           ],
-          "summary": "Fixes in the call-negotiation engine (JSEP) around when media sections are associated, plus a code-quality check."
+          "summary": "Recent updates to the negotiation engine, which is part of the JSEP (JavaScript Session Establishment Protocol) used for handling media sessions like video calls, aim to improve its efficiency and performance. The changes include stopping the use of a process that was not suitable for certain application scenarios and refining when transceivers\u2014components that manage media streams\u2014are associated based on the state of the remote media section. These adjustments are significant for enhancing the reliability and responsiveness of real-time communications, ensuring a smoother experience in applications relying on technologies like WebRTC, the backbone of video calling. **Overall, these tweaks stand to boost user experience by making media connections more streamlined and effective.**"
         },
         {
           "feature": "dom/media/webrtc",
@@ -5538,7 +5538,7 @@
               "primary_subdir": "dom/media/webrtc"
             }
           ],
-          "summary": "Cross-cutting WebRTC work \u2014 an H.264 format-parameter parser with tests, and rejecting Media Capabilities H.264 queries whose resolution or frame rate exceed what the encoder supports."
+          "summary": "Recent updates to WebRTC, the technology behind real-time video and audio communication, introduce important enhancements regarding H.264 video capabilities. The browser will now **reject queries for H.264 video when the requested resolution or frame rate exceeds the supported limits**, ensuring better compatibility and performance during video calls. Additionally, a new parser for H.264 format parameters has been implemented along with comprehensive tests, which will help developers ensure that their applications can handle video streams more reliably and efficiently. These changes aim to improve user experience by maintaining high-quality video while preventing issues related to unsupported configurations."
         },
         {
           "feature": "dom/media/webrtc/third_party_build",
@@ -5566,7 +5566,7 @@
               "primary_subdir": "dom/media/webrtc/third_party_build"
             }
           ],
-          "summary": "Tooling to track and update the vendored libwebrtc library. _Build maintenance only._"
+          "summary": "Recent updates to the libwebrtc build process introduced two new Python scripts aimed at improving how developers manage their code. One script checks for any missing branch-head commits, helping ensure that all crucial updates and changes are tracked effectively, while the other provides a visual overview of those branch-head commits. These enhancements are significant because they support better collaboration and maintenance of WebRTC, the technology behind video calls, making it easier for engineers to keep the codebase up to date and reduce the risk of issues arising from overlooked changes."
         },
         {
           "feature": "dom/media/systemservices/android_video_capture",
@@ -5584,7 +5584,7 @@
               "primary_subdir": "dom/media/systemservices/android_video_capture"
             }
           ],
-          "summary": "Android camera capture now reads device rotation from the window context, so the camera image stays correctly oriented as the phone rotates."
+          "summary": "Recent updates to the Android camera capture functionality in Firefox now allow the browser to automatically read the camera's rotation based on the device's orientation. This means that when you turn your device, the camera will adjust accordingly, providing a more intuitive experience when taking photos or recording videos. **This improvement enhances user convenience and ensures that images and videos are correctly aligned, mitigating issues with upside-down or sideways captures.**"
         },
         {
           "feature": "dom/media/systemservices/fake_video_capture",
@@ -5602,7 +5602,7 @@
               "primary_subdir": "dom/media/systemservices/fake_video_capture"
             }
           ],
-          "summary": "A test-only fix in the fake camera-capture backend. _Testing only._"
+          "summary": "Recent changes in the camera capture testing area include a renaming of a function to improve clarity and alignment with the latest development standards. Additionally, updates were made to a test related to the real-time clock used in capturing video, which now features a newly populated statistic that was previously returning zero. These adjustments enhance the accuracy and reliability of camera-related functionalities, ensuring better performance for applications utilizing these features, particularly in real-time scenarios."
         },
         {
           "feature": "dom/media/webrtc/tests",
@@ -5620,7 +5620,7 @@
               "primary_subdir": "dom/media/webrtc/tests"
             }
           ],
-          "summary": "Re-enabled and stabilised a batch of WebRTC tests (crashtests, mochitests, screensharing) on macOS 15."
+          "summary": "Recent updates to the WebRTC tests have introduced crashtests for the MacOS platform running on Apple\u2019s AArch64 architecture. This enhancement is important because it helps ensure that WebRTC \u2014 the technology behind video calls \u2014 functions reliably on the latest Mac hardware. **By enabling these crashtests, developers can proactively catch and address potential crashes, improving the overall stability and performance of WebRTC in Firefox.**"
         }
       ]
     },
@@ -5755,7 +5755,7 @@
               "primary_subdir": "dom/media/webrtc/jsapi"
             }
           ],
-          "summary": "Work on the public WebRTC API pages use (RTCPeerConnection, RTCDataChannel) \u2014 fixes to connection teardown and data-channel worker lifetimes, exposing the default audio/video codecs, enabling transport-wide congestion control for audio, and general modernisation."
+          "summary": "Recent updates to the WebRTC web API, which enables real-time communication like video calls, include several important improvements and fixes. One significant change is the **enablement of transport-cc for audio codecs**, allowing better control and quality of audio streams during calls by adapting to changing network conditions. Additionally, updates such as ensuring closed updates are fired for transports that have been torn down, even if inactive, help in maintaining accurate connection status reporting. These enhancements not only improve the reliability and efficiency of WebRTC implementations but also streamline the underlying code management for future development, making it easier to maintain and extend this essential feature for modern web applications."
         },
         {
           "feature": "dom/media/webrtc/libwebrtcglue",
@@ -5873,7 +5873,7 @@
               "primary_subdir": "dom/media/webrtc/libwebrtcglue"
             }
           ],
-          "summary": "Glue between Firefox and the upstream libwebrtc library \u2014 better gating of hardware H.264 encode/decode, audio bitrate and bandwidth configuration, and more accurate Media Capabilities answers for real-time codecs."
+          "summary": "Recent updates to the **libwebrtc integration** in Firefox have enhanced the browser's ability to handle video and audio more efficiently during real-time communications. Notably, the integration of an H.264 FMTP (Format Parameter) parser allows for improved support of this widely used video codec, which is crucial for delivering high-quality video over the internet. Additionally, improvements to the Media Capabilities framework now provide more accurate support queries based on media resolution and framerate, enabling better performance optimization. These changes are significant as they result in a smoother experience for users engaging in video calls and other media-intensive activities, leading to **better quality and reliability in WebRTC (the technology behind video calls)**."
         },
         {
           "feature": "dom/media/webrtc/transport",
@@ -5971,7 +5971,7 @@
               "primary_subdir": "dom/media/webrtc/transport"
             }
           ],
-          "summary": "Improvements to the WebRTC connection layer (ICE/DTLS) \u2014 richer connection statistics such as TLS version, cipher and candidate details, plus threading and ownership clean-ups."
+          "summary": "Recent changes in the Firefox browser have focused on enhancing the WebRTC (the technology behind video calls) connection transport layer, specifically related to ICE (Interactive Connectivity Establishment) and DTLS (Datagram Transport Layer Security). Notably, improvements include the implementation of detailed statistics such as TLS version and cipher information for secure communications, which helps in monitoring and optimizing the performance of these connections. Additionally, enhancements have been made to the RTCIceCandidateStats, including new fields that give insight into network connectivity, thereby making WebRTC connections more resilient and efficient. These upgrades are essential as they not only strengthen the security and reliability of real-time communications but also align Firefox with modern web standards, ensuring a better user experience. **Overall, these developments bring more robustness and transparency to secure real-time communication, which is crucial for maintaining the integrity of user data.**"
         },
         {
           "feature": "dom/media/webrtc/tests",
@@ -6059,7 +6059,7 @@
               "primary_subdir": "dom/media/webrtc/tests"
             }
           ],
-          "summary": "Re-enabled and stabilised a batch of WebRTC tests (crashtests, mochitests, screensharing) on macOS 15."
+          "summary": "Recent updates to the WebRTC testing framework in Firefox focused on enhancing compatibility and reliability on macOS platforms. The changes include the re-enabling of several important test types, such as mochitests for screen sharing, which is critical for ensuring the stability of video calls and other real-time communication features. Additionally, crashtests, which help identify when the browser crashes under specific conditions, were re-enabled and optimized. These adjustments are essential to maintain a smooth and reliable experience for users engaging in WebRTC activities, ensuring that technology behind **video calls and online collaboration tools** works seamlessly on newer macOS versions."
         },
         {
           "feature": "dom/media/webrtc/sdp",
@@ -6137,7 +6137,7 @@
               "primary_subdir": "dom/media/webrtc/sdp"
             }
           ],
-          "summary": "Refactoring of the SDP layer (the text format that negotiates a call's media) toward safer memory ownership, with formatting and lint clean-up."
+          "summary": "Recent updates in the session negotiation area of the Firefox browser have shifted the codebase to make better use of smart pointers, specifically **UniquePtrs**. This change enhances memory management, ensuring that memory is automatically cleaned up when it's no longer needed, which helps prevent memory leaks and improves performance. Additionally, the updates have standardized the way certain attributes are handled in the SDP (Session Description Protocol), which is crucial for managing multimedia sessions like video calls. By transitioning to more modern C++ practices and improving code consistency, these changes contribute to a more reliable and maintainable WebRTC (the technology behind video calls) implementation, ultimately enhancing users' calling experience."
         },
         {
           "feature": "dom/media/webrtc",
@@ -6195,7 +6195,7 @@
               "primary_subdir": "dom/media/webrtc"
             }
           ],
-          "summary": "Cross-cutting WebRTC work \u2014 an H.264 format-parameter parser with tests, and rejecting Media Capabilities H.264 queries whose resolution or frame rate exceed what the encoder supports."
+          "summary": "Recent updates to Firefox's WebRTC support, which is the technology behind video calls and real-time communication, introduced tighter control over video quality by rejecting H.264 codec queries if the requested resolution or framerate exceeds set limits. This enhancement is important as it helps ensure that video streams remain within a manageable range, preventing overloading of devices during calls. Additionally, improvements were made to better handle media configurations and encoding information, ensuring that errors are properly communicated to developers. Overall, these changes enhance the browser's ability to deliver reliable, high-quality video experiences while maintaining system performance, thereby contributing to more efficient and effective online communication."
         },
         {
           "feature": "dom/media/systemservices",
@@ -6233,7 +6233,7 @@
               "primary_subdir": "dom/media/systemservices"
             }
           ],
-          "summary": "Camera and microphone capture internals \u2014 making some helpers usable from worker threads, plus code-quality clean-up."
+          "summary": "Recent updates in the camera and audio capture area of Firefox focused on enhancing the browser's internal structure and functionality. By implementing **EventTargetCapability** throughout the CamerasParent component, the browser can better manage how events, such as those from camera inputs, are handled, leading to more reliable and efficient video and audio interactions. Additionally, a new variant of **HostnameInPref** has been made available for use in workers, allowing background tasks to securely manage different web hostnames with improved preference handling. While these changes primarily refine the behind-the-scenes architecture, they collectively contribute to a smoother user experience in future camera and audio features."
         },
         {
           "feature": "dom/media/webrtc/jsep",
@@ -6271,7 +6271,7 @@
               "primary_subdir": "dom/media/webrtc/jsep"
             }
           ],
-          "summary": "Fixes in the call-negotiation engine (JSEP) around when media sections are associated, plus a code-quality check."
+          "summary": "Recent updates to the negotiation engine, which is part of the JSEP (JavaScript Session Establishment Protocol) used for handling media sessions like video calls, aim to improve its efficiency and performance. The changes include stopping the use of a process that was not suitable for certain application scenarios and refining when transceivers\u2014components that manage media streams\u2014are associated based on the state of the remote media section. These adjustments are significant for enhancing the reliability and responsiveness of real-time communications, ensuring a smoother experience in applications relying on technologies like WebRTC, the backbone of video calling. **Overall, these tweaks stand to boost user experience by making media connections more streamlined and effective.**"
         },
         {
           "feature": "dom/media/webrtc/third_party_build",
@@ -6309,7 +6309,7 @@
               "primary_subdir": "dom/media/webrtc/third_party_build"
             }
           ],
-          "summary": "Tooling to track and update the vendored libwebrtc library. _Build maintenance only._"
+          "summary": "Recent updates to the libwebrtc build have introduced new Python scripts designed to enhance the management of code versions. One script checks for any missing branch-head commits, ensuring that developers can keep track of the latest updates, while another displays the current branch-head commits for libwebrtc, simplifying version oversight. Additionally, the default configuration environment has been updated for version v149, which helps maintain compatibility with the latest development standards. These changes are important because they improve the efficiency of developers working with **libwebrtc, the underlying technology for video calls**, ensuring a smoother development process and reducing the risk of errors."
         },
         {
           "feature": "dom/media/systemservices/android_video_capture",
@@ -6327,7 +6327,7 @@
               "primary_subdir": "dom/media/systemservices/android_video_capture"
             }
           ],
-          "summary": "Android camera capture now reads device rotation from the window context, so the camera image stays correctly oriented as the phone rotates."
+          "summary": "Recent updates to the Android camera capture functionality in Firefox now allow the browser to automatically read the camera's rotation based on the device's orientation. This means that when you turn your device, the camera will adjust accordingly, providing a more intuitive experience when taking photos or recording videos. **This improvement enhances user convenience and ensures that images and videos are correctly aligned, mitigating issues with upside-down or sideways captures.**"
         },
         {
           "feature": "dom/media/systemservices/fake_video_capture",
@@ -6345,7 +6345,7 @@
               "primary_subdir": "dom/media/systemservices/fake_video_capture"
             }
           ],
-          "summary": "A test-only fix in the fake camera-capture backend. _Testing only._"
+          "summary": "Recent changes in the camera capture testing area include a renaming of a function to improve clarity and alignment with the latest development standards. Additionally, updates were made to a test related to the real-time clock used in capturing video, which now features a newly populated statistic that was previously returning zero. These adjustments enhance the accuracy and reliability of camera-related functionalities, ensuring better performance for applications utilizing these features, particularly in real-time scenarios."
         }
       ]
     }
