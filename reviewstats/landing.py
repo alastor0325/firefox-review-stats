@@ -354,7 +354,7 @@ def render_landing_page(teams: list[Team]) -> str:
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Mozilla Reviewer Load — pick a team</title>
+<title>Mozilla Team Dashboards — pick a team</title>
 <link rel="icon" type="image/svg+xml" href="{_FAVICON}">
 {_FONTS}
 <style>{_STYLE}</style>
@@ -363,8 +363,8 @@ def render_landing_page(teams: list[Team]) -> str:
 
 <div class="masthead">
   <p class="eyebrow"><span>Mozilla · Research</span></p>
-  <h1 class="title">Reviewer<br><em>Load</em></h1>
-  <p class="lede">A six-month accounting of <em>who reviews what</em>, for whom, and how often — surfacing concentration, bottleneck risk, and review-wait latency across teams.</p>
+  <h1 class="title">Team<br><em>Dashboards</em></h1>
+  <p class="lede">A six-month read on each review team — <em>who reviews what</em>, for whom, and how often (concentration, bottleneck risk, review-wait latency) — plus a digest of <em>what each component shipped</em> recently.</p>
   <div class="meta-row">
     <span>{n_teams} {dashboards_word}</span>
     <span class="sep">·</span>

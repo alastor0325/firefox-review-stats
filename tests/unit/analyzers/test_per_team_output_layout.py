@@ -23,7 +23,7 @@ from unittest.mock import patch
 import analyze_git
 from reviewstats.git_log import Commit
 from reviewstats.parse import Reviewer
-from reviewstats.teams import PLAYBACK_TEAM
+from reviewstats.teams import PLAYBACK_TEAM, WEBRTC_TEAM
 
 
 def _commit(sha: str = "a" * 40) -> Commit:
@@ -155,6 +155,30 @@ def test_generate_for_team_attaches_feature_summaries(tmp_path: Path):
     data = json.loads((tmp_path / "playback" / "data_git.json").read_text())
     feature = data["recent_changes"]["1m"]["features"][0]
     assert feature["summary"] == f"Overview of {feature['label']}"
+
+
+def test_multiroot_team_recent_feed_buckets_one_level_deep(tmp_path: Path):
+    """A multi-root team (webrtc) buckets its Recent Changes feed one level
+    under the owned root — so feature areas are meaningful (e.g.
+    dom/media/webrtc/transport) rather than the whole root."""
+    with patch.object(analyze_git, "fetch_commits", return_value=[_commit()]), \
+        patch.object(
+            analyze_git, "fetch_commit_files_cached",
+            return_value=["dom/media/webrtc/transport/Foo.cpp"],
+        ):
+        analyze_git._generate_for_team(
+            WEBRTC_TEAM,
+            repo="mozilla-firefox/firefox",
+            since="2026-05-01T00:00:00Z",
+            out_dir=tmp_path,
+            cache_dir=tmp_path / ".commit_files_cache",
+            archive_week=False,
+            now=datetime(2026, 5, 15, tzinfo=timezone.utc),
+        )
+    data = json.loads((tmp_path / "webrtc" / "data_git.json").read_text())
+    feature = data["recent_changes"]["1m"]["features"][0]
+    assert feature["feature"] == "dom/media/webrtc/transport"
+    assert feature["label"] == "Connection transport (ICE / DTLS)"
 
 
 def test_main_iterates_every_registered_team(tmp_path: Path):

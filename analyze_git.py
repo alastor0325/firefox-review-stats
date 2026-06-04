@@ -35,6 +35,7 @@ from reviewstats.parse import (
     strip_bug_prefix,
     strip_reviewer_tag,
 )
+from reviewstats.recent_changes import deep_feature_bucket
 from reviewstats.render import render_html
 from reviewstats.report import RECENT_CHANGES_WINDOWS, build_report
 from reviewstats.summarize import (
@@ -140,11 +141,19 @@ def _generate_for_team(
             bad_with_files, path=team.paths[0],
         )
         subdir_of = lambda fs: primary_subdir(fs, path=team.paths[0])
+        # Single-root teams already bucket by immediate subdir — the
+        # Recent Changes feed reuses that.
+        recent_subdir_of = subdir_of
     else:
         by_subdir = classify_landed_without_team_review_by_subdir(
             bad_with_files, paths=team.paths,
         )
         subdir_of = lambda fs: primary_subdir(fs, paths=team.paths)
+        # The no-team-review pie stays coarse (root-only), but the Recent
+        # Changes feed buckets one level deeper so a multi-root team's
+        # feature areas (e.g. gfx/wr, dom/media/webrtc/transport) are
+        # meaningful rather than one giant root bucket.
+        recent_subdir_of = lambda fs: deep_feature_bucket(fs, team.paths)
 
     no_team_review_list = [
         {
@@ -191,7 +200,7 @@ def _generate_for_team(
                 "subject": strip_bug_prefix(strip_reviewer_tag(c.subject)),
                 "bug": extract_bug_number(c.subject),
                 "differential_revision": c.differential_revision,
-                "primary_subdir": subdir_of(files) or "(unknown)",
+                "primary_subdir": recent_subdir_of(files) or "(unknown)",
             }
         )
 

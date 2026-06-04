@@ -5,11 +5,16 @@ never touch the SDK or the network.
 """
 
 import json
+import sys
+import types
 from types import SimpleNamespace
+
+import pytest
 
 from reviewstats.summarize import (
     build_summary_prompt,
     extract_summary_text,
+    make_anthropic_summarizer,
     summarize_features,
     summary_cache_key,
 )
@@ -107,3 +112,83 @@ class TestSummarizeFeatures:
         summarize_features(windows, cache_dir=tmp_path, summarize_fn=lambda l, p: None)
         assert "summary" not in windows["1w"]["features"][0]
         assert not list(tmp_path.glob("*.json"))
+
+    def test_corrupt_cache_entry_is_resummarized(self, tmp_path):
+        # A garbage cache file is treated as a miss → summarize_fn runs and
+        # overwrites it (rather than crashing or yielding no summary).
+        windows = self._windows()
+        key = summary_cache_key("eme", ["D1"])
+        (tmp_path / f"{key}.json").write_text("{not json")
+
+        summarize_features(
+            windows, cache_dir=tmp_path, summarize_fn=lambda l, p: "fresh"
+        )
+        assert windows["1w"]["features"][0]["summary"] == "fresh"
+        assert json.loads((tmp_path / f"{key}.json").read_text())["summary"] == "fresh"
+
+
+def _install_fake_anthropic(monkeypatch):
+    """Inject a stub `anthropic` module so make_anthropic_summarizer can be
+    tested without the real SDK installed. Returns the exception classes."""
+    mod = types.ModuleType("anthropic")
+
+    class APIError(Exception):
+        pass
+
+    class BadRequestError(APIError):
+        pass
+
+    mod.APIError = APIError
+    mod.BadRequestError = BadRequestError
+    mod.Anthropic = lambda *a, **k: None  # not used; we inject a client
+    monkeypatch.setitem(sys.modules, "anthropic", mod)
+    return BadRequestError, APIError
+
+
+def _msg(text):
+    return SimpleNamespace(content=[SimpleNamespace(type="text", text=text)])
+
+
+class _FakeMessages:
+    def __init__(self, impl):
+        self._impl = impl
+
+    def create(self, **kwargs):
+        return self._impl(**kwargs)
+
+
+class _FakeClient:
+    def __init__(self, impl):
+        self.messages = _FakeMessages(impl)
+
+
+class TestAnthropicSummarizer:
+    def test_success_returns_text(self, monkeypatch):
+        _install_fake_anthropic(monkeypatch)
+        client = _FakeClient(lambda **k: _msg("An overview."))
+        fn = make_anthropic_summarizer(client=client)
+        assert fn("EME", [{"subject": "x"}]) == "An overview."
+
+    def test_uses_adaptive_thinking_then_falls_back(self, monkeypatch):
+        BadRequestError, _ = _install_fake_anthropic(monkeypatch)
+        seen = []
+
+        def impl(**kwargs):
+            seen.append("thinking" in kwargs)
+            if "thinking" in kwargs:
+                raise BadRequestError("model lacks adaptive thinking")
+            return _msg("Plain overview.")
+
+        fn = make_anthropic_summarizer(client=_FakeClient(impl))
+        assert fn("EME", [{"subject": "x"}]) == "Plain overview."
+        # First call requested adaptive thinking; retry dropped it.
+        assert seen == [True, False]
+
+    def test_api_error_returns_none(self, monkeypatch):
+        _, APIError = _install_fake_anthropic(monkeypatch)
+
+        def impl(**kwargs):
+            raise APIError("boom")
+
+        fn = make_anthropic_summarizer(client=_FakeClient(impl))
+        assert fn("EME", [{"subject": "x"}]) is None

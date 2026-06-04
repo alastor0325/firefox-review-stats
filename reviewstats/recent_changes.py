@@ -11,6 +11,8 @@ report JSON. No I/O, no network.
 """
 
 import re
+from collections import Counter
+from typing import Optional
 
 # Friendly names for the buckets `primary_subdir` produces. Single-root
 # teams (e.g. playback over dom/media) bucket by immediate subdirectory,
@@ -44,14 +46,42 @@ FEATURE_LABELS: dict[str, str] = {
     "gtest": "Tests (gtest)",
     "test": "Tests",
     "tests": "Tests",
-    # webrtc-reviewers — full-path buckets.
+    # webrtc-reviewers — root and one-level-deeper buckets (see
+    # deep_feature_bucket; multi-root teams group finer than the root).
     "dom/media/webrtc": "WebRTC",
-    "dom/media/systemservices": "System services (camera / audio I/O)",
-    # gfx-reviewers — full-path buckets.
+    "dom/media/webrtc/jsapi": "WebRTC web API (RTCPeerConnection)",
+    "dom/media/webrtc/libwebrtcglue": "libwebrtc integration",
+    "dom/media/webrtc/transport": "Connection transport (ICE / DTLS)",
+    "dom/media/webrtc/sdp": "Session negotiation (SDP)",
+    "dom/media/webrtc/jsep": "Negotiation engine (JSEP)",
+    "dom/media/webrtc/tests": "WebRTC tests",
+    "dom/media/webrtc/third_party_build": "libwebrtc build",
+    "dom/media/systemservices": "Camera & audio capture",
+    "dom/media/systemservices/android_video_capture": "Android camera capture",
+    "dom/media/systemservices/fake_video_capture": "Test camera capture",
+    # gfx-reviewers — root and one-level-deeper buckets.
     "gfx": "Graphics core",
+    "gfx/wr": "WebRender (GPU compositor)",
+    "gfx/webrender_bindings": "WebRender bindings",
+    "gfx/wgpu_bindings": "WebGPU backend (wgpu)",
+    "gfx/layers": "Compositing & layers",
+    "gfx/thebes": "2D graphics (Thebes)",
+    "gfx/2d": "2D graphics library (Moz2D)",
+    "gfx/gl": "OpenGL / GL contexts",
+    "gfx/vr": "Virtual & augmented reality",
+    "gfx/config": "Graphics configuration",
+    "gfx/ycbcr": "Video colour conversion (YCbCr)",
+    "gfx/qcms": "Colour management (QCMS)",
+    "gfx/src": "Graphics core internals",
+    "gfx/tests": "Graphics tests",
     "image": "Image decoding",
+    "image/decoders": "Image decoders",
+    "image/encoders": "Image encoders",
+    "image/test": "Image tests",
     "dom/canvas": "Canvas",
+    "dom/canvas/test": "Canvas tests",
     "dom/webgpu": "WebGPU",
+    "dom/webgpu/tests": "WebGPU tests",
     # Shared sentinel buckets emitted by primary_subdir / the classifier.
     "(top-level)": "General / top-level",
     "(unknown)": "Other",
@@ -71,6 +101,34 @@ def humanize_feature(subdir: str) -> str:
         return FEATURE_LABELS[leaf]
     words = [w for w in re.split(r"[-_/]+", leaf) if w]
     return " ".join(w.capitalize() for w in words)
+
+
+def deep_feature_bucket(files: list[str], paths: tuple[str, ...]) -> Optional[str]:
+    """Bucket a commit one level *under* whichever owned root it touched
+    most — the finer grouping the Recent Changes feed uses for multi-root
+    teams (gfx, webrtc), where the plain root ("gfx") is too coarse to be a
+    useful feature area.
+
+    Returns e.g. "gfx/layers" or "dom/media/webrtc/transport"; the bare
+    root (e.g. "gfx") for files sitting directly under it; None if no file
+    lies under any owned path. Ties broken alphabetically for determinism.
+    """
+    prefixes = sorted(paths, key=len, reverse=True)
+    counts: Counter[str] = Counter()
+    for fn in files:
+        for root in prefixes:
+            prefix = root.rstrip("/") + "/"
+            if fn.startswith(prefix):
+                rest = fn[len(prefix):]
+                counts[f"{root}/{rest.split('/')[0]}" if "/" in rest else root] += 1
+                break
+            if fn == root:
+                counts[root] += 1
+                break
+    if not counts:
+        return None
+    best = max(counts.values())
+    return sorted(b for b, c in counts.items() if c == best)[0]
 
 
 def _patch_key(row: dict) -> str:

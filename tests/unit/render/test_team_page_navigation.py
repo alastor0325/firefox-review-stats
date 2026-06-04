@@ -51,13 +51,13 @@ def test_template_title_is_generic_and_filled_in_via_js():
     while JS hasn't run yet."""
     html = render_html(_minimal_data(paths=["dom/media"], group="g"))
     # Static title is generic.
-    assert "<title>Reviewer Load Dashboard</title>" in html
+    assert "<title>Team Dashboard</title>" in html
     # JS upgrades it to the team-specific form.
     assert "document.title = " in html
 
 
 def test_h1_shows_group_only_paths_live_in_subtitle():
-    """The H1 reads 'Reviewer Load — <group>' — short and stable
+    """The H1 reads 'Team Dashboard — <group>' — short and stable
     across multi-path teams. The paths line lives in the meta
     subtitle below, so repeating them in the H1 would be redundant
     and hard to read when a team owns several roots."""
@@ -66,7 +66,7 @@ def test_h1_shows_group_only_paths_live_in_subtitle():
         group="webrtc-reviewers",
     ))
     # No hardcoded path string in the H1 anywhere.
-    assert "dom/media Reviewer Load" not in html
+    assert "dom/media Team Dashboard" not in html
     # The group half is JS-populated; the paths half no longer
     # appears inside the H1.
     assert "id=\"header-group\"" in html
@@ -80,7 +80,7 @@ def test_h1_shows_group_only_paths_live_in_subtitle():
     # the misleading abbreviation.
     assert "hdr-group" not in html
     assert "hdr-meta" not in html
-    # The static H1 text leads with the team-agnostic 'Reviewer Load',
+    # The static H1 text leads with the team-agnostic 'Team Dashboard',
     # then a decorative separator, then the JS-populated group span.
     # The separator glyph is a presentation detail — pinning the literal
     # em-dash was too brittle when the editorial redesign swapped in a
@@ -89,9 +89,9 @@ def test_h1_shows_group_only_paths_live_in_subtitle():
     h1_match = re.search(r"<h1[^>]*>(.*?)</h1>", html, re.DOTALL)
     assert h1_match is not None, "no <h1> in rendered page"
     h1 = h1_match.group(1)
-    assert "Reviewer Load" in h1
+    assert "Team Dashboard" in h1
     assert 'id="header-group"' in h1
-    assert h1.index("Reviewer Load") < h1.index('id="header-group"')
+    assert h1.index("Team Dashboard") < h1.index('id="header-group"')
 
 
 def test_header_has_back_link_to_landing_picker():

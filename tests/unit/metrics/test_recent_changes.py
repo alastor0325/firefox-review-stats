@@ -2,6 +2,7 @@
 
 from reviewstats.recent_changes import (
     FEATURE_LABELS,
+    deep_feature_bucket,
     group_by_feature,
     humanize_feature,
 )
@@ -113,3 +114,39 @@ class TestGroupByFeature:
             _row("eme", sha="e2", date="2026-06-02"),
         ]
         assert group_by_feature(rows)[0]["count"] == 2
+
+
+class TestDeepFeatureBucket:
+    GFX = ("gfx", "image", "dom/canvas", "dom/webgpu")
+
+    def test_one_level_under_matched_root(self):
+        files = ["gfx/layers/Compositor.cpp", "gfx/layers/Layer.h"]
+        assert deep_feature_bucket(files, self.GFX) == "gfx/layers"
+
+    def test_files_directly_under_root_bucket_as_root(self):
+        assert deep_feature_bucket(["gfx/gfxPlatform.cpp"], self.GFX) == "gfx"
+
+    def test_picks_root_with_most_files(self):
+        files = ["gfx/wr/a.rs", "gfx/wr/b.rs", "image/test/c.cpp"]
+        assert deep_feature_bucket(files, self.GFX) == "gfx/wr"
+
+    def test_separate_top_level_roots(self):
+        assert deep_feature_bucket(["dom/canvas/Canvas.cpp"], self.GFX) == "dom/canvas"
+
+    def test_no_match_returns_none(self):
+        assert deep_feature_bucket(["js/src/foo.cpp"], self.GFX) is None
+
+    def test_path_equal_to_root_counts_as_root(self):
+        # Defensive: a file path exactly equal to a root (no trailing slash)
+        # buckets as that root rather than being dropped.
+        assert deep_feature_bucket(["gfx"], self.GFX) == "gfx"
+
+    def test_tie_breaks_alphabetically(self):
+        files = ["gfx/layers/a.cpp", "gfx/wr/b.rs"]  # 1 each
+        assert deep_feature_bucket(files, self.GFX) == "gfx/layers"
+
+    def test_labels_resolve_for_deep_buckets(self):
+        # Known deep buckets get friendly labels (not raw leaf title-case).
+        assert humanize_feature("gfx/wr") == FEATURE_LABELS["gfx/wr"]
+        assert humanize_feature("dom/media/webrtc/transport") == \
+            FEATURE_LABELS["dom/media/webrtc/transport"]

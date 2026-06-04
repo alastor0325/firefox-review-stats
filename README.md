@@ -1,6 +1,6 @@
 # firefox-review-stats
 
-Per-team reviewer-load dashboards for Mozilla. Each dashboard covers the past 6 months of patches landed under the team's owned paths, refreshed weekly via a GitHub Action and published to GitHub Pages.
+Per-team dashboards for Mozilla — review-load distribution plus a digest of what each component shipped recently. Each dashboard covers the past 6 months of patches landed under the team's owned paths, refreshed weekly via a GitHub Action and published to GitHub Pages.
 
 **Live**: <https://alastor0325.github.io/firefox-review-stats/>
 
