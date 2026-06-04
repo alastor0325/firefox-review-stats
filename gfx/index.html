@@ -1259,6 +1259,7 @@ function bindToggle(axis) {
     } else if (axis === 'recent') {
       if (renderRecentWindow) renderRecentWindow(value);
     }
+    writeHash();
   }
   for (const b of buttons) {
     b.addEventListener('click', () => set(b.dataset[axis]));
@@ -1268,6 +1269,43 @@ function bindToggle(axis) {
 const setView = bindToggle('view');
 const setPeriod = bindToggle('period');
 const setRecent = bindToggle('recent');
+
+// Deep-linkable URLs. The hash encodes the current view and its secondary
+// axis: #team/6m, #team/3m, #team/1m, #team/weekly, #member, #queue,
+// #recent/1w, #recent/1m. Toggling updates the hash (replaceState — keeps
+// the URL shareable without spamming history); on load and on back/forward
+// the hash is applied to restore that exact state.
+const PERIOD_TO_HASH = { total: '6m', '3m': '3m', '1m': '1m', weekly: 'weekly' };
+const HASH_TO_PERIOD = { '6m': 'total', '3m': '3m', '1m': '1m', weekly: 'weekly' };
+let applyingHash = false;
+
+function writeHash() {
+  if (applyingHash) return;
+  const v = document.body.dataset.view;
+  let h = v;
+  if (v === 'team') h += '/' + (PERIOD_TO_HASH[document.body.dataset.period] || '6m');
+  else if (v === 'recent') h += '/' + (document.body.dataset.recent || '1w');
+  if (('#' + h) === location.hash) return;
+  try { history.replaceState(null, '', '#' + h); }
+  catch (e) { location.hash = h; }  // file:// fallback
+}
+
+function applyHash() {
+  const raw = location.hash.replace(/^#/, '');
+  if (!raw) return;
+  const [v, sub] = raw.split('/');
+  // Only switch to a view whose tab is actually present/visible.
+  if (!visibleAxisValues('view').includes(v)) return;
+  applyingHash = true;
+  try {
+    setView(v);
+    if (v === 'team') setPeriod(HASH_TO_PERIOD[sub] || 'total');
+    else if (v === 'recent') setRecent(sub === '1m' ? '1m' : '1w');
+  } finally {
+    applyingHash = false;
+  }
+}
+window.addEventListener('hashchange', applyHash);
 
 // If the report was generated before `team_views` was introduced,
 // only 6m data is available — hide the 1m / 3m buttons so the user
@@ -2109,6 +2147,10 @@ attachTooltips(document);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 })();
+
+// Honor a deep link (#view[/period]) on initial load, now that every
+// view/period/window setter and renderer is wired up.
+applyHash();
 </script>
 
 </body>

@@ -21,6 +21,8 @@ Each per-team page has four views, toggled at the top:
 
 **Keyboard navigation:** on a team page, **←/→** cycle the view (Team → Member → Wait Queue → Recent Changes) and **Shift+←/→** cycle the period (6-Month → 3-Month → 1-Month → Per-Week, Team View only). Arrows are ignored while typing in a field, and Cmd/Alt/Ctrl+arrow are left to the OS/browser (Ctrl+← / → is the macOS Spaces switch, which is why Shift — not Ctrl — drives the period).
 
+**Deep links:** the view and its period/window are encoded in the URL hash, so you can link straight to a state — `#team/6m`, `#team/3m`, `#team/1m`, `#team/weekly`, `#member`, `#queue`, `#recent/1w`, `#recent/1m`. The hash updates as you toggle and is restored on load and on back/forward.
+
 The landing page is a static picker that lists every registered team and links into its subfolder. **↑/↓** move a focus highlight through the teams; **Enter** opens the highlighted one.
 
 ## Architecture

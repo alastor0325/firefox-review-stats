@@ -348,6 +348,32 @@ class TestWaitQueueView:
         )
 
 
+class TestHashRouting:
+    """The view + secondary axis are deep-linkable via the URL hash."""
+
+    def test_toggle_writes_hash(self):
+        html = _render()
+        assert "function writeHash(" in html
+        assert "history.replaceState" in html, "toggles should update the hash"
+        assert "writeHash();" in html, "set() must call writeHash on every change"
+
+    def test_hash_applied_on_load_and_navigation(self):
+        html = _render()
+        assert "function applyHash(" in html
+        assert "location.hash" in html
+        assert re.search(r"addEventListener\(\s*'hashchange'\s*,\s*applyHash", html), (
+            "back/forward + manual hash edits must re-apply via hashchange"
+        )
+        # applyHash() is invoked once on load.
+        assert re.search(r"\napplyHash\(\);", html), "applyHash must run on load"
+
+    def test_hash_encodes_period_readably(self):
+        # 6-Month (data-period=total) maps to a readable '6m' in the URL.
+        html = _render()
+        assert re.search(r"PERIOD_TO_HASH\s*=\s*\{[^}]*total:\s*'6m'", html)
+        assert re.search(r"HASH_TO_PERIOD\s*=\s*\{[^}]*'6m':\s*'total'", html)
+
+
 class TestAxisIndependence:
     """The two axes change state independently; a `setMode` helper
     shouldn't reset the other axis when toggled. The toggle JS
