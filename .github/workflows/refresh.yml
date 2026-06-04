@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: write  # needed to push regenerated data + html
+  models: read     # lets the workflow token call GitHub Models for overviews
 
 jobs:
   refresh:
@@ -26,7 +27,7 @@ jobs:
       - name: Install Python deps
         run: |
           python -m pip install --upgrade pip
-          python -m pip install pytest playwright anthropic
+          python -m pip install pytest playwright
 
       - name: Install Chromium for Playwright
         run: python -m playwright install --with-deps chromium
@@ -69,16 +70,15 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Generate landing report (GitHub commits)
-        # The Recent Changes per-area overviews come from .summary_cache/,
-        # which is committed to git — so this run REUSES overviews generated
-        # locally (where the Anthropic key lives) without needing the key in
-        # CI. Only feature-areas never summarized locally show blank until
-        # the next local refresh. If ANTHROPIC_API_KEY *is* present it also
-        # fills any gaps; absent, the step still succeeds.
+        # Recent Changes overviews are generated via GitHub Models (free,
+        # using the workflow's own token — no third-party key stored). Newly
+        # written overviews are committed to .summary_cache/ and reused on
+        # later runs. GH_TOKEN doubles as both the commit-API token and the
+        # GitHub Models inference token (permissions: models: read above).
         run: python analyze_git.py
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          REVIEW_STATS_SUMMARY_BACKEND: github
 
       - name: Generate per-author listing
         run: python dump_author_patches.py

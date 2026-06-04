@@ -33,6 +33,14 @@ from reviewstats.recent_changes import _patch_key
 # quality for ~5x lower cost on the weekly batch.
 DEFAULT_SUMMARY_MODEL = "claude-opus-4-8"
 
+# GitHub Models — free inference reachable from CI with the workflow's own
+# token (permissions: models: read), no third-party key stored. Used for
+# the weekly refresh; a small model is plenty for short summaries and keeps
+# us inside the free low-tier rate limit. See README → Recent-change summaries.
+GITHUB_MODELS_URL = "https://models.github.ai/inference/chat/completions"
+GITHUB_MODELS_API_VERSION = "2026-03-10"
+DEFAULT_GITHUB_MODEL = "openai/gpt-4o-mini"
+
 _SYSTEM_PROMPT = (
     "You explain recent changes to one part of the Firefox browser for a "
     "broad audience. Given the area name and the titles of the patches "
@@ -186,5 +194,72 @@ def make_anthropic_summarizer(
             print(f"  [summary] API error for {feature_label!r}: {exc}")
             return None
         return extract_summary_text(message.content) or None
+
+    return summarize
+
+
+def _post_json(url, headers, payload, *, timeout=60):
+    """Minimal stdlib POST returning parsed JSON (no `requests` dependency)."""
+    import urllib.request
+
+    req = urllib.request.Request(
+        url,
+        data=json.dumps(payload).encode("utf-8"),
+        headers=headers,
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        return json.loads(resp.read().decode("utf-8"))
+
+
+def make_github_models_summarizer(
+    *,
+    token: str,
+    model: str = DEFAULT_GITHUB_MODEL,
+    post=_post_json,
+    min_interval: float = 4.0,
+) -> Callable[[str, list[dict]], Optional[str]]:
+    """Build a `summarize_fn` backed by GitHub Models (OpenAI-compatible).
+
+    Uses the workflow's own token (no third-party key). `post(url, headers,
+    payload) -> dict` is injectable for tests. `min_interval` paces calls to
+    stay under the free per-minute rate limit (~15/min → 4s spacing). Any
+    error returns None so the refresh degrades to no overview rather than
+    failing.
+    """
+    import time
+
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": GITHUB_MODELS_API_VERSION,
+    }
+    state = {"last": 0.0}
+
+    def summarize(feature_label: str, patches: list[dict]) -> Optional[str]:
+        system, user = build_summary_prompt(feature_label, patches)
+        if min_interval:
+            wait = min_interval - (time.monotonic() - state["last"])
+            if wait > 0:
+                time.sleep(wait)
+        payload = {
+            "model": model,
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+            "max_tokens": 400,
+        }
+        try:
+            data = post(GITHUB_MODELS_URL, headers, payload)
+            text = data["choices"][0]["message"]["content"]
+        except Exception as exc:  # urllib errors, bad JSON, missing fields
+            print(f"  [summary] GitHub Models error for {feature_label!r}: {exc}")
+            return None
+        finally:
+            if min_interval:
+                state["last"] = time.monotonic()
+        return (text or "").strip() or None
 
     return summarize

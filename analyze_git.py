@@ -39,8 +39,10 @@ from reviewstats.recent_changes import deep_feature_bucket
 from reviewstats.render import render_html
 from reviewstats.report import RECENT_CHANGES_WINDOWS, build_report
 from reviewstats.summarize import (
+    DEFAULT_GITHUB_MODEL as _DEFAULT_GITHUB_MODEL,
     DEFAULT_SUMMARY_MODEL as _DEFAULT_SUMMARY_MODEL,
     make_anthropic_summarizer,
+    make_github_models_summarizer,
     summarize_features,
 )
 from reviewstats.teams import TEAMS, Team
@@ -290,22 +292,33 @@ def main(argv: list[str] | None = None) -> int:
     ).strftime("%Y-%m-%dT%H:%M:%SZ")
     now = datetime.now(timezone.utc)
 
-    # Build the Recent Changes summarizer only when an API key is present.
-    # Without one (most local runs, and CI until the secret is set) the
-    # tab still renders — just without the per-feature summaries.
+    # Pick the Recent Changes summarizer backend:
+    #   REVIEW_STATS_SUMMARY_BACKEND=github  → GitHub Models (free, uses the
+    #       workflow's own token; the CI default)
+    #   =anthropic / ANTHROPIC_API_KEY set   → Claude API (local "nicer prose")
+    #   =off, or nothing configured          → no generation; cached overviews
+    #       in .summary_cache/ are still reused.
+    backend = os.environ.get("REVIEW_STATS_SUMMARY_BACKEND", "").strip().lower()
     summarize_fn = None
-    if os.environ.get("ANTHROPIC_API_KEY"):
+    if backend == "off":
+        print("Recent-change summaries disabled (backend=off); reusing cache only.")
+    elif backend == "github":
+        token = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN")
+        if token:
+            model = os.environ.get("REVIEW_STATS_SUMMARY_MODEL", _DEFAULT_GITHUB_MODEL)
+            summarize_fn = make_github_models_summarizer(token=token, model=model)
+            print(f"Recent-change summaries via GitHub Models (model={model}).")
+        else:
+            print("backend=github but no GH_TOKEN/GITHUB_TOKEN — reusing cache only.")
+    elif os.environ.get("ANTHROPIC_API_KEY"):
         model = os.environ.get("REVIEW_STATS_SUMMARY_MODEL", _DEFAULT_SUMMARY_MODEL)
         try:
             summarize_fn = make_anthropic_summarizer(model=model)
-            print(f"Recent-change summaries enabled (model={model}).")
+            print(f"Recent-change summaries via Anthropic (model={model}).")
         except ImportError:
-            print(
-                "ANTHROPIC_API_KEY is set but the `anthropic` package is "
-                "not installed — skipping recent-change summaries."
-            )
+            print("ANTHROPIC_API_KEY set but `anthropic` not installed — cache only.")
     else:
-        print("ANTHROPIC_API_KEY not set — skipping recent-change summaries.")
+        print("No summary backend configured — reusing cached overviews only.")
 
     for team in TEAMS.values():
         _generate_for_team(

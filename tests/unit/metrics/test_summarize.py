@@ -15,6 +15,7 @@ from reviewstats.summarize import (
     build_summary_prompt,
     extract_summary_text,
     make_anthropic_summarizer,
+    make_github_models_summarizer,
     summarize_features,
     summary_cache_key,
 )
@@ -202,4 +203,38 @@ class TestAnthropicSummarizer:
             raise APIError("boom")
 
         fn = make_anthropic_summarizer(client=_FakeClient(impl))
+        assert fn("EME", [{"subject": "x"}]) is None
+
+
+class TestGithubModelsSummarizer:
+    def test_success_and_request_shape(self):
+        seen = {}
+
+        def post(url, headers, payload):
+            seen.update(url=url, headers=headers, payload=payload)
+            return {"choices": [{"message": {"content": "  GH overview.  "}}]}
+
+        fn = make_github_models_summarizer(
+            token="tok", model="openai/gpt-4o-mini", post=post, min_interval=0
+        )
+        assert fn("EME", [{"subject": "Fix X"}]) == "GH overview."
+        assert seen["url"].endswith("/inference/chat/completions")
+        assert seen["headers"]["Authorization"] == "Bearer tok"
+        assert seen["headers"]["X-GitHub-Api-Version"]
+        assert seen["payload"]["model"] == "openai/gpt-4o-mini"
+        # OpenAI-compatible: a system message then the user prompt.
+        assert [m["role"] for m in seen["payload"]["messages"]] == ["system", "user"]
+        assert "Fix X" in seen["payload"]["messages"][1]["content"]
+
+    def test_http_error_returns_none(self):
+        def post(*a, **k):
+            raise RuntimeError("502")
+
+        fn = make_github_models_summarizer(token="t", post=post, min_interval=0)
+        assert fn("EME", [{"subject": "x"}]) is None
+
+    def test_malformed_response_returns_none(self):
+        fn = make_github_models_summarizer(
+            token="t", post=lambda *a, **k: {"choices": []}, min_interval=0
+        )
         assert fn("EME", [{"subject": "x"}]) is None
