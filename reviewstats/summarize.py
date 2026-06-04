@@ -217,7 +217,7 @@ def make_github_models_summarizer(
     token: str,
     model: str = DEFAULT_GITHUB_MODEL,
     post=_post_json,
-    min_interval: float = 4.0,
+    min_interval: float = 5.0,
 ) -> Callable[[str, list[dict]], Optional[str]]:
     """Build a `summarize_fn` backed by GitHub Models (OpenAI-compatible).
 
