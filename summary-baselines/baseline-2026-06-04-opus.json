@@ -1,0 +1,1201 @@
+{
+  "captured_at": "2026-06-04",
+  "model": "claude-opus-4-8 (Claude-authored baseline)",
+  "teams": {
+    "playback": {
+      "1w": [
+        {
+          "feature": "(top-level)",
+          "label": "General / top-level",
+          "count": 7,
+          "summary": "Reliability and clean-up across the core playback plumbing — safer object-lifetime handling and a thread-safety fix in media logging. Also lands groundwork for two notable web features: **picture-in-picture** (popping a video out into a floating window) and the new Audio Session API that pages use to declare how their sound should behave.",
+          "patch_subjects": [
+            "Change MediaDecoderStateMachine::CreateAudioSink to return its newly-allocated result as an already_AddRefed.",
+            "Simplify MediaDecoder::ConnectMirrors() now that it's clearer that its parameter is always mDecoderStateMachine.",
+            "Change MediaDecoder::CreateStateMachine() to return already_AddRefed.",
+            "Hold strong ref while calling nsIStreamListener methods",
+            "Part 1: Add Subtype() method to MediaExtendedMIMEType that returns the MIME string subtype.",
+            "Add missing ResultVariant.h include in dom/media/MediaData.h",
+            "Implement Picture In Picture API"
+          ]
+        },
+        {
+          "feature": "mediacontrol",
+          "label": "Media Control / Session",
+          "count": 7,
+          "summary": "A major build-out of audio-session handling — the system that tracks which tab is playing sound and keeps it coordinated. It adds a parent-side model of every audible source, computes the active session per the spec, fires change events, and routes media keys (including to sources that can't be directly controlled), all backed by extensive new tests.",
+          "patch_subjects": [
+            "Part 3: Browser test for AudioSession state transitions end-to-end.",
+            "Part 2: Plumb AudioSession state changes from parent to content and dispatch statechange.",
+            "Part 1: Move AudioSession-related gtests to a dedicated file.",
+            "Part 3: Wire the cross-session inactivation algorithm into state and type mutations.",
+            "Part 2: Implement the §5.4 update-all-audio-session-states algorithm.",
+            "Part 1: Add audio-session state field and selected-audio-session tracking.",
+            "Move parent-side audio-session state into a dedicated owner."
+          ]
+        },
+        {
+          "feature": "platforms",
+          "label": "Decoder / platform backends",
+          "count": 4,
+          "summary": "Decoder and platform-backend work centred on high-dynamic-range (HDR) video: HDR metadata now flows through the FFmpeg, Direct3D and Apple decoding paths. Also adds **hardware-accelerated video decoding via Vulkan**, better HEVC handling, and multichannel Opus encoding.",
+          "patch_subjects": [
+            "Stop checking for a non-zero numSPS when comparing extra data.",
+            "Add gtest for H265::CompareExtraData equality of SPS-less configs",
+            "Bug 2041373.",
+            "Part 7: Initialize Android utility PEMs in PEMFactory as per media.android-media-codec.enabled"
+          ]
+        },
+        {
+          "feature": "test",
+          "label": "Tests",
+          "count": 3,
+          "summary": "Test and fuzzing maintenance — new crashtests and coverage (key-system capabilities, a Vorbis preroll crash) plus refreshed fuzz tolerances for updated drivers. _No user-facing change._",
+          "patch_subjects": [
+            "Adjust fuzz for Skia m149.",
+            "Bump Android fuzz bound and drop stale macOS version annotations for color_quads reftests",
+            "Use quad shaders for images when TEXTURE_RECT isn't required."
+          ]
+        },
+        {
+          "feature": "mediasource",
+          "label": "Media Source Extensions (MSE)",
+          "count": 2,
+          "summary": "Added tests for HEVC video delivered through Media Source Extensions (MSE) — the technology streaming sites use for adaptive playback — including a script to generate the test fixtures.",
+          "patch_subjects": [
+            "Add MSE HEVC SPS-less CMAF test",
+            "Add generator script for HEVC test fixtures under dom/media/mediasource/test/"
+          ]
+        },
+        {
+          "feature": "hls",
+          "label": "HLS",
+          "count": 1,
+          "summary": "Early groundwork for HLS live streaming, expanding the interface it uses to open network connections. _Not yet user-visible._",
+          "patch_subjects": [
+            "p1: expand HLS resource callbacks interface for opening necko HTTP channels."
+          ]
+        },
+        {
+          "feature": "mediaelement",
+          "label": "HTMLMediaElement",
+          "count": 1,
+          "summary": "Made a media element's muted content attribute act as a fallback for the muted state, so muting behaves more predictably.",
+          "patch_subjects": [
+            "Part 1: Make the muted content attribute a fallback for the muted state."
+          ]
+        },
+        {
+          "feature": "mediacapabilities",
+          "label": "Media Capabilities",
+          "count": 1,
+          "summary": "A big push on Media Capabilities — the API sites use to check whether your device can smoothly play given media. It adds support for querying WebRTC (real-time video-calling) codecs and hardware acceleration, reworks the internal support checks, and for now rejects an unsupported WebRTC scalability option so call sites fall back cleanly.",
+          "patch_subjects": [
+            "Part 4: Update Media Capabilities to reject WebRTC scalabilityMode until Bug 1571470 lands"
+          ]
+        },
+        {
+          "feature": "ipc",
+          "label": "Media IPC",
+          "count": 1,
+          "summary": "Modernised the media inter-process plumbing onto safer reference-counted channels for remote decoders and the Media Foundation DRM/engine. _No visible change._",
+          "patch_subjects": [
+            "Use ContiguousEnumSerializerInclusive with ParamTraits<mozilla::MediaDataDecoder::PropertyName>"
+          ]
+        },
+        {
+          "feature": "webaudio",
+          "label": "Web Audio",
+          "count": 1,
+          "summary": "Maintenance of Web Audio (in-browser sound) — a shutdown crash fix, audio-fingerprinting hardening, and better handling of sample-rate drift when decoding audio. Also connects Web Audio to the media-control system.",
+          "patch_subjects": [
+            "Turn on clang-tidy's performance-trivially-destructible pass"
+          ]
+        }
+      ],
+      "1m": [
+        {
+          "feature": "mediacapabilities",
+          "label": "Media Capabilities",
+          "count": 24,
+          "summary": "A big push on Media Capabilities — the API sites use to check whether your device can smoothly play given media. It adds support for querying WebRTC (real-time video-calling) codecs and hardware acceleration, reworks the internal support checks, and for now rejects an unsupported WebRTC scalability option so call sites fall back cleanly.",
+          "patch_subjects": [
+            "Part 4: Update Media Capabilities to reject WebRTC scalabilityMode until Bug 1571470 lands",
+            "Initialize MediaCapabilitiesDecodingInfo::mPowerEfficient unconditionally before lambda capture",
+            "Make MediaCapabilities mime type parameter handling for webrtc permissive, for now.",
+            "Add an allowlist for the MediaCapabilities webrtc type.",
+            "Add an allowlist for MediaCapabilities legacy mode.",
+            "Move MediaCapabilities webrtc.enabled pref to BehaviorConfig.",
+            "Change MediaCapabilities validation prefs to a single legacy pref and put it in a struct for once-per-request sampling.",
+            "Fix worker thread lifetimes in Media Capabilities",
+            "Part 20: Add heuristic and overrides to determine Media Capabilities smooth attribute for WebRTC.",
+            "Part 18: Remove vestigial CheckAudio/VideoConfiguration functions.",
+            "Part 17: Overhaul Media Capabilities EncodingInfo creation to use unified support checks and add WebRTC support.",
+            "Part 16: Update Media Capabilities DecodingInfo creation to use unified support checks and add WebRTC support.",
+            "Part 15: Add hardware acceleration encode support checks to Media Capabilities.",
+            "Part 14: Add CodecSupportState class to store support for MediaCapabilities encode/decode for both audio and video.",
+            "Part 13: Update CheckTypeFor* functions to use MediaExtendedMIMEType",
+            "Part 12: Add GetThreadForAsyncRequesthelper to use when checking Media Capabilities support information.",
+            "Part 11: Add fmt::formatters for Media Capabilities video/audio encode/decode configurations and info.",
+            "Part 8: Add prefs to toggle Media Capabilities color space / scalability checks.",
+            "Part 7: Add WebRTC and colorGamut/transferFunction support checks to CheckMIMETypeSupport.",
+            "Part 6: Add colorGamut and transferFunction validation functions to be used in MediaCapabilities MIME type support check.",
+            "Part 5: Add WebRTC-specific scalabilityMode check to Media Capabilities video configuration validation.",
+            "Part 4: Add video/mpeg and audio/mpeg to container list for Media Capabilities validation.",
+            "Part 3: Add WebRTC media type check, add detail to comment with links to ongoing spec discussions.",
+            "Part 2: Add pref to enable/disable WebRTC type support in the Media Capabilities API."
+          ]
+        },
+        {
+          "feature": "mediacontrol",
+          "label": "Media Control / Session",
+          "count": 22,
+          "summary": "A major build-out of audio-session handling — the system that tracks which tab is playing sound and keeps it coordinated. It adds a parent-side model of every audible source, computes the active session per the spec, fires change events, and routes media keys (including to sources that can't be directly controlled), all backed by extensive new tests.",
+          "patch_subjects": [
+            "Part 3: Browser test for AudioSession state transitions end-to-end.",
+            "Part 2: Plumb AudioSession state changes from parent to content and dispatch statechange.",
+            "Part 1: Move AudioSession-related gtests to a dedicated file.",
+            "Part 3: Wire the cross-session inactivation algorithm into state and type mutations.",
+            "Part 2: Implement the §5.4 update-all-audio-session-states algorithm.",
+            "Part 1: Add audio-session state field and selected-audio-session tracking.",
+            "Move parent-side audio-session state into a dedicated owner.",
+            "Part 4: Expose the effective audio-session type via WebIDL and cover with browser tests.",
+            "Part 3: Compute the effective audio-session type per the spec algorithm.",
+            "Part 2: Implement the per-context audio-session type selection algorithm.",
+            "Part 1: Plumb audioSession.type setter to the parent process.",
+            "Part 5: Add a browser test for active-session stability when an audible iframe appears.",
+            "Part 4: Add gtest coverage for the consolidated audibility store.",
+            "Part 3: Rename intra-tab audio-focus owner to active audible controllable context.",
+            "Part 2: Track every audible source in a single parent-side store.",
+            "Part 1: Tag every audio source with its audio session type.",
+            "Part 5: Cross-source audio focus competition mochitests.",
+            "Part 4: Add audiblechange event on MediaController.",
+            "Part 1: Route Stop key to uncontrollable receivers.",
+            "Add Pref to expose media metadata in private browsing",
+            "Add uncontrollable audio source tracking to MediaController.",
+            "Use MakeRefPtr and MakeAndAddRef instead of 'new' to allocate gfxDrawable instances."
+          ]
+        },
+        {
+          "feature": "platforms",
+          "label": "Decoder / platform backends",
+          "count": 18,
+          "summary": "Decoder and platform-backend work centred on high-dynamic-range (HDR) video: HDR metadata now flows through the FFmpeg, Direct3D and Apple decoding paths. Also adds **hardware-accelerated video decoding via Vulkan**, better HEVC handling, and multichannel Opus encoding.",
+          "patch_subjects": [
+            "Stop checking for a non-zero numSPS when comparing extra data.",
+            "Add gtest for H265::CompareExtraData equality of SPS-less configs",
+            "Bug 2041373.",
+            "Part 7: Initialize Android utility PEMs in PEMFactory as per media.android-media-codec.enabled",
+            "Part 2: Only mark codecs with a real lack-of-extension mapping when their Media Foundation MFT is missing.",
+            "Part 1: Add PDMFactorySupport singleton with pref/gfxVar invalidation.",
+            "Make MacIOSurface derive alpha from pixel format, update callsites.",
+            "Use VK_NULL_HANDLE for Vulkan object handles in FFmpegVulkanVideoDecoder on 32-bit.",
+            "Funnel FFmpeg extradata allocation through a single helper",
+            "Cap FFmpeg-routed video decoding at MAX_VIDEO_WIDTH * MAX_VIDEO_HEIGHT via AVCodecContext::max_pixels",
+            "Declare major()/minor() for DRM render-node stat on Solaris and BSD.",
+            "Part 2: Wire VideoInfo HDR metadata into D3D11 image creation.",
+            "DOM Media - FFmpeg Vulkan Video decode in RDD.",
+            "Enable >8ch Opus encoding by setting mapping_family to 255.",
+            "Part 3: Propagate transfer function and HDR metadata in AppleVTDecoder.",
+            "Part 2: Propagate transfer function and HDR metadata in FFmpeg shmem buffer path.",
+            "Remove an expensive alpha check from AppleVTDecoder.",
+            "Assert FFMPEG_MAX_MAJOR_VERSION stays in sync with sonames and AV_FUNC bindings."
+          ]
+        },
+        {
+          "feature": "gtest",
+          "label": "Tests (gtest)",
+          "count": 17,
+          "summary": "A large batch of automated unit tests across the media code — image-buffer validation, HEVC support invariants, HDR-metadata plumbing — plus re-enabling several previously-skipped tests. _Internal quality work._",
+          "patch_subjects": [
+            "Extend GMP launch timeout and re-enable skipped Windows GMP gtests.",
+            "Part 1: Map HEVC's lack-of-extension state and assert the support-helper invariant.",
+            "Re-enable HW-accelerated H.264 support GTest for MacOS",
+            "add black image size tests.",
+            "Unittest a potential race in AggregateCapturer stream removal.",
+            "Add test for chroma dimension validation in RemoteImageHolder",
+            "Add test for display rect exceeding plane dimensions in RemoteImageHolder",
+            "Add test for descriptor validation in RemoteImageHolder",
+            "Use explicit namespace to prevent ambiguous references during unified builds",
+            "Add test",
+            "Bug 2018102 gtest for stride and size mismatch in VideoData inputs",
+            "Part 1: Add mHDRMetadata to PlanarYCbCrData and wire through YCbCrDescriptor IPC.",
+            "Add test for SetTrimWindow with incommensurate timescale.",
+            "Disable MacOS gtest for WebRTCCodecInfoTest.H264HWBlockedByWebRTCPref as MacOS doesn't currently respect the pref",
+            "Properly initialize media in TestMediaDataDecoder test",
+            "Part 22: Add GTests for CodecInfo.",
+            "Add a test"
+          ]
+        },
+        {
+          "feature": "(top-level)",
+          "label": "General / top-level",
+          "count": 14,
+          "summary": "Reliability and clean-up across the core playback plumbing — safer object-lifetime handling and a thread-safety fix in media logging. Also lands groundwork for two notable web features: **picture-in-picture** (popping a video out into a floating window) and the new Audio Session API that pages use to declare how their sound should behave.",
+          "patch_subjects": [
+            "Change MediaDecoderStateMachine::CreateAudioSink to return its newly-allocated result as an already_AddRefed.",
+            "Simplify MediaDecoder::ConnectMirrors() now that it's clearer that its parameter is always mDecoderStateMachine.",
+            "Change MediaDecoder::CreateStateMachine() to return already_AddRefed.",
+            "Hold strong ref while calling nsIStreamListener methods",
+            "Part 1: Add Subtype() method to MediaExtendedMIMEType that returns the MIME string subtype.",
+            "Add missing ResultVariant.h include in dom/media/MediaData.h",
+            "Implement Picture In Picture API",
+            "Implement `transfer` for EncodedAudioChunkInit.",
+            "drop extra channels when out of downmixer's capability.",
+            "Part 1: Land the AudioSession WebIDL surface and Navigator.audioSession getter.",
+            "Fix AsyncLogger thread safety and shutdown.",
+            "Pass trusted client PID to AudioIPC server.",
+            "Change RegisterStrongMemoryReporter to take already_AddRefed instead of a raw pointer, and update callsites.",
+            "Rename conflicting static variables in extended unified build context"
+          ]
+        },
+        {
+          "feature": "webaudio",
+          "label": "Web Audio",
+          "count": 8,
+          "summary": "Maintenance of Web Audio (in-browser sound) — a shutdown crash fix, audio-fingerprinting hardening, and better handling of sample-rate drift when decoding audio. Also connects Web Audio to the media-control system.",
+          "patch_subjects": [
+            "Turn on clang-tidy's performance-trivially-destructible pass",
+            "Warn when Web Audio decodeAudioData sees mid-stream sample-rate drift",
+            "Track max per-packet channel count for Web Audio decodeAudioData buffer width",
+            "Don't create HRTFDatabaseLoader after shutdown.",
+            "Use js_pod_calloc in ThreadSharedFloatArrayBufferList::Create",
+            "Part 2: Wire AudioContext to media-control infrastructure as an uncontrollable receiver.",
+            "Pass the appropriate compiler flags to prevent fma usage in webaudio/AudioNodeEngine.cpp",
+            "Stop using xsimd::fma in AudioBufferAddWithScale to collapse audio fingerprint"
+          ]
+        },
+        {
+          "feature": "test",
+          "label": "Tests",
+          "count": 7,
+          "summary": "Test and fuzzing maintenance — new crashtests and coverage (key-system capabilities, a Vorbis preroll crash) plus refreshed fuzz tolerances for updated drivers. _No user-facing change._",
+          "patch_subjects": [
+            "Adjust fuzz for Skia m149.",
+            "Bump Android fuzz bound and drop stale macOS version annotations for color_quads reftests",
+            "Use quad shaders for images when TEXTURE_RECT isn't required.",
+            "Add browser test exercising GetKeySystemCapabilities end-to-end",
+            "Relax color_quads yuv420p10 fuzzies for updated Azure A10 driver.",
+            "Bug 2018102 luma/alpha plane size mismatch crashtest",
+            "Fix Vorbis preroll crash by using INT64_MIN as unset granulepos sentinel."
+          ]
+        },
+        {
+          "feature": "ipc",
+          "label": "Media IPC",
+          "count": 3,
+          "summary": "Modernised the media inter-process plumbing onto safer reference-counted channels for remote decoders and the Media Foundation DRM/engine. _No visible change._",
+          "patch_subjects": [
+            "Use ContiguousEnumSerializerInclusive with ParamTraits<mozilla::MediaDataDecoder::PropertyName>",
+            "Work around int-to-enum cast error.",
+            "Use IPDL refcounted actors for PRemoteDecoder, PMFCDM and PMFMediaEngine."
+          ]
+        },
+        {
+          "feature": "gmp",
+          "label": "Gecko Media Plugins (GMP)",
+          "count": 2,
+          "summary": "Modernised the Gecko Media Plugins system — the sandboxed plugins that play **DRM-protected video** — onto safer reference-counted internals.",
+          "patch_subjects": [
+            "Activate clang-tidy's performance-for-range-copy check",
+            "Use IPDL refcounted actors for GMP."
+          ]
+        },
+        {
+          "feature": "mediaelement",
+          "label": "HTMLMediaElement",
+          "count": 2,
+          "summary": "Made a media element's muted content attribute act as a fallback for the muted state, so muting behaves more predictably.",
+          "patch_subjects": [
+            "Part 1: Make the muted content attribute a fallback for the muted state.",
+            "Part 3: Move classifier blocking error code helpers into ChannelClassifierUtils."
+          ]
+        },
+        {
+          "feature": "mediasource",
+          "label": "Media Source Extensions (MSE)",
+          "count": 2,
+          "summary": "Added tests for HEVC video delivered through Media Source Extensions (MSE) — the technology streaming sites use for adaptive playback — including a script to generate the test fixtures.",
+          "patch_subjects": [
+            "Add MSE HEVC SPS-less CMAF test",
+            "Add generator script for HEVC test fixtures under dom/media/mediasource/test/"
+          ]
+        },
+        {
+          "feature": "webcodecs",
+          "label": "WebCodecs",
+          "count": 2,
+          "summary": "Test-tooling clean-up for WebCodecs, the low-level API web apps use to encode and decode audio and video directly.",
+          "patch_subjects": [
+            "Remove some cases of ESLint rule no-undef being disabled.",
+            "Use a defined version of the \"globals\" npm module, and resolved raised issues."
+          ]
+        },
+        {
+          "feature": "autoplay",
+          "label": "Autoplay",
+          "count": 1,
+          "summary": "A small internal fix adding missing memory-bookkeeping entries in the autoplay code.",
+          "patch_subjects": [
+            "Part 9: Add missing cycle collection entries in dom/media"
+          ]
+        },
+        {
+          "feature": "fuzz",
+          "label": "Fuzzing",
+          "count": 1,
+          "summary": "Made a WebM fuzzing harness more reliable by waiting for decoder shutdown. _Testing only._",
+          "patch_subjects": [
+            "Make MediaWebM fuzz harness wait for decoder shutdown before resolving the BenchmarkPromise"
+          ]
+        },
+        {
+          "feature": "hls",
+          "label": "HLS",
+          "count": 1,
+          "summary": "Early groundwork for HLS live streaming, expanding the interface it uses to open network connections. _Not yet user-visible._",
+          "patch_subjects": [
+            "p1: expand HLS resource callbacks interface for opening necko HTTP channels."
+          ]
+        },
+        {
+          "feature": "mediasink",
+          "label": "Media sink",
+          "count": 1,
+          "summary": "A reliability fix in the audio output path, removing a fragile assumption during start-up.",
+          "patch_subjects": [
+            "Stop relying on TaskQueue::IsEmpty() from inside an AudioSinkWrapper init runnable."
+          ]
+        },
+        {
+          "feature": "tests",
+          "label": "Tests",
+          "count": 1,
+          "summary": "Re-enabled a previously disabled playback crashtest on macOS.",
+          "patch_subjects": [
+            "Re-enable dom/media/tests/crashtests/1490700.html on macOS 15.30 aarch64"
+          ]
+        },
+        {
+          "feature": "webspeech",
+          "label": "Web Speech",
+          "count": 1,
+          "summary": "Wired Web Speech (text-to-speech read-aloud) into the media-control system so spoken output behaves like other media.",
+          "patch_subjects": [
+            "Part 3: Wire Web Speech to media-control infrastructure as an uncontrollable receiver."
+          ]
+        },
+        {
+          "feature": "webm",
+          "label": "WebM",
+          "count": 1,
+          "summary": "Fixed the WebM/Matroska demuxer so Opus audio tracks are extracted correctly.",
+          "patch_subjects": [
+            "Ensure MatroskaDemuxer extracts audio codec binary blob for Opus."
+          ]
+        },
+        {
+          "feature": "webvtt",
+          "label": "WebVTT / captions",
+          "count": 1,
+          "summary": "Fixed a bug that could stop WebVTT subtitles and captions from loading.",
+          "patch_subjects": [
+            "Fix HTMLTrackElement::LoadResource when load gets clobbered."
+          ]
+        }
+      ]
+    },
+    "webrtc": {
+      "1w": [
+        {
+          "feature": "dom/media/webrtc/jsapi",
+          "label": "WebRTC web API (RTCPeerConnection)",
+          "count": 8,
+          "summary": "Work on the public WebRTC API pages use (RTCPeerConnection, RTCDataChannel) — fixes to connection teardown and data-channel worker lifetimes, exposing the default audio/video codecs, enabling transport-wide congestion control for audio, and general modernisation.",
+          "patch_subjects": [
+            "Remove the cache-clearing side effect of TS_NONE.",
+            "Fire closed updates for transports that are torn down, even if they were never active.",
+            "fix webrtc-stats transportId references",
+            "Use 'std::make_unique' for allocation (instead of 'new') for std::unique_ptr-typed variables, in dom/media/webrtc/.",
+            "Use MakeRefPtr to do allocation for more RefPtr variables in dom/media/webrtc/.",
+            "Use MakeRefPtr to do allocation for various RefPtr variables in dom/media/webrtc/.",
+            "Enable transport-cc for audio codecs;",
+            "Avoid sending null data to NewArrayBufferWithUserOwnedContents()"
+          ]
+        },
+        {
+          "feature": "dom/media/webrtc/transport",
+          "label": "Connection transport (ICE / DTLS)",
+          "count": 6,
+          "summary": "Improvements to the WebRTC connection layer (ICE/DTLS) — richer connection statistics such as TLS version, cipher and candidate details, plus threading and ownership clean-ups.",
+          "patch_subjects": [
+            "Use 'MakeUnique' for allocation (instead of 'new') for UniquePtr-typed variables, in dom/media/webrtc/.",
+            "Move originAttributes to socket base class nsASocketHandler",
+            "Implement RTCTransportStats.tlsVersion/dtlsCipher/srtpCipher",
+            "implement (some of) RTCTransportStats",
+            "Add more IPCMessageUtils specializations for STL types",
+            "Make this mainthread only."
+          ]
+        },
+        {
+          "feature": "dom/media/webrtc/libwebrtcglue",
+          "label": "libwebrtc integration",
+          "count": 5,
+          "summary": "Glue between Firefox and the upstream libwebrtc library — better gating of hardware H.264 encode/decode, audio bitrate and bandwidth configuration, and more accurate Media Capabilities answers for real-time codecs.",
+          "patch_subjects": [
+            "Part 6: Integrate H.264 FMTP parser usage into Media Capabilities and WebrtcGmpVideoCodec support functions",
+            "Part 2: Improve accuracy of Media Capabilities support queries based on media resolution/framerate. Uses PDM/PEMFactory checks to more easily allow additional verification in the future.",
+            "Bug 2040478 (MOZ) - Remove the CallBasicStats override.",
+            "Map webrtc::H264Level to H264_LEVEL by enumerator name",
+            "Configure audio send stream bitrate range and BWE allocation."
+          ]
+        },
+        {
+          "feature": "dom/media/webrtc/sdp",
+          "label": "Session negotiation (SDP)",
+          "count": 4,
+          "summary": "Refactoring of the SDP layer (the text format that negotiates a call's media) toward safer memory ownership, with formatting and lint clean-up.",
+          "patch_subjects": [
+            "Use MakeUnique instead of 'new' to populate UniquePtrs in dom/media/webrtc/{jsep,sdp}.",
+            "Change SdpAttributeList::SetAttribute() and its callers to transfer ownership using UniquePtr.",
+            "Change SdpAttribute::Clone() to provide the clone in a UniquePtr.",
+            "In SdpAttributeList concrete classes, store attributes in UniquePtrs instead of raw pointers."
+          ]
+        },
+        {
+          "feature": "dom/media/webrtc/jsep",
+          "label": "Negotiation engine (JSEP)",
+          "count": 3,
+          "summary": "Fixes in the call-negotiation engine (JSEP) around when media sections are associated, plus a code-quality check.",
+          "patch_subjects": [
+            "Stop using FindUnassociatedTransceiver on application m-sections.",
+            "Only attempt to associate transceivers when remote m-section is receiving.",
+            "Activate performance-inefficient-string-concatenation clang-tidy check"
+          ]
+        },
+        {
+          "feature": "dom/media/webrtc",
+          "label": "WebRTC",
+          "count": 2,
+          "summary": "Cross-cutting WebRTC work — an H.264 format-parameter parser with tests, and rejecting Media Capabilities H.264 queries whose resolution or frame rate exceed what the encoder supports.",
+          "patch_subjects": [
+            "Part 8: Reject WebRTC MediaCapabilities H.264 queries when resolution/framerate exceeds the requested level",
+            "Part 5: Add H.264 FMTP parser and GTests"
+          ]
+        },
+        {
+          "feature": "dom/media/webrtc/third_party_build",
+          "label": "libwebrtc build",
+          "count": 2,
+          "summary": "Tooling to track and update the vendored libwebrtc library. _Build maintenance only._",
+          "patch_subjects": [
+            "add python script to check for missing branch-head commits.",
+            "add python script to show branch-head commits for libwebrtc."
+          ]
+        },
+        {
+          "feature": "dom/media/systemservices/android_video_capture",
+          "label": "Android camera capture",
+          "count": 1,
+          "summary": "Android camera capture now reads device rotation from the window context, so the camera image stays correctly oriented as the phone rotates.",
+          "patch_subjects": [
+            "Read camera rotation from a window context so it tracks device rotation on Android."
+          ]
+        },
+        {
+          "feature": "dom/media/systemservices/fake_video_capture",
+          "label": "Test camera capture",
+          "count": 1,
+          "summary": "A test-only fix in the fake camera-capture backend. _Testing only._",
+          "patch_subjects": [
+            "Bug 2040478 (MOZ) - Rename GetRealTimeClockRaw, and update a test for a newly-populated stat (was always 0 previously)."
+          ]
+        },
+        {
+          "feature": "dom/media/webrtc/tests",
+          "label": "WebRTC tests",
+          "count": 1,
+          "summary": "Re-enabled and stabilised a batch of WebRTC tests (crashtests, mochitests, screensharing) on macOS 15.",
+          "patch_subjects": [
+            "Enable crashtest (opt) on macosx1500-aarch64-vms"
+          ]
+        }
+      ],
+      "1m": [
+        {
+          "feature": "dom/media/webrtc/jsapi",
+          "label": "WebRTC web API (RTCPeerConnection)",
+          "count": 12,
+          "summary": "Work on the public WebRTC API pages use (RTCPeerConnection, RTCDataChannel) — fixes to connection teardown and data-channel worker lifetimes, exposing the default audio/video codecs, enabling transport-wide congestion control for audio, and general modernisation.",
+          "patch_subjects": [
+            "Remove the cache-clearing side effect of TS_NONE.",
+            "Fire closed updates for transports that are torn down, even if they were never active.",
+            "fix webrtc-stats transportId references",
+            "Use 'std::make_unique' for allocation (instead of 'new') for std::unique_ptr-typed variables, in dom/media/webrtc/.",
+            "Use MakeRefPtr to do allocation for more RefPtr variables in dom/media/webrtc/.",
+            "Use MakeRefPtr to do allocation for various RefPtr variables in dom/media/webrtc/.",
+            "Enable transport-cc for audio codecs;",
+            "Avoid sending null data to NewArrayBufferWithUserOwnedContents()",
+            "Fix comment spelling errors;r=ng",
+            "In RTCDataChannel, don't release the worker ref when the worker no longer needs us.",
+            "Part 9: Add functions to expose default WebRTC audio/video codecs.",
+            "Reformat recent changes to the Google coding style"
+          ]
+        },
+        {
+          "feature": "dom/media/webrtc/libwebrtcglue",
+          "label": "libwebrtc integration",
+          "count": 11,
+          "summary": "Glue between Firefox and the upstream libwebrtc library — better gating of hardware H.264 encode/decode, audio bitrate and bandwidth configuration, and more accurate Media Capabilities answers for real-time codecs.",
+          "patch_subjects": [
+            "Part 6: Integrate H.264 FMTP parser usage into Media Capabilities and WebrtcGmpVideoCodec support functions",
+            "Part 2: Improve accuracy of Media Capabilities support queries based on media resolution/framerate. Uses PDM/PEMFactory checks to more easily allow additional verification in the future.",
+            "Bug 2040478 (MOZ) - Remove the CallBasicStats override.",
+            "Map webrtc::H264Level to H264_LEVEL by enumerator name",
+            "Configure audio send stream bitrate range and BWE allocation.",
+            "Part 2: Migrate query-only PDMFactory call sites to PDMFactorySupport.",
+            "Report dropped MediaDataEncoder inputs via OnFrameDropped.",
+            "Drive MediaDataEncoder with input timestamp_us and recover rtp_timestamp via per-frame metadata.",
+            "Add explicit check for media.webrtc.hw.h264.enabled in WebRTC MediaDataEncoder/Decoder",
+            "improve videoconduit logging;r=dbaker",
+            "Part 10: Add CodecInfo.{cpp,h} to parse and export WebRTC codec information for use with Media Capabilities support checks."
+          ]
+        },
+        {
+          "feature": "dom/media/webrtc/transport",
+          "label": "Connection transport (ICE / DTLS)",
+          "count": 9,
+          "summary": "Improvements to the WebRTC connection layer (ICE/DTLS) — richer connection statistics such as TLS version, cipher and candidate details, plus threading and ownership clean-ups.",
+          "patch_subjects": [
+            "Use 'MakeUnique' for allocation (instead of 'new') for UniquePtr-typed variables, in dom/media/webrtc/.",
+            "Move originAttributes to socket base class nsASocketHandler",
+            "Implement RTCTransportStats.tlsVersion/dtlsCipher/srtpCipher",
+            "implement (some of) RTCTransportStats",
+            "Add more IPCMessageUtils specializations for STL types",
+            "Make this mainthread only.",
+            "Activate modernize-use-bool-literals clang-tidy check",
+            "Implement the usernameFragment, foundation and tcpType fields of RTCIceCandidateStats",
+            "Vendor upgraded http, hyper, warp crates and their dependencies."
+          ]
+        },
+        {
+          "feature": "dom/media/webrtc/tests",
+          "label": "WebRTC tests",
+          "count": 8,
+          "summary": "Re-enabled and stabilised a batch of WebRTC tests (crashtests, mochitests, screensharing) on macOS 15.",
+          "patch_subjects": [
+            "Enable crashtest (opt) on macosx1500-aarch64-vms",
+            "Re-enable macOS mochitests.",
+            "Re-enable macOS mochitests.",
+            "Re-enable macOS 15.30 screensharing mochitest.",
+            "Re-enable crashtests and WPT on macOS 15.",
+            "Re-enable crashtest 1903905.html on macOS 15.",
+            "Disable mDNS for crashtests on macOS 15.",
+            "Add crashtest."
+          ]
+        },
+        {
+          "feature": "dom/media/webrtc/sdp",
+          "label": "Session negotiation (SDP)",
+          "count": 7,
+          "summary": "Refactoring of the SDP layer (the text format that negotiates a call's media) toward safer memory ownership, with formatting and lint clean-up.",
+          "patch_subjects": [
+            "Use MakeUnique instead of 'new' to populate UniquePtrs in dom/media/webrtc/{jsep,sdp}.",
+            "Change SdpAttributeList::SetAttribute() and its callers to transfer ownership using UniquePtr.",
+            "Change SdpAttribute::Clone() to provide the clone in a UniquePtr.",
+            "In SdpAttributeList concrete classes, store attributes in UniquePtrs instead of raw pointers.",
+            "lint, constify, and fix includes in SDP glue;r=dbaker",
+            "Changed all instances in dom/media/webrtc to std::from_chars",
+            "Reformat recent rust changes with rustfmt"
+          ]
+        },
+        {
+          "feature": "dom/media/webrtc",
+          "label": "WebRTC",
+          "count": 5,
+          "summary": "Cross-cutting WebRTC work — an H.264 format-parameter parser with tests, and rejecting Media Capabilities H.264 queries whose resolution or frame rate exceed what the encoder supports.",
+          "patch_subjects": [
+            "Part 8: Reject WebRTC MediaCapabilities H.264 queries when resolution/framerate exceeds the requested level",
+            "Part 5: Add H.264 FMTP parser and GTests",
+            "Return already_AddRefed from CubebDeviceEnumerator::GetInstance.",
+            "Expose abseil-cpp as a Library so non-xul Programs can link it.",
+            "Part 19: Return a promise rejected with a TypeError if EncodingInfo is not a valid MediaConfiguration."
+          ]
+        },
+        {
+          "feature": "dom/media/systemservices",
+          "label": "Camera & audio capture",
+          "count": 3,
+          "summary": "Camera and microphone capture internals — making some helpers usable from worker threads, plus code-quality clean-up.",
+          "patch_subjects": [
+            "Use EventTargetCapability throughout CamerasParent.",
+            "Make a HostnameInPref variant usable in workers with a mirror:always StaticPref.",
+            "Apply clang-tidy checks to headers that were previously skipped"
+          ]
+        },
+        {
+          "feature": "dom/media/webrtc/jsep",
+          "label": "Negotiation engine (JSEP)",
+          "count": 3,
+          "summary": "Fixes in the call-negotiation engine (JSEP) around when media sections are associated, plus a code-quality check.",
+          "patch_subjects": [
+            "Stop using FindUnassociatedTransceiver on application m-sections.",
+            "Only attempt to associate transceivers when remote m-section is receiving.",
+            "Activate performance-inefficient-string-concatenation clang-tidy check"
+          ]
+        },
+        {
+          "feature": "dom/media/webrtc/third_party_build",
+          "label": "libwebrtc build",
+          "count": 3,
+          "summary": "Tooling to track and update the vendored libwebrtc library. _Build maintenance only._",
+          "patch_subjects": [
+            "add python script to check for missing branch-head commits.",
+            "add python script to show branch-head commits for libwebrtc.",
+            "updated default_config_env for v149"
+          ]
+        },
+        {
+          "feature": "dom/media/systemservices/android_video_capture",
+          "label": "Android camera capture",
+          "count": 1,
+          "summary": "Android camera capture now reads device rotation from the window context, so the camera image stays correctly oriented as the phone rotates.",
+          "patch_subjects": [
+            "Read camera rotation from a window context so it tracks device rotation on Android."
+          ]
+        },
+        {
+          "feature": "dom/media/systemservices/fake_video_capture",
+          "label": "Test camera capture",
+          "count": 1,
+          "summary": "A test-only fix in the fake camera-capture backend. _Testing only._",
+          "patch_subjects": [
+            "Bug 2040478 (MOZ) - Rename GetRealTimeClockRaw, and update a test for a newly-populated stat (was always 0 previously)."
+          ]
+        }
+      ]
+    },
+    "gfx": {
+      "1w": [
+        {
+          "feature": "gfx/layers",
+          "label": "Compositing & layers",
+          "count": 17,
+          "summary": "Broad work in the compositor and the async scrolling/touch system (APZ) — smoother scroll-snapping and gesture handling, Wayland HDR and emulated-VSync improvements on Linux, and HDR metadata threaded through the texture pipeline.",
+          "patch_subjects": [
+            "Enable mochitest-plain (opt) on macosx1500-aarch64-vms",
+            "Unify early exits and parent space for sticky/scroll nodes",
+            "Bug 2042965.",
+            "Use MakeUnique/MakeUniqueFallible to do allocation for some UniquePtr-type values in ImageContainer.cpp.",
+            "Use MakeRefPtr to do allocation for refcounted values in more places in gfx/layers/.",
+            "Use MakeRefPtr to do allocation for various RefPtr variables in gfx/layers/.",
+            "Mostly revert bug 1782541.",
+            "Clamp APZ visual scroll offset after applying relative ScrollPositionUpdate.",
+            "Apply std::move in gfx where values can be moved instead of copied",
+            "Bug 2023443 Part 2: Add namespaces to various WR actors.",
+            "Bug 2023443 Part 1: Ensure ownership of external images in various WR actors.",
+            "Wait for a content response on the first touch-move if needed.",
+            "Fast-path notify APZ on non-passive APZ-aware listener registration.",
+            "Encapsulate the long-tap touchmove content-response condition in a TouchBlockState method.",
+            "Propagate the initial touch move information to InputQueue from APZCTreeManager.",
+            "Add mFirstMoveSeen to TouchCounter.",
+            "Add a gtest for bug 1536520 -"
+          ]
+        },
+        {
+          "feature": "gfx/wr",
+          "label": "WebRender (GPU compositor)",
+          "count": 14,
+          "summary": "Heavy iteration on WebRender, the GPU-based page renderer — a large migration of primitives (images, borders, gradients) onto a unified 'quad shader' path, render-graph improvements, and HDR video-overlay fixes.",
+          "patch_subjects": [
+            "Refactor text runs to store glyphs with device offsets",
+            "Port the normal border code path from brush to quad.",
+            "Implement image cutouts using quad shaders.",
+            "Fix incorrect segment if rounded rect clip and prim have different clips.",
+            "Don't fall back to brushes when image properties are missing.",
+            "Use the quad path for images with a base color.",
+            "Undo the windows qualcomm workaround for quad base color.",
+            "Use UV rects provided by external image instead of the graph.",
+            "Prevent to disable video underlay in TileCacheInstance::post_update() if video is HDR",
+            "Reduce ps_quad_box_shadow varying count from 15 to 13",
+            "Implement support for TextureRect images with ps_quad_textured.",
+            "Use quad shaders for images when TEXTURE_RECT isn't required.",
+            "Add ps_quad_textured variants for the different sampler types.",
+            "Move per-rect snapping from scene build to frame build."
+          ]
+        },
+        {
+          "feature": "gfx/thebes",
+          "label": "2D graphics (Thebes)",
+          "count": 7,
+          "summary": "Font and device-management work in the older 2D graphics layer — faster text shaping, multi-GPU adapter handling, HDR/Direct3D device setup, and Linux dmabuf and font fixes.",
+          "patch_subjects": [
+            "Refactor ExpirationTrackerImpl to only allow StaticMutex or PlaceholderLock.",
+            "Disable hardware video decoding/encoding in xpcshell on OSX due to signing constraints.",
+            "Optimize loop in nsTextFrame::AddInlineMinISizeForFlow.",
+            "Change VIDEO_HDR allowlist to blocklist with no entries",
+            "Detect unsupported VideoProcessorBlt features at startup",
+            "Create a fast-path in gfxFontGroup::ComputeRanges.",
+            "Enumerate outputs on all adapters for multi-gpu systems"
+          ]
+        },
+        {
+          "feature": "gfx/2d",
+          "label": "2D graphics library (Moz2D)",
+          "count": 5,
+          "summary": "Clean-up and hardening in the 2D drawing library (Moz2D) — safer path storage, hardened recording deserialization, and shared CPU-feature detection.",
+          "patch_subjects": [
+            "Use for_each rather than looping on an explicit iterator in FilterNodeSoftware",
+            "Use UniquePtr instead of new[]/delete[] to manage lifetime of a temporary buffer in FilterNodeSoftware.cpp.",
+            "Migrate from 'new' to 'MakeRefPtr' in FilterNodeSoftware.cpp.",
+            "Fix Moz2D for Skia m149.",
+            "Harden Read routine for RecordedEvent deserialization"
+          ]
+        },
+        {
+          "feature": "dom/canvas",
+          "label": "Canvas",
+          "count": 4,
+          "summary": "Canvas and WebGL maintenance — memory-allocation and lifetime clean-ups, validation tweaks, and adopting ANGLE's uniform-block validator.",
+          "patch_subjects": [
+            "Use ANGLEs uniform block count validator.",
+            "Migrate from 'new' to 'std::make_unique' to allocate unique_ptr-managed memory in WebGLContextExtensions.cpp.",
+            "Migrate from 'new' to 'MakeRefPtr' to allocate RefPtr-managed memory in WebGLContextExtensions.cpp.",
+            "Add more IPCMessageUtils specializations for STL types"
+          ]
+        },
+        {
+          "feature": "image/test",
+          "label": "Image tests",
+          "count": 3,
+          "summary": "Image test maintenance, much of it for the new **JPEG-XL** image format, plus re-enabling image tests on macOS 15.",
+          "patch_subjects": [
+            "Bug 2042547. Bump fuzz for image/test/reftest/downscaling/downscale-moz-icon-1.html.",
+            "Adjust fuzz for Skia m149.",
+            "Bug 2037697. Verify ICO resource sizes when dir entries leave them ambiguous."
+          ]
+        },
+        {
+          "feature": "gfx/tests",
+          "label": "Graphics tests",
+          "count": 2,
+          "summary": "Graphics test additions and fixes, including P010/P016 chroma handling.",
+          "patch_subjects": [
+            "Ensure DrawTargetSkia::CanCreateSimilarDrawTarget checks buffer size.",
+            "Use PuppetWidget for window less browser even on headless mode."
+          ]
+        },
+        {
+          "feature": "image",
+          "label": "Image decoding",
+          "count": 2,
+          "summary": "Image-decoding work — a fix for animated GIFs with a zero first-frame delay, SVG link parsing, and memory/lifetime tidy-ups.",
+          "patch_subjects": [
+            "Add link-parameter parsing and rendering for svg",
+            "Hold strong ref while calling nsIStreamListener methods"
+          ]
+        },
+        {
+          "feature": "gfx/wgpu_bindings",
+          "label": "WebGPU backend (wgpu)",
+          "count": 2,
+          "summary": "Routine updates of the upstream wgpu library that powers WebGPU.",
+          "patch_subjects": [
+            "Update wgpu to upstream e4e2c451 (2026-6-1)",
+            "Update wgpu to a16439c1 (2026-05-26)"
+          ]
+        },
+        {
+          "feature": "dom/webgpu/tests",
+          "label": "WebGPU tests",
+          "count": 1,
+          "summary": "Updated the WebGPU conformance test suite (CTS) to newer revisions.",
+          "patch_subjects": [
+            "Update WebGPU CTS to 9a848e6eae8bc1efda4908fd3f2e194bebf8d2c7"
+          ]
+        }
+      ],
+      "1m": [
+        {
+          "feature": "gfx/wr",
+          "label": "WebRender (GPU compositor)",
+          "count": 50,
+          "summary": "Heavy iteration on WebRender, the GPU-based page renderer — a large migration of primitives (images, borders, gradients) onto a unified 'quad shader' path, render-graph improvements, and HDR video-overlay fixes.",
+          "patch_subjects": [
+            "Refactor text runs to store glyphs with device offsets",
+            "Port the normal border code path from brush to quad.",
+            "Implement image cutouts using quad shaders.",
+            "Fix incorrect segment if rounded rect clip and prim have different clips.",
+            "Don't fall back to brushes when image properties are missing.",
+            "Use the quad path for images with a base color.",
+            "Undo the windows qualcomm workaround for quad base color.",
+            "Use UV rects provided by external image instead of the graph.",
+            "Prevent to disable video underlay in TileCacheInstance::post_update() if video is HDR",
+            "Reduce ps_quad_box_shadow varying count from 15 to 13",
+            "Implement support for TextureRect images with ps_quad_textured.",
+            "Use quad shaders for images when TEXTURE_RECT isn't required.",
+            "Add ps_quad_textured variants for the different sampler types.",
+            "Move per-rect snapping from scene build to frame build.",
+            "Fix nearest sampling in the SWGL fast path for quad_textured.",
+            "Decompose linear gradients at prepare time.",
+            "Encode image stretch_size as per-axis FillsPrim/Explicit.",
+            "Avoid unnecessary texture update processing when update_list is empty",
+            "Pt 2 - Insert zero-offset OffsetFrame children for scroll and sticky",
+            "Pt 1 - Add OffsetFrame spatial node kind to WebRender",
+            "Don't use quads for underlay images.",
+            "Use quad shaders for stacking context snapshots with adjusted bounds.",
+            "Pt 3 - Remove SpatialTreeItemKey from public WebRender API",
+            "Pt 2 - Remove SpatialNodeUid from scene-tree interner",
+            "Pt 1 - Remove dead SpatialNode.uid internal counter",
+            "Slightly increase fuzziness for reftests/text/text-fixed-slice.yaml",
+            "Remove unused opaque_rect from PrimitiveCluster",
+            "Adapt consumers to http 1.x, hyper 1.x, and windows-sys HANDLE type changes.",
+            "Vendor upgraded http, hyper, warp crates and their dependencies.",
+            "Update to Glean v67.3.2",
+            "Anchor text-run interning on the run pen origin",
+            "Avoid all warnings about built_frame not being used.",
+            "Inflate drop-shadow source-rect by blur margin in get_surface_rects.",
+            "Do frustum clipping in the root space of the preserve-3d context.",
+            "Add support for tiled images via quad shaders.",
+            "Support non-premultiplied images with ps_quad_textured.",
+            "Add support for blend modes in the quad shader infrastructure.",
+            "Fix wrench png.",
+            "Change plane splitting to operate in root space of preserve-3d context",
+            "Add support for task sub-rects in the render task graph.",
+            "Update to Glean v67.3.1",
+            "Reenable quad shaders for images in simple cases.",
+            "Properly handle stretch_size when it is larger than the prim local rect.",
+            "Emit a stable transform fingerprint for perspective-crossing rects in WebRender invalidation.",
+            "Align box-shadow analytical clip with rounded prim_rect",
+            "Pt 23 - Move prim_size from template to PrimitiveInstance.prim_rect",
+            "Pt 22 - Per-instance GPU addresses for NormalBorder/ImageBorder",
+            "Pt 21 - Build LineDecorationCacheKey per-frame",
+            "Pt 20 - Move may_need_repetition off PrimTemplateCommonData",
+            "Pt 19 - Encode gradient stretch_size as a ratio of prim_size"
+          ]
+        },
+        {
+          "feature": "gfx/layers",
+          "label": "Compositing & layers",
+          "count": 40,
+          "summary": "Broad work in the compositor and the async scrolling/touch system (APZ) — smoother scroll-snapping and gesture handling, Wayland HDR and emulated-VSync improvements on Linux, and HDR metadata threaded through the texture pipeline.",
+          "patch_subjects": [
+            "Enable mochitest-plain (opt) on macosx1500-aarch64-vms",
+            "Unify early exits and parent space for sticky/scroll nodes",
+            "Bug 2042965.",
+            "Use MakeUnique/MakeUniqueFallible to do allocation for some UniquePtr-type values in ImageContainer.cpp.",
+            "Use MakeRefPtr to do allocation for refcounted values in more places in gfx/layers/.",
+            "Use MakeRefPtr to do allocation for various RefPtr variables in gfx/layers/.",
+            "Mostly revert bug 1782541.",
+            "Clamp APZ visual scroll offset after applying relative ScrollPositionUpdate.",
+            "Apply std::move in gfx where values can be moved instead of copied",
+            "Bug 2023443 Part 2: Add namespaces to various WR actors.",
+            "Bug 2023443 Part 1: Ensure ownership of external images in various WR actors.",
+            "Wait for a content response on the first touch-move if needed.",
+            "Fast-path notify APZ on non-passive APZ-aware listener registration.",
+            "Encapsulate the long-tap touchmove content-response condition in a TouchBlockState method.",
+            "Propagate the initial touch move information to InputQueue from APZCTreeManager.",
+            "Add mFirstMoveSeen to TouchCounter.",
+            "Add a gtest for bug 1536520 -",
+            "Add timeout to cancelling of autoscroll due to scrolling -",
+            "Skip helper_zoom_after_gpu_process_restart.html on Mac.",
+            "Bug 2036663. Handle SharedSurfacesChild.cpp code being called late during shutdown.",
+            "Make MacIOSurface derive alpha from pixel format, update callsites.",
+            "Avoid swipe navigation when APZ can scroll a pan gesture.",
+            "Removed remaining lines as suggested.",
+            "Bug 1731895 [Wayland][HDR] Implement xx-fractional-scale-v2 for HDR rendering",
+            "Preserve the queued transform-end when a pan-end snap doesn't move the scroll position.",
+            "Do not mutate aStartPosition in MaybeAdjustDeltaForScrollSnapping.",
+            "Use CSSSnapDestination::mPosition to output the snap destination in logs.",
+            "Make PAPZ and PAPZTreeManager actors refcounted.",
+            "Update mLastSnapTargetIds when SmoothScrollTo exits early without scrolling.",
+            "Bug 2037779 [Wayland][HDR] Use map callback to repaint root surface",
+            "Acknowledge child WebRender transactions immediately when the root WRBP has no display list, so content RefreshDrivers don't get stuck \"waiting for paint\" in headless mode.",
+            "Bug 2000840 [Wayland][HDR] Run emulated VSync only if all layers are hidden",
+            "Bug 2000840 [Wayland] Add an external handler to configure emulated VSync run",
+            "Bug 2000840 [Wayland] Fire emulated VSync events for unmapped surfaces",
+            "Bug 2000840 [Wayland] Rename FrameCallback to VSync callback and unify opaque frame callback",
+            "Part 1: Thread HDR metadata through D3D11 texture and IPC stack.",
+            "Make ScrollableLayerGuid default constructor constexpr",
+            "Use the enum for CommandLayerInfo's samplingFilter.",
+            "Part 1: Add mHDRMetadata to PlanarYCbCrData and wire through YCbCrDescriptor IPC.",
+            "Initialize uninitialized scalar fields in gfx to fix Coverity uninitialized-scalar defects"
+          ]
+        },
+        {
+          "feature": "gfx/thebes",
+          "label": "2D graphics (Thebes)",
+          "count": 26,
+          "summary": "Font and device-management work in the older 2D graphics layer — faster text shaping, multi-GPU adapter handling, HDR/Direct3D device setup, and Linux dmabuf and font fixes.",
+          "patch_subjects": [
+            "Refactor ExpirationTrackerImpl to only allow StaticMutex or PlaceholderLock.",
+            "Disable hardware video decoding/encoding in xpcshell on OSX due to signing constraints.",
+            "Optimize loop in nsTextFrame::AddInlineMinISizeForFlow.",
+            "Change VIDEO_HDR allowlist to blocklist with no entries",
+            "Detect unsupported VideoProcessorBlt features at startup",
+            "Create a fast-path in gfxFontGroup::ComputeRanges.",
+            "Enumerate outputs on all adapters for multi-gpu systems",
+            "Don't pass an empty filename to fontconfig.",
+            "Move gfxTextRun::IsInvalidChar definitions into the header.",
+            "Small gfxFont word cache access optimizations.",
+            "Try to avoid calling gfxScriptItemizer at all for purely Latin-script textruns.",
+            "macOS: Create autorelease pools for two startup threads doing font initialization.",
+            "Check for initialized HarfBuzz shaper before retrieving font baselines.",
+            "Synthesize vertical font metrics/baselines from horizontal metrics/baselines.",
+            "Bug 2030204 Part 2: Change DeviceManagerDx::GetOutputFromMonitor() to enumerate all adapters.",
+            "Bug 2030204 Part 1: Refactor DeviceManagerDx::GetDXGIAdapter() to create the factory in ::EnsureFactory().",
+            "Bug 2039518 [Linux] Load EGL dmabuf modifiers on X11",
+            "Don't filter out Mongolian Vowel Separator (or other similar format chars) if the font explicitly wants to render them.",
+            "Eagerly initialize the first Family record in the font list, to ensure at least one family is usable as a default.",
+            "Close FontSubstitutes registry key after use.",
+            "Work around sign error in font descent metric.",
+            "Change RegisterStrongAsyncMemoryReporter to take already_AddRefed instead of a raw pointer, and update callsites.",
+            "Change RegisterStrongMemoryReporter to take already_AddRefed instead of a raw pointer, and update callsites.",
+            "DMABuf - Defer EGL modifier queries to after hardware video decoding is enabled.",
+            "DMABuf - Defer EGL modifier queries to after hardware video decoding is enabled.",
+            "Part 5: Fix CreateMediaEngineDevice to load d3d11.dll directly and fall back to WARP."
+          ]
+        },
+        {
+          "feature": "dom/canvas",
+          "label": "Canvas",
+          "count": 15,
+          "summary": "Canvas and WebGL maintenance — memory-allocation and lifetime clean-ups, validation tweaks, and adopting ANGLE's uniform-block validator.",
+          "patch_subjects": [
+            "Use ANGLEs uniform block count validator.",
+            "Migrate from 'new' to 'std::make_unique' to allocate unique_ptr-managed memory in WebGLContextExtensions.cpp.",
+            "Migrate from 'new' to 'MakeRefPtr' to allocate RefPtr-managed memory in WebGLContextExtensions.cpp.",
+            "Add more IPCMessageUtils specializations for STL types",
+            "Cleanup transform feedback preparation.",
+            "Update the cache in copyBufferSubData.",
+            "Tidy up WebGLBuffer index cache.",
+            "Silence unnecessary-virtual-specifier warnings.",
+            "Use const ref bindings/iteration in dom/canvas to avoid copies",
+            "Use explicit namespace to prevent ambiguous references during unified builds",
+            "Replace MOZ_UNLIKELY with C++20's [[unlikely]] in dom/canvas.",
+            "Replace MOZ_LIKELY with C++20's [[likely]] in dom/canvas.",
+            "Rename conflicting static variables in extended unified build context",
+            "Apply clang-tidy checks to headers that were previously skipped",
+            "Initialize uninitialized scalar fields in dom/canvas to fix Coverity uninitialized-scalar defects"
+          ]
+        },
+        {
+          "feature": "gfx/2d",
+          "label": "2D graphics library (Moz2D)",
+          "count": 12,
+          "summary": "Clean-up and hardening in the 2D drawing library (Moz2D) — safer path storage, hardened recording deserialization, and shared CPU-feature detection.",
+          "patch_subjects": [
+            "Use for_each rather than looping on an explicit iterator in FilterNodeSoftware",
+            "Use UniquePtr instead of new[]/delete[] to manage lifetime of a temporary buffer in FilterNodeSoftware.cpp.",
+            "Migrate from 'new' to 'MakeRefPtr' in FilterNodeSoftware.cpp.",
+            "Fix Moz2D for Skia m149.",
+            "Harden Read routine for RecordedEvent deserialization",
+            "Preserve vector commands in MozPrintCallback.",
+            "Add inline storage to PathOps",
+            "Switch PathOps from std::vector to mozilla::Vector",
+            "Fix RescalingFactorForColorDepth()",
+            "Use kRadPerDegree in more places",
+            "Consolidate all definitions of kRadToDegree ins a single place",
+            "Remove redundant cpuid feature detection from gfx and use mozglue implementation instead"
+          ]
+        },
+        {
+          "feature": "image/test",
+          "label": "Image tests",
+          "count": 11,
+          "summary": "Image test maintenance, much of it for the new **JPEG-XL** image format, plus re-enabling image tests on macOS 15.",
+          "patch_subjects": [
+            "Bug 2042547. Bump fuzz for image/test/reftest/downscaling/downscale-moz-icon-1.html.",
+            "Adjust fuzz for Skia m149.",
+            "Bug 2037697. Verify ICO resource sizes when dir entries leave them ambiguous.",
+            "Added support for Adobe-style extensions (v2 & v3 info header sizes)",
+            "Bug 2041267. Fix image/test/mochitest/test_bug496292.html for jxl pref value on android.",
+            "Bug 2040273. Fix image/test/mochitest/test_bug496292.html image accept header to expect jxl when enabled.",
+            "Bug 2016688. Build jpeg-xl code on release and beta by default (still pref'ed off by default).",
+            "Bug 2037719. Make image/test/mochitest/test_jxl_progressive.html robust against android test verify.",
+            "Bug 2037714. Bump fuzz on image/test/reftest/jxl/jxl-size-33x33.jxl.",
+            "Bug 2037396. Improve progressive jxl mochitest.",
+            "Bug 2037064. Re-enable image/test/mochitest/test_animation_operators.html on macos 15."
+          ]
+        },
+        {
+          "feature": "image",
+          "label": "Image decoding",
+          "count": 10,
+          "summary": "Image-decoding work — a fix for animated GIFs with a zero first-frame delay, SVG link parsing, and memory/lifetime tidy-ups.",
+          "patch_subjects": [
+            "Add link-parameter parsing and rendering for svg",
+            "Hold strong ref while calling nsIStreamListener methods",
+            "Fix ImageDecoder failing to decode animated GIFs with zero first-frame delay.",
+            "Tighten up lifetime management of imgLoader::sMemReporter.",
+            "Changed NewClonedProxy to return already_AddRefed type.",
+            "Use MakeRefPtr to do allocation for local RefPtr variables, in image/.",
+            "Use MakeRefPtr and MakeAndAddRef instead of 'new' to allocate gfxDrawable instances.",
+            "Tighten SurfaceWithFormat constructor to take already_AddRefed<gfxDrawable>, since its callers all pass in freshly-allocated objects and expect it to take ownership.",
+            "Apply std::move in image where values can be moved instead of copied",
+            "Initialize uninitialized scalar fields in image to fix Coverity uninitialized-scalar defects"
+          ]
+        },
+        {
+          "feature": "image/decoders",
+          "label": "Image decoders",
+          "count": 6,
+          "summary": "Continued build-out of the new **JPEG-XL** image decoder — per-format pixel conversion, colour management, and showing progressive images sooner.",
+          "patch_subjects": [
+            "Make nsIURI.rs usable in rust",
+            "Bug 2037396. Show progressive jxl images much sooner.",
+            "Bug 2036329. jxl decoder flushes pixels when nothing has changed.",
+            "Bug 2034984. In the jxl decoder make sure to apply color management before premultiplying alpha.",
+            "Bug 2034984. Add per-format pixel conversion and CMS wiring in C++ jxl decoder.",
+            "Bug 2034984. Add per-pixel-format detection and infrastructure to jxl decoder."
+          ]
+        },
+        {
+          "feature": "gfx/gl",
+          "label": "OpenGL / GL contexts",
+          "count": 6,
+          "summary": "Code-quality and portability fixes in the OpenGL context layer.",
+          "patch_subjects": [
+            "Activate modernize-use-bool-literals clang-tidy check",
+            "Comply with clang-tidy's modernize-use-nullptr check for gfx/",
+            "Activate clang-tidy's performance-for-range-copy check",
+            "Enforce usage of MOZ_EMPTY_BASES",
+            "Fix UBSan function-type-mismatch for fGetString.",
+            "Fix eglQueryString function-pointer return type."
+          ]
+        },
+        {
+          "feature": "gfx/webrender_bindings",
+          "label": "WebRender bindings",
+          "count": 6,
+          "summary": "The bridge between Firefox and WebRender — HDR video metadata for the Direct3D video processor and overlay-robustness fixes.",
+          "patch_subjects": [
+            "Unify ASR to Spatial ID mapping in WebRenderAPI.",
+            "Prevent to disable video overlay if video is HDR even with slow present",
+            "In FUZZING builds replace MOZ_RELEASE_ASSERT with graceful error returns in Moz2DImageRenderer blob rendering.",
+            "Part 3: Inform the D3D11 video processor of stream HDR metadata.",
+            "Disable WebGL overlay when RenderDXGITextureHost::GetDCompositionTexture() is slow",
+            "Add diagnostic asserts on stacking-context FFI inputs."
+          ]
+        },
+        {
+          "feature": "dom/canvas/test",
+          "label": "Canvas tests",
+          "count": 4,
+          "summary": "Canvas/WebGL test improvements and clearer createImageBitmap error messages.",
+          "patch_subjects": [
+            "Split generated webgl-conf mochitest manifest into per-cluster files,",
+            "Improved 'unhelpful' createImageBitmap error messages",
+            "Support updated Azure A10 WebGL renderer string.",
+            "Bug 2038907. Add test for bug 2022610."
+          ]
+        },
+        {
+          "feature": "gfx/tests",
+          "label": "Graphics tests",
+          "count": 4,
+          "summary": "Graphics test additions and fixes, including P010/P016 chroma handling.",
+          "patch_subjects": [
+            "Ensure DrawTargetSkia::CanCreateSimilarDrawTarget checks buffer size.",
+            "Use PuppetWidget for window less browser even on headless mode.",
+            "Add tests",
+            "Fix 16-bit chroma de-interleaving and zero-fill gap bytes for P010/P016."
+          ]
+        },
+        {
+          "feature": "gfx/config",
+          "label": "Graphics configuration",
+          "count": 3,
+          "summary": "Graphics feature-gating — initially allowing HDR video only on AMD and NVIDIA GPUs on Windows.",
+          "patch_subjects": [
+            "Part 1: Add PDMFactorySupport singleton with pref/gfxVar invalidation.",
+            "Part 10: Add CodecInfo.{cpp,h} to parse and export WebRTC codec information for use with Media Capabilities support checks.",
+            "Allow HDR video on Windows only on AMD/NVIDIA initially"
+          ]
+        },
+        {
+          "feature": "image/rust",
+          "label": "Rust",
+          "count": 3,
+          "summary": "Upgraded the Rust JPEG-XL decoding library (jxl-rs) and simplified its colour-management API.",
+          "patch_subjects": [
+            "Bug 2036780. Update to small api change in jxl-rs.",
+            "Bug 2036780. Upgrade jxl-rs to just past 0.4.3.",
+            "Bug 2034984. Remove internal CMS adapter from jxl-rs; simplify jxl_decoder_new API."
+          ]
+        },
+        {
+          "feature": "dom/webgpu",
+          "label": "WebGPU",
+          "count": 3,
+          "summary": "WebGPU housekeeping — disabled on 32-bit builds, and getContext('webgpu') now returns null when WebGPU isn't supported.",
+          "patch_subjects": [
+            "`canvas.getContext(\"webgpu\")` should return null when WebGPU is not supported",
+            "Disable WebGPU on 32-bit targets",
+            "Part 6: Add missing cycle collection entries in dom/(misc)"
+          ]
+        },
+        {
+          "feature": "gfx/wgpu_bindings",
+          "label": "WebGPU backend (wgpu)",
+          "count": 3,
+          "summary": "Routine updates of the upstream wgpu library that powers WebGPU.",
+          "patch_subjects": [
+            "Update wgpu to upstream e4e2c451 (2026-6-1)",
+            "Update wgpu to a16439c1 (2026-05-26)",
+            "Update wgpu to 64394cc7 (2026-5-6)."
+          ]
+        },
+        {
+          "feature": "dom/webgpu/tests",
+          "label": "WebGPU tests",
+          "count": 3,
+          "summary": "Updated the WebGPU conformance test suite (CTS) to newer revisions.",
+          "patch_subjects": [
+            "Update WebGPU CTS to 9a848e6eae8bc1efda4908fd3f2e194bebf8d2c7",
+            "chore(webgpu): update CTS to 97b4991bf90f8fb13f51bffd8a6de9083d86286a",
+            "Update WebGPU CTS to 3b327ebc44f11212fd3872972a6dd394634fb9e3"
+          ]
+        },
+        {
+          "feature": "gfx",
+          "label": "Graphics core",
+          "count": 2,
+          "summary": "Performance-telemetry maintenance — added alerting on key performance probes and removed legacy ones.",
+          "patch_subjects": [
+            "Remove legacy mirrors for a large set of probes primarily used for performance monitoring.",
+            "Add telemetry alerting to a number of important high-level performance probes."
+          ]
+        },
+        {
+          "feature": "gfx/src",
+          "label": "Graphics core internals",
+          "count": 2,
+          "summary": "Portability and vectorization fixes for rectangle-intersection math.",
+          "patch_subjects": [
+            "Fix portability of nsRectIntersectGenericImpl.h",
+            "Generalize vectorization of nsRect::Intersect"
+          ]
+        },
+        {
+          "feature": "gfx/qcms",
+          "label": "Colour management (QCMS)",
+          "count": 1,
+          "summary": "Added a 16-bit-float transform interface to the QCMS colour-management library.",
+          "patch_subjects": [
+            "Bug 2034983. Give qcms a f16 transform interface."
+          ]
+        },
+        {
+          "feature": "gfx/ycbcr",
+          "label": "Video colour conversion (YCbCr)",
+          "count": 1,
+          "summary": "A build-system fix so some colour-conversion assembly files are preprocessed correctly.",
+          "patch_subjects": [
+            "Tell the build system that some assembly files need preprocessing"
+          ]
+        }
+      ]
+    }
+  }
+}
