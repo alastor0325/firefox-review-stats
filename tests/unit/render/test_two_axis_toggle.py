@@ -53,7 +53,7 @@ def _render() -> str:
 class TestToggleBarMarkup:
     def test_has_view_axis_buttons(self):
         html = _render()
-        for v in ("team", "member", "queue"):
+        for v in ("team", "member", "queue", "recent"):
             assert re.search(rf'<button[^>]*data-view="{v}"', html), (
                 f'expected a "{v}" view button'
             )
@@ -74,8 +74,8 @@ class TestToggleBarMarkup:
         bar = m.group(1)
         view_buttons = re.findall(r'<button[^>]*data-view=', bar)
         period_buttons = re.findall(r'<button[^>]*data-period=', bar)
-        assert len(view_buttons) == 3, (
-            f"expected exactly 3 view buttons, found {len(view_buttons)}"
+        assert len(view_buttons) == 4, (
+            f"expected exactly 4 view buttons, found {len(view_buttons)}"
         )
         # Period axis: 6-Month (data-period="total") / 3-Month / 1-Month
         # / Per-Week. 1m and 3m were added alongside the windowed

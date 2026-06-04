@@ -12,13 +12,14 @@ Per-team reviewer-load dashboards for Mozilla. Each dashboard covers the past 6 
 
 ## What the dashboard shows
 
-Each per-team page has three views, toggled at the top:
+Each per-team page has four views, toggled at the top:
 
 - **Team View** — Headline summary (in-scope patch count, group-tagged %, listed-members reviewing, "landed without team review" with a foldable drill-down pie + patch list). Within-group reviewer distribution, concentration metrics (Gini, bus factor), sole-reviewer-risk, total reviews per member, top patch authors, author→reviewer mapping. Four periods: **1-Month** / **3-Month** / **6-Month** rollups (same content, narrower commit slices) and **Per-Week** (most-recent-week slice for wait-time data).
 - **Member View** — Per-member profile: weekly activity (reviews + patches submitted), authors whose patches they reviewed, wait-time tiles when they're the author.
 - **Wait Queue** — Per-revision table of in-scope, member-authored patches sorted by longest wait first. Links straight into Phabricator.
+- **Recent Changes** — A "what changed in this component" digest, defaulting to **This Week** (toggle to **This Month**). Landed **patches** (one per revision; re-lands counted once) are grouped into **feature areas** — the subdirectory each patch changed the most, mapped to a friendly label — **ordered by number of patches**, with a `count/total · %` badge per area. Each area shows a short, plain-language LLM **overview** (what changed and why it matters; a key highlight may be bolded in red) with its full patch list tucked behind a **"Show N patches"** toggle, collapsed by default. Covers all landings, not just team-reviewed ones. Overviews are generated at refresh time by the Claude API (see [Recent-change summaries](#recent-change-summaries)); without an API key the tab still renders the patch lists, just without overviews.
 
-**Keyboard navigation:** on a team page, **←/→** cycle the view (Team → Member → Wait Queue) and **Shift+←/→** cycle the period (6-Month → 3-Month → 1-Month → Per-Week, Team View only). Arrows are ignored while typing in a field, and Cmd/Alt/Ctrl+arrow are left to the OS/browser (Ctrl+← / → is the macOS Spaces switch, which is why Shift — not Ctrl — drives the period).
+**Keyboard navigation:** on a team page, **←/→** cycle the view (Team → Member → Wait Queue → Recent Changes) and **Shift+←/→** cycle the period (6-Month → 3-Month → 1-Month → Per-Week, Team View only). Arrows are ignored while typing in a field, and Cmd/Alt/Ctrl+arrow are left to the OS/browser (Ctrl+← / → is the macOS Spaces switch, which is why Shift — not Ctrl — drives the period).
 
 The landing page is a static picker that lists every registered team and links into its subfolder. **↑/↓** move a focus highlight through the teams; **Enter** opens the highlighted one.
 
@@ -39,7 +40,8 @@ Data sources:
 
 - **GitHub REST API** for commit history (auth via `GH_TOKEN` env or `gh auth token`).
 - **Phabricator HTML scraping** via Playwright (real Chromium TLS fingerprint — anonymous `urlopen` trips Varnish 429s). Public revisions only; sec-bug revisions return the login page and are skipped.
-- **Single-commit GitHub endpoint** for file-list lookups, used by the "landed without team review" subdir classifier. Cached per-SHA on disk.
+- **Single-commit GitHub endpoint** for file-list lookups, used by the "landed without team review" subdir classifier and the Recent Changes feature-area grouping. Cached per-SHA on disk (shared between both passes — a SHA is fetched at most once).
+- **Anthropic Claude API** (optional) for the Recent Changes per-area overviews. One overview per feature area per window, reasoned over the area's change set, cached on disk by content hash (`.summary_cache/`) so a weekly run only calls the API for feature-sets it hasn't summarized. See [Recent-change summaries](#recent-change-summaries).
 
 The library is in `reviewstats/`:
 
@@ -47,6 +49,8 @@ The library is in `reviewstats/`:
 teams.py        # Team dataclass + TEAMS registry (config-only edits to add a team)
 members.py      # Thin re-export of PLAYBACK_TEAM.members for legacy callers
 metrics.py      # Pure aggregations: routing, sole-reviewer, weekly trends, gini, bus factor
+recent_changes.py  # Feature-area labels + grouping for the Recent Changes tab
+summarize.py    # LLM "what we did" summaries (Anthropic SDK, disk-cached by content hash)
 report.py       # build_report(): the JSON shape consumed by the HTML page
 render.py       # Inlines build_report's output into templates/index.html.tmpl
 landing.py      # Root index.html team picker
@@ -84,7 +88,7 @@ Python 3.10+ (CI runs 3.12). Set up a virtualenv and install Playwright:
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install pytest playwright
+pip install pytest playwright anthropic   # anthropic only needed for summaries
 python -m playwright install chromium
 ```
 
@@ -110,6 +114,14 @@ Serve locally:
 python3 -m http.server 8765 --bind 127.0.0.1
 # Then open http://127.0.0.1:8765/
 ```
+
+### Recent-change summaries
+
+The Recent Changes tab's per-area overviews are generated by the Claude API when `analyze_git.py` runs. They're **optional** — with no key, the tab renders the patch lists without overviews.
+
+- **Enable:** set `ANTHROPIC_API_KEY` in the environment (and `pip install anthropic`). In CI, add it as the `ANTHROPIC_API_KEY` repository secret — the refresh workflow already wires it into the `analyze_git.py` step.
+- **Model:** defaults to `claude-opus-4-8` (with adaptive thinking, so it reasons over the area's changes before writing). Override with `REVIEW_STATS_SUMMARY_MODEL` (e.g. `claude-haiku-4-5` for ~5× lower cost on the weekly batch).
+- **Cost control:** one overview per feature area per window, cached on disk under `.summary_cache/` keyed by content hash (feature + the set of patches), so a run only calls the API for feature-sets it hasn't summarized before (the in-run memo also dedupes areas shared between This Week and This Month). Delete the directory to force a re-summarize.
 
 ## Tests
 
@@ -139,13 +151,15 @@ The workflow runs `pytest tests/` so both layers gate every weekly refresh.
 
 `.github/workflows/refresh.yml` fires on Monday 09:00 UTC and on manual `workflow_dispatch`. Each run:
 
-1. Restores the `.phab_html_cache/` and `.commit_files_cache/` from the previous run (keyed by `github.run_id`, with a fallback prefix restore key — so a brand-new run can still inherit caches).
+1. Restores the `.phab_html_cache/`, `.commit_files_cache/`, and `.summary_cache/` from the previous run (keyed by `github.run_id`, with a fallback prefix restore key — so a brand-new run can still inherit caches).
 2. Runs the full test suite.
 3. Runs `analyze_git.py` → `analyze_phab.py` → `dump_author_patches.py` over every registered team.
 4. Stages `index.html`, `<slug>/` for every team, and `raw_data/`.
 5. Commits (`weekly: YYYY-WW refresh`) and pushes if anything changed. GitHub Pages picks up the push and republishes.
 
 Steady-state runtime: ~5 minutes (warm cache). Cold-cache for a brand-new team: ~10–15 minutes the first time (Playwright fetches the team's new D-numbers, then they're cached).
+
+The Recent Changes summaries need the `ANTHROPIC_API_KEY` repository secret; if it's absent the `analyze_git.py` step still succeeds and the tab renders without summaries. See [Recent-change summaries](#recent-change-summaries).
 
 ## Layout
 

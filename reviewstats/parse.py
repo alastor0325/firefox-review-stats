@@ -4,6 +4,16 @@ import re
 from dataclasses import dataclass
 
 _REVIEWER_BLOCK_RE = re.compile(r"r[=?]([A-Za-z0-9_\-,#.]+)")
+# Strip a trailing reviewer tag for human-friendly display. Consumes the
+# leading whitespace too so "Fix something. r=padenot" collapses to
+# "Fix something." with no dangling space. `!` covers blocking reviews
+# (r=padenot!), which `_REVIEWER_BLOCK_RE` intentionally doesn't parse.
+_REVIEW_TAG_RE = re.compile(r"\s+r[=?][A-Za-z0-9_\-,#.!]+")
+_BUG_NUMBER_RE = re.compile(r"^Bug (\d+)")
+# Strip the leading "Bug NNNN - " / "Bug NNNN: " so a change reads as a
+# description, not a bug reference. A "Part N" marker (if any) is kept —
+# it disambiguates a patch series; only the bug number is noise.
+_BUG_PREFIX_RE = re.compile(r"^Bug \d+\s*[-:]\s*")
 _DIFF_REV_RE = re.compile(
     r"^Differential Revision:\s*\S*/(D\d+)\s*$", re.MULTILINE
 )
@@ -54,3 +64,27 @@ def is_excluded_author(author: str) -> bool:
 def extract_differential_revision(body: str) -> str | None:
     match = _DIFF_REV_RE.search(body)
     return match.group(1) if match else None
+
+
+def extract_bug_number(subject: str) -> str | None:
+    """Return the leading bug number ("Bug 1900123 - ...") or None.
+
+    Only matches the canonical "Bug N" prefix at the start of the
+    subject — a bug referenced mid-sentence is not the patch's own bug.
+    """
+    match = _BUG_NUMBER_RE.match(subject)
+    return match.group(1) if match else None
+
+
+def strip_reviewer_tag(subject: str) -> str:
+    """Drop the trailing `r=…` / `r?…` reviewer tag from a subject so it
+    reads cleanly in a human-facing list (the reviewer is shown
+    elsewhere). A subject without a tag is returned unchanged."""
+    return _REVIEW_TAG_RE.sub("", subject).rstrip()
+
+
+def strip_bug_prefix(subject: str) -> str:
+    """Drop a leading "Bug NNNN - " / "Bug NNNN: " so the change reads as a
+    description rather than a bug reference. Only the leading occurrence is
+    removed; a subject without the prefix is returned unchanged."""
+    return _BUG_PREFIX_RE.sub("", subject, count=1)

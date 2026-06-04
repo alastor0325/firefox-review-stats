@@ -66,13 +66,18 @@ class TestKeydownHandler:
         assert re.search(r"setPeriod\(", html), "period nav must call setPeriod"
         assert re.search(r"setView\(", html), "view nav must call setView"
 
-    def test_period_nav_gated_to_team_view(self):
-        """Period only applies in Team View; Ctrl+arrow elsewhere is a
-        no-op rather than silently mutating a hidden axis."""
+    def test_shift_nav_drives_secondary_axis_per_view(self):
+        """Shift+arrow drives the current view's secondary axis: the period
+        in Team View, the week/month window in Recent Changes. In other
+        views it's a no-op rather than mutating a hidden axis."""
         html = _render()
         assert re.search(
-            r"dataset\.view\s*!==\s*'team'", html
-        ), "period navigation should bail out unless data-view is 'team'"
+            r"dataset\.view\s*===\s*'team'", html
+        ), "Shift nav should drive the period axis when data-view is 'team'"
+        assert re.search(
+            r"dataset\.view\s*===\s*'recent'", html
+        ), "Shift nav should drive the recent-window axis when data-view is 'recent'"
+        assert re.search(r"setRecent\(", html), "recent nav must call setRecent"
 
     def test_prevent_default_when_handled(self):
         html = _render()

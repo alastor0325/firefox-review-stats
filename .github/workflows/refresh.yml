@@ -26,7 +26,7 @@ jobs:
       - name: Install Python deps
         run: |
           python -m pip install --upgrade pip
-          python -m pip install pytest playwright
+          python -m pip install pytest playwright anthropic
 
       - name: Install Chromium for Playwright
         run: python -m playwright install --with-deps chromium
@@ -68,10 +68,24 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Restore recent-change summary cache
+        # Stores per-feature LLM summaries (one JSON per content hash) so
+        # the weekly run only pays the Anthropic API for feature-sets it
+        # hasn't summarized before. Safe to drop — a miss just re-summarizes.
+        uses: actions/cache@v4
+        with:
+          path: .summary_cache
+          key: summary-cache-${{ github.run_id }}
+          restore-keys: |
+            summary-cache-
+
       - name: Generate landing report (GitHub commits)
         run: python analyze_git.py
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Enables the Recent Changes "what we did" summaries. If the
+          # secret is unset the step still succeeds — summaries are skipped.
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
       - name: Generate per-author listing
         run: python dump_author_patches.py

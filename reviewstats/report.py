@@ -11,6 +11,7 @@ from zoneinfo import ZoneInfo
 
 from reviewstats.git_log import Commit
 from reviewstats.members import MEMBERS as _DEFAULT_MEMBERS
+from reviewstats.recent_changes import group_by_feature
 from reviewstats.metrics import (
     author_patch_counts,
     author_reviewer_pairs,
@@ -63,6 +64,14 @@ TEAM_VIEW_WINDOWS = {
     "6m": 6,
 }
 _DAYS_PER_MONTH = 30
+
+# Selectable windows for the "Recent Changes" tab: how many days back
+# from window_end each slice covers. Keys are the data-window attribute
+# values the rendered HTML uses.
+RECENT_CHANGES_WINDOWS = {
+    "1w": 7,
+    "1m": 30,
+}
 
 
 def author_count_for_member(
@@ -126,6 +135,36 @@ def _filter_no_team_review_list(
     start = window_start.date().isoformat()
     end = window_end.date().isoformat()
     return [r for r in rows if start <= r["date"] <= end]
+
+
+def build_recent_changes(
+    recent_rows: list[dict],
+    *,
+    window_end: datetime,
+) -> dict:
+    """Slice the recent in-scope landings into the tab's selectable
+    windows (This Week / This Month) and group each by feature area.
+
+    `recent_rows` are pre-built row dicts (assembled by the caller, which
+    fetches enough history to cover the widest window) carrying a
+    `primary_subdir` plus the display fields. Date filtering is a plain
+    string comparison on the ISO `date` field — same inclusivity contract
+    as `_filter_no_team_review_list`. `total` is the de-duplicated patch
+    count (re-lands collapsed), so it equals the sum of feature counts.
+    """
+    end = window_end.date().isoformat()
+    out: dict[str, dict] = {}
+    for key, days in RECENT_CHANGES_WINDOWS.items():
+        start = (window_end - timedelta(days=days)).date().isoformat()
+        in_window = [r for r in recent_rows if start <= r["date"] <= end]
+        features = group_by_feature(in_window)
+        out[key] = {
+            "window_start": start,
+            "window_end": end,
+            "total": sum(g["count"] for g in features),
+            "features": features,
+        }
+    return out
 
 
 def build_team_view(
@@ -238,6 +277,7 @@ def build_report(
     excludes: tuple[str, ...] = (),
     no_team_review_by_subdir: dict[str, int] | None = None,
     no_team_review_list: list[dict] | None = None,
+    recent_rows: list[dict] | None = None,
     members: dict[str, str] | None = None,
 ) -> dict:
     # Both `path` (singular, kept for older callers) and `paths`
@@ -306,7 +346,7 @@ def build_report(
         commits, members_dict, weeks,
     )
 
-    return {
+    report = {
         "meta": {
             "path": path,
             "paths": list(paths),
@@ -340,3 +380,13 @@ def build_report(
         # with a narrower commit slice.
         "team_views": team_views,
     }
+
+    # Recent-changes feed for the "Recent Changes" tab. Only added when
+    # the caller supplies rows — older reports omit the key entirely so
+    # the template's `if (!DATA.recent_changes)` guard hides the tab.
+    if recent_rows is not None:
+        report["recent_changes"] = build_recent_changes(
+            recent_rows, window_end=window_end
+        )
+
+    return report

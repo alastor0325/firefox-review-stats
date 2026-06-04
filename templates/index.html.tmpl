@@ -487,10 +487,19 @@
     white-space: normal;
   }
 
-  /* View axis: data-view ∈ {team, member, queue} */
+  /* View axis: data-view ∈ {team, member, queue, recent} */
   body[data-view="team"]    .member-only, body[data-view="team"]    .queue-only,
   body[data-view="member"]  .team-only,   body[data-view="member"]  .queue-only,
   body[data-view="queue"]   .team-only,   body[data-view="queue"]   .member-only
+    { display: none !important; }
+
+  /* Recent Changes is the 4th view. Stated additively so the matrix
+     above stays readable: hide everyone else's sections in recent, and
+     hide recent-only everywhere else. */
+  body[data-view="recent"] .team-only,
+  body[data-view="recent"] .member-only,
+  body[data-view="recent"] .queue-only,
+  body:not([data-view="recent"]) .recent-only
     { display: none !important; }
 
   /* Period axis: `.total-only` covers the 1m / 3m / 6m (data-period=total)
@@ -500,9 +509,19 @@
   body[data-view="team"][data-period="total"] .weekly-only,
   body[data-view="team"][data-period="weekly"] .total-only { display: none !important; }
 
+  /* Two secondary toggle groups share the same top-bar component: the
+     Period axis (Team View) and the Recent-window axis (Recent Changes).
+     Only one is visible at a time, gated by data-view. */
+  .toggle-group-recent, .toggle-sep-recent { display: none; }
+
   body[data-view="member"] .toggle-group-period, body[data-view="member"] .toggle-sep,
-  body[data-view="queue"]  .toggle-group-period, body[data-view="queue"]  .toggle-sep
+  body[data-view="queue"]  .toggle-group-period, body[data-view="queue"]  .toggle-sep,
+  body[data-view="recent"] .toggle-group-period, body[data-view="recent"] .toggle-sep
     { display: none; }
+
+  /* Recent Changes shows the week/month group instead (same styling as Period). */
+  body[data-view="recent"] .toggle-group-recent { display: flex; }
+  body[data-view="recent"] .toggle-sep-recent { display: block; }
 
   /* Profile select */
   .profile-select {
@@ -539,9 +558,83 @@
     letter-spacing: 0.06em;
     margin: 0 0 14px;
   }
+
+  /* Recent Changes view — the week/month switch lives in the top toggle
+     bar (same component as the Team-View period axis). */
+  .recent-controls { margin: 0 0 22px; }
+  .recent-summary {
+    font-family: var(--mono); font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .feature-group {
+    margin: 0 0 14px;
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    background: var(--surface);
+    overflow: hidden;
+  }
+  .feature-head {
+    display: flex; align-items: baseline; gap: 12px;
+    padding: 14px 18px 8px;
+  }
+  .feature-label {
+    font-family: var(--serif);
+    font-size: 17px; font-weight: 500;
+    flex: 1;
+  }
+  .feature-count {
+    color: var(--muted); font-weight: 400;
+    font-size: 11px; font-family: var(--mono);
+    text-transform: uppercase; letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
+  .feature-summary {
+    margin: 0; padding: 0 18px 12px;
+    line-height: 1.6; color: var(--ink-soft);
+  }
+  /* Bold = the important, user-facing highlight (red, used sparingly). */
+  .feature-summary strong { font-weight: 600; color: var(--accent); }
+  /* Italic = a minor aside or caveat — de-emphasized, never red. */
+  .feature-summary em { font-style: italic; color: var(--muted); }
+  /* Change-list toggle — collapsed by default */
+  .changes-toggle { border-top: 1px solid var(--rule-soft); }
+  .changes-toggle-head {
+    list-style: none; cursor: pointer; user-select: none;
+    padding: 9px 18px;
+    font-family: var(--mono); font-size: 10.5px; font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--muted);
+    display: flex; align-items: center; gap: 7px;
+  }
+  .changes-toggle-head::-webkit-details-marker { display: none; }
+  .changes-toggle-head::before {
+    content: '▸'; font-size: 10px;
+    transition: transform 0.15s; display: inline-block;
+  }
+  .changes-toggle[open] .changes-toggle-head::before { transform: rotate(90deg); }
+  .changes-toggle-head:hover { color: var(--ink); }
+  .recent-patch-list { list-style: none; margin: 0; padding: 2px 18px 12px; }
+  .recent-patch {
+    display: flex; gap: 14px; align-items: baseline;
+    padding: 8px 2px;
+    border-bottom: 1px solid var(--rule-soft);
+  }
+  .recent-patch:last-child { border-bottom: none; }
+  .recent-patch .rp-date {
+    color: var(--muted); font-family: var(--mono);
+    font-size: 11px; white-space: nowrap; min-width: 78px;
+  }
+  .recent-patch .rp-subject { flex: 1; line-height: 1.4; }
+  .recent-patch .rp-subject a { color: var(--ink); }
+  .recent-patch .rp-author {
+    color: var(--muted); font-size: 12px;
+    white-space: nowrap; font-style: italic;
+  }
+  .recent-empty { color: var(--muted); font-style: italic; }
 </style>
 </head>
-<body data-view="team" data-period="total">
+<body data-view="team" data-period="total" data-recent="1w">
 
 <div class="top-bar">
   <header>
@@ -553,6 +646,7 @@
       <button data-view="team"   class="active" type="button">Team View</button>
       <button data-view="member" type="button">Member View</button>
       <button data-view="queue"  type="button">Wait Queue</button>
+      <button data-view="recent" type="button">Recent Changes</button>
     </div>
     <div class="toggle-sep" aria-hidden="true"></div>
     <div class="toggle-group toggle-group-period" role="tablist" aria-label="Period">
@@ -560,6 +654,11 @@
       <button data-period="3m" type="button">3-Month</button>
       <button data-period="1m" type="button">1-Month</button>
       <button data-period="weekly" type="button">Per-Week</button>
+    </div>
+    <div class="toggle-sep toggle-sep-recent" aria-hidden="true"></div>
+    <div class="toggle-group toggle-group-recent" role="tablist" aria-label="Recent window">
+      <button data-recent="1w" class="active" type="button">This Week</button>
+      <button data-recent="1m" type="button">This Month</button>
     </div>
   </nav>
 </div>
@@ -726,6 +825,18 @@
   </section>
 </div>
 
+<!-- ============= RECENT CHANGES ============= -->
+<div class="recent-only">
+  <section>
+    <h2>Recent changes — what shipped in this component <span class="info" data-tip="Every patch that landed in the team's owned paths during the window, grouped by the feature area (the subdirectory it changed the most files in). Covers all landings, not just team-reviewed ones. Re-lands are shown once."></span></h2>
+    <div class="recent-controls">
+      <span class="recent-summary" id="recent-summary"></span>
+    </div>
+    <div id="recent-changes-container"></div>
+    <div class="footer-note">A "patch" is one landed revision (re-lands counted once); each patch is filed under the one feature area it changed the most. Areas are ordered by number of patches; each shows a generated overview and its full patch list (collapsible). Subjects link to Phabricator where a Differential Revision is available, with the bug number and reviewer tag stripped for readability.</div>
+  </section>
+</div>
+
 <!-- ============= TEAM WAIT-TIME (6-month rollup) ============= -->
 <div id="phab-section" class="team-only total-only" style="display:none">
   <h2 class="page-divider">Review wait time <em>— team-level</em></h2>
@@ -768,6 +879,7 @@
 <script>
 const DATA = __DATA_JSON__;
 const PHAB_DATA = __PHAB_DATA_JSON__;
+const RECENT = DATA.recent_changes || null;
 
 const tipEl = document.createElement('div');
 tipEl.className = 'tip-floating';
@@ -1116,11 +1228,13 @@ if (lastIdx >= 0) {
     'Listed members with any review activity this week.'));
 }
 
-// Two-axis toggle wiring: data-view (team|member|queue) × data-period
-// (1m|3m|total|weekly). Buttons declare their axis + value via data
-// attributes; one handler per axis. When the period changes to one of
-// the aggregate slices (1m / 3m / total≡6m), re-render the team-total
-// view from the matching `DATA.team_views[*]` slice.
+// Multi-axis toggle wiring: data-view (team|member|queue|recent) plus two
+// secondary axes that share the same top-bar component — data-period
+// (Team View: 1m|3m|total|weekly) and data-recent (Recent Changes: 1w|1m).
+// Buttons declare their axis + value via data attributes; one handler per
+// axis. Changing period re-renders the team-total slice; changing the
+// recent window re-renders the Recent Changes list (assigned below).
+let renderRecentWindow = null;
 function bindToggle(axis) {
   const buttons = document.querySelectorAll(`.toggle-bar button[data-${axis}]`);
   function set(value) {
@@ -1131,6 +1245,8 @@ function bindToggle(axis) {
     if (axis === 'period') {
       const key = PERIOD_TO_KEY[value];
       if (key) renderTeamTotalView(key);
+    } else if (axis === 'recent') {
+      if (renderRecentWindow) renderRecentWindow(value);
     }
   }
   for (const b of buttons) {
@@ -1140,6 +1256,7 @@ function bindToggle(axis) {
 }
 const setView = bindToggle('view');
 const setPeriod = bindToggle('period');
+const setRecent = bindToggle('recent');
 
 // If the report was generated before `team_views` was introduced,
 // only 6m data is available — hide the 1m / 3m buttons so the user
@@ -1149,6 +1266,15 @@ if (!DATA.team_views) {
   document.querySelectorAll(
     '.toggle-bar button[data-period="1m"], .toggle-bar button[data-period="3m"]'
   ).forEach(b => { b.style.display = 'none'; });
+}
+
+// Reports generated before the Recent Changes feed existed have no
+// `recent_changes` block — hide the view button so it can't be selected
+// (and so keyboard cycling skips it, since visibleAxisValues filters on
+// offsetParent). The next weekly refresh fills it in and it reappears.
+if (!RECENT) {
+  document.querySelectorAll('.toggle-bar button[data-view="recent"]')
+    .forEach(b => { b.style.display = 'none'; });
 }
 
 // Initial team-total render — reads the HTML's default data-period
@@ -1187,10 +1313,15 @@ document.addEventListener('keydown', (e) => {
   if (isTypingTarget(e.target)) return;
   const dir = e.key === 'ArrowRight' ? 1 : -1;
   if (e.shiftKey) {
-    // Period only applies in Team View — elsewhere it's a no-op.
-    if (document.body.dataset.view !== 'team') return;
-    const values = visibleAxisValues('period');
-    setPeriod(cycleValue(values, document.body.dataset.period, dir));
+    // Shift+arrow drives the secondary axis of the current view: the
+    // period in Team View, the week/month window in Recent Changes.
+    if (document.body.dataset.view === 'team') {
+      const values = visibleAxisValues('period');
+      setPeriod(cycleValue(values, document.body.dataset.period, dir));
+    } else if (document.body.dataset.view === 'recent') {
+      const values = visibleAxisValues('recent');
+      setRecent(cycleValue(values, document.body.dataset.recent, dir));
+    }
   } else {
     const values = visibleAxisValues('view');
     setView(cycleValue(values, document.body.dataset.view, dir));
@@ -1841,6 +1972,108 @@ if (PHAB_DATA && PHAB_DATA.n > 0) {
     th.addEventListener('click', () => render(th.dataset.sort));
   }
   render('time_to_accept_days');  // default sort
+})();
+
+// =============================================================
+// Recent Changes view: per-feature digest of what landed in the
+// component, with a This Week / This Month window toggle.
+// =============================================================
+(function setupRecentChanges() {
+  const container = document.getElementById('recent-changes-container');
+  const summaryEl = document.getElementById('recent-summary');
+  if (!container || !RECENT) return;
+
+  const fmtDate = iso => {
+    // iso is "YYYY-MM-DD"; render as "Jun 2" without constructing a
+    // Date (avoids any TZ shifting of a date-only string).
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug',
+                    'Sep','Oct','Nov','Dec'];
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+    return m ? `${months[+m[2] - 1]} ${+m[3]}` : iso;
+  };
+
+  // Render the overview's light emphasis markup: **bold** and _italic_.
+  // HTML is escaped FIRST so the summary text can never inject markup;
+  // only our own <strong>/<em> tags are introduced afterwards.
+  const renderEmphasis = s => escHtml(s)
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/_(.+?)_/g, '<em>$1</em>');
+
+  function render(windowKey) {
+    const win = RECENT[windowKey];
+    container.innerHTML = '';
+    if (!win) return;
+
+    const featureCount = win.features.length;
+    summaryEl.textContent =
+      `${win.total} patch${win.total === 1 ? '' : 'es'} · ` +
+      `${featureCount} feature area${featureCount === 1 ? '' : 's'} · ` +
+      `since ${fmtDate(win.window_start)}`;
+
+    if (!win.total) {
+      container.innerHTML =
+        '<p class="recent-empty">No patches landed in this window.</p>';
+      return;
+    }
+
+    // Feature areas, ordered by number of patches (data is pre-sorted).
+    // The area heading + plain-language overview are always visible; the
+    // detailed patch list is tucked behind a "Show N patches" toggle,
+    // collapsed by default.
+    for (const group of win.features) {
+      const block = document.createElement('div');
+      block.className = 'feature-group';
+
+      const pct = win.total ? Math.round(group.count / win.total * 100) : 0;
+      const head = document.createElement('div');
+      head.className = 'feature-head';
+      head.innerHTML = `<span class="feature-label">${escHtml(group.label)}</span>` +
+        `<span class="feature-count">${group.count}/${win.total} · ${pct}%</span>`;
+      block.appendChild(head);
+
+      if (group.summary) {
+        const p = document.createElement('p');
+        p.className = 'feature-summary';
+        p.innerHTML = renderEmphasis(group.summary);
+        block.appendChild(p);
+      }
+
+      // Patch list — collapsed by default; click to reveal.
+      const det = document.createElement('details');
+      det.className = 'changes-toggle';
+      const sm = document.createElement('summary');
+      sm.className = 'changes-toggle-head';
+      sm.textContent = `Show ${group.count} patch${group.count === 1 ? '' : 'es'}`;
+      det.appendChild(sm);
+
+      const list = document.createElement('ul');
+      list.className = 'recent-patch-list';
+      for (const p of group.patches) {
+        const phabUrl = p.differential_revision
+          ? `https://phabricator.services.mozilla.com/${escAttr(p.differential_revision)}`
+          : null;
+        const subject = phabUrl
+          ? `<a href="${phabUrl}" target="_blank" rel="noopener">${escHtml(p.subject)}</a>`
+          : escHtml(p.subject);
+        const li = document.createElement('li');
+        li.className = 'recent-patch';
+        li.innerHTML =
+          `<span class="rp-date">${escHtml(fmtDate(p.date))}</span>` +
+          `<span class="rp-subject">${subject}</span>` +
+          `<span class="rp-author">${escHtml(p.author)}</span>`;
+        list.appendChild(li);
+      }
+      det.appendChild(list);
+      block.appendChild(det);
+      container.appendChild(block);
+    }
+  }
+
+  // The week/month switch is the top-bar `data-recent` toggle (wired by
+  // bindToggle). Expose render() so that toggle can drive it, and do the
+  // initial render from the body's default window (This Week).
+  renderRecentWindow = render;
+  render(document.body.dataset.recent || '1w');
 })();
 
 attachTooltips(document);

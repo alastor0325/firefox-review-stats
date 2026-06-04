@@ -17,6 +17,7 @@ flag also copies each team's JSON into archive/<slug>/data_git_<YYYY-WW>.json.
 
 import argparse
 import json
+import os
 import shutil
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -29,8 +30,18 @@ from reviewstats.metrics import (
     iso_week,
     primary_subdir,
 )
+from reviewstats.parse import (
+    extract_bug_number,
+    strip_bug_prefix,
+    strip_reviewer_tag,
+)
 from reviewstats.render import render_html
-from reviewstats.report import build_report
+from reviewstats.report import RECENT_CHANGES_WINDOWS, build_report
+from reviewstats.summarize import (
+    DEFAULT_SUMMARY_MODEL as _DEFAULT_SUMMARY_MODEL,
+    make_anthropic_summarizer,
+    summarize_features,
+)
 from reviewstats.teams import TEAMS, Team
 
 
@@ -47,11 +58,16 @@ def _generate_for_team(
     cache_dir: Path,
     archive_week: bool,
     now: datetime,
+    summarize_fn=None,
 ) -> None:
     """Build one team's report from scratch and write it to
     `<out_dir>/<team.slug>/`. raw_data/ and caches are shared
     across teams, hence the explicit `cache_dir` parameter so the
-    caller controls placement (root, not per-team)."""
+    caller controls placement (root, not per-team).
+
+    `summarize_fn`, when supplied, generates the per-feature "what we
+    did" summaries for the Recent Changes tab; None skips summarization
+    (the tab still renders the change lists, just without summaries)."""
     print(
         f"[{team.slug}] Fetching commits from {repo} "
         f"paths={list(team.paths)} excludes={list(team.excludes)} "
@@ -91,6 +107,22 @@ def _generate_for_team(
         bad_commits.append(c)
 
     token = _get_auth_token()
+
+    # Memoise file lists for this run: the no-team-review pass and the
+    # recent-changes pass below overlap on recently-landed SHAs, and
+    # `fetch_commit_files_cached` re-reads its on-disk cache file every
+    # call. An in-process dict keeps each SHA to a single disk read.
+    _files_by_sha: dict[str, list] = {}
+
+    def files_for(sha: str) -> list:
+        files = _files_by_sha.get(sha)
+        if files is None:
+            files = fetch_commit_files_cached(
+                repo, sha, cache_dir=cache_dir, token=token,
+            )
+            _files_by_sha[sha] = files
+        return files
+
     bad_with_files: list = []
     if bad_commits:
         print(
@@ -98,10 +130,7 @@ def _generate_for_team(
             f"review' commits by primary subdir..."
         )
     for c in bad_commits:
-        files = fetch_commit_files_cached(
-            repo, c.sha, cache_dir=cache_dir, token=token,
-        )
-        bad_with_files.append((c, files))
+        bad_with_files.append((c, files_for(c.sha)))
 
     # Single-path teams bucket by sub-subdirectory; multi-path teams
     # bucket by which root path the patch touches most (coarser, but
@@ -135,6 +164,37 @@ def _generate_for_team(
     ]
     no_team_review_list.sort(key=lambda r: r["date"], reverse=True)
 
+    # Recent-changes feed: every in-scope landing in the most recent
+    # window (the widest selectable slice), bucketed by feature area.
+    # Unlike no_team_review this covers ALL landings — the tab answers
+    # "what shipped", not "what bypassed review". File lists come from
+    # the same SHA-keyed cache, so commits already fetched above for the
+    # no-team-review pass don't hit the API twice.
+    recent_cutoff = window_end - timedelta(days=max(RECENT_CHANGES_WINDOWS.values()))
+    recent_commits = [c for c in commits if c.date >= recent_cutoff]
+    recent_rows: list = []
+    if recent_commits:
+        print(
+            f"[{team.slug}] Building recent-changes feed for "
+            f"{len(recent_commits)} landings since {recent_cutoff.date()}..."
+        )
+    for c in recent_commits:
+        files = files_for(c.sha)
+        recent_rows.append(
+            {
+                "sha": c.sha,
+                "short_sha": c.sha[:12],
+                "date": c.date.date().isoformat(),
+                "author": c.author,
+                # Display title: drop the r= tag and the "Bug NNNN -"
+                # prefix so each change reads as a description, not a bug ref.
+                "subject": strip_bug_prefix(strip_reviewer_tag(c.subject)),
+                "bug": extract_bug_number(c.subject),
+                "differential_revision": c.differential_revision,
+                "primary_subdir": subdir_of(files) or "(unknown)",
+            }
+        )
+
     report = build_report(
         commits,
         group=team.group,
@@ -145,8 +205,20 @@ def _generate_for_team(
         excludes=team.excludes,
         no_team_review_by_subdir=by_subdir,
         no_team_review_list=no_team_review_list,
+        recent_rows=recent_rows,
         members=team.members,
     )
+
+    # Annotate each Recent Changes feature area with a "what we did"
+    # overview. Disk-cached by content hash, so the weekly refresh only
+    # summarizes feature-sets it hasn't seen. No-op when summarize_fn is None.
+    if "recent_changes" in report and summarize_fn is not None:
+        print(f"[{team.slug}] Summarizing recent-change feature areas...")
+        summarize_features(
+            report["recent_changes"],
+            cache_dir=out_dir / ".summary_cache",
+            summarize_fn=summarize_fn,
+        )
 
     json_path = team_dir / "data_git.json"
     json_path.write_text(
@@ -209,6 +281,23 @@ def main(argv: list[str] | None = None) -> int:
     ).strftime("%Y-%m-%dT%H:%M:%SZ")
     now = datetime.now(timezone.utc)
 
+    # Build the Recent Changes summarizer only when an API key is present.
+    # Without one (most local runs, and CI until the secret is set) the
+    # tab still renders — just without the per-feature summaries.
+    summarize_fn = None
+    if os.environ.get("ANTHROPIC_API_KEY"):
+        model = os.environ.get("REVIEW_STATS_SUMMARY_MODEL", _DEFAULT_SUMMARY_MODEL)
+        try:
+            summarize_fn = make_anthropic_summarizer(model=model)
+            print(f"Recent-change summaries enabled (model={model}).")
+        except ImportError:
+            print(
+                "ANTHROPIC_API_KEY is set but the `anthropic` package is "
+                "not installed — skipping recent-change summaries."
+            )
+    else:
+        print("ANTHROPIC_API_KEY not set — skipping recent-change summaries.")
+
     for team in TEAMS.values():
         _generate_for_team(
             team,
@@ -218,6 +307,7 @@ def main(argv: list[str] | None = None) -> int:
             cache_dir=cache_dir,
             archive_week=args.archive_week,
             now=now,
+            summarize_fn=summarize_fn,
         )
 
     landing_path = out_dir / "index.html"
