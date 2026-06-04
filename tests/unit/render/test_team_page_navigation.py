@@ -94,6 +94,19 @@ def test_h1_shows_group_only_paths_live_in_subtitle():
     assert h1.index("Team Dashboard") < h1.index('id="header-group"')
 
 
+def test_title_links_to_repo():
+    """The 'Team Dashboard' title links to the GitHub repo (opens in a new
+    tab), styled to still read as the heading rather than the back-arrow."""
+    import re
+    html = render_html(_minimal_data(paths=["dom/media"], group="g"))
+    m = re.search(
+        r'<a href="(https://github\.com/[^"]+)"[^>]*class="dash-title"[^>]*>Team Dashboard</a>',
+        html,
+    )
+    assert m, "title should be an <a class=dash-title> pointing at the GitHub repo"
+    assert 'target="_blank"' in m.group(0) and "noopener" in m.group(0)
+
+
 def test_header_has_back_link_to_landing_picker():
     """The user navigated *into* the team page from the landing
     picker; give them a clear path back. A tiny `←` in the header
