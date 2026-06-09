@@ -13,6 +13,7 @@ as one product, not two.
 """
 
 from reviewstats.teams import Team
+from reviewstats.ui import GITHUB_CORNER_CSS, github_corner_html
 
 
 _FAVICON = (
@@ -357,9 +358,12 @@ def render_landing_page(teams: list[Team]) -> str:
 <title>Mozilla Team Dashboards — pick a team</title>
 <link rel="icon" type="image/svg+xml" href="{_FAVICON}">
 {_FONTS}
-<style>{_STYLE}</style>
+<style>{_STYLE}
+{GITHUB_CORNER_CSS}</style>
 </head>
 <body>
+
+{github_corner_html()}
 
 <div class="masthead">
   <p class="eyebrow"><span>Mozilla · Research</span></p>

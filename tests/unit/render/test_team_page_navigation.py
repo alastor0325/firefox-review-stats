@@ -94,17 +94,35 @@ def test_h1_shows_group_only_paths_live_in_subtitle():
     assert h1.index("Team Dashboard") < h1.index('id="header-group"')
 
 
-def test_title_links_to_repo():
-    """The 'Team Dashboard' title links to the GitHub repo (opens in a new
-    tab), styled to still read as the heading rather than the back-arrow."""
+def test_title_is_plain_text_not_a_link():
+    """The 'Team Dashboard' title is plain heading text — it used to link
+    to the repo, but that read as confusing (clicking the page title sent
+    you off to GitHub). The repo link now lives in the fixed corner icon."""
+    import re
+    html = render_html(_minimal_data(paths=["dom/media"], group="g"))
+    # The title is a <span>, not an <a>.
+    assert '<span class="dash-title">Team Dashboard</span>' in html
+    # And there is no anchor wrapping the title text.
+    assert not re.search(
+        r'<a[^>]*class="dash-title"[^>]*>',
+        html,
+    ), "the title should no longer be a link"
+
+
+def test_github_repo_link_lives_in_fixed_corner_icon():
+    """The GitHub repo link is a small icon fixed in the top-right corner
+    (opens in a new tab), not the page title."""
     import re
     html = render_html(_minimal_data(paths=["dom/media"], group="g"))
     m = re.search(
-        r'<a href="(https://github\.com/[^"]+)"[^>]*class="dash-title"[^>]*>Team Dashboard</a>',
+        r'<a class="gh-corner" href="(https://github\.com/[^"]+)"[^>]*>',
         html,
     )
-    assert m, "title should be an <a class=dash-title> pointing at the GitHub repo"
+    assert m, "expected a fixed GitHub corner link pointing at the repo"
     assert 'target="_blank"' in m.group(0) and "noopener" in m.group(0)
+    # It carries the GitHub mark as an inline SVG.
+    corner = html[m.start():html.index("</a>", m.start())]
+    assert "<svg" in corner
 
 
 def test_header_has_back_link_to_landing_picker():

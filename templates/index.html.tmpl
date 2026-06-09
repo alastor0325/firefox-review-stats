@@ -81,9 +81,10 @@
     display: inline-block;
   }
   header h1 a:hover { color: var(--red) !important; }
-  /* The title itself links to the repo — keep it looking like the heading
-     (not the small muted back-arrow), just clickable. */
-  header h1 a.dash-title {
+  /* The title is plain heading text (the repo link now lives in the
+     fixed GitHub corner, top-right). Keep it visually identical to the
+     heading rather than the small muted back-arrow. */
+  header h1 .dash-title {
     color: var(--ink) !important;
     font-size: inherit !important;
     font-weight: 500 !important;
@@ -91,7 +92,9 @@
     margin-right: 0 !important;
     vertical-align: baseline;
   }
-  header h1 a.dash-title:hover { color: var(--red) !important; }
+  /* Small GitHub mark fixed top-right — markup + CSS shared with the
+     landing picker via reviewstats/ui.py (injected at render time). */
+  __GH_CORNER_CSS__
   header h1 #header-group {
     font-style: italic;
     color: var(--red);
@@ -649,9 +652,11 @@
 </head>
 <body data-view="team" data-period="total" data-recent="1w">
 
+__GH_CORNER__
+
 <div class="top-bar">
   <header>
-    <h1><a href="../index.html" title="Back to team picker">←</a><a href="https://github.com/alastor0325/firefox-review-stats" class="dash-title" target="_blank" rel="noopener" title="View the source on GitHub">Team Dashboard</a> <span style="color: var(--muted); font-variation-settings: 'opsz' 110, 'wght' 300; font-style: italic;">·</span> <span id="header-group"></span></h1>
+    <h1><a href="../index.html" title="Back to team picker">←</a><span class="dash-title">Team Dashboard</span> <span style="color: var(--muted); font-variation-settings: 'opsz' 110, 'wght' 300; font-style: italic;">·</span> <span id="header-group"></span></h1>
     <div class="meta" id="header-meta"></div>
   </header>
   <nav class="toggle-bar" aria-label="View and period selectors">

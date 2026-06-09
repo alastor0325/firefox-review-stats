@@ -3,10 +3,14 @@
 import json
 from pathlib import Path
 
+from .ui import GITHUB_CORNER_CSS, github_corner_html
+
 
 _TEMPLATE_PATH = Path(__file__).resolve().parent.parent / "templates" / "index.html.tmpl"
 _DATA_PLACEHOLDER = "__DATA_JSON__"
 _PHAB_PLACEHOLDER = "__PHAB_DATA_JSON__"
+_GH_CORNER_PLACEHOLDER = "__GH_CORNER__"
+_GH_CORNER_CSS_PLACEHOLDER = "__GH_CORNER_CSS__"
 
 
 def _safe_json(data: object) -> str:
@@ -30,4 +34,6 @@ def render_html(
         template
         .replace(_DATA_PLACEHOLDER, _safe_json(data))
         .replace(_PHAB_PLACEHOLDER, _safe_json(phab_data))
+        .replace(_GH_CORNER_PLACEHOLDER, github_corner_html())
+        .replace(_GH_CORNER_CSS_PLACEHOLDER, GITHUB_CORNER_CSS)
     )
