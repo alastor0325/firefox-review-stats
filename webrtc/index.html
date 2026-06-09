@@ -608,6 +608,8 @@
   .feature-summary strong { font-weight: 600; color: var(--accent); }
   /* Italic = a minor aside or caveat — de-emphasized, never red. */
   .feature-summary em { font-style: italic; color: var(--muted); }
+  /* Inline code = identifiers / env vars / symbols (e.g. MOZ_LOG_FMT). */
+  .feature-summary code { font-family: var(--mono); font-size: 0.92em; }
   /* Change-list toggle — collapsed by default */
   .changes-toggle { border-top: 1px solid var(--rule-soft); }
   .changes-toggle-head {
@@ -2045,8 +2047,16 @@ if (PHAB_DATA && PHAB_DATA.n > 0) {
   // HTML is escaped FIRST so the summary text can never inject markup;
   // only our own <strong>/<em> tags are introduced afterwards.
   const renderEmphasis = s => escHtml(s)
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/_(.+?)_/g, '<em>$1</em>');
+    // Split out `code` spans and format only the non-code text, so identifiers
+    // like `MOZ_LOG_FMT` render verbatim. Underscore-italic fires only at word
+    // boundaries (CommonMark intraword rule), so a bare MOZ_LOG_FMT outside
+    // backticks keeps its underscores too.
+    .split(/(`[^`]+`)/g)
+    .map((p, i) => i % 2
+      ? '<code>' + p.slice(1, -1) + '</code>'
+      : p.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+         .replace(/(^|[^A-Za-z0-9])_(?!_)([^_]+?)_(?![A-Za-z0-9])/g, '$1<em>$2</em>'))
+    .join('');
 
   function render(windowKey) {
     const win = RECENT[windowKey];

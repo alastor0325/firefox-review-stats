@@ -169,13 +169,22 @@ class TestRecentJS:
         )
 
     def test_overview_supports_emphasis_markup(self):
-        # Overview text is escaped first, then **bold** / _italic_ markup is
-        # converted to <strong>/<em> — so the summary can carry emphasis
-        # without allowing raw HTML injection.
+        # Overview text is escaped first, then `code` / **bold** / _italic_ markup
+        # is converted to <code>/<strong>/<em> — so the summary can carry emphasis
+        # (and code spans) without allowing raw HTML injection.
         html = _render()
         assert "renderEmphasis" in html
         assert r"<strong>$1</strong>" in html
-        assert r"<em>$1</em>" in html
+        # code spans are split out and wrapped so identifiers like `MOZ_LOG_FMT`
+        # render verbatim (and are never emphasized internally).
+        assert "(`[^`]+`)" in html, "overview must handle inline `code` spans"
+        assert "<code>" in html
+        # underscore-italic must be intraword-safe: the rule requires a non-alnum
+        # boundary around the underscores, so MOZ_LOG_FMT is NOT italicized.
+        assert "[^A-Za-z0-9])_" in html, (
+            "underscore-italic must be boundary-anchored, not bare /_(.+?)_/"
+        )
+        assert r"<em>$2</em>" in html
         assert "renderEmphasis(group.summary)" in html, (
             "overview should be rendered through the emphasis converter"
         )
