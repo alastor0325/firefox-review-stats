@@ -1,8 +1,8 @@
 ==============================================================================
 WEBRTC-REVIEWERS AUTHOR-PATCH LISTING (raw author %an, no aliasing)
-Source: github.com/mozilla-firefox/firefox   Paths: dom/media/webrtc, dom/media/systemservices   Since: 2025-12-11T18:38:02Z
+Source: github.com/mozilla-firefox/firefox   Paths: dom/media/webrtc, dom/media/systemservices   Since: 2025-12-17T15:23:44Z
 Excluded paths: (none)
-Authors: 45    Patches: 373    (Lando-format / Lando-author / merge / Revert commits already excluded)
+Authors: 46    Patches: 394    (Lando-format / Lando-author / merge / Revert commits already excluded)
 ==============================================================================
 
 Known aliases (applied in HTML report, NOT below):
@@ -244,7 +244,39 @@ Known aliases (applied in HTML report, NOT below):
       2026-01-05  0515e71aa8ac  Bug 2007349 - Remove unused references to stdio.h r=ahal,necko-reviewers,media-playback-reviewers,win-reviewers,sunil,gstoll,aosmond
       2026-01-05  ca9d6265fef0  Bug 2007350 - Remove unused references to stdlib.h r=ahal,necko-reviewers,sunil
 
-[ 5] az  —  13 patch(es)
+[ 5] Daniel Holbert  —  29 patch(es)
+    ----------------------------------------------------------------------
+      2026-06-13  5902016d8dba  Bug 2047299: Use MakeUnique (instead of foo.reset(new T()) to repopulate a UniquePtr in JsepCodecDescription.h. r=webrtc-reviewers,bwc
+      2026-06-13  7e8aa82e37de  Bug 2047299: Migrate Sdp::Clone() (and its concrete-class overrides) to return UniquePtr. r=webrtc-reviewers,bwc
+      2026-06-13  4347aeca8ce7  Bug 2047299: Migrate JsepCodecDescription::Clone() to return UniquePtr. r=webrtc-reviewers,bwc
+      2026-06-13  9ebf1e9f4116  Bug 2047299: Migrate JsepSession::Clone() to return UniquePtr. r=webrtc-reviewers,bwc
+      2026-06-13  44b2f747a24d  Bug 2047299: Migrate JsepUuidGenerator::Clone() to return UniquePtr. r=webrtc-reviewers,bwc to return UniquePtr.
+      2026-06-13  2fb7c5733b0a  Bug 2047299: Migrate various WebRTC 'Parameters* Clone()' methods to return UniquePtr. r=webrtc-reviewers,bwc
+      2026-06-13  f0837e9b2cc1  Bug 2047299: Use MakeUnique (instead of foo.reset(new T()) to repopulate a UniquePtr in JsepCodecDescription.h. r=webrtc-reviewers,bwc
+      2026-06-13  0d7e829ba79f  Bug 2047299: Migrate Sdp::Clone() (and its concrete-class overrides) to return UniquePtr. r=webrtc-reviewers,bwc
+      2026-06-13  994223e87ec7  Bug 2047299: Migrate JsepCodecDescription::Clone() to return UniquePtr. r=webrtc-reviewers,bwc
+      2026-06-13  c6437c9bb55c  Bug 2047299: Migrate JsepSession::Clone() to return UniquePtr. r=webrtc-reviewers,bwc
+      2026-06-13  031b869bb4f2  Bug 2047299: Migrate JsepUuidGenerator::Clone() to return UniquePtr. r=webrtc-reviewers,bwc to return UniquePtr.
+      2026-06-13  fa2b7e34899e  Bug 2047299: Migrate various WebRTC 'Parameters* Clone()' methods to return UniquePtr. r=webrtc-reviewers,bwc
+      2026-06-13  571b7288e3e4  Bug 2047303: Use MakeRefPtr for allocation in CubebDeviceEnumerator::EnumerateAudioDevices. r=webrtc-reviewers,bwc
+      2026-06-13  624091c98af9  Bug 2047303: Use MakeRefPtr for allocation in MediaEngineFake::CreateSource and MediaEngineWebRTC::CreateSource. r=webrtc-reviewers,bwc
+      2026-06-12  031529190cd3  Bug 2047290: Allocate WebrtcVideoEncoderProxy with the MakeRefPtr utility function instead of 'new'. r=webrtc-reviewers,bwc
+      2026-06-12  8bb00debc807  Bug 2047290: Change MediaDataCodec::CreateDecoder() to return std::unique_ptr. r=webrtc-reviewers,bwc
+      2026-06-12  a68de081d082  Bug 2047290: Change MediaDataCodec::CreateEncoder() to return std::unique_ptr. r=webrtc-reviewers,bwc
+      2026-06-12  cac9b65d805d  Bug 2047290: Change GmpVideoCodec::CreateDecoder() to return std::unique_ptr. r=webrtc-reviewers,bwc
+      2026-06-12  907ecff60d27  Bug 2047290: Change GmpVideoCodec::CreateEncoder() to return std::unique_ptr. r=webrtc-reviewers,bwc
+      2026-06-10  9a89af7544f0  Bug 2046535: Apply code formatting in dom/media/webrtc/libwebrtcglue. r=webrtc-reviewers,bwc DONTBUILD
+      2026-06-05  3a33cc1c12ef  Bug 2044510: Pass already_AddRefed types by-value instead of by rvalue reference, in dom/{ipc,mathml,media,notification,streams}. r=dom-core-reviewers,media-playback-reviewers,webrtc-reviewers,smaug,pehrsons,aosmond
+      2026-06-01  3c0bbecfeeb1  Bug 2044085: Use 'std::make_unique' for allocation (instead of 'new') for std::unique_ptr-typed variables, in dom/media/webrtc/. r=webrtc-reviewers,bwc
+      2026-06-01  92a0b89dfe75  Bug 2044085: Use 'MakeUnique' for allocation (instead of 'new') for UniquePtr-typed variables, in dom/media/webrtc/. r=webrtc-reviewers,bwc
+      2026-06-01  cf18974b66b7  Bug 2044118: Use MakeRefPtr to do allocation for more RefPtr variables in dom/media/webrtc/. r=webrtc-reviewers,bwc
+      2026-06-01  43ea41eec30a  Bug 2044089: Use MakeRefPtr to do allocation for various RefPtr variables in dom/media/webrtc/. r=webrtc-reviewers,bwc
+      2026-06-01  28954649f5d5  Bug 2043860: Use MakeUnique instead of 'new' to populate UniquePtrs in dom/media/webrtc/{jsep,sdp}. r=webrtc-reviewers,bwc
+      2026-06-01  567bcbf4ba13  Bug 2043860: Change SdpAttributeList::SetAttribute() and its callers to transfer ownership using UniquePtr. r=webrtc-reviewers,bwc
+      2026-06-01  5e9255499f12  Bug 2043860: Change SdpAttribute::Clone() to provide the clone in a UniquePtr. r=webrtc-reviewers,bwc
+      2026-06-01  47dee9bf0986  Bug 2043860: In SdpAttributeList concrete classes, store attributes in UniquePtrs instead of raw pointers. r=webrtc-reviewers,bwc
+
+[ 6] az  —  13 patch(es)
     ----------------------------------------------------------------------
       2026-05-30  c94701b2fb6a  Bug 2037810 - Part 8: Reject WebRTC MediaCapabilities H.264 queries when resolution/framerate exceeds the requested level r=pehrsons,jib
       2026-05-30  b4921b60b045  Bug 2037810 - Part 6: Integrate H.264 FMTP parser usage into Media Capabilities and WebrtcGmpVideoCodec support functions r=pehrsons,jib
@@ -260,7 +292,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-05-06  8dcf681e2ead  Bug 1825286 - Part 9: Add functions to expose default WebRTC audio/video codecs. r=pehrsons
       2026-03-16  d4ff4b1fbfef  Bug 2001319 - Part 2: Unprovision MediaDRM origins when clearing browsing data. r=aosmond,media-playback-reviewers,webrtc-reviewers,jib
 
-[ 6] Daniel Baker  —  12 patch(es)
+[ 7] Daniel Baker  —  12 patch(es)
     ----------------------------------------------------------------------
       2026-05-29  e2a9ff1eeb37  Bug 1802849 - Read camera rotation from a window context so it tracks device rotation on Android. r=pehrsons,geckoview-reviewers,m_kato
       2026-05-23  4179641dcee0  Bug 1802849 - Read camera rotation from a window context so it tracks device rotation on Android. r=pehrsons,geckoview-reviewers,m_kato
@@ -275,7 +307,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-02-12  f4cef2bfa7d6  Bug 2014868 - Reject SDP when media type changes at m-line index.;r=bwc
       2026-02-10  c5b22051c757  Bug 2001637 - Ensure valid image size.;r=pehrsons
 
-[ 7] Alastor Wu  —  11 patch(es)
+[ 8] Alastor Wu  —  11 patch(es)
     ----------------------------------------------------------------------
       2026-06-04  195069d1394d  Bug 2044124 - Part 26: Use MOZ_LOG_FMT in gmp. r=media-playback-reviewers,webrtc-reviewers,aosmond,bwc
       2026-06-04  bb3d6473fabb  Bug 2044124 - Part 22: Use MOZ_LOG_FMT in webrtc jsapi, sdp and logging bridges. r=webrtc-reviewers,bwc
@@ -289,7 +321,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-03-30  d47f194b61bf  Bug 2025502 - Serialize MediaSystemResourceService shutdown on the compositor thread. r=media-playback-reviewers,padenot
       2026-02-11  894cf1a51c74  Bug 2010427 - part6 : update test_getUserMedia_audioCapture. r=webrtc-reviewers,pehrsons
 
-[ 8] Philipp Hancke  —  11 patch(es)
+[ 9] Philipp Hancke  —  11 patch(es)
     ----------------------------------------------------------------------
       2026-06-03  22ef5960cc46  Bug 1225723: fix webrtc-stats transportId references r=bwc,smaug,webidl,pehrsons
       2026-06-01  6c012f4fa6f7  Bug 1225723: implement (some of) RTCTransportStats r=bwc,webidl,smaug
@@ -303,7 +335,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-02  007182b76d1c  Bug 2028060: add rtpTimestamp to RTCEncodedFrameMetadata r=bwc,smaug,webidl
       2026-04-01  214b99f05141  Bug 2028060: add mimeType to RTCEncoded(Audio|Video)Frame r=webidl,smaug,bwc
 
-[ 9] Anshul  —  9 patch(es)
+[10] Anshul  —  9 patch(es)
     ----------------------------------------------------------------------
       2026-03-30  ab01648ca587  Bug 2027740 - Relax ice-ufrag/ice-pwd character validation to only reject '$'. r=bwc
       2026-03-27  a1477984aef6  Bug 1617686 - Validate ice-ufrag and ice-pwd length and character constraints. r=bwc
@@ -314,18 +346,6 @@ Known aliases (applied in HTML report, NOT below):
       2026-03-05  5987282452ba  Bug 1561441 - Implement RTCPeerConnection icecandidateerror event. r=bwc,webidl,smaug,mjf
       2026-02-25  87953af01779  Bug 2018447 - Avoid unnecessary copy in GetContributingSourceStats. r=bwc
       2026-02-25  b9eb04904ffa  Bug 2018843 - Implement RTCIceTransport.role. r=bwc,webidl,smaug?bwc
-
-[10] Daniel Holbert  —  9 patch(es)
-    ----------------------------------------------------------------------
-      2026-06-05  3a33cc1c12ef  Bug 2044510: Pass already_AddRefed types by-value instead of by rvalue reference, in dom/{ipc,mathml,media,notification,streams}. r=dom-core-reviewers,media-playback-reviewers,webrtc-reviewers,smaug,pehrsons,aosmond
-      2026-06-01  3c0bbecfeeb1  Bug 2044085: Use 'std::make_unique' for allocation (instead of 'new') for std::unique_ptr-typed variables, in dom/media/webrtc/. r=webrtc-reviewers,bwc
-      2026-06-01  92a0b89dfe75  Bug 2044085: Use 'MakeUnique' for allocation (instead of 'new') for UniquePtr-typed variables, in dom/media/webrtc/. r=webrtc-reviewers,bwc
-      2026-06-01  cf18974b66b7  Bug 2044118: Use MakeRefPtr to do allocation for more RefPtr variables in dom/media/webrtc/. r=webrtc-reviewers,bwc
-      2026-06-01  43ea41eec30a  Bug 2044089: Use MakeRefPtr to do allocation for various RefPtr variables in dom/media/webrtc/. r=webrtc-reviewers,bwc
-      2026-06-01  28954649f5d5  Bug 2043860: Use MakeUnique instead of 'new' to populate UniquePtrs in dom/media/webrtc/{jsep,sdp}. r=webrtc-reviewers,bwc
-      2026-06-01  567bcbf4ba13  Bug 2043860: Change SdpAttributeList::SetAttribute() and its callers to transfer ownership using UniquePtr. r=webrtc-reviewers,bwc
-      2026-06-01  5e9255499f12  Bug 2043860: Change SdpAttribute::Clone() to provide the clone in a UniquePtr. r=webrtc-reviewers,bwc
-      2026-06-01  47dee9bf0986  Bug 2043860: In SdpAttributeList concrete classes, store attributes in UniquePtrs instead of raw pointers. r=webrtc-reviewers,bwc
 
 [11] Emilio Cobos Álvarez  —  8 patch(es)
     ----------------------------------------------------------------------
@@ -475,46 +495,50 @@ Known aliases (applied in HTML report, NOT below):
     ----------------------------------------------------------------------
       2026-02-27  1e4695f22896  Bug 2019745 - Add Win11 25H2 (11.26200) skip annotations to TOML manifests r=webcompat-reviewers,media-playback-reviewers,credential-management-reviewers,search-reviewers,devtools-reviewers,places-reviewers,urlbar-reviewers,profiles-reviewers,dom-worker-reviewers,twisniewski,hneiva,aryx,scunnane,asuth,dimi,mossop,padenot
 
-[35] Kershaw Chang  —  1 patch(es)
+[35] Keith Cirkel  —  1 patch(es)
+    ----------------------------------------------------------------------
+      2026-06-09  f72f3f6b870c  Bug 2045043 - Part 2 - Fixup final classes using _FINAL cycle collecting isupports macro in dom/media r=media-playback-reviewers,webrtc-reviewers,alwu,pehrsons
+
+[36] Kershaw Chang  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-04-30  6104f2138b73  Bug 1978895 - Ensure CONNECT-only work with MASQUE proxy, r=necko-reviewers,webrtc-reviewers,valentin,bwc
 
-[36] Landry Breuil  —  1 patch(es)
+[37] Landry Breuil  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-03-11  504db5fb75d4  Bug 2021362: fix build on BSD after bug 2013730 r=mjf
 
-[37] Manuel Bucher  —  1 patch(es)
+[38] Manuel Bucher  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-06-01  385ca3a838f0  Bug 2035872 - Move originAttributes to socket base class nsASocketHandler r=necko-reviewers,webrtc-reviewers,bwc,kershaw
 
-[38] Masayuki Nakano  —  1 patch(es)
+[39] Masayuki Nakano  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-06-09  6388e5884115  Bug 2044523 - Make `nsPIDOMWindow.h` stop including `nsPIDOMWindowInlines.h` r=dom-core-reviewers,geckoview-reviewers,media-playback-reviewers,webrtc-reviewers,win-reviewers,layout-reviewers,manuel,aosmond,smaug,bwc,gstoll,dholbert,farre,m_kato
 
-[39] Mike Hommey  —  1 patch(es)
+[40] Mike Hommey  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-03-26  52098a85b6e3  Bug 2026021 - Avoid races in test_nr_socket_ice_unittest. r=webrtc-reviewers,bwc
 
-[40] Nika Layzell  —  1 patch(es)
+[41] Nika Layzell  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-03-24  5f0f9dd22a69  Bug 2020817 - Part 4: Annotate & clean up nsACString callers of BeginReading/Data, r=xpcom-reviewers,media-playback-reviewers,webrtc-reviewers,cookie-reviewers,profiler-reviewers,win-reviewers,dom-storage-reviewers,permissions-reviewers,toolkit-telemetry-reviewers-rotation,layout-reviewers,dom-worker-reviewers,gfx-reviewers,webgpu-reviewers,necko-reviewers,dom-core,smaug,handyman,emilio,pehrsons,kershaw,timhuang,edenchuang,padenot,bradwerth
 
-[41] Randell Jesup  —  1 patch(es)
+[42] Randell Jesup  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-04-07  4a84bc322b7f  Bug 2025489: avoid overflows r=pehrsons,bwc,jib
 
-[42] Ryan Curran  —  1 patch(es)
+[43] Ryan Curran  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-05-29  d51f90c6573d  Bug 2037084 - Enable crashtest (opt) on macosx1500-aarch64-vms r=media-playback-reviewers,webrtc-reviewers,bwc,padenot
 
-[43] Sandor Molnar  —  1 patch(es)
+[44] Sandor Molnar  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-04-14  586be5758bd3  Bug 2030403 - Update disable to include test_peerConnection_simulcastAnswer_oldSetParameters.html
 
-[44] Vinit Jangir  —  1 patch(es)
+[45] Vinit Jangir  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-05-08  61c84c2e3eb2  Bug 790194 - Changed all instances in dom/media/webrtc to std::from_chars r=bwc
 
-[45] WSchmalstieg  —  1 patch(es)
+[46] WSchmalstieg  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-05-15  9f0213c204ae  Bug 2036515 - Fix comment spelling errors;r=ng
