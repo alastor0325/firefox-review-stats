@@ -27,6 +27,7 @@ from reviewstats.github_commits import _get_auth_token, fetch_commits
 from reviewstats.landing import render_landing_page
 from reviewstats.metrics import (
     classify_landed_without_team_review_by_subdir,
+    has_team_review,
     iso_week,
     primary_subdir,
 )
@@ -94,20 +95,20 @@ def _generate_for_team(
     window_start = min(c.date for c in commits)
     window_end = max(c.date for c in commits)
 
-    # Identify commits that landed without any team-roster reviewer.
+    # Identify commits that landed without any team-roster reviewer,
+    # group tag, or trusted approved reviewer. Same predicate the count
+    # uses, so the list and the summary number can never diverge.
     member_ids = frozenset(team.members)
-    bad_commits = []
-    for c in commits:
-        has_group = any(
-            r.is_group and r.name == team.group for r in c.reviewers
+    bad_commits = [
+        c
+        for c in commits
+        if not has_team_review(
+            c,
+            group=team.group,
+            members=member_ids,
+            approved=team.approved_reviewers,
         )
-        if has_group:
-            continue
-        if any(
-            r.name in member_ids for r in c.reviewers if not r.is_group
-        ):
-            continue
-        bad_commits.append(c)
+    ]
 
     token = _get_auth_token()
 
@@ -218,6 +219,7 @@ def _generate_for_team(
         no_team_review_list=no_team_review_list,
         recent_rows=recent_rows,
         members=team.members,
+        approved_reviewers=team.approved_reviewers,
     )
 
     # Annotate each Recent Changes feature area with a "what we did"

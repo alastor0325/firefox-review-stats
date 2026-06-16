@@ -10,12 +10,17 @@ Each `Team` bundles the four knobs every report needs:
   scan (sibling-team territory that happens to live alongside).
 * `members`   — `{handle: display_name}` for the team's listed
   reviewers (sourced from the Phab project membership page).
+* `approved_reviewers` — extra handles that are NOT on the roster but
+  whose review still counts as valid team oversight (so patches they
+  review don't count as "landed without team review"). Unlike
+  `members`, these never appear in any load-distribution view — they
+  are not treated as team members, only as trusted approvers.
 
 The slug is used as the output subdirectory name (each team gets
 its own /<slug>/index.html under the site root).
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass(frozen=True)
@@ -26,6 +31,7 @@ class Team:
     paths: tuple[str, ...]
     excludes: tuple[str, ...]
     members: dict[str, str]
+    approved_reviewers: frozenset[str] = field(default_factory=frozenset)
 
 
 PLAYBACK_TEAM = Team(

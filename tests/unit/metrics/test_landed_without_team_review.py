@@ -9,7 +9,12 @@ change. A non-zero value is a queue-health red flag.
 from datetime import datetime, timezone
 
 from reviewstats.git_log import Commit
-from reviewstats.metrics import landed_without_team_review
+from reviewstats.metrics import (
+    count_by_individual,
+    landed_without_team_review,
+    sole_reviewer_counts,
+    total_reviews_per_member,
+)
 from reviewstats.parse import Reviewer
 from reviewstats.report import build_report
 from reviewstats.render import render_html
@@ -62,6 +67,49 @@ def test_patch_with_only_other_team_group_is_counted():
         _c([Reviewer("webrtc-reviewers", True), Reviewer("someone-else", False)])
     ]
     assert landed_without_team_review(commits, group=GROUP, members=MEMBERS) == 1
+
+
+APPROVED = frozenset({"trusted-outsider"})
+
+
+def test_approved_non_member_reviewer_is_not_counted():
+    """An approved reviewer who is NOT on the team roster still gives the
+    patch valid oversight, so it must not count as 'without team review'."""
+    commits = [_c([Reviewer("trusted-outsider", False)])]
+    assert (
+        landed_without_team_review(
+            commits, group=GROUP, members=MEMBERS, approved=APPROVED
+        )
+        == 0
+    )
+
+
+def test_approved_default_empty_matches_legacy_behavior():
+    """With no approved set, a non-member reviewer is still counted —
+    back-compat guard for callers that don't pass `approved`."""
+    commits = [_c([Reviewer("trusted-outsider", False)])]
+    assert landed_without_team_review(commits, group=GROUP, members=MEMBERS) == 1
+
+
+def test_approved_reviewer_absent_from_load_metrics():
+    """Invariant: approved reviewers are NOT team members. They must not
+    appear in any load-distribution view, only exempt the bad-review count."""
+    commits = [_c([Reviewer(GROUP, True), Reviewer("trusted-outsider", False)])]
+    # count_by_individual / total_reviews_per_member / sole_reviewer all
+    # filter to `members`; an approved-only handle must never show up.
+    assert "trusted-outsider" not in count_by_individual(
+        commits, group=GROUP, members=MEMBERS
+    )
+    assert all(
+        r["name"] != "trusted-outsider"
+        for r in total_reviews_per_member(
+            commits, group=GROUP, members=MEMBERS
+        )
+    )
+    solo = [_c([Reviewer("trusted-outsider", False)])]
+    assert "trusted-outsider" not in sole_reviewer_counts(
+        solo, members=MEMBERS
+    )
 
 
 def test_summary_carries_count_and_pct():

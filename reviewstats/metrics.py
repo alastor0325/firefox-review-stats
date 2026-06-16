@@ -183,27 +183,48 @@ def classify_landed_without_team_review_by_subdir(
     return dict(out)
 
 
+def has_team_review(
+    commit: _CommitLike,
+    *,
+    group: str,
+    members: frozenset[str],
+    approved: frozenset[str] = frozenset(),
+) -> bool:
+    """True if a patch had valid team oversight: the team group tag, a
+    listed-member individual reviewer, or an `approved` reviewer.
+
+    `approved` reviewers are trusted handles that are NOT on the team
+    roster (so they never appear in any load-distribution view) but whose
+    review still counts as approval. The single source of truth for the
+    "landed without team review" classification — used both by the count
+    below and by the per-commit bad-list builder in analyze_git.
+    """
+    if _has_group(commit, group):
+        return True
+    return any(name in members or name in approved for name in _individuals(commit))
+
+
 def landed_without_team_review(
     commits: Iterable[_CommitLike],
     *,
     group: str,
     members: frozenset[str],
+    approved: frozenset[str] = frozenset(),
 ) -> int:
-    """Count patches that landed with neither the team group tag nor any
-    listed-member individual reviewer.
+    """Count patches that landed with neither the team group tag, a
+    listed-member individual reviewer, nor an `approved` reviewer.
 
     A non-zero value signals patches reaching dom/media without anyone
-    on the listed-member roster checking the work — usually a queue
-    health red flag.
+    trusted by the team checking the work — usually a queue health red
+    flag.
     """
-    count = 0
-    for c in commits:
-        if _has_group(c, group):
-            continue
-        if any(name in members for name in _individuals(c)):
-            continue
-        count += 1
-    return count
+    return sum(
+        1
+        for c in commits
+        if not has_team_review(
+            c, group=group, members=members, approved=approved
+        )
+    )
 
 
 def sole_reviewer_counts(

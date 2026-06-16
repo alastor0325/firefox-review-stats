@@ -74,6 +74,11 @@ The multi-team refactor means this is a config-only change. Roughly 4 lines + te
        paths=("some/path",),
        excludes=(),                  # vendored upstreams under your paths, if any
        members={"handle": "Display Name", ...},
+       # Optional: trusted handles NOT on the roster whose review still
+       # counts as team oversight. Patches they review don't show up as
+       # "landed without team review". Unlike members, they never appear
+       # in any load-distribution view (not treated as team members).
+       approved_reviewers=frozenset({"trusted-handle"}),
    )
    TEAMS[FOO_TEAM.slug] = FOO_TEAM
    ```

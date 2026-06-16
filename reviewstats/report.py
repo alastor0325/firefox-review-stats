@@ -175,6 +175,7 @@ def build_team_view(
     window_start: datetime,
     window_end: datetime,
     no_team_review_list: list[dict] | None = None,
+    approved: frozenset[str] = frozenset(),
 ) -> dict:
     """Compute the per-window team-view fields shown by the Team toggle.
 
@@ -196,7 +197,7 @@ def build_team_view(
 
     routing = routing_breakdown(in_window, group=group)
     no_team_review = landed_without_team_review(
-        in_window, group=group, members=member_ids
+        in_window, group=group, members=member_ids, approved=approved
     )
     indiv_counts = count_by_individual(
         in_window, group=group, members=member_ids
@@ -279,6 +280,7 @@ def build_report(
     no_team_review_list: list[dict] | None = None,
     recent_rows: list[dict] | None = None,
     members: dict[str, str] | None = None,
+    approved_reviewers: frozenset[str] = frozenset(),
 ) -> dict:
     # Both `path` (singular, kept for older callers) and `paths`
     # (plural, used by multi-path teams) are supported. If `paths` is
@@ -319,6 +321,7 @@ def build_report(
             window_start=sub_start,
             window_end=window_end,
             no_team_review_list=no_team_review_list,
+            approved=approved_reviewers,
         )
 
     six_month_view = team_views["6m"]
