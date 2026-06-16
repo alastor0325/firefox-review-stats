@@ -68,6 +68,17 @@ def test_playback_team_member_roster_matches_existing_members():
     assert PLAYBACK_TEAM.members == expected
 
 
+def test_playback_approved_reviewers_are_trusted_non_members():
+    """pehrsons and stransky review playback patches but aren't on the
+    roster — their review must count as oversight without making them
+    team members (so they stay out of every load-distribution view)."""
+    assert PLAYBACK_TEAM.approved_reviewers == frozenset(
+        {"pehrsons", "stransky"}
+    )
+    # Trusted approvers, not roster members.
+    assert PLAYBACK_TEAM.approved_reviewers.isdisjoint(PLAYBACK_TEAM.members)
+
+
 def test_registry_indexes_team_by_slug():
     assert TEAMS["playback"] is PLAYBACK_TEAM
 

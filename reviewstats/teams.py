@@ -53,6 +53,9 @@ PLAYBACK_TEAM = Team(
         "karlt": "Karl Tomlinson",
         "aosmond": "Andrew Osmond",
     },
+    # Trusted reviewers who aren't on the media-playback-reviewers Phab
+    # roster but whose review still counts as valid team oversight.
+    approved_reviewers=frozenset({"pehrsons", "stransky"}),
 )
 
 
