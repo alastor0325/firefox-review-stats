@@ -1,8 +1,8 @@
 ==============================================================================
 MEDIA-PLAYBACK-REVIEWERS AUTHOR-PATCH LISTING (raw author %an, no aliasing)
-Source: github.com/mozilla-firefox/firefox   Paths: dom/media   Since: 2025-12-17T15:23:44Z
+Source: github.com/mozilla-firefox/firefox   Paths: dom/media   Since: 2025-12-24T14:50:18Z
 Excluded paths: dom/media/webrtc, dom/media/systemservices
-Authors: 65    Patches: 763    (Lando-format / Lando-author / merge / Revert commits already excluded)
+Authors: 65    Patches: 794    (Lando-format / Lando-author / merge / Revert commits already excluded)
 ==============================================================================
 
 Known aliases (applied in HTML report, NOT below):
@@ -11,8 +11,19 @@ Known aliases (applied in HTML report, NOT below):
 
 ==============================================================================
 
-[ 1] Alastor Wu  —  156 patch(es)
+[ 1] Alastor Wu  —  167 patch(es)
     ----------------------------------------------------------------------
+      2026-06-19  d863d1b65aa2  Bug 2046657 - Part 4: Clear a discarded browsing context's audibility. r=padenot
+      2026-06-19  d4cfc2cfff75  Bug 2046657 - Part 3: Add mute control to the parent-process MediaController. r=padenot
+      2026-06-19  11d0349d2310  Bug 2046657 - Part 2: Distinguish mute-by-content from mute-by-media-control in HTMLMediaElement. r=webidl,padenot,smaug
+      2026-06-19  ebf271666779  Bug 2046657 - Part 1: Route non-controllable HTMLMediaElement sources through the uncontrolled audibility path. r=padenot
+      2026-06-18  9c986300fac9  Bug 2046657 - Part 4: Clear a discarded browsing context's audibility. r=padenot
+      2026-06-18  f43d1ee131f4  Bug 2046657 - Part 3: Add mute control to the parent-process MediaController. r=padenot
+      2026-06-18  21969746ddae  Bug 2046657 - Part 2: Distinguish mute-by-content from mute-by-media-control in HTMLMediaElement. r=webidl,padenot,smaug
+      2026-06-18  621e23b98cda  Bug 2046657 - Part 1: Route non-controllable HTMLMediaElement sources through the uncontrolled audibility path. r=padenot
+      2026-06-15  bb09b2497188  Bug 2045756 - Skip a renderer-referenced surface when matching by FFmpeg id in FFmpegVideoFramePool r=padenot
+      2026-06-15  1bd02c4504c0  Bug 2045424 - Constrain the per-sample IV size in the CENC parser and ClearKey decryptor. r=media-playback-reviewers,jolin
+      2026-06-15  a1a34c476b41  Bug 2045395 - Use checked arithmetic for the interleave buffer length in AudioDecoderInputTrack r=media-playback-reviewers,padenot
       2026-06-12  60e8e13ba20c  Bug 2044320 - Part 2: Add a playback test for an MP4 with multiple colr boxes. r=media-playback-reviewers,kinetik
       2026-06-10  3e2bffcea911  Bug 2045281 - Use the decoded frame format for ffmpeg video chroma plane geometry. r=media-playback-reviewers,aosmond
       2026-06-10  fbe4cb3e595e  Bug 2043739 - Adjust CDM lifetime handling in the Media Foundation CDM IPC path. r=media-playback-reviewers,aosmond
@@ -170,81 +181,76 @@ Known aliases (applied in HTML report, NOT below):
       2026-02-05  adc25451597d  Bug 1707584 - part2 : implement :seeking pseudo class. r=media-playback-reviewers,firefox-style-system-reviewers,emilio,chunmin
       2026-02-05  4c7319eb8292  Bug 1707584 - part1 : implement :playing and :paused pseudo classes. r=media-playback-reviewers,firefox-style-system-reviewers,emilio,chunmin
 
-[ 2] Andrew Osmond  —  71 patch(es)
+[ 2] Chun-Min Chang  —  66 patch(es)
     ----------------------------------------------------------------------
-      2026-06-10  de82f9eaba84  Bug 2046551 - Prevent using WMF HW encoders when the frame size is less than 128x128. r=media-playback-reviewers,alwu
-      2026-06-10  f6b043739367  Bug 2046550 - Only allow H264 for non-HW encoders with WMF. r=media-playback-reviewers,alwu
-      2026-06-09  6552d1aa4d23  Bug 2042269. r=media-playback-reviewers,alwu
-      2026-06-09  7e7af37e4f62  Bug 2045187. r=media-playback-reviewers,alwu
-      2026-06-09  a639de0f8f5a  Bug 2045730. r=media-playback-reviewers,alwu
-      2026-06-09  fd4cc8239da6  Bug 2042269. r=media-playback-reviewers,alwu
-      2026-06-09  c02c2e14aa7d  Bug 1829467 - Fix shutdown crash in media shutdown gtests. r=webrtc-reviewers,pehrsons
-      2026-06-08  65bdd20935e6  Bug 2045010 - Filter hardware/software support from RemoteEncoderModule::Supports based on EncoderConfig::mHardwarePreference. r=media-playback-reviewers,padenot
-      2026-06-03  ae6ccf73c142  Bug 2041373. r=media-playback-reviewers,padenot
-      2026-05-26  51afa835e894  Bug 2041969 - Ensure MatroskaDemuxer extracts audio codec binary blob for Opus. r=media-playback-reviewers,alwu
-      2026-05-19  b83751d861f0  Bug 2040665 - Use IPDL refcounted actors for PRemoteDecoder, PMFCDM and PMFMediaEngine. r=media-playback-reviewers,alwu
-      2026-05-15  8dac2e8cfa64  Bug 2036872 - Use IPDL refcounted actors for GMP. r=media-playback-reviewers,alwu
-      2026-05-04  f7540b73ec99  Bug 2036872 - Use IPDL refcounted actors for GMP. r=media-playback-reviewers,alwu
-      2026-04-15  5cf3cf6b4ecb  Bug 2022390. r=media-playback-reviewers,padenot
-      2026-04-14  bddb59f59f0c  Bug 2022390. r=media-playback-reviewers,padenot
-      2026-04-13  5b41f1930a2b  Bug 2023880. r=media-playback-reviewers,padenot
-      2026-04-13  ae1b6eb6cfbc  Bug 2030467. r=media-playback-reviewers,padenot
-      2026-04-07  315e8c2f54f7  Bug 2024238. r=media-playback-reviewers,padenot
-      2026-04-07  9951ab5ea3ec  Bug 2025471. r=media-playback-reviewers,padenot
-      2026-04-07  3321d88c85e8  Bug 2025488. r=media-playback-reviewers,kinetik
-      2026-04-07  e15200cbea8d  Bug 2025506. r=media-playback-reviewers,kinetik
-      2026-04-03  e209ef10c94d  Bug 2027161 - Simplify GMP plugin and actor lifetimes. r=media-playback-reviewers,azebrowski
-      2026-03-31  53438185bca1  Bug 2025578. r=media-playback-reviewers,alwu
-      2026-03-30  a9bb9e500e26  Bug 2027342. r=media-playback-reviewers,padenot
-      2026-03-30  8859aa94bcf8  Bug 2025583. r=media-playback-reviewers,padenot
-      2026-03-30  46a02b4c6654  Bug 2027151. r=media-playback-reviewers,padenot
-      2026-03-30  2595076932c3  Bug 2027152. r=media-playback-reviewers,padenot
-      2026-03-29  497baa67e664  Bug 2022373. r=media-playback-reviewers,padenot
-      2026-03-28  bea8bb1bc06c  Bug 2022373. r=media-playback-reviewers,padenot
-      2026-03-28  03883b0fe68d  Bug 2025513. r=media-playback-reviewers,alwu
-      2026-03-28  1a664d16b7a7  Bug 2025429. r=media-playback-reviewers,alwu
-      2026-03-28  f854234d72fe  Bug 2025495. r=media-playback-reviewers,padenot
-      2026-03-28  92b78829144a  Bug 2025513. r=media-playback-reviewers,alwu
-      2026-03-28  f1b5d33eed18  Bug 2022373. r=media-playback-reviewers,padenot
-      2026-03-27  8903a76b5d65  Bug 1999158. r=media-playback-reviewers,padenot
-      2026-03-27  956f17570f89  Bug 2025492. r=media-playback-reviewers,kinetik
-      2026-03-24  45e63ec63f65  Bug 2023254 - Avoid lifetime issues when tearing down RemoteMediaDataEncoderChild and RemoteCDMChild. r=media-playback-reviewers,jolin
-      2026-03-16  9f64d4e42163  Bug 2023255 - Fix inverted return value check when converting to AVCC in FFmpegVideoEncoder on Android. r=media-playback-reviewers,padenot
-      2026-03-10  04d3315d9b42  Bug 2014611 - Prepend SPS/PPS data for H264 AnnexB keyframes with Android ffmpeg encoders if missing. r=media-playback-reviewers,jolin
-      2026-03-10  22e0e773eddb  Bug 2014292 - Make FFmpegVideoDecoder supply H264/HEVC extradata in correct form. r=media-playback-reviewers,jolin,alwu
-      2026-02-03  8289157dfa7c  Bug 2008471 - Ensure media.ffvpx-hw.enabled is honoured for video decoders. r=media-playback-reviewers,jolin
-      2026-02-03  f839efefb114  Bug 2014176 - Add checks for empty Maybe<TimeUnit> in MediaDecoder::CallSeek logs. r=media-playback-reviewers,padenot
-      2026-01-30  1817545d3481  Bug 2013382 - Cleanup MediaCodec outstanding output buffers and HW device context. r=media-playback-reviewers,alwu
-      2026-01-29  18ed725f957a  Bug 2013378 - Add checks for empty Maybe<TimeUnit> in MediaDecoderStateMachine::LoopingDecodingState logs. r=media-playback-reviewers,azebrowski
-      2026-01-13  2128fd733f16  Bug 2009772 - Part 2. Make FFmpegVideoDecoder configure the codec to allow supplying csd-0/csd-1 for H264 MediaCodec decoders. r=media-playback-reviewers,padenot
-      2026-01-13  c5b68f55a3ae  Bug 2009846 - Ignore dispatch errors in FFmpegVideoDecoder::QueueResumeDrain. r=media-playback-reviewers,padenot
-      2026-01-13  6aaa57baa170  Bug 2009880 - Make dom/media/mediasource/test/test_FrameSelection_mp4.html work with ffvpx on Android. r=media-playback-reviewers,padenot
-      2026-01-13  df808ad5ffee  Bug 2009882 - Add fuzz for reftests with ffvpx on Android. r=media-playback-reviewers,padenot
-      2026-01-13  2648c60d82bf  Bug 2008461 - Update dom/media/test/test_can_play_type_mpeg.html for ffvpx on Android. r=media-playback-reviewers,karlt
-      2026-01-08  763fd288773d  Bug 2009205 - Supply packet pts in FFmpegAudioDecoder to suppress log warnings. r=media-playback-reviewers,alwu
-      2026-01-08  c199318144ce  Bug 2008354 - Part 5. Use map to track durations for MediaCodec encoders. r=media-playback-reviewers,padenot
-      2026-01-08  f58ac665285a  Bug 2008354 - Part 4. Handle input sample conversions from YUV420P and NV12. r=media-playback-reviewers,jolin
-      2026-01-08  f5986df439c7  Bug 2008354 - Part 3. Handle AnnexB output from encoders when AVCC requested. r=media-playback-reviewers,jolin
-      2026-01-08  729e32cb210d  Bug 2008354 - Part 2. Ensure we configure H264 MediaCodec encoders properly. r=media-playback-reviewers,jolin
-      2026-01-08  b00727bfd190  Bug 2008354 - Part 1. Ensure we select MediaCodec encoders when appropriate on Android. r=media-playback-reviewers,jolin,padenot
-      2026-01-08  6b239e496c39  Bug 2008385 - Remote encoders/decoders should always check if manager thread has shutdown. r=media-playback-reviewers,padenot
-      2026-01-07  1f4c1dae040f  Bug 1976929 - Don't assume MediaChangeMonitor::mDecodePromise is set after dispatching. r=media-playback-reviewers,padenot
-      2026-01-05  c4e4daedd249  Bug 2008422 - Allow H264/HEVC MediaCodec decoders in parent process for gtests. r=media-playback-reviewers,jolin
-      2026-01-05  dd2ab66fbfaa  Bug 2008328 - Use const with FFmpegLibWrapper* consistently. r=media-playback-reviewers,karlt
-      2026-01-02  ddafaa057aca  Bug 2008270 - Consolidate encoder functionality that extracts AVCC extradata from AnnexB samples. r=media-playback-reviewers,jolin,alwu
-      2025-12-31  c068abb18e26  Bug 2008102 - Make Android gtests be able to load libmozavutil and libmozavcodec for ffvpx. r=media-playback-reviewers,jolin
-      2025-12-24  111413f36789  Bug 2005011 - Part 7. Update ffmpeg configuration to be more accurate on Android. r=media-playback-reviewers,padenot
-      2025-12-24  de12d1b691fc  Bug 2005011 - Part 6. Shuffle FFmpegDecoderModule member variable initialization. r=media-playback-reviewers,padenot
-      2025-12-24  182d9ca987fb  Bug 2005011 - Part 5. Ensure we initialize FFmpegEncoderModule for advertising hardware support. r=media-playback-reviewers,padenot
-      2025-12-24  333565f56164  Bug 2005011 - Part 4. Remove redundant gfxVars for VP8 HW decoding status. r=media-playback-reviewers,padenot
-      2025-12-24  cc59d41bd7cc  Bug 2005011 - Part 2. Move AV1 main profile check from AndroidDecoderModule to AOMDecoder. r=media-playback-reviewers,padenot
-      2025-12-23  654d670b05e5  Bug 2005011 - Part 7. Update ffmpeg configuration to be more accurate on Android. r=media-playback-reviewers,padenot
-      2025-12-23  51ea564fcaef  Bug 2005011 - Part 6. Shuffle FFmpegDecoderModule member variable initialization. r=media-playback-reviewers,padenot
-      2025-12-23  e19013799e22  Bug 2005011 - Part 5. Ensure we initialize FFmpegEncoderModule for advertising hardware support. r=media-playback-reviewers,padenot
-      2025-12-23  b6b226f9e94f  Bug 2005011 - Part 4. Remove redundant gfxVars for VP8 HW decoding status. r=media-playback-reviewers,padenot
-      2025-12-23  08d019b2ab6f  Bug 2005011 - Part 2. Move AV1 main profile check from AndroidDecoderModule to AOMDecoder. r=media-playback-reviewers,padenot
+      2026-06-17  f2c4acdb5e84  Bug 2040522 - Reject out-of-range H.264 SPS picture dimensions r=media-playback-reviewers,alwu
+      2026-06-17  6ac4d9749663  Bug 2040522 - Validate H.264 SPS picture dimension computation r=media-playback-reviewers,alwu
+      2026-06-17  3cc8442ce766  Bug 2040522 - Add MSE mochitest for an H.264 init segment with an oversized SPS picture width r=media-playback-reviewers,alwu
+      2026-06-17  75b8df63683b  Bug 2040522 - Add gtests for H.264 SPS dimension validation r=media-playback-reviewers,alwu
+      2026-06-17  f33376dc6c26  Bug 2040522 - Move H264 SPS gtest from TestBitWriter into TestByteStreams r=media-playback-reviewers,alwu
+      2026-06-09  e986181a5b3a  Bug 2039853 - Add MSE HEVC SPS-less CMAF test r=media-playback-reviewers,padenot
+      2026-06-09  cf312a88e9bf  Bug 2039853 - Add generator script for HEVC test fixtures under dom/media/mediasource/test/ r=media-playback-reviewers,padenot
+      2026-06-09  e82e0b12529e  Bug 2039853 - Add gtest for H265::CompareExtraData equality of SPS-less configs r=media-playback-reviewers,aosmond
+      2026-06-03  b2965b341cea  Bug 2039853 - Add MSE HEVC SPS-less CMAF test r=media-playback-reviewers,padenot
+      2026-06-03  6881c07fcc29  Bug 2039853 - Add generator script for HEVC test fixtures under dom/media/mediasource/test/ r=media-playback-reviewers,padenot
+      2026-06-03  a05e3ad05dc3  Bug 2039853 - Add gtest for H265::CompareExtraData equality of SPS-less configs r=media-playback-reviewers,aosmond
+      2026-05-27  8a441547db90  Bug 2039460 - Initialize MediaCapabilitiesDecodingInfo::mPowerEfficient unconditionally before lambda capture r=media-playback-reviewers,alwu
+      2026-05-27  1265e3a642fd  Bug 2039460 - Add browser test exercising GetKeySystemCapabilities end-to-end r=media-playback-reviewers,alwu
+      2026-05-27  d539b3eabba7  Bug 2039651 - Warn when Web Audio decodeAudioData sees mid-stream sample-rate drift r=karlt
+      2026-05-27  69074398a693  Bug 2039651 - Track max per-packet channel count for Web Audio decodeAudioData buffer width r=karlt
+      2026-05-20  83557d718c22  Bug 2038465 - Use js_pod_calloc in ThreadSharedFloatArrayBufferList::Create r=karlt
+      2026-05-14  3b8056f040e9  Bug 2038049 - Make MediaWebM fuzz harness wait for decoder shutdown before resolving the BenchmarkPromise r=media-playback-reviewers,padenot
+      2026-05-14  f1ffe4b4b20c  Bug 2038473 - Funnel FFmpeg extradata allocation through a single helper r=media-playback-reviewers,jolin
+      2026-05-13  6983448f5ea8  Bug 1926361 - Cap FFmpeg-routed video decoding at MAX_VIDEO_WIDTH * MAX_VIDEO_HEIGHT via AVCodecContext::max_pixels r=media-playback-reviewers,padenot
+      2026-05-10  3ef915306060  Bug 2019109 - Add test for chroma dimension validation in RemoteImageHolder r=media-playback-reviewers,padenot
+      2026-05-10  4d6a521aa692  Bug 2019109 - Add test for display rect exceeding plane dimensions in RemoteImageHolder r=media-playback-reviewers,padenot
+      2026-05-10  bafee50b4632  Bug 2019109 - Add test for descriptor validation in RemoteImageHolder r=media-playback-reviewers,padenot
+      2026-05-08  46c395e6a3cf  Bug 2019109 - Add test for chroma dimension validation in RemoteImageHolder r=media-playback-reviewers,padenot
+      2026-05-08  623590e14d2b  Bug 2019109 - Add test for display rect exceeding plane dimensions in RemoteImageHolder r=media-playback-reviewers,padenot
+      2026-05-08  157b461edece  Bug 2019109 - Add test for descriptor validation in RemoteImageHolder r=media-playback-reviewers,padenot
+      2026-05-08  bdbdb3c4be67  Bug 2016329 - Add test r=aosmond
+      2026-04-11  9d653b04f83f  Bug 2025883 - Fix AudioData.copyTo() planar-to-interleaved not applying frame offset. r=media-playback-reviewers,padenot
+      2026-04-11  77f6a1bf327b  Bug 2025883 - Fix AudioData.copyTo() interleaved-to-interleaved incorrect frame offset calculation. r=media-playback-reviewers,padenot
+      2026-04-11  0c6f3fd3394f  Bug 2025883 - Pass source frames-per-channel to AudioData CopySamples. r=jolin
+      2026-04-11  063096f14e9f  Bug 2025883 - Fix VideoFrame.copyTo() using incorrect stride for YUV surfaces. r=media-playback-reviewers,padenot
+      2026-04-11  68e97e45a43a  Bug 2022604 - Fix VideoFrame.copyTo() using incorrect stride for RGB surfaces. r=media-playback-reviewers,padenot
+      2026-04-09  2ff3158f5f13  Bug 2025883 - Fix AudioData.copyTo() planar-to-interleaved not applying frame offset. r=media-playback-reviewers,padenot
+      2026-04-09  2fc26706509f  Bug 2025883 - Fix AudioData.copyTo() interleaved-to-interleaved incorrect frame offset calculation. r=media-playback-reviewers,padenot
+      2026-04-09  c8c733749066  Bug 2025883 - Fix VideoFrame.copyTo() using incorrect stride for YUV surfaces. r=media-playback-reviewers,padenot
+      2026-04-09  71cd3b8ff623  Bug 2022604 - Fix VideoFrame.copyTo() using incorrect stride for RGB surfaces. r=media-playback-reviewers,padenot
+      2026-04-08  60118438b441  Bug 2001200 - Remove debug fprintf r=karlt
+      2026-04-08  744d7f74f4ff  Bug 2001200 - Enable connecting AudioStreamTrack and MediaStreamTrackAudioSourceNode in different graphs r=karlt
+      2026-04-04  6919efd22f62  Bug 2027460 - Protect mAllocatedImages with DataMutex for thread safety r=media-playback-reviewers,alwu
+      2026-03-26  c4be23c2167a  Bug 2001200 - Remove debug fprintf r=karlt
+      2026-03-26  29cf48be8ea1  Bug 2001200 - Enable connecting AudioStreamTrack and MediaStreamTrackAudioSourceNode in different graphs r=karlt
+      2026-03-13  0b090e7106e8  Bug 2020854 - Replace static_cast with AssertedCast for narrowing conversions in FFmpeg encoder/decoder files r=media-playback-reviewers,padenot
+      2026-03-13  54d8f116ea21  Bug 2020854 - Fix cppcoreguidelines-narrowing-conversions in FFmpegDataDecoder.cpp r=media-playback-reviewers,padenot
+      2026-03-13  f27e817e4bc3  Bug 2020854 - Fix cppcoreguidelines-narrowing-conversions in FFmpegVideoDecoder.cpp r=media-playback-reviewers,padenot
+      2026-03-13  879c6211d35d  Bug 2020854 - Fix cppcoreguidelines-narrowing-conversions in FFmpegVideoEncoder.cpp r=media-playback-reviewers,padenot
+      2026-03-09  26142b2fd2b5  Bug 2021623 - Remove assertion for checking duplication of mFakePts r=media-playback-reviewers,padenot
+      2026-03-04  abbab3cd3e24  Bug 2019736 - Remove dead mMoofParser check in MP4SampleIndex constructor r=media-playback-reviewers,jolin
+      2026-03-04  418549e47d89  Bug 2019736 - Remove redundant mp4parse_get_track_info call in MP4Metadata::GetTrackInfo r=media-playback-reviewers,jolin
+      2026-03-04  a940b51f5a9b  Bug 2019736 - Add gtests for MP4 timescale > INT32_MAX r=media-playback-reviewers,jolin
+      2026-03-04  c1c3bb8284c0  Bug 2005833 - Simplify SimpleMap API: replace Find with Take, ForEach+Clear with Clear(callback) r=media-playback-reviewers,padenot
+      2026-03-04  45f31ba895bb  Bug 2005833 - Add uniqueness assertions to SimpleMap callsites with unique keys r=media-playback-reviewers,padenot
+      2026-03-04  63757878a262  Bug 2018126 - Validate chroma dimensions against CbCr plane size in RemoteImageHolder r=media-playback-reviewers,aosmond
+      2026-02-26  5d8f82ef6b58  Bug 2016329 - Rework CheckFrameData r=media-playback-reviewers,aosmond
+      2026-02-26  cf45e8f3d886  Bug 2016370 - Validate display rect against plane dimensions in RemoteImageHolder r=media-playback-reviewers,padenot
+      2026-02-26  d49b50901c48  Bug 2014857 - Improve descriptor validation in RemoteImageHolder r=media-playback-reviewers,padenot
+      2026-02-26  12b30222ddbb  Bug 2017491 - Rename mDecoderRequest to mCreateAndInitRequest r=media-playback-reviewers,padenot
+      2026-02-26  9013ee711e6d  Bug 2017491 - Handle shutdown-during-creation race in MediaChangeMonitor::CreateDecoder() r=media-playback-reviewers,padenot
+      2026-02-26  5a2e66306cb5  Bug 2017491 - Disconnect mDecoderRequest in MediaChangeMonitor::Shutdown() r=media-playback-reviewers,padenot
+      2026-02-26  551ae4a7e2c4  Bug 2017491 - Add crashtest r=media-playback-reviewers,padenot
+      2026-02-24  27aaca0edc8b  Bug 2014878 - Improve error reporting for non-ASCII strings in MediaError::GetMessage r=media-playback-reviewers,padenot
+      2026-02-24  5855c63ff6f6  Bug 2014878 - Add crashtest r=media-playback-reviewers,padenot
+      2026-02-04  921e9e8a4374  Bug 2013957 - Add defensive isValid() checks to ValidateVisibility r=media-playback-reviewers,padenot
+      2026-02-04  4dbbe5a91cf2  Bug 2013957 - Add defensive overflow checks to buffer reader plane accessors r=media-playback-reviewers,padenot
+      2026-02-04  17c6249b5c0e  Bug 2013957 - Fix CheckedInt overflow in VideoFrame::Format::ByteCount r=media-playback-reviewers,padenot
+      2026-02-04  88a63e8674d8  Bug 2013957 - Add crashtest r=media-playback-reviewers,padenot
+      2026-01-30  c9726865cf36  Bug 2012791 - Fix CheckedInt overflow in AudioData::CopyTo r=media-playback-reviewers,alwu
+      2026-01-30  15a92a11952c  Bug 2012791 - Add crashtest r=media-playback-reviewers,alwu
 
-[ 3] Paul Adenot  —  66 patch(es)
+[ 3] Paul Adenot  —  65 patch(es)
     ----------------------------------------------------------------------
       2026-05-22  6709f39e971d  Bug 2008586 - Don't create HRTFDatabaseLoader after shutdown. r=karlt
       2026-05-18  36c4a6d9258c  Bug 2025512 - Fix AsyncLogger thread safety and shutdown. r=azebrowski
@@ -311,75 +317,79 @@ Known aliases (applied in HTML report, NOT below):
       2026-02-12  95bbaa823f90  Bug 2014849 - Skip unknown codec tracks in TrackTypeToGlobalTrackIndex. r=media-playback-reviewers,alwu
       2026-02-12  e508216940b7  Bug 2014836 - Check for allocation failure before creating EncodedAudioChunk. r=media-playback-reviewers,chunmin
       2026-01-07  25c021cb2768  Bug 2008288 - Fix a issue in which audio stream wouldn't work if started while globally muted. r=karlt
-      2025-12-19  0d0e88354133  Bug 2006863 - Remove KeyValueStorage.h. r=media-playback-reviewers,chunmin DONTBUILD
 
-[ 4] Chun-Min Chang  —  62 patch(es)
+[ 4] Andrew Osmond  —  63 patch(es)
     ----------------------------------------------------------------------
-      2026-06-09  e986181a5b3a  Bug 2039853 - Add MSE HEVC SPS-less CMAF test r=media-playback-reviewers,padenot
-      2026-06-09  cf312a88e9bf  Bug 2039853 - Add generator script for HEVC test fixtures under dom/media/mediasource/test/ r=media-playback-reviewers,padenot
-      2026-06-09  e82e0b12529e  Bug 2039853 - Add gtest for H265::CompareExtraData equality of SPS-less configs r=media-playback-reviewers,aosmond
-      2026-06-03  b2965b341cea  Bug 2039853 - Add MSE HEVC SPS-less CMAF test r=media-playback-reviewers,padenot
-      2026-06-03  6881c07fcc29  Bug 2039853 - Add generator script for HEVC test fixtures under dom/media/mediasource/test/ r=media-playback-reviewers,padenot
-      2026-06-03  a05e3ad05dc3  Bug 2039853 - Add gtest for H265::CompareExtraData equality of SPS-less configs r=media-playback-reviewers,aosmond
-      2026-05-27  8a441547db90  Bug 2039460 - Initialize MediaCapabilitiesDecodingInfo::mPowerEfficient unconditionally before lambda capture r=media-playback-reviewers,alwu
-      2026-05-27  1265e3a642fd  Bug 2039460 - Add browser test exercising GetKeySystemCapabilities end-to-end r=media-playback-reviewers,alwu
-      2026-05-27  d539b3eabba7  Bug 2039651 - Warn when Web Audio decodeAudioData sees mid-stream sample-rate drift r=karlt
-      2026-05-27  69074398a693  Bug 2039651 - Track max per-packet channel count for Web Audio decodeAudioData buffer width r=karlt
-      2026-05-20  83557d718c22  Bug 2038465 - Use js_pod_calloc in ThreadSharedFloatArrayBufferList::Create r=karlt
-      2026-05-14  3b8056f040e9  Bug 2038049 - Make MediaWebM fuzz harness wait for decoder shutdown before resolving the BenchmarkPromise r=media-playback-reviewers,padenot
-      2026-05-14  f1ffe4b4b20c  Bug 2038473 - Funnel FFmpeg extradata allocation through a single helper r=media-playback-reviewers,jolin
-      2026-05-13  6983448f5ea8  Bug 1926361 - Cap FFmpeg-routed video decoding at MAX_VIDEO_WIDTH * MAX_VIDEO_HEIGHT via AVCodecContext::max_pixels r=media-playback-reviewers,padenot
-      2026-05-10  3ef915306060  Bug 2019109 - Add test for chroma dimension validation in RemoteImageHolder r=media-playback-reviewers,padenot
-      2026-05-10  4d6a521aa692  Bug 2019109 - Add test for display rect exceeding plane dimensions in RemoteImageHolder r=media-playback-reviewers,padenot
-      2026-05-10  bafee50b4632  Bug 2019109 - Add test for descriptor validation in RemoteImageHolder r=media-playback-reviewers,padenot
-      2026-05-08  46c395e6a3cf  Bug 2019109 - Add test for chroma dimension validation in RemoteImageHolder r=media-playback-reviewers,padenot
-      2026-05-08  623590e14d2b  Bug 2019109 - Add test for display rect exceeding plane dimensions in RemoteImageHolder r=media-playback-reviewers,padenot
-      2026-05-08  157b461edece  Bug 2019109 - Add test for descriptor validation in RemoteImageHolder r=media-playback-reviewers,padenot
-      2026-05-08  bdbdb3c4be67  Bug 2016329 - Add test r=aosmond
-      2026-04-11  9d653b04f83f  Bug 2025883 - Fix AudioData.copyTo() planar-to-interleaved not applying frame offset. r=media-playback-reviewers,padenot
-      2026-04-11  77f6a1bf327b  Bug 2025883 - Fix AudioData.copyTo() interleaved-to-interleaved incorrect frame offset calculation. r=media-playback-reviewers,padenot
-      2026-04-11  0c6f3fd3394f  Bug 2025883 - Pass source frames-per-channel to AudioData CopySamples. r=jolin
-      2026-04-11  063096f14e9f  Bug 2025883 - Fix VideoFrame.copyTo() using incorrect stride for YUV surfaces. r=media-playback-reviewers,padenot
-      2026-04-11  68e97e45a43a  Bug 2022604 - Fix VideoFrame.copyTo() using incorrect stride for RGB surfaces. r=media-playback-reviewers,padenot
-      2026-04-09  2ff3158f5f13  Bug 2025883 - Fix AudioData.copyTo() planar-to-interleaved not applying frame offset. r=media-playback-reviewers,padenot
-      2026-04-09  2fc26706509f  Bug 2025883 - Fix AudioData.copyTo() interleaved-to-interleaved incorrect frame offset calculation. r=media-playback-reviewers,padenot
-      2026-04-09  c8c733749066  Bug 2025883 - Fix VideoFrame.copyTo() using incorrect stride for YUV surfaces. r=media-playback-reviewers,padenot
-      2026-04-09  71cd3b8ff623  Bug 2022604 - Fix VideoFrame.copyTo() using incorrect stride for RGB surfaces. r=media-playback-reviewers,padenot
-      2026-04-08  60118438b441  Bug 2001200 - Remove debug fprintf r=karlt
-      2026-04-08  744d7f74f4ff  Bug 2001200 - Enable connecting AudioStreamTrack and MediaStreamTrackAudioSourceNode in different graphs r=karlt
-      2026-04-04  6919efd22f62  Bug 2027460 - Protect mAllocatedImages with DataMutex for thread safety r=media-playback-reviewers,alwu
-      2026-03-26  c4be23c2167a  Bug 2001200 - Remove debug fprintf r=karlt
-      2026-03-26  29cf48be8ea1  Bug 2001200 - Enable connecting AudioStreamTrack and MediaStreamTrackAudioSourceNode in different graphs r=karlt
-      2026-03-13  0b090e7106e8  Bug 2020854 - Replace static_cast with AssertedCast for narrowing conversions in FFmpeg encoder/decoder files r=media-playback-reviewers,padenot
-      2026-03-13  54d8f116ea21  Bug 2020854 - Fix cppcoreguidelines-narrowing-conversions in FFmpegDataDecoder.cpp r=media-playback-reviewers,padenot
-      2026-03-13  f27e817e4bc3  Bug 2020854 - Fix cppcoreguidelines-narrowing-conversions in FFmpegVideoDecoder.cpp r=media-playback-reviewers,padenot
-      2026-03-13  879c6211d35d  Bug 2020854 - Fix cppcoreguidelines-narrowing-conversions in FFmpegVideoEncoder.cpp r=media-playback-reviewers,padenot
-      2026-03-09  26142b2fd2b5  Bug 2021623 - Remove assertion for checking duplication of mFakePts r=media-playback-reviewers,padenot
-      2026-03-04  abbab3cd3e24  Bug 2019736 - Remove dead mMoofParser check in MP4SampleIndex constructor r=media-playback-reviewers,jolin
-      2026-03-04  418549e47d89  Bug 2019736 - Remove redundant mp4parse_get_track_info call in MP4Metadata::GetTrackInfo r=media-playback-reviewers,jolin
-      2026-03-04  a940b51f5a9b  Bug 2019736 - Add gtests for MP4 timescale > INT32_MAX r=media-playback-reviewers,jolin
-      2026-03-04  c1c3bb8284c0  Bug 2005833 - Simplify SimpleMap API: replace Find with Take, ForEach+Clear with Clear(callback) r=media-playback-reviewers,padenot
-      2026-03-04  45f31ba895bb  Bug 2005833 - Add uniqueness assertions to SimpleMap callsites with unique keys r=media-playback-reviewers,padenot
-      2026-03-04  63757878a262  Bug 2018126 - Validate chroma dimensions against CbCr plane size in RemoteImageHolder r=media-playback-reviewers,aosmond
-      2026-02-26  5d8f82ef6b58  Bug 2016329 - Rework CheckFrameData r=media-playback-reviewers,aosmond
-      2026-02-26  cf45e8f3d886  Bug 2016370 - Validate display rect against plane dimensions in RemoteImageHolder r=media-playback-reviewers,padenot
-      2026-02-26  d49b50901c48  Bug 2014857 - Improve descriptor validation in RemoteImageHolder r=media-playback-reviewers,padenot
-      2026-02-26  12b30222ddbb  Bug 2017491 - Rename mDecoderRequest to mCreateAndInitRequest r=media-playback-reviewers,padenot
-      2026-02-26  9013ee711e6d  Bug 2017491 - Handle shutdown-during-creation race in MediaChangeMonitor::CreateDecoder() r=media-playback-reviewers,padenot
-      2026-02-26  5a2e66306cb5  Bug 2017491 - Disconnect mDecoderRequest in MediaChangeMonitor::Shutdown() r=media-playback-reviewers,padenot
-      2026-02-26  551ae4a7e2c4  Bug 2017491 - Add crashtest r=media-playback-reviewers,padenot
-      2026-02-24  27aaca0edc8b  Bug 2014878 - Improve error reporting for non-ASCII strings in MediaError::GetMessage r=media-playback-reviewers,padenot
-      2026-02-24  5855c63ff6f6  Bug 2014878 - Add crashtest r=media-playback-reviewers,padenot
-      2026-02-04  921e9e8a4374  Bug 2013957 - Add defensive isValid() checks to ValidateVisibility r=media-playback-reviewers,padenot
-      2026-02-04  4dbbe5a91cf2  Bug 2013957 - Add defensive overflow checks to buffer reader plane accessors r=media-playback-reviewers,padenot
-      2026-02-04  17c6249b5c0e  Bug 2013957 - Fix CheckedInt overflow in VideoFrame::Format::ByteCount r=media-playback-reviewers,padenot
-      2026-02-04  88a63e8674d8  Bug 2013957 - Add crashtest r=media-playback-reviewers,padenot
-      2026-01-30  c9726865cf36  Bug 2012791 - Fix CheckedInt overflow in AudioData::CopyTo r=media-playback-reviewers,alwu
-      2026-01-30  15a92a11952c  Bug 2012791 - Add crashtest r=media-playback-reviewers,alwu
-      2025-12-20  992dd3e29188  Bug 1674892 - Enable connecting AudioStreamTrack and MediaStreamAudioSourceNode in different graphs r=karlt
+      2026-06-17  7bdecaff5641  Bug 2048317 - Ensure we create a RemoteEncoderModule in content for the GPU process. r=media-playback-reviewers,alwu
+      2026-06-16  7db43238ad47  Bug 2047978 - Only allow HW video encoding with WMF in the GPU process. r=media-playback-reviewers,padenot
+      2026-06-10  de82f9eaba84  Bug 2046551 - Prevent using WMF HW encoders when the frame size is less than 128x128. r=media-playback-reviewers,alwu
+      2026-06-10  f6b043739367  Bug 2046550 - Only allow H264 for non-HW encoders with WMF. r=media-playback-reviewers,alwu
+      2026-06-09  6552d1aa4d23  Bug 2042269. r=media-playback-reviewers,alwu
+      2026-06-09  7e7af37e4f62  Bug 2045187. r=media-playback-reviewers,alwu
+      2026-06-09  a639de0f8f5a  Bug 2045730. r=media-playback-reviewers,alwu
+      2026-06-09  fd4cc8239da6  Bug 2042269. r=media-playback-reviewers,alwu
+      2026-06-09  c02c2e14aa7d  Bug 1829467 - Fix shutdown crash in media shutdown gtests. r=webrtc-reviewers,pehrsons
+      2026-06-08  65bdd20935e6  Bug 2045010 - Filter hardware/software support from RemoteEncoderModule::Supports based on EncoderConfig::mHardwarePreference. r=media-playback-reviewers,padenot
+      2026-06-03  ae6ccf73c142  Bug 2041373. r=media-playback-reviewers,padenot
+      2026-05-26  51afa835e894  Bug 2041969 - Ensure MatroskaDemuxer extracts audio codec binary blob for Opus. r=media-playback-reviewers,alwu
+      2026-05-19  b83751d861f0  Bug 2040665 - Use IPDL refcounted actors for PRemoteDecoder, PMFCDM and PMFMediaEngine. r=media-playback-reviewers,alwu
+      2026-05-15  8dac2e8cfa64  Bug 2036872 - Use IPDL refcounted actors for GMP. r=media-playback-reviewers,alwu
+      2026-05-04  f7540b73ec99  Bug 2036872 - Use IPDL refcounted actors for GMP. r=media-playback-reviewers,alwu
+      2026-04-15  5cf3cf6b4ecb  Bug 2022390. r=media-playback-reviewers,padenot
+      2026-04-14  bddb59f59f0c  Bug 2022390. r=media-playback-reviewers,padenot
+      2026-04-13  5b41f1930a2b  Bug 2023880. r=media-playback-reviewers,padenot
+      2026-04-13  ae1b6eb6cfbc  Bug 2030467. r=media-playback-reviewers,padenot
+      2026-04-07  315e8c2f54f7  Bug 2024238. r=media-playback-reviewers,padenot
+      2026-04-07  9951ab5ea3ec  Bug 2025471. r=media-playback-reviewers,padenot
+      2026-04-07  3321d88c85e8  Bug 2025488. r=media-playback-reviewers,kinetik
+      2026-04-07  e15200cbea8d  Bug 2025506. r=media-playback-reviewers,kinetik
+      2026-04-03  e209ef10c94d  Bug 2027161 - Simplify GMP plugin and actor lifetimes. r=media-playback-reviewers,azebrowski
+      2026-03-31  53438185bca1  Bug 2025578. r=media-playback-reviewers,alwu
+      2026-03-30  a9bb9e500e26  Bug 2027342. r=media-playback-reviewers,padenot
+      2026-03-30  8859aa94bcf8  Bug 2025583. r=media-playback-reviewers,padenot
+      2026-03-30  46a02b4c6654  Bug 2027151. r=media-playback-reviewers,padenot
+      2026-03-30  2595076932c3  Bug 2027152. r=media-playback-reviewers,padenot
+      2026-03-29  497baa67e664  Bug 2022373. r=media-playback-reviewers,padenot
+      2026-03-28  bea8bb1bc06c  Bug 2022373. r=media-playback-reviewers,padenot
+      2026-03-28  03883b0fe68d  Bug 2025513. r=media-playback-reviewers,alwu
+      2026-03-28  1a664d16b7a7  Bug 2025429. r=media-playback-reviewers,alwu
+      2026-03-28  f854234d72fe  Bug 2025495. r=media-playback-reviewers,padenot
+      2026-03-28  92b78829144a  Bug 2025513. r=media-playback-reviewers,alwu
+      2026-03-28  f1b5d33eed18  Bug 2022373. r=media-playback-reviewers,padenot
+      2026-03-27  8903a76b5d65  Bug 1999158. r=media-playback-reviewers,padenot
+      2026-03-27  956f17570f89  Bug 2025492. r=media-playback-reviewers,kinetik
+      2026-03-24  45e63ec63f65  Bug 2023254 - Avoid lifetime issues when tearing down RemoteMediaDataEncoderChild and RemoteCDMChild. r=media-playback-reviewers,jolin
+      2026-03-16  9f64d4e42163  Bug 2023255 - Fix inverted return value check when converting to AVCC in FFmpegVideoEncoder on Android. r=media-playback-reviewers,padenot
+      2026-03-10  04d3315d9b42  Bug 2014611 - Prepend SPS/PPS data for H264 AnnexB keyframes with Android ffmpeg encoders if missing. r=media-playback-reviewers,jolin
+      2026-03-10  22e0e773eddb  Bug 2014292 - Make FFmpegVideoDecoder supply H264/HEVC extradata in correct form. r=media-playback-reviewers,jolin,alwu
+      2026-02-03  8289157dfa7c  Bug 2008471 - Ensure media.ffvpx-hw.enabled is honoured for video decoders. r=media-playback-reviewers,jolin
+      2026-02-03  f839efefb114  Bug 2014176 - Add checks for empty Maybe<TimeUnit> in MediaDecoder::CallSeek logs. r=media-playback-reviewers,padenot
+      2026-01-30  1817545d3481  Bug 2013382 - Cleanup MediaCodec outstanding output buffers and HW device context. r=media-playback-reviewers,alwu
+      2026-01-29  18ed725f957a  Bug 2013378 - Add checks for empty Maybe<TimeUnit> in MediaDecoderStateMachine::LoopingDecodingState logs. r=media-playback-reviewers,azebrowski
+      2026-01-13  2128fd733f16  Bug 2009772 - Part 2. Make FFmpegVideoDecoder configure the codec to allow supplying csd-0/csd-1 for H264 MediaCodec decoders. r=media-playback-reviewers,padenot
+      2026-01-13  c5b68f55a3ae  Bug 2009846 - Ignore dispatch errors in FFmpegVideoDecoder::QueueResumeDrain. r=media-playback-reviewers,padenot
+      2026-01-13  6aaa57baa170  Bug 2009880 - Make dom/media/mediasource/test/test_FrameSelection_mp4.html work with ffvpx on Android. r=media-playback-reviewers,padenot
+      2026-01-13  df808ad5ffee  Bug 2009882 - Add fuzz for reftests with ffvpx on Android. r=media-playback-reviewers,padenot
+      2026-01-13  2648c60d82bf  Bug 2008461 - Update dom/media/test/test_can_play_type_mpeg.html for ffvpx on Android. r=media-playback-reviewers,karlt
+      2026-01-08  763fd288773d  Bug 2009205 - Supply packet pts in FFmpegAudioDecoder to suppress log warnings. r=media-playback-reviewers,alwu
+      2026-01-08  c199318144ce  Bug 2008354 - Part 5. Use map to track durations for MediaCodec encoders. r=media-playback-reviewers,padenot
+      2026-01-08  f58ac665285a  Bug 2008354 - Part 4. Handle input sample conversions from YUV420P and NV12. r=media-playback-reviewers,jolin
+      2026-01-08  f5986df439c7  Bug 2008354 - Part 3. Handle AnnexB output from encoders when AVCC requested. r=media-playback-reviewers,jolin
+      2026-01-08  729e32cb210d  Bug 2008354 - Part 2. Ensure we configure H264 MediaCodec encoders properly. r=media-playback-reviewers,jolin
+      2026-01-08  b00727bfd190  Bug 2008354 - Part 1. Ensure we select MediaCodec encoders when appropriate on Android. r=media-playback-reviewers,jolin,padenot
+      2026-01-08  6b239e496c39  Bug 2008385 - Remote encoders/decoders should always check if manager thread has shutdown. r=media-playback-reviewers,padenot
+      2026-01-07  1f4c1dae040f  Bug 1976929 - Don't assume MediaChangeMonitor::mDecodePromise is set after dispatching. r=media-playback-reviewers,padenot
+      2026-01-05  c4e4daedd249  Bug 2008422 - Allow H264/HEVC MediaCodec decoders in parent process for gtests. r=media-playback-reviewers,jolin
+      2026-01-05  dd2ab66fbfaa  Bug 2008328 - Use const with FFmpegLibWrapper* consistently. r=media-playback-reviewers,karlt
+      2026-01-02  ddafaa057aca  Bug 2008270 - Consolidate encoder functionality that extracts AVCC extradata from AnnexB samples. r=media-playback-reviewers,jolin,alwu
+      2025-12-31  c068abb18e26  Bug 2008102 - Make Android gtests be able to load libmozavutil and libmozavcodec for ffvpx. r=media-playback-reviewers,jolin
 
-[ 5] alastor0325  —  39 patch(es)
+[ 5] alastor0325  —  43 patch(es)
     ----------------------------------------------------------------------
+      2026-06-18  b8eed3e31f13  Bug 2047749 - Part 4: Add the mfcdm recovery telemetry event. r=media-playback-reviewers,padenot
+      2026-06-18  d192c25184fa  Bug 2047749 - Part 3: Record per-session outcome on the mfcdm playback event. r=media-playback-reviewers,TravisLong,padenot
+      2026-06-18  c8de720f7f03  Bug 2047749 - Part 2: Record GPU adapter context on the mfcdm error event. r=media-playback-reviewers,TravisLong,gfx-reviewers,padenot,ahale
+      2026-06-18  153163e0b0b1  Bug 2047749 - Part 1: Renew expiry of mfcdm telemetry events. r=media-playback-reviewers,padenot
       2026-05-04  e4c7e4a9612d  Bug 1870722 - Part 8: Add mochitest for MFCDM session.update() error paths. r=jolin
       2026-05-04  872d21a7074d  Bug 1870722 - Part 7: Add mochitest for WMFClearKey encrypted media playback. r=jolin
       2026-05-04  8ab442b71de7  Bug 1870722 - Part 4: Extend readyState frame-gate bypass for frame server mode. r=jolin
@@ -420,8 +430,11 @@ Known aliases (applied in HTML report, NOT below):
       2026-03-17  4b3dbb55b262  Bug 2021157 - Part 2: Replace media.playback.decode_error event with dual_labeled_counters. r=media-playback-reviewers,padenot
       2026-03-17  2a210dee26c1  Bug 2021157 - Part 1: Replace media.error event with a dual_labeled_counter. r=media-playback-reviewers,padenot
 
-[ 6] az  —  39 patch(es)
+[ 6] az  —  42 patch(es)
     ----------------------------------------------------------------------
+      2026-06-16  b116faac7201  Bug 2045742 - r=kinetik,media-playback-reviewers
+      2026-06-16  786db9d38f73  Bug 2023699 - Part 2: Rework MediaDrm origin ID generation r=aosmond,media-playback-reviewers,jib
+      2026-06-16  281940ef7add  Bug 2023699 - Part 1: Use the storage principal for MediaDrm origin IDs r=aosmond,media-playback-reviewers,jib
       2026-06-08  665d608ad800  Bug 2028543 - GTest for bug 2025511 r=padenot
       2026-05-30  cad1f8b9ba01  Bug 2037810 - Part 7: Initialize Android utility PEMs in PEMFactory as per media.android-media-codec.enabled r=media-playback-reviewers,chunmin
       2026-05-30  17304af39dfd  Bug 2037810 - Part 4: Update Media Capabilities to reject WebRTC scalabilityMode until Bug 1571470 lands r=pehrsons
@@ -462,8 +475,9 @@ Known aliases (applied in HTML report, NOT below):
       2026-03-16  2edd9d47da6c  Bug 2001319 - Part 1: Update MediaDRM provisioning on Android to use origin IDs. r=aosmond,geckoview-reviewers,media-playback-reviewers,tcampbell
       2026-01-14  bf64fa8d8d24  Bug 1886799 - Part 2: Remove cert pinning support and associated prefs/telemetry from GMP, refactor tests to use content signature test server. r=aosmond,bhearsum
 
-[ 7] Karl Tomlinson  —  32 patch(es)
+[ 7] Karl Tomlinson  —  33 patch(es)
     ----------------------------------------------------------------------
+      2026-06-15  af1fa256513c  Bug 2046555 Await async init tasks in AudioSinkWrapper::Shutdown() r=padenot
       2026-06-14  be62415b8f0f  Bug 2031197 channel count change with playback rate crashtest for bug 2027433 r=padenot
       2026-05-07  d771534673a9  Bug 2018102 gtest for stride and size mismatch in VideoData inputs r=chunmin
       2026-05-07  0d317ce4a558  Bug 2018102 luma/alpha plane size mismatch crashtest r=chunmin
@@ -530,7 +544,36 @@ Known aliases (applied in HTML report, NOT below):
       2026-01-17  d6013f199956  Bug 2010520 - Use .inc extension for X macro files in dom/ r=media-playback-reviewers,webidl,firefox-svg-reviewers,padenot,devtools-reviewers,ochameau,smaug
       2026-01-09  d58be75d92bf  Bug 2009128 - Add missing miscellaneous header guards r=ahochheiden
 
-[ 9] alwu  —  26 patch(es)
+[ 9] Andreas Pehrson  —  26 patch(es)
+    ----------------------------------------------------------------------
+      2026-06-17  125502d984a3  Bug 2025517 - Add gtest. r=dbaker
+      2026-06-17  020897141ba1  Bug 2027148 - Add unittest. r=jib
+      2026-06-17  083165464c23  Bug 2025463 - Add gtests. r=aosmond
+      2026-05-11  7402ee8218f4  Bug 2021925 - Unittest a potential race in AggregateCapturer stream removal. r=jib
+      2026-05-07  ad3bb05e40cd  Bug 2037647 - Make MediaCapabilities mime type parameter handling for webrtc permissive, for now. r=azebrowski,media-playback-reviewers
+      2026-05-07  aad21226c743  Bug 2037647 - Add an allowlist for the MediaCapabilities webrtc type. r=azebrowski,media-playback-reviewers
+      2026-05-07  6fa92e482689  Bug 2037647 - Add an allowlist for MediaCapabilities legacy mode. r=azebrowski,media-playback-reviewers
+      2026-05-07  64aaf18d2ee4  Bug 2037647 - Move MediaCapabilities webrtc.enabled pref to BehaviorConfig. r=azebrowski,media-playback-reviewers
+      2026-05-07  ccbc11516569  Bug 2037647 - Change MediaCapabilities validation prefs to a single legacy pref and put it in a struct for once-per-request sampling. r=azebrowski,media-playback-reviewers
+      2026-04-28  3e1f32dc4097  Bug 2034722 - Add gtest for StartStream with capability-less DeviceInfo. r=webrtc-reviewers,mjf
+      2026-04-14  2b505012453c  Bug 2031719 - Re-enable test_webvtt_seeking.html. r=media-playback-reviewers,padenot
+      2026-04-14  6e47537bb835  Bug 2031641 - Make MOZ_DUMP_AUDIO accept a path to a directory for writing. r=padenot
+      2026-04-13  1b2bc97de2c8  Bug 2031470 - Make GeckoMediaPluginServiceParent::EnsureInitialized return a non-exclusive promise. r=aosmond,media-playback-reviewers
+      2026-04-08  3dd7970cc592  Bug 2025515 - Always allow Add/RemoveVideoOutput with detached outputs. r=karlt
+      2026-04-08  0b1212a2604f  Bug 2025515 - Defer video MediaStreamTrack rendering attachment via WatchManager. r=karlt,media-playback-reviewers
+      2026-04-07  c6118da52e04  Bug 2014827 - Add crashtest. r=media-playback-reviewers,alwu
+      2026-04-01  a2084f051e7f  Bug 1897052 - Add suspenders around mSuspendedCount. r=karlt
+      2026-04-01  fa350c467928  Bug 1897052 - Add suspenders around mSuspendedCount. r=karlt
+      2026-03-30  ee84485489c7  Bug 2025515 - Defer video MediaStreamTrack rendering attachment via WatchManager. r=karlt,media-playback-reviewers
+      2026-03-20  c3d554a0c773  Bug 2022085 - Add unittest for AggregateCapturer::CombinedCapability always selecting a known capability for cameras. r=jib
+      2026-03-02  29b022f0b6cd  Bug 2005729 - Unit test that GMP encoder input frames dropped by plugin are tracked. r=bwc
+      2026-03-02  30e3b461f1e0  Bug 1999658 - Account for AudioCallbackDriver proxy release when asserting Graph refcnt in TestDecodedStream. r=karlt
+      2026-02-27  1829412f2a50  Bug 2005729 - Unit test that GMP encoder input frames dropped by plugin are tracked. r=bwc
+      2026-02-25  9c8088e1373c  Bug 2005729 - Write initial set of WebrtcGmpVideoEncoder gtests. r=bwc
+      2026-02-11  8ef5d1179bf8  Bug 2014824 - Add crashtest. r=alwu
+      2026-02-11  f911fe150702  Bug 2014824 - Runtime check args. r=alwu
+
+[10] alwu  —  26 patch(es)
     ----------------------------------------------------------------------
       2026-02-11  59e57e371f40  Bug 2011940 - part1 : use CONTINUE_WHEN_ENDED for CaptureStream. r=pehrsons
       2026-02-11  e0f4d3e044ca  Bug 2010427 - part1 : monitor media element's effective volume in order to apply volume change on the media element source node properly. r=media-playback-reviewers,pehrsons,karlt
@@ -559,33 +602,31 @@ Known aliases (applied in HTML report, NOT below):
       2026-01-16  ac4a423507a7  Bug 2007596 - part2 : implement CaptureStream API and create OutputCaptureInfo to propagate related information. r=media-playback-reviewers,webidl,smaug,padenot
       2026-01-16  c91f92f95240  Bug 2007596 - part1: introduce AudioOutputConfig enum to track whether audio output configuration is needed. r=media-playback-reviewers,padenot
 
-[10] Andreas Pehrson  —  23 patch(es)
+[11] John Lin  —  21 patch(es)
     ----------------------------------------------------------------------
-      2026-05-11  7402ee8218f4  Bug 2021925 - Unittest a potential race in AggregateCapturer stream removal. r=jib
-      2026-05-07  ad3bb05e40cd  Bug 2037647 - Make MediaCapabilities mime type parameter handling for webrtc permissive, for now. r=azebrowski,media-playback-reviewers
-      2026-05-07  aad21226c743  Bug 2037647 - Add an allowlist for the MediaCapabilities webrtc type. r=azebrowski,media-playback-reviewers
-      2026-05-07  6fa92e482689  Bug 2037647 - Add an allowlist for MediaCapabilities legacy mode. r=azebrowski,media-playback-reviewers
-      2026-05-07  64aaf18d2ee4  Bug 2037647 - Move MediaCapabilities webrtc.enabled pref to BehaviorConfig. r=azebrowski,media-playback-reviewers
-      2026-05-07  ccbc11516569  Bug 2037647 - Change MediaCapabilities validation prefs to a single legacy pref and put it in a struct for once-per-request sampling. r=azebrowski,media-playback-reviewers
-      2026-04-28  3e1f32dc4097  Bug 2034722 - Add gtest for StartStream with capability-less DeviceInfo. r=webrtc-reviewers,mjf
-      2026-04-14  2b505012453c  Bug 2031719 - Re-enable test_webvtt_seeking.html. r=media-playback-reviewers,padenot
-      2026-04-14  6e47537bb835  Bug 2031641 - Make MOZ_DUMP_AUDIO accept a path to a directory for writing. r=padenot
-      2026-04-13  1b2bc97de2c8  Bug 2031470 - Make GeckoMediaPluginServiceParent::EnsureInitialized return a non-exclusive promise. r=aosmond,media-playback-reviewers
-      2026-04-08  3dd7970cc592  Bug 2025515 - Always allow Add/RemoveVideoOutput with detached outputs. r=karlt
-      2026-04-08  0b1212a2604f  Bug 2025515 - Defer video MediaStreamTrack rendering attachment via WatchManager. r=karlt,media-playback-reviewers
-      2026-04-07  c6118da52e04  Bug 2014827 - Add crashtest. r=media-playback-reviewers,alwu
-      2026-04-01  a2084f051e7f  Bug 1897052 - Add suspenders around mSuspendedCount. r=karlt
-      2026-04-01  fa350c467928  Bug 1897052 - Add suspenders around mSuspendedCount. r=karlt
-      2026-03-30  ee84485489c7  Bug 2025515 - Defer video MediaStreamTrack rendering attachment via WatchManager. r=karlt,media-playback-reviewers
-      2026-03-20  c3d554a0c773  Bug 2022085 - Add unittest for AggregateCapturer::CombinedCapability always selecting a known capability for cameras. r=jib
-      2026-03-02  29b022f0b6cd  Bug 2005729 - Unit test that GMP encoder input frames dropped by plugin are tracked. r=bwc
-      2026-03-02  30e3b461f1e0  Bug 1999658 - Account for AudioCallbackDriver proxy release when asserting Graph refcnt in TestDecodedStream. r=karlt
-      2026-02-27  1829412f2a50  Bug 2005729 - Unit test that GMP encoder input frames dropped by plugin are tracked. r=bwc
-      2026-02-25  9c8088e1373c  Bug 2005729 - Write initial set of WebrtcGmpVideoEncoder gtests. r=bwc
-      2026-02-11  8ef5d1179bf8  Bug 2014824 - Add crashtest. r=alwu
-      2026-02-11  f911fe150702  Bug 2014824 - Runtime check args. r=alwu
+      2026-06-19  949bda5b6e4c  Bug 2044198 - cap the size of black image. r=pehrsons
+      2026-06-17  789719d26d67  Bug 2027564 - test converting to 8-bit. r=media-playback-reviewers,alwu
+      2026-06-17  56a99fdb4e80  Bug 2046897 - update HLSResourceCallbacksSupport for MOZ_LOG_FMT(). r=media-playback-reviewers,alwu
+      2026-06-17  f14bbcd903be  Bug 2046897 - reroute HLS principal change and resource type callbacks. r=geckoview-reviewers,media-playback-reviewers,alwu,m_kato
+      2026-06-17  2ad690566b2f  Bug 2047221 - validate crypto info before decoding. r=media-playback-reviewers,alwu
+      2026-06-03  a2aba856a00a  Bug 1495701 - p1: expand HLS resource callbacks interface for opening necko HTTP channels. r=necko-reviewers,geckoview-reviewers,media-playback-reviewers,valentin,alwu,m_kato
+      2026-05-21  c335063e048a  Bug 2021955 - drop extra channels when out of downmixer's capability. r=media-playback-reviewers,alwu
+      2026-05-12  424391eee734  Bug 2024441 - add black image size tests. r=pehrsons
+      2026-04-14  72b03186fc9b  Bug 2030198 - report error when fails to copy Android encoder output data. r=media-playback-reviewers,alwu
+      2026-04-08  89308914fa7f  Bug 2027564 - validate decoded image before converting to 8-bit. r=media-playback-reviewers,alwu
+      2026-04-02  9dd9539534a9  Bug 2023515 - p2: use SampleBuffer native copy method. r=media-playback-reviewers,alwu
+      2026-03-24  fa84091ee97c  Bug 2024441 - check color plane sizes when creating image. r=pehrsons,webrtc-reviewers
+      2026-03-24  76952e155099  Bug 2024447 - store diagnostics info in AwaitInstall() if failed. r=media-playback-reviewers,alwu
+      2026-03-19  b6b5750f987f  Bug 2024007 - promote float values in FFmpegVideoDecoder decode stats r=media-playback-reviewers,alwu
+      2026-03-17  b44413864cb1  Bug 2017451 - p1: start media control listener for 'playing' event. r=media-playback-reviewers,padenot
+      2026-03-12  5cf9c552c3a2  Bug 2021545 - sanity check audio gap calculation. r=media-playback-reviewers,alwu
+      2026-03-06  b9eb6ddf0b14  Bug 2020174 - validate buffer size before allocation. r=media-playback-reviewers,padenot
+      2026-02-11  608bcb855d05  Bug 2016198 - extend Matroska data collection expiry to version 156. r=media-playback-reviewers,alwu
+      2026-02-09  373ae9400cbd  Bug 2010461 - extend HLS data collection expiry to version 156. r=media-playback-reviewers,karlt
+      2026-01-27  9478365621c2  Bug 2012108 - avoid unnecessary decoder recreation. r=media-playback-reviewers,alwu
+      2026-01-26  2fc16add653e  Bug 1999402 - revoke old channel when redirect. r=alwu
 
-[11] Ryan VanderMeulen  —  22 patch(es)
+[12] Ryan VanderMeulen  —  21 patch(es)
     ----------------------------------------------------------------------
       2026-05-29  62bac86357e0  Bug 2028698 - Bump Android fuzz bound and drop stale macOS version annotations for color_quads reftests r=aryx
       2026-05-25  f2365375ccbf  Bug 2020664 - Extend GMP launch timeout and re-enable skipped Windows GMP gtests. r=media-playback-reviewers,padenot
@@ -608,29 +649,11 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-17  065658b3b1d9  Bug 2032784 - Gate TestMFVideoTransFunc.cpp on MOZ_WMF_MEDIA_ENGINE to fix MinGW build. r=alwu
       2026-03-16  ce77cad5284e  Bug 2023289 - Add missing Services.h include to TestAudioTrackGraph.cpp. r=media-playback-reviewers,padenot
       2026-03-09  0bba4879dbf1  Bug 2021662 - Update chromium-cdm to 33c977516b3dfe5b065bc298aa74175e1999ab51. r=media-playback-reviewers,padenot
-      2025-12-22  fc7363724447  Bug 2007215 - Only define Decoder Doctor helpers if DDLogger is enabled. r=media-playback-reviewers,karlt
 
-[12] John Lin  —  16 patch(es)
+[13] Tom Schuster  —  17 patch(es)
     ----------------------------------------------------------------------
-      2026-06-03  a2aba856a00a  Bug 1495701 - p1: expand HLS resource callbacks interface for opening necko HTTP channels. r=necko-reviewers,geckoview-reviewers,media-playback-reviewers,valentin,alwu,m_kato
-      2026-05-21  c335063e048a  Bug 2021955 - drop extra channels when out of downmixer's capability. r=media-playback-reviewers,alwu
-      2026-05-12  424391eee734  Bug 2024441 - add black image size tests. r=pehrsons
-      2026-04-14  72b03186fc9b  Bug 2030198 - report error when fails to copy Android encoder output data. r=media-playback-reviewers,alwu
-      2026-04-08  89308914fa7f  Bug 2027564 - validate decoded image before converting to 8-bit. r=media-playback-reviewers,alwu
-      2026-04-02  9dd9539534a9  Bug 2023515 - p2: use SampleBuffer native copy method. r=media-playback-reviewers,alwu
-      2026-03-24  fa84091ee97c  Bug 2024441 - check color plane sizes when creating image. r=pehrsons,webrtc-reviewers
-      2026-03-24  76952e155099  Bug 2024447 - store diagnostics info in AwaitInstall() if failed. r=media-playback-reviewers,alwu
-      2026-03-19  b6b5750f987f  Bug 2024007 - promote float values in FFmpegVideoDecoder decode stats r=media-playback-reviewers,alwu
-      2026-03-17  b44413864cb1  Bug 2017451 - p1: start media control listener for 'playing' event. r=media-playback-reviewers,padenot
-      2026-03-12  5cf9c552c3a2  Bug 2021545 - sanity check audio gap calculation. r=media-playback-reviewers,alwu
-      2026-03-06  b9eb6ddf0b14  Bug 2020174 - validate buffer size before allocation. r=media-playback-reviewers,padenot
-      2026-02-11  608bcb855d05  Bug 2016198 - extend Matroska data collection expiry to version 156. r=media-playback-reviewers,alwu
-      2026-02-09  373ae9400cbd  Bug 2010461 - extend HLS data collection expiry to version 156. r=media-playback-reviewers,karlt
-      2026-01-27  9478365621c2  Bug 2012108 - avoid unnecessary decoder recreation. r=media-playback-reviewers,alwu
-      2026-01-26  2fc16add653e  Bug 1999402 - revoke old channel when redirect. r=alwu
-
-[13] Tom Schuster  —  15 patch(es)
-    ----------------------------------------------------------------------
+      2026-06-17  6767ecd66f51  Bug 2047708 - Use setHTML instead of innerHTML in WebVTT. r=alwu
+      2026-06-17  9caa2653eb43  Bug 2047320 - Set ReferrerInfo for MediaSession image requests. r=alwu
       2026-06-12  8d38890bd08a  Bug 2044625 - Use document for MediaSession artwork requests. r=media-playback-reviewers,alwu
       2026-05-22  d19946b10118  Bug 2032787 - Work around int-to-enum cast error. r=media-playback-reviewers,aosmond
       2026-04-29  632850874c03  Bug 2034786 - Cleanup some ChromiumCDM IPC. r=media-playback-reviewers,aosmond
@@ -665,7 +688,24 @@ Known aliases (applied in HTML report, NOT below):
       2026-05-11  90b31f7c6d2f  Bug 2021722 - DOM Media - FFmpeg Vulkan Video decode in RDD. r=stransky,alwu
       2026-03-26  3f87a5c0200a  Bug 2021722 - Added hwcontext_vulkan.h and updated ve rsion.h header. r=stransky
 
-[15] André Bargull  —  13 patch(es)
+[15] Emilio Cobos Álvarez  —  14 patch(es)
+    ----------------------------------------------------------------------
+      2026-06-17  bb460ea2086f  Bug 2046953 - Use HashBytes for hashing thin strings. r=sergesanspaille,arai,necko-reviewers,media-playback-reviewers,profiler-reviewers,alwu,canova,jesup,places-reviewers,Standard8
+      2026-06-16  37803dfd0e8b  Bug 2046953 - Use HashBytes for hashing thin strings. r=sergesanspaille,arai,necko-reviewers,media-playback-reviewers,profiler-reviewers,alwu,canova,jesup
+      2026-06-11  02ed7a6b7873  Bug 2046364 - Remove shortcut key restriction for user activation. r=edgar,media-playback-reviewers,aosmond
+      2026-05-25  b8127fedd7d4  Bug 2042008 - Fix HTMLTrackElement::LoadResource when load gets clobbered. r=dom-core,smaug
+      2026-05-02  e833a1757bf7  Bug 2033243 - Replace ownerGlobal with documentGlobal, and stop exposing ownerGlobal to JS. r=firefox-desktop-core-reviewers ,webidl,joschmidt,perftest-reviewers,sparky,smaug,mossop ,webidl,joschmidt,perftest-reviewers,sparky,smaug,mossop
+      2026-05-02  526325469022  Bug 2033243 - Replace ownerGlobal with documentGlobal, and stop exposing ownerGlobal to JS. r=firefox-desktop-core-reviewers ,webidl,joschmidt,perftest-reviewers,sparky,smaug,mossop ,webidl,joschmidt,perftest-reviewers,sparky,smaug,mossop
+      2026-05-01  367d83d299b4  Bug 2033243 - Replace ownerGlobal with documentGlobal, and stop exposing ownerGlobal to JS. r=firefox-desktop-core-reviewers ,webidl,joschmidt,perftest-reviewers,sparky,smaug,mossop
+      2026-04-30  7dea1af2e034  Bug 2033243 - Replace ownerGlobal with documentGlobal, and stop exposing ownerGlobal to JS. r=firefox-desktop-core-reviewers ,webidl,joschmidt,perftest-reviewers,sparky,smaug,mossop
+      2026-04-16  8aae0c3e7a6f  Bug 2032201 - Add explicit include.
+      2026-04-16  8622964bae2e  Bug 2032201 - Remove some HTMLMediaElement includes. r=media-playback-reviewers,aosmond
+      2026-04-15  26866407bcd2  Bug 2027416 - Prevent video controls from sending web exposed events for caption resize. r=mconley,smaug,webidl,layout-reviewers,hjones,desktop-theme-reviewers,jwatt
+      2026-03-22  5016086e1a6f  Bug 2025089 - Remove some includes from nsINode.h and Element.h. r=dom-core,dom-storage-reviewers,firefox-svg-reviewers,janv,smaug
+      2026-03-06  198847dad479  Bug 2001912 - Use jpeg encoder / decoder in Skia PDF backend. r=lsalzman
+      2026-02-17  5624defbfd80  Bug 2016280 - Use shadow DOM for editor. r=masayuki,dom-core,smaug,Jamie
+
+[16] André Bargull  —  13 patch(es)
     ----------------------------------------------------------------------
       2026-03-26  ea1d6e352d01  Bug 2023878 - Part 3: Replace MOZ_LITTLE_ENDIAN uses with std::endian::little. r=sergesanspaille,media-playback-reviewers,padenot
       2026-03-26  fa4ed7a8a1fe  Bug 2023878 - Part 2: Replace MOZ_BIG_ENDIAN uses with std::endian::big. r=sergesanspaille,media-playback-reviewers,profiler-reviewers,canaltinova,padenot,necko-reviewers,dom-storage-reviewers,jesup
@@ -681,23 +721,9 @@ Known aliases (applied in HTML report, NOT below):
       2026-03-13  e7b204177b59  Bug 2020608 - Part 3: Replace CountPopulation32 with std::popcount. r=sergesanspaille
       2026-03-04  59ac0515de4a  Bug 2020607 - Part 1: Replace mozilla::AllOf with std::all_of. r=sergesanspaille,media-playback-reviewers,padenot
 
-[16] Emilio Cobos Álvarez  —  12 patch(es)
+[17] Matthew Gregan  —  12 patch(es)
     ----------------------------------------------------------------------
-      2026-06-11  02ed7a6b7873  Bug 2046364 - Remove shortcut key restriction for user activation. r=edgar,media-playback-reviewers,aosmond
-      2026-05-25  b8127fedd7d4  Bug 2042008 - Fix HTMLTrackElement::LoadResource when load gets clobbered. r=dom-core,smaug
-      2026-05-02  e833a1757bf7  Bug 2033243 - Replace ownerGlobal with documentGlobal, and stop exposing ownerGlobal to JS. r=firefox-desktop-core-reviewers ,webidl,joschmidt,perftest-reviewers,sparky,smaug,mossop ,webidl,joschmidt,perftest-reviewers,sparky,smaug,mossop
-      2026-05-02  526325469022  Bug 2033243 - Replace ownerGlobal with documentGlobal, and stop exposing ownerGlobal to JS. r=firefox-desktop-core-reviewers ,webidl,joschmidt,perftest-reviewers,sparky,smaug,mossop ,webidl,joschmidt,perftest-reviewers,sparky,smaug,mossop
-      2026-05-01  367d83d299b4  Bug 2033243 - Replace ownerGlobal with documentGlobal, and stop exposing ownerGlobal to JS. r=firefox-desktop-core-reviewers ,webidl,joschmidt,perftest-reviewers,sparky,smaug,mossop
-      2026-04-30  7dea1af2e034  Bug 2033243 - Replace ownerGlobal with documentGlobal, and stop exposing ownerGlobal to JS. r=firefox-desktop-core-reviewers ,webidl,joschmidt,perftest-reviewers,sparky,smaug,mossop
-      2026-04-16  8aae0c3e7a6f  Bug 2032201 - Add explicit include.
-      2026-04-16  8622964bae2e  Bug 2032201 - Remove some HTMLMediaElement includes. r=media-playback-reviewers,aosmond
-      2026-04-15  26866407bcd2  Bug 2027416 - Prevent video controls from sending web exposed events for caption resize. r=mconley,smaug,webidl,layout-reviewers,hjones,desktop-theme-reviewers,jwatt
-      2026-03-22  5016086e1a6f  Bug 2025089 - Remove some includes from nsINode.h and Element.h. r=dom-core,dom-storage-reviewers,firefox-svg-reviewers,janv,smaug
-      2026-03-06  198847dad479  Bug 2001912 - Use jpeg encoder / decoder in Skia PDF backend. r=lsalzman
-      2026-02-17  5624defbfd80  Bug 2016280 - Use shadow DOM for editor. r=masayuki,dom-core,smaug,Jamie
-
-[17] Matthew Gregan  —  11 patch(es)
-    ----------------------------------------------------------------------
+      2026-06-17  d00bfaddba2a  Bug 2045200 - Don't query the hardware max channel count when creating offline MediaTrackGraphs. r=media-playback-reviewers,padenot
       2026-05-08  3a16c481f09e  Bug 2034274 - Pass trusted client PID to AudioIPC server. r=cubeb-reviewers,pehrsons
       2026-04-29  11606654c86b  Bug 2035059 - Don't latch Infinity in ADTS demuxer mInfo->mDuration r=alwu,media-playback-reviewers
       2026-04-29  68d577da6d4d  Bug 2035059 - Don't latch Infinity in MP3 demuxer mInfo->mDuration r=alwu,media-playback-reviewers
@@ -710,19 +736,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-03-16  e9fdc0f156fb  Bug 2023277 - Minor bug fixes/code hardening in the mp4parse/Gecko interface.  r=media-playback-reviewers,padenot
       2026-03-13  52a6d1ae2055  Bug 2020538 - Tighten up uint64_t -> int64_t conversions in mp4parse integration paths.  r=media-playback-reviewers,padenot
 
-[18] Mark Banner  —  9 patch(es)
-    ----------------------------------------------------------------------
-      2026-05-21  7c7e102a02f9  Bug 1924775 - Remove some cases of ESLint rule no-undef being disabled. r=devtools-reviewers,hsohaney,nchevobbe
-      2026-05-21  a2a2e4cb7a43  Bug 1924775 - Use a defined version of the "globals" npm module, and resolved raised issues. r=frontend-codestyle-reviewers,devtools-reviewers,home-newtab-reviewers,flozia,nchevobbe,mossop,thecount
-      2026-05-20  f572e490267d  Bug 1924775 - Remove some cases of ESLint rule no-undef being disabled. r=devtools-reviewers,hsohaney,nchevobbe
-      2026-05-20  e0f4d195f842  Bug 1924775 - Use a defined version of the "globals" npm module, and resolved raised issues. r=frontend-codestyle-reviewers,devtools-reviewers,home-newtab-reviewers,flozia,nchevobbe,mossop,thecount
-      2026-05-19  1a90fee5f3c2  Bug 1924775 - Remove some cases of ESLint rule no-undef being disabled. r=devtools-reviewers,hsohaney,nchevobbe
-      2026-05-19  9b2da35abad1  Bug 1924775 - Use a defined version of the "globals" npm module, and resolved raised issues. r=frontend-codestyle-reviewers,devtools-reviewers,home-newtab-reviewers,flozia,nchevobbe,mossop,thecount
-      2026-01-21  0faa040118b1  Bug 1967204 - remove superfluous eslint-env annotations from remaining places. r=frontend-codestyle-reviewers,geckoview-reviewers,whimboo,Gijs,nalexander
-      2026-01-20  a0fd5cb92504  Bug 1967204 - remove superfluous eslint-env annotations from remaining places. r=frontend-codestyle-reviewers,geckoview-reviewers,whimboo,Gijs,nalexander
-      2025-12-22  0895ef714d19  Bug 2004680 - Fix ESLint rule jsdoc/check-tag-names issues in dom. r=dom-core,media-playback-reviewers,smaug,alwu
-
-[19] Daniel Holbert  —  8 patch(es)
+[18] Daniel Holbert  —  8 patch(es)
     ----------------------------------------------------------------------
       2026-06-04  d0e7480f922a  Bug 2044564: Change MediaDecoderStateMachine::CreateAudioSink to return its newly-allocated result as an already_AddRefed. r=media-playback-reviewers,aosmond
       2026-06-04  2223485bf73e  Bug 2044560: Simplify MediaDecoder::ConnectMirrors() now that it's clearer that its parameter is always mDecoderStateMachine. r=media-playback-reviewers,aosmond
@@ -732,6 +746,17 @@ Known aliases (applied in HTML report, NOT below):
       2026-05-11  edd61684e616  Bug 2037700: Use MakeRefPtr and MakeAndAddRef instead of 'new' to allocate gfxDrawable instances. r=media-playback-reviewers,layout-reviewers,emilio,padenot
       2026-05-07  a88c0883b9fe  Bug 2037761: Change RegisterStrongMemoryReporter to take already_AddRefed instead of a raw pointer, and update callsites. r=dom-core,smaug
       2026-05-07  2e187ddbc803  Bug 2037761: Change RegisterStrongMemoryReporter to take already_AddRefed instead of a raw pointer, and update callsites. r=dom-core,smaug
+
+[19] Mark Banner  —  8 patch(es)
+    ----------------------------------------------------------------------
+      2026-05-21  7c7e102a02f9  Bug 1924775 - Remove some cases of ESLint rule no-undef being disabled. r=devtools-reviewers,hsohaney,nchevobbe
+      2026-05-21  a2a2e4cb7a43  Bug 1924775 - Use a defined version of the "globals" npm module, and resolved raised issues. r=frontend-codestyle-reviewers,devtools-reviewers,home-newtab-reviewers,flozia,nchevobbe,mossop,thecount
+      2026-05-20  f572e490267d  Bug 1924775 - Remove some cases of ESLint rule no-undef being disabled. r=devtools-reviewers,hsohaney,nchevobbe
+      2026-05-20  e0f4d195f842  Bug 1924775 - Use a defined version of the "globals" npm module, and resolved raised issues. r=frontend-codestyle-reviewers,devtools-reviewers,home-newtab-reviewers,flozia,nchevobbe,mossop,thecount
+      2026-05-19  1a90fee5f3c2  Bug 1924775 - Remove some cases of ESLint rule no-undef being disabled. r=devtools-reviewers,hsohaney,nchevobbe
+      2026-05-19  9b2da35abad1  Bug 1924775 - Use a defined version of the "globals" npm module, and resolved raised issues. r=frontend-codestyle-reviewers,devtools-reviewers,home-newtab-reviewers,flozia,nchevobbe,mossop,thecount
+      2026-01-21  0faa040118b1  Bug 1967204 - remove superfluous eslint-env annotations from remaining places. r=frontend-codestyle-reviewers,geckoview-reviewers,whimboo,Gijs,nalexander
+      2026-01-20  a0fd5cb92504  Bug 1967204 - remove superfluous eslint-env annotations from remaining places. r=frontend-codestyle-reviewers,geckoview-reviewers,whimboo,Gijs,nalexander
 
 [20] Nika Layzell  —  8 patch(es)
     ----------------------------------------------------------------------
@@ -770,188 +795,194 @@ Known aliases (applied in HTML report, NOT below):
       2026-03-28  34acd20a52f8  Bug 2025434: Return early in ClearKey r=media-playback-reviewers,padenot
       2026-03-27  f54d2cb0946b  Bug 2025430: Check for CDM shutdown r=media-playback-reviewers,padenot
 
-[24] Brad Werth  —  4 patch(es)
+[24] Sotaro Ikeda  —  5 patch(es)
+    ----------------------------------------------------------------------
+      2026-06-18  fdd922107f11  Bug 2046254 - Add AImageReader support on Android r=media-playback-reviewers,gfx-reviewers,alwu,jnicol
+      2026-06-18  5641ea933052  Bug 2046254 - Add AImageReader support on Android r=media-playback-reviewers,gfx-reviewers,alwu,jnicol
+      2026-06-16  f5f4081f307f  Bug 2047847 - Make RemoteMediaManagerParent::OnManagerThread() static r=media-playback-reviewers,padenot
+      2026-06-02  f9966b8594cf  Bug 2044230 - Use ContiguousEnumSerializerInclusive with ParamTraits<mozilla::MediaDataDecoder::PropertyName> r=media-playback-reviewers,tschuster,aosmond
+      2026-01-15  df5ccf1d555e  Bug 2008641 - Disable zero copy when too many video frames are used r=gfx-reviewers,media-playback-reviewers,lsalzman,alwu
+
+[25] Brad Werth  —  4 patch(es)
     ----------------------------------------------------------------------
       2026-05-20  5c3ccfe280a2  Bug 2038047: Make MacIOSurface derive alpha from pixel format, update callsites. r=media-playback-reviewers,gfx-reviewers,padenot,jrmuizel
       2026-05-19  a588759afe43  Bug 2038047: Make MacIOSurface derive alpha from pixel format, update callsites. r=media-playback-reviewers,gfx-reviewers,padenot,jrmuizel
       2026-05-06  e24ad0129c16  Bug 2034952: Remove an expensive alpha check from AppleVTDecoder. r=media-playback-reviewers,gfx-reviewers,padenot,ahale
       2026-04-16  6f2fb9d1d917  Bug 2029054 Part 2: Remove default values to MacIOSurface constructor and ::Lookup, and fixup callsites. r=media-playback-reviewers,padenot
 
-[25] Lee Salzman  —  4 patch(es)
+[26] Jens Stutte  —  4 patch(es)
+    ----------------------------------------------------------------------
+      2026-06-17  d1dc4eb37bbd  Bug 2016900 - Part 7: Observe media.getusermedia.audio.processing.agc2.forced explicitly r=gstoll
+      2026-05-21  3d4820e909f8  Bug 1983309 - Stop relying on TaskQueue::IsEmpty() from inside an AudioSinkWrapper init runnable. r=media-playback-reviewers,nika,karlt
+      2026-04-10  99ba1720681e  Bug 2027238 - Use promise-based SendRequestMemoryReport instead of callback overload. r=xpcom-reviewers,necko-reviewers,media-playback-reviewers,kershaw,padenot,nika
+      2026-01-29  7651687af508  Bug 2011090 - Use a StaticString as name parameter for SharedThreadPool creation. r=xpcom-reviewers,emilio
+
+[27] Lee Salzman  —  4 patch(es)
     ----------------------------------------------------------------------
       2026-05-30  0f156170c30f  Bug 2042256 - Adjust fuzz for Skia m149. r=gfx-reviewers,media-playback-reviewers,nical,aosmond
       2026-05-27  33c3a75ca730  Bug 2042256 - Adjust fuzz for Skia m149. r=gfx-reviewers,media-playback-reviewers,nical,aosmond
       2026-05-27  9f7788214070  Bug 2042256 - Adjust fuzz for Skia m149. r=gfx-reviewers,media-playback-reviewers,nical,aosmond
       2026-02-27  4d427b9a3f5a  Bug 2018103. r=aosmond,media-playback-reviewers
 
-[26] Timothy Nikkel  —  4 patch(es)
+[28] Timothy Nikkel  —  4 patch(es)
     ----------------------------------------------------------------------
       2026-03-26  3e431919b57b  Bug 2023140. r=gfx-reviewers,media-playback-reviewers,nical,bradwerth,padenot
       2026-03-05  7fed96876d3d  Bug 2020091. r=gfx-reviewers,media-playback-reviewers,bradwerth,padenot
       2026-03-04  629a8193cb25  Bug 2018113. r=gfx-reviewers,media-playback-reviewers,lsalzman,chunmin
       2026-02-18  48f963a1b3d1  Bug 2017523. Removed unused variable in ImageDecoder.cpp. r=aosmond
 
-[27] Alexandru Marc  —  3 patch(es)
+[29] Alexandru Marc  —  3 patch(es)
     ----------------------------------------------------------------------
       2026-02-20  abd21a31a259  Bug 2017699 - disable test_decoderDelay.html on Android
       2026-02-20  cfcd6ab66ffb  Bug 2017699 - Update test case expectations
       2026-02-20  4d9692a48c06  Bug 2016883 - Remove crashtests 2016504, 2016883 and 2016493 on Android
 
-[28] Arnaud Bienner  —  3 patch(es)
+[30] Arnaud Bienner  —  3 patch(es)
     ----------------------------------------------------------------------
       2026-01-23  1719ab118e16  Bug 2011896 - Remove "media.mediasource.webm.enabled" pref. r=karlt,media-playback-reviewers
       2026-01-22  13527d985f10  Bug 2011894 - MoofParser: remove useless copy of Box object. r=karlt,media-playback-reviewers
       2026-01-20  4ae2bd8497e7  Bug 2004835 - MoofParser: prevent integer overflows when parsing tfdt boxes with very high time values. r=karlt,media-playback-reviewers
 
-[29] Ashley Hale  —  3 patch(es)
+[31] Ashley Hale  —  3 patch(es)
     ----------------------------------------------------------------------
       2026-03-31  14c669784228  Bug 2012850 - Add TransferFunction to TextureHost and PiecewiseGamma to support HLG transfer function r=tnikkel,bradwerth,gfx-reviewers,media-playback-reviewers,alwu
       2026-03-30  2550eb5e9b5b  Bug 2012850 - Add TransferFunction to TextureHost and PiecewiseGamma to support HLG transfer function r=tnikkel,bradwerth,gfx-reviewers,media-playback-reviewers,alwu
       2026-01-07  38bbd8dd7935  Bug 1977746 - display HDR video on Windows using RGB10A2 r=bradwerth,gfx-reviewers,media-playback-reviewers,sotaro,alwu
 
-[30] Bob Owen  —  3 patch(es)
+[32] Bob Owen  —  3 patch(es)
     ----------------------------------------------------------------------
       2026-06-09  dacc55c54220  Bug 1972278 - Serialize between MFShutdown and MFTEnumEx to prevent deadlocks. r=aosmond,media-playback-reviewers
       2026-03-25  9bddec0a07bc  Bug 2016711 - On Windows don't pass parent binary to verify when same as gmp process binary. r=aosmond,media-playback-reviewers
       2026-03-25  218e118a8e8d  Bug 2023094 p1 - Trigger AppLocker checks for CDM DLLs before lowering the sandbox. r=aosmond,yjuglaret
 
-[31] Jens Stutte  —  3 patch(es)
-    ----------------------------------------------------------------------
-      2026-05-21  3d4820e909f8  Bug 1983309 - Stop relying on TaskQueue::IsEmpty() from inside an AudioSinkWrapper init runnable. r=media-playback-reviewers,nika,karlt
-      2026-04-10  99ba1720681e  Bug 2027238 - Use promise-based SendRequestMemoryReport instead of callback overload. r=xpcom-reviewers,necko-reviewers,media-playback-reviewers,kershaw,padenot,nika
-      2026-01-29  7651687af508  Bug 2011090 - Use a StaticString as name parameter for SharedThreadPool creation. r=xpcom-reviewers,emilio
-
-[32] Sandor Molnar  —  3 patch(es)
+[33] Sandor Molnar  —  3 patch(es)
     ----------------------------------------------------------------------
       2026-03-13  3284e458e6ab  Bug 2014888- Fix crashtest failures
       2026-03-04  a8950a818d5b  Bug 2020427 - Further annotate fuzyness.
       2026-03-04  1e5500400478  Bug 2020427 - Update fuzzy annotations for win asan. r=media-playback-reviewers,padenot
 
-[33] Edgar Chen  —  2 patch(es)
+[34] Alex Franchuk  —  2 patch(es)
+    ----------------------------------------------------------------------
+      2026-06-17  e57ee5b2b265  Bug 2042458 - Move TiedFields to mfbt and add to IPC serializers r=ipc-reviewers,sergesanspaille,media-playback-reviewers,ahale,chunmin,nika
+      2026-05-06  a998028167a0  Bug 2035235 - Properly initialize media in TestMediaDataDecoder test r=padenot
+
+[35] Edgar Chen  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-06-10  0ec94e834992  Bug 2043435 - Make touch input generate user activation if it is not canceled; r=smaug,media-playback-reviewers,alwu
       2026-06-04  018d3a9f54f5  Bug 2043435 - Make touch input generate user activation if it is not canceled; r=smaug,media-playback-reviewers,alwu
 
-[34] Florian Quèze  —  2 patch(es)
+[36] Florian Quèze  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-06-09  89d722f8face  Bug 2046034 - Remove incorrect HasVideo() assertion when reporting the video resize profiler marker, r=media-playback-reviewers,aosmond.
       2026-01-22  88ff5189a607  Bug 2010890 - Break the include cycle between BindingUtils.h and ChromeUtilsBinding.h, r=dom-worker-reviewers,asuth,dom-core,edgar.
 
-[35] Jari Jalkanen  —  2 patch(es)
+[37] Jari Jalkanen  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-03-16  d34871b17e3d  Bug 2011597 - Improve UnboundedMPSCQueue test coverage. r=padenot
       2026-03-16  6e9c5b089446  Bug 2011597 - Allow move-only types in UnboundedMPSCQueue. r=padenot
 
-[36] Kagami Sascha Rosylight  —  2 patch(es)
+[38] Kagami Sascha Rosylight  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-05-12  7984538e2102  Bug 2031661 - Part 9: Add missing cycle collection entries in dom/media r=media-playback-reviewers,padenot
       2026-05-12  1fa783fd2215  Bug 2031661 - Part 9: Add missing cycle collection entries in dom/audio r=media-playback-reviewers,padenot
 
-[37] Ryan Curran  —  2 patch(es)
+[39] Ryan Curran  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-05-21  d88b8f2cff19  Bug 1984994 - Re-enable dom/media/tests/crashtests/1490700.html on macOS 15.30 aarch64 r=pehrsons,webrtc-reviewers
       2026-04-29  143b508425d4  Bug 2034604 - run macOS mochitests on AArch64 r=aryx,devtools-reviewers,jdescottes,media-playback-reviewers,padenot
 
-[38] Ryan McCartney  —  2 patch(es)
+[40] Ryan McCartney  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-06-09  b876ad8e1b6e  Bug 2039853 - Stop checking for a non-zero numSPS when comparing extra data. r=chunmin
       2026-06-03  964a57f25358  Bug 2039853 - Stop checking for a non-zero numSPS when comparing extra data. r=chunmin
 
-[39] Sotaro Ikeda  —  2 patch(es)
+[41] Sylvestre Ledru  —  2 patch(es)
     ----------------------------------------------------------------------
-      2026-06-02  f9966b8594cf  Bug 2044230 - Use ContiguousEnumSerializerInclusive with ParamTraits<mozilla::MediaDataDecoder::PropertyName> r=media-playback-reviewers,tschuster,aosmond
-      2026-01-15  df5ccf1d555e  Bug 2008641 - Disable zero copy when too many video frames are used r=gfx-reviewers,media-playback-reviewers,lsalzman,alwu
+      2026-06-20  6c13767fb58b  Bug 2038819 - Convert dom/ RST docs to Markdown r=dom-core-reviewers,media-playback-reviewers,dom-worker-reviewers,smaug,azebrowski,edenchuang
+      2026-05-04  4caddf6d2318  Bug 2023411 - Lowercase MinGW Windows header includes flagged by mozcheck r=tjr,media-playback-reviewers,padenot
 
-[40] Tom Ritter  —  2 patch(es)
+[42] Tom Ritter  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-05-05  f048f6f24477  Bug 2036977: Add a test r=padenot
       2026-05-05  c88e68a501a4  Bug 2036977 - Stop using xsimd::fma in AudioBufferAddWithScale to collapse audio fingerprint r=padenot
 
-[41] Updatebot  —  2 patch(es)
+[43] Updatebot  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-05-01  6cc45d56d750  Bug 2036225 - Apply mozilla patches for chromium-cdm r=media-playback-reviewers,alwu
       2026-05-01  1f5e6d30ba5d  Bug 2036225 - Update chromium-cdm to 8f62f3ba6f06483f3908f9cce4f8d931800c9d7c r=media-playback-reviewers,alwu
 
-[42] Valentin Gosu  —  2 patch(es)
+[44] Valentin Gosu  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-05-30  524d0b5cd55c  Bug 2036929 - Hold strong ref while calling nsIStreamListener methods r=necko-reviewers,geckoview-reviewers,extension-reviewers,media-playback-reviewers,firefox-style-system-reviewers,emilio,padenot,robwu,nalexander,kershaw
       2026-04-28  ae6a9de29bdf  Bug 1971997 - HTTP/2 and HTTP/3 should not reparse the headers. r=necko-reviewers,geckoview-reviewers,extension-reviewers,devtools-reviewers,jesup,robwu,nalexander,bomsy
 
-[43] Aethar  —  1 patch(es)
+[45] Aethar  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-03-20  9d0fbe61623b  Bug 1674654 - Add MPRIS volume control support. r=media-playback-reviewers,emilio,win-reviewers,gstoll,alwu
 
-[44] Alex Franchuk  —  1 patch(es)
-    ----------------------------------------------------------------------
-      2026-05-06  a998028167a0  Bug 2035235 - Properly initialize media in TestMediaDataDecoder test r=padenot
-
-[45] Andreea Silaghi  —  1 patch(es)
+[46] Andreea Silaghi  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-03-04  5352fd8cf086  Bug 2011946 - fix linux build bustages
 
-[46] Andrew McCreight  —  1 patch(es)
+[47] Andrew McCreight  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-03-23  a7ca961567a4  Bug 2024618 - Make MediaData::As() use a release assert. r=media-playback-reviewers,kinetik
 
-[47] Anutrix  —  1 patch(es)
+[48] Anutrix  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-02-19  2e14d7d750d6  Bug 2016987 - Replace Python's json with 'mozfile.json' throughout `dom` directory. r=media-playback-reviewers,padenot,emilio
 
-[48] Ben Hearsum  —  1 patch(es)
+[49] Ben Hearsum  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-04-27  2417eab27adb  Bug 2035220: switch in tree balrog stage server references to mozcloud stage r=releng-reviewers,taskgraph-reviewers,Eijebong
 
-[49] Damien Carver  —  1 patch(es)
+[50] Damien Carver  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-02-06  d4d96c19390b  Bug 1979356 - Remove the "searchable" flag from marker schema fields r=necko-reviewers,profiler-reviewers,toolkit-telemetry-reviewers,canaltinova,jesup
 
-[50] Emily McDonough  —  1 patch(es)
+[51] Emily McDonough  —  1 patch(es)
     ----------------------------------------------------------------------
       2025-12-29  9183dbde2d07  Bug 1650176 - During static clone, copy the lastest video frame when cloning HTMLMediaElement r=jwatt,pehrsons
 
-[51] Frederik Braun  —  1 patch(es)
+[52] Frederik Braun  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-01-27  e79cb9c68609  Bug 2012331 - ensure consistent MediaKeys lifetime r=alwu
 
-[52] Gabriele Svelto  —  1 patch(es)
+[53] Gabriele Svelto  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-02-27  eee3e29394ea  Bug 2002158 - Avoid throwing exceptions when a crash dump id is missing during tests r=media-playback-reviewers,ai-ondevice-reviewers,alwu,gregtatum,ahal
 
-[53] Jamie Nicol  —  1 patch(es)
+[54] Jamie Nicol  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-03-18  6bc9c4160ff3  Bug 2022874. r=gfx-reviewers,media-playback-reviewers,padenot,lsalzman
 
-[54] Leo Tenenbaum  —  1 patch(es)
+[55] Leo Tenenbaum  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-05-22  925a8c01e05a  Bug 1994894 - Implement `transfer` for EncodedAudioChunkInit. r=aosmond
 
-[55] Makoto Kato  —  1 patch(es)
+[56] Makoto Kato  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-06-09  9b01d35c9ad0  Bug 2045597 - Disble HLS player with isolated process. r=jolin,geckoview-reviewers,ohall
 
-[56] Michael Lynch  —  1 patch(es)
+[57] Michael Lynch  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-03-19  cf353fe6d3d7  Bug 2023046 - Reject negative time denom in ogg skeleton index r=media-playback-reviewers,padenot
 
-[57] Mubashshir  —  1 patch(es)
+[58] Mubashshir  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-05-12  1361ccb99a93  Bug 1803078 - Add Pref to expose media metadata in private browsing r=alwu
 
-[58] Nazım Can Altınova  —  1 patch(es)
+[59] Nazım Can Altınova  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-04-21  fdbfe2ece229  Bug 2032439 - Propagate profile additional info when collecting shutdown profiles r=mstange,profiler-reviewers
 
-[59] Nicolas Silva  —  1 patch(es)
+[60] Nicolas Silva  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-05-28  a80dfadec5d3  Bug 2038650 - Use quad shaders for images when TEXTURE_RECT isn't required. r=gw,media-playback-reviewers,padenot
 
-[60] Slowlife01  —  1 patch(es)
+[61] Slowlife01  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-01-23  d3f3f72b83c1  Bug 2011420 - Notify MediaSession when MediaMetadata properties are mutated r=media-playback-reviewers,alwu
-
-[61] Sylvestre Ledru  —  1 patch(es)
-    ----------------------------------------------------------------------
-      2026-05-04  4caddf6d2318  Bug 2023411 - Lowercase MinGW Windows header includes flagged by mozcheck r=tjr,media-playback-reviewers,padenot
 
 [62] Tim Huang  —  1 patch(es)
     ----------------------------------------------------------------------
