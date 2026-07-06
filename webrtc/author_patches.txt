@@ -1,8 +1,8 @@
 ==============================================================================
 WEBRTC-REVIEWERS AUTHOR-PATCH LISTING (raw author %an, no aliasing)
-Source: github.com/mozilla-firefox/firefox   Paths: dom/media/webrtc, dom/media/systemservices   Since: 2025-12-31T13:17:36Z
+Source: github.com/mozilla-firefox/firefox   Paths: dom/media/webrtc, dom/media/systemservices   Since: 2026-01-07T12:55:49Z
 Excluded paths: (none)
-Authors: 47    Patches: 394    (Lando-format / Lando-author / merge / Revert commits already excluded)
+Authors: 48    Patches: 391    (Lando-format / Lando-author / merge / Revert commits already excluded)
 ==============================================================================
 
 Known aliases (applied in HTML report, NOT below):
@@ -11,7 +11,7 @@ Known aliases (applied in HTML report, NOT below):
 
 ==============================================================================
 
-[ 1] Michael Froman  —  70 patch(es)
+[ 1] Michael Froman  —  69 patch(es)
     ----------------------------------------------------------------------
       2026-06-22  9dfa15d50b47  Bug 2046649 - read stun msg id safely from possbily misaligned buffer. r=dbaker
       2026-06-04  c727979bcf8d  Bug 2044828 - remove unused macros from r_macros.h r=bwc
@@ -79,13 +79,14 @@ Known aliases (applied in HTML report, NOT below):
       2026-01-06  bfcb3e2ea65e  Bug 2008052 - use new python fast-forward script in loop-ff.sh r=dbaker
       2026-01-06  70abcaef434e  Bug 2008052 - new fast_forward_libwebrtc.py to replace fast-forward-libwebrtc.sh r=dbaker
       2026-01-06  1424a9cb4222  Bug 2007443 - add git support to elm_rebase.sh r=dbaker
-      2026-01-05  f257ace949d9  Bug 2007457 - fix our usage of rid after libwebrtc's update. r=bwc
       2025-12-30  8709f4145e2a  Bug 2006933 - updated default_config_env for v143
       2025-12-29  fcb6940510c6  Bug 2006933 (MOZ) - upstream added a member to Call::Stats
       2025-12-23  4789efb50dbb  Bug 2006933 (MOZ) - add video/adaptation/pixel_limit_resource.cc to non-unified build
 
-[ 2] Andreas Pehrson  —  57 patch(es)
+[ 2] Andreas Pehrson  —  59 patch(es)
     ----------------------------------------------------------------------
+      2026-07-01  fbe7bafe6e7d  Bug 2049310 - Do fractional framerate decimation for cameras to reach requested rate on average. r=jib
+      2026-06-30  5c0ebc3bf96e  Bug 2049310 - Do fractional framerate decimation for cameras to reach requested rate on average. r=jib
       2026-06-17  ed1c85f5d368  Bug 2027384: Add gtest. r=dbaker
       2026-05-21  de25c014c6cf  Bug 1929420 - Re-enable macOS mochitests. r=webrtc-reviewers,bwc
       2026-05-21  6ef570374c06  Bug 1929425 - Re-enable macOS mochitests. r=webrtc-reviewers,bwc
@@ -194,7 +195,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-01-20  86047ac8bdee  Bug 2006096: Ensure that we announce open when we've received a data message before the open ack. r=ng
       2026-01-14  86c6fee7cd54  Bug 2005074: Dispatch the release of mWorkerRef, after mSelfRef is released. r=ng,asuth
 
-[ 4] serge-sans-paille  —  37 patch(es)
+[ 4] serge-sans-paille  —  32 patch(es)
     ----------------------------------------------------------------------
       2026-06-18  5bd2bdf96845  Bug 2047510 - Activate clang-tidy's modernize-type-traits check r=sylvestre,media-playback-reviewers,webrtc-reviewers,firefox-style-system-reviewers,layout-reviewers,janerik,aosmond,TYLin,bwc,emilio
       2026-06-17  5ca354175b07  Bug 2041298 - Comply with clang-tidy's modernize-use-nullptr check for dom/ r=media-playback-reviewers,webrtc-reviewers,pehrsons,aosmond,firefox-animation-reviewers,mccr8,hiro
@@ -228,11 +229,6 @@ Known aliases (applied in HTML report, NOT below):
       2026-01-14  2130b842188b  Bug 2009327 - Add missing header guards in dom/ headers r=media-playback-reviewers,webrtc-reviewers,padenot,bwc
       2026-01-13  18da74b20ff8  Bug 2008695 - Remove unused <string.h> inclusion and make sure we don't regress on those r=ahal,necko-reviewers,media-playback-reviewers,webrtc-reviewers,win-reviewers,toolkit-telemetry-reviewers,firefox-svg-reviewers,padenot,gstoll,kershaw,ng
       2026-01-07  93496ffd0ecc  Bug 2008694 - Remove unused <stdint.h> inclusion and make sure we don't regress on those r=webrtc-reviewers,layout-reviewers,manuel,emilio,ng
-      2026-01-07  c3bc8e9113b7  Bug 2008693 - Remove unused <stddef.h> inclusion and make sure we don't regress on those r=geckoview-reviewers,media-playback-reviewers,webrtc-reviewers,padenot,ng,m_kato
-      2026-01-07  65808e644bb2  Bug 2008691 - Remove unused <stdarg.h> inclusion and make sure we don't regress on those r=necko-reviewers,media-playback-reviewers,webrtc-reviewers,padenot,kershaw,ng
-      2026-01-07  9eb9358a1ef7  Bug 2007348 - Remove remaining unused <stdlib.h> and <stdio.h> inclusion r=webrtc-reviewers,win-reviewers,toolkit-telemetry-reviewers,gstoll,ng
-      2026-01-05  0515e71aa8ac  Bug 2007349 - Remove unused references to stdio.h r=ahal,necko-reviewers,media-playback-reviewers,win-reviewers,sunil,gstoll,aosmond
-      2026-01-05  ca9d6265fef0  Bug 2007350 - Remove unused references to stdlib.h r=ahal,necko-reviewers,sunil
 
 [ 5] Daniel Holbert  —  29 patch(es)
     ----------------------------------------------------------------------
@@ -407,35 +403,34 @@ Known aliases (applied in HTML report, NOT below):
       2026-02-04  2844ea52e1d1  Bug 2013964 - Avoid including nsHttpResponseHead.h in other headers r=necko-reviewers,webrtc-reviewers,mjf,jesup
       2026-02-04  66363a0c9744  Bug 2013964 - Avoid including nsHttpResponseHead.h in other headers r=necko-reviewers,webrtc-reviewers,mjf,jesup
 
-[18] Alex Hochheiden  —  3 patch(es)
-    ----------------------------------------------------------------------
-      2026-01-08  02333707ab4f  Bug 2006716 - Reformat entire repo with `ruff-format` (`black` replacement) r=ahal,sylvestre,linter-reviewers,perftest-reviewers,mozperftest-reviewers,geckoview-reviewers,extension-reviewers,media-playback-reviewers,webrtc-reviewers,releng-reviewers,sessionstore-reviewers,win-reviewers,dom-storage-reviewers,translations-reviewers,omc-reviewers,android-reviewers,home-newtab-reviewers,toolkit-telemetry-reviewers,firefox-style-system-reviewers,layout-reviewers,dom-worker-reviewers,geckodriver-reviewers,Sasha,emz,fchasen,sthompson,dholbert,sparky,padenot,emilio,Gijs,mconley,tcampbell,mjf,emcminn,willdurand,gstoll,jgraham,asuth
-      2026-01-07  b2b8db285933  Bug 2006716 - Reformat entire repo with `ruff-format` (`black` replacement) r=ahal,sylvestre,linter-reviewers,perftest-reviewers,mozperftest-reviewers,geckoview-reviewers,extension-reviewers,media-playback-reviewers,webrtc-reviewers,releng-reviewers,sessionstore-reviewers,win-reviewers,dom-storage-reviewers,translations-reviewers,omc-reviewers,android-reviewers,home-newtab-reviewers,toolkit-telemetry-reviewers,firefox-style-system-reviewers,layout-reviewers,dom-worker-reviewers,geckodriver-reviewers,Sasha,emz,fchasen,sthompson,dholbert,sparky,padenot,emilio,Gijs,mconley,tcampbell,mjf,emcminn,willdurand,gstoll,jgraham,asuth
-      2026-01-07  3ed06912eb4a  Bug 2006716 - Reformat entire repo with `ruff-format` (`black` replacement) r=ahal,sylvestre,linter-reviewers,perftest-reviewers,mozperftest-reviewers,geckoview-reviewers,extension-reviewers,media-playback-reviewers,webrtc-reviewers,releng-reviewers,sessionstore-reviewers,win-reviewers,dom-storage-reviewers,translations-reviewers,omc-reviewers,android-reviewers,home-newtab-reviewers,toolkit-telemetry-reviewers,firefox-style-system-reviewers,layout-reviewers,dom-worker-reviewers,geckodriver-reviewers,Sasha,emz,fchasen,sthompson,dholbert,sparky,padenot,emilio,Gijs,mconley,tcampbell,mjf,emcminn,willdurand,gstoll,jgraham,asuth
-
-[19] Jens Stutte  —  3 patch(es)
+[18] Jens Stutte  —  3 patch(es)
     ----------------------------------------------------------------------
       2026-05-12  6fb81bc15d88  Bug 2038551 - Return already_AddRefed from CubebDeviceEnumerator::GetInstance. r=webrtc-reviewers,pehrsons
       2026-01-26  69091519a240  Bug 2011161 - Enforce TaskQueue names to be literal with StaticString. r=xpcom-reviewers,dom-storage-reviewers,nika,asuth
       2026-01-26  1030b77bd4fb  Bug 2011161 - Enforce TaskQueue names to be literal with StaticString. r=xpcom-reviewers,dom-storage-reviewers,nika,asuth
 
-[20] Sebastian Hengst  —  3 patch(es)
+[19] Sebastian Hengst  —  3 patch(es)
     ----------------------------------------------------------------------
       2026-04-15  44fef2c7e349  Bug 2030403 - disable another batch of webrtc tests on Android AArch64 debug for permanent failures.
       2026-04-13  3d474e20a703  Bug 2030403 - disable several webrtc tests on Android and Linux for permanent failures
       2026-04-02  89bc71a132a6  Bug 2027049 - disable tests which fail permanently for Windows 11 25H2. r=pehrsons,tabbrowser-reviewers,nsharpley
 
-[21] Tom Schuster  —  3 patch(es)
+[20] Tom Schuster  —  3 patch(es)
     ----------------------------------------------------------------------
       2026-04-28  391bb5f4369e  Bug 2035452 - Use CaptureEngine type for CamerasParent::GetDeviceInfo and EnsureInitialized. r=webrtc-reviewers,mjf
       2026-04-21  9b1de3d3d560  Bug 2027690 - Cleanup MediaTransport IPC. r=bwc
       2026-03-16  601fafa65ba6  Bug 2021178 - Return Maybe<int32_t> from Get*Stride. r=tnikkel,media-playback-reviewers,webrtc-reviewers,webgpu-reviewers,bradwerth,ErichDonGubler,pehrsons,padenot
 
-[22] alwu  —  3 patch(es)
+[21] alwu  —  3 patch(es)
     ----------------------------------------------------------------------
       2026-01-17  39ef7b40169d  Bug 2007596 - part7 : use captureStream for existing tests when the method exists. r=media-playback-reviewers,padenot
       2026-01-16  977312a63d8d  Bug 2007596 - part7 : use captureStream for existing tests when the method exists. r=media-playback-reviewers,padenot
       2026-01-16  1808fa1a9edd  Bug 2007596 - part7 : use captureStream for existing tests when the method exists. r=media-playback-reviewers,padenot
+
+[22] Alex Hochheiden  —  2 patch(es)
+    ----------------------------------------------------------------------
+      2026-01-08  02333707ab4f  Bug 2006716 - Reformat entire repo with `ruff-format` (`black` replacement) r=ahal,sylvestre,linter-reviewers,perftest-reviewers,mozperftest-reviewers,geckoview-reviewers,extension-reviewers,media-playback-reviewers,webrtc-reviewers,releng-reviewers,sessionstore-reviewers,win-reviewers,dom-storage-reviewers,translations-reviewers,omc-reviewers,android-reviewers,home-newtab-reviewers,toolkit-telemetry-reviewers,firefox-style-system-reviewers,layout-reviewers,dom-worker-reviewers,geckodriver-reviewers,Sasha,emz,fchasen,sthompson,dholbert,sparky,padenot,emilio,Gijs,mconley,tcampbell,mjf,emcminn,willdurand,gstoll,jgraham,asuth
+      2026-01-07  b2b8db285933  Bug 2006716 - Reformat entire repo with `ruff-format` (`black` replacement) r=ahal,sylvestre,linter-reviewers,perftest-reviewers,mozperftest-reviewers,geckoview-reviewers,extension-reviewers,media-playback-reviewers,webrtc-reviewers,releng-reviewers,sessionstore-reviewers,win-reviewers,dom-storage-reviewers,translations-reviewers,omc-reviewers,android-reviewers,home-newtab-reviewers,toolkit-telemetry-reviewers,firefox-style-system-reviewers,layout-reviewers,dom-worker-reviewers,geckodriver-reviewers,Sasha,emz,fchasen,sthompson,dholbert,sparky,padenot,emilio,Gijs,mconley,tcampbell,mjf,emcminn,willdurand,gstoll,jgraham,asuth
 
 [23] Alexandra Borovova  —  2 patch(es)
     ----------------------------------------------------------------------
@@ -467,81 +462,86 @@ Known aliases (applied in HTML report, NOT below):
       2026-01-21  ab52c75e6a25  Bug 1967204 - remove superfluous eslint-env annotations from dom/ r=dom-core,media-playback-reviewers,smaug,aosmond
       2026-01-20  f342d41a38a7  Bug 1967204 - remove superfluous eslint-env annotations from dom/ r=dom-core,media-playback-reviewers,smaug,aosmond
 
-[29] Paul Adenot  —  2 patch(es)
+[29] Nika Layzell  —  2 patch(es)
+    ----------------------------------------------------------------------
+      2026-06-29  12dece120f68  Bug 2048423 - Part 2: Simplify RunnableMethod and InvokeAsync method handling, r=xpcom-reviewers,necko-reviewers,extension-reviewers,media-playback-reviewers,webrtc-reviewers,win-reviewers,layout-reviewers,dom-worker-reviewers,alwu,asuth,pehrsons,valentin,emilio,robwu,sandbox-reviewers,gstoll,bobowen
+      2026-03-24  5f0f9dd22a69  Bug 2020817 - Part 4: Annotate & clean up nsACString callers of BeginReading/Data, r=xpcom-reviewers,media-playback-reviewers,webrtc-reviewers,cookie-reviewers,profiler-reviewers,win-reviewers,dom-storage-reviewers,permissions-reviewers,toolkit-telemetry-reviewers-rotation,layout-reviewers,dom-worker-reviewers,gfx-reviewers,webgpu-reviewers,necko-reviewers,dom-core,smaug,handyman,emilio,pehrsons,kershaw,timhuang,edenchuang,padenot,bradwerth
+
+[30] Paul Adenot  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-03-20  77c62c860ba7  Bug 2023897 - Remove the ability to disable AV1 support. r=media-playback-reviewers,necko-reviewers,webrtc-reviewers,valentin,alwu,pehrsons,layout-reviewers,tnikkel
       2026-02-11  bc4d10547868  Bug 2009260 - Prevent MediaManager::Dispatch crash during shutdown. r=jib
 
-[30] Ryan VanderMeulen  —  2 patch(es)
+[31] Ryan VanderMeulen  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-05-08  a4fd02222dd2  Bug 2038068 - Expose abseil-cpp as a Library so non-xul Programs can link it. r=firefox-build-system-reviewers,glandium,sergesanspaille
       2026-04-29  677c78906bc1  Bug 2026033 - Drive-by: convert test_setSinkId-stream-source.html to runTest. r=webrtc-reviewers,pehrsons
 
-[31] na-g  —  2 patch(es)
+[32] na-g  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-03-26  eb2fb73132f6  Bug 2026098 - keep msection data fresh;r=bwc
       2026-03-24  8cea8ff530eb  Bug 2024596 - ensure only video capture is fully initialized;r=dbaker
 
-[32] Andrew Osmond  —  1 patch(es)
+[33] Andrew Osmond  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-04-03  30623b62d037  Bug 2025497. r=media-playback-reviewers,padenot
 
-[33] Christian Holler  —  1 patch(es)
+[34] Christian Holler  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-04-22  30206d36267f  Bug 2027154 - Remove FrameRelay callbacks. r=pehrsons,jesup
 
-[34] Chun-Min Chang  —  1 patch(es)
+[35] Chun-Min Chang  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-05-29  b190420418d1  Bug 2040529 - Map webrtc::H264Level to H264_LEVEL by enumerator name r=webrtc-reviewers,dbaker
 
-[35] Jonathan Moss  —  1 patch(es)
+[36] Jonathan Moss  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-02-27  1e4695f22896  Bug 2019745 - Add Win11 25H2 (11.26200) skip annotations to TOML manifests r=webcompat-reviewers,media-playback-reviewers,credential-management-reviewers,search-reviewers,devtools-reviewers,places-reviewers,urlbar-reviewers,profiles-reviewers,dom-worker-reviewers,twisniewski,hneiva,aryx,scunnane,asuth,dimi,mossop,padenot
 
-[36] Keith Cirkel  —  1 patch(es)
+[37] Keith Cirkel  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-06-09  f72f3f6b870c  Bug 2045043 - Part 2 - Fixup final classes using _FINAL cycle collecting isupports macro in dom/media r=media-playback-reviewers,webrtc-reviewers,alwu,pehrsons
 
-[37] Kershaw Chang  —  1 patch(es)
+[38] Kershaw Chang  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-04-30  6104f2138b73  Bug 1978895 - Ensure CONNECT-only work with MASQUE proxy, r=necko-reviewers,webrtc-reviewers,valentin,bwc
 
-[38] Landry Breuil  —  1 patch(es)
+[39] Landry Breuil  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-03-11  504db5fb75d4  Bug 2021362: fix build on BSD after bug 2013730 r=mjf
 
-[39] Manuel Bucher  —  1 patch(es)
+[40] Manuel Bucher  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-06-01  385ca3a838f0  Bug 2035872 - Move originAttributes to socket base class nsASocketHandler r=necko-reviewers,webrtc-reviewers,bwc,kershaw
 
-[40] Masayuki Nakano  —  1 patch(es)
+[41] Masayuki Nakano  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-06-09  6388e5884115  Bug 2044523 - Make `nsPIDOMWindow.h` stop including `nsPIDOMWindowInlines.h` r=dom-core-reviewers,geckoview-reviewers,media-playback-reviewers,webrtc-reviewers,win-reviewers,layout-reviewers,manuel,aosmond,smaug,bwc,gstoll,dholbert,farre,m_kato
 
-[41] Mike Hommey  —  1 patch(es)
+[42] Mike Hommey  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-03-26  52098a85b6e3  Bug 2026021 - Avoid races in test_nr_socket_ice_unittest. r=webrtc-reviewers,bwc
 
-[42] Nika Layzell  —  1 patch(es)
+[43] Nicolas Grunbaum  —  1 patch(es)
     ----------------------------------------------------------------------
-      2026-03-24  5f0f9dd22a69  Bug 2020817 - Part 4: Annotate & clean up nsACString callers of BeginReading/Data, r=xpcom-reviewers,media-playback-reviewers,webrtc-reviewers,cookie-reviewers,profiler-reviewers,win-reviewers,dom-storage-reviewers,permissions-reviewers,toolkit-telemetry-reviewers-rotation,layout-reviewers,dom-worker-reviewers,gfx-reviewers,webgpu-reviewers,necko-reviewers,dom-core,smaug,handyman,emilio,pehrsons,kershaw,timhuang,edenchuang,padenot,bradwerth
+      2026-07-01  bac4e9ee6b48  Bug 2051003 - reject PT range 64-95 for RTCP MUX;r=dbaker
 
-[43] Randell Jesup  —  1 patch(es)
+[44] Randell Jesup  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-04-07  4a84bc322b7f  Bug 2025489: avoid overflows r=pehrsons,bwc,jib
 
-[44] Ryan Curran  —  1 patch(es)
+[45] Ryan Curran  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-05-29  d51f90c6573d  Bug 2037084 - Enable crashtest (opt) on macosx1500-aarch64-vms r=media-playback-reviewers,webrtc-reviewers,bwc,padenot
 
-[45] Sandor Molnar  —  1 patch(es)
+[46] Sandor Molnar  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-04-14  586be5758bd3  Bug 2030403 - Update disable to include test_peerConnection_simulcastAnswer_oldSetParameters.html
 
-[46] Vinit Jangir  —  1 patch(es)
+[47] Vinit Jangir  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-05-08  61c84c2e3eb2  Bug 790194 - Changed all instances in dom/media/webrtc to std::from_chars r=bwc
 
-[47] WSchmalstieg  —  1 patch(es)
+[48] WSchmalstieg  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-05-15  9f0213c204ae  Bug 2036515 - Fix comment spelling errors;r=ng
