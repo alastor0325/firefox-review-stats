@@ -1,8 +1,8 @@
 ==============================================================================
 WEBRTC-REVIEWERS AUTHOR-PATCH LISTING (raw author %an, no aliasing)
-Source: github.com/mozilla-firefox/firefox   Paths: dom/media/webrtc, dom/media/systemservices   Since: 2026-02-04T12:29:04Z
+Source: github.com/mozilla-firefox/firefox   Paths: dom/media/webrtc, dom/media/systemservices   Since: 2026-02-04T22:18:55Z
 Excluded paths: (none)
-Authors: 46    Patches: 399    (Lando-format / Lando-author / merge / Revert commits already excluded)
+Authors: 46    Patches: 404    (Lando-format / Lando-author / merge / Revert commits already excluded)
 ==============================================================================
 
 Known aliases (applied in HTML report, NOT below):
@@ -145,8 +145,14 @@ Known aliases (applied in HTML report, NOT below):
       2026-02-13  5ee390b9fb66  Bug 2009411 - Do impossible-constraint check for all video source types. r=jib
       2026-02-13  8809696f32d6  Bug 2009411 - Do impossible-constraint check for all video source types. r=jib
 
-[ 3] Michael Froman  —  49 patch(es)
+[ 3] Michael Froman  —  55 patch(es)
     ----------------------------------------------------------------------
+      2026-08-03  e42e498367b5  Bug 2045368 - Enforce the webrtc outgoing port restriction in the parent process for ICE-TCP. r=bwc
+      2026-08-03  7018d2b57f71  Bug 2045368 - Enforce the webrtc outgoing port restriction in the parent process for content-process UDP. r=bwc
+      2026-08-03  54c979b1e91d  Bug 2045368 - Apply outgoing port restrictions to remote ICE candidate destinations in NrSocket. r=bwc
+      2026-08-03  7c118142911e  Bug 2045368 - Expose the webrtc port allowlist as a shared IsWebrtcPortAllowed helper. r=bwc
+      2026-08-03  94af811ff8f7  Bug 2045368 - add checkRemoteCandidatePorts to test_peerConnection_portRestrictions.html r=bwc
+      2026-08-03  4385852fd3e1  Bug 2045368 - fix unbalanced AddRef/Release in SocketProcessParent. r=bwc,necko-reviewers,jesup
       2026-07-28  1473f2aba29b  Bug 2045368 - Enforce the webrtc outgoing port restriction in the parent process for ICE-TCP. r=bwc
       2026-07-28  c8529ad48e0a  Bug 2045368 - Enforce the webrtc outgoing port restriction in the parent process for content-process UDP. r=bwc
       2026-07-28  1684bd5486af  Bug 2045368 - Apply outgoing port restrictions to remote ICE candidate destinations in NrSocket. r=bwc
@@ -439,41 +445,40 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-21  9b1de3d3d560  Bug 2027690 - Cleanup MediaTransport IPC. r=bwc
       2026-03-16  601fafa65ba6  Bug 2021178 - Return Maybe<int32_t> from Get*Stride. r=tnikkel,media-playback-reviewers,webrtc-reviewers,webgpu-reviewers,bradwerth,ErichDonGubler,pehrsons,padenot
 
-[22] Valentin Gosu  —  3 patch(es)
-    ----------------------------------------------------------------------
-      2026-02-16  ee334bd83462  Bug 2009372 - Mark TRR connections and sockets r=necko-reviewers,kershaw,webrtc-reviewers,mjf
-      2026-02-12  0fd8e2d182e1  Bug 2009372 - Mark TRR connections and sockets r=necko-reviewers,kershaw,webrtc-reviewers,mjf
-      2026-02-04  2844ea52e1d1  Bug 2013964 - Avoid including nsHttpResponseHead.h in other headers r=necko-reviewers,webrtc-reviewers,mjf,jesup
-
-[23] Alexandra Borovova  —  2 patch(es)
+[22] Alexandra Borovova  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-06-23  eef67eea00ca  Bug 2041678 - Invalidate device cache when recording a browser window on desktop in the privileged context. r=webrtc-reviewers,pehrsons,jib
       2026-06-23  014a7422887a  Bug 2041678 - Allow capturing a browser in a priviliged context beyond Nighly. r=webrtc-reviewers,pehrsons
 
-[24] Damien Carver  —  2 patch(es)
+[23] Damien Carver  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-03-13  9f2937606509  Bug 1635350 - Remove MOZ_GECKO_PROFILER ifdef. r=necko-reviewers,whimboo,geckoview-reviewers,webrtc-reviewers,devtools-reviewers,profiler-reviewers,dom-storage-reviewers,translations-reviewers,canaltinova,TravisLong,valentin,m_kato,jesup,bwc,nchevobbe,jari
       2026-03-11  9c6ccb9aaeac  Bug 1635350 - Remove MOZ_GECKO_PROFILER ifdef. r=necko-reviewers,whimboo,geckoview-reviewers,webrtc-reviewers,devtools-reviewers,profiler-reviewers,dom-storage-reviewers,translations-reviewers,canaltinova,TravisLong,valentin,m_kato,jesup,bwc,nchevobbe,jari
 
-[25] Henrik Skupin  —  2 patch(es)
+[24] Henrik Skupin  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-05-18  0ba394a1ccb2  Bug 2033393 - Vendor upgraded http, hyper, warp crates and their dependencies. r=supply-chain-reviewers,webrtc-reviewers,geckodriver-reviewers,jdescottes,jgraham,bwc,valentin,afranchuk,gsvelto,gw,padenot
       2026-05-13  f9052e80e2c8  Bug 2033393 - Vendor upgraded http, hyper, warp crates and their dependencies. r=supply-chain-reviewers,webrtc-reviewers,geckodriver-reviewers,jdescottes,jgraham,bwc,valentin,afranchuk,gsvelto,gw,padenot
 
-[26] Jan-Ivar Bruaroey  —  2 patch(es)
+[25] Jan-Ivar Bruaroey  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-04-23  6387f69f8e06  Bug 2029899 - Use default string initialization r=webrtc-reviewers,bwc
       2026-03-25  ae8f1cc594fc  Bug 2025494 - Remove MOZ_UNANNOTATED. r=webrtc-reviewers,pehrsons
 
-[27] Nika Layzell  —  2 patch(es)
+[26] Nika Layzell  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-06-29  12dece120f68  Bug 2048423 - Part 2: Simplify RunnableMethod and InvokeAsync method handling, r=xpcom-reviewers,necko-reviewers,extension-reviewers,media-playback-reviewers,webrtc-reviewers,win-reviewers,layout-reviewers,dom-worker-reviewers,alwu,asuth,pehrsons,valentin,emilio,robwu,sandbox-reviewers,gstoll,bobowen
       2026-03-24  5f0f9dd22a69  Bug 2020817 - Part 4: Annotate & clean up nsACString callers of BeginReading/Data, r=xpcom-reviewers,media-playback-reviewers,webrtc-reviewers,cookie-reviewers,profiler-reviewers,win-reviewers,dom-storage-reviewers,permissions-reviewers,toolkit-telemetry-reviewers-rotation,layout-reviewers,dom-worker-reviewers,gfx-reviewers,webgpu-reviewers,necko-reviewers,dom-core,smaug,handyman,emilio,pehrsons,kershaw,timhuang,edenchuang,padenot,bradwerth
 
-[28] Paul Adenot  —  2 patch(es)
+[27] Paul Adenot  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-03-20  77c62c860ba7  Bug 2023897 - Remove the ability to disable AV1 support. r=media-playback-reviewers,necko-reviewers,webrtc-reviewers,valentin,alwu,pehrsons,layout-reviewers,tnikkel
       2026-02-11  bc4d10547868  Bug 2009260 - Prevent MediaManager::Dispatch crash during shutdown. r=jib
+
+[28] Valentin Gosu  —  2 patch(es)
+    ----------------------------------------------------------------------
+      2026-02-16  ee334bd83462  Bug 2009372 - Mark TRR connections and sockets r=necko-reviewers,kershaw,webrtc-reviewers,mjf
+      2026-02-12  0fd8e2d182e1  Bug 2009372 - Mark TRR connections and sockets r=necko-reviewers,kershaw,webrtc-reviewers,mjf
 
 [29] na-g  —  2 patch(es)
     ----------------------------------------------------------------------

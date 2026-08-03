@@ -1,8 +1,8 @@
 ==============================================================================
 GFX-REVIEWERS AUTHOR-PATCH LISTING (raw author %an, no aliasing)
-Source: github.com/mozilla-firefox/firefox   Paths: gfx, image, dom/canvas, dom/webgpu   Since: 2026-02-04T12:29:04Z
+Source: github.com/mozilla-firefox/firefox   Paths: gfx, image, dom/canvas, dom/webgpu   Since: 2026-02-04T22:18:55Z
 Excluded paths: gfx/angle, gfx/cairo, gfx/skia, gfx/harfbuzz, gfx/ots, gfx/sfntly, gfx/graphite2
-Authors: 114    Patches: 1727    (Lando-format / Lando-author / merge / Revert commits already excluded)
+Authors: 114    Patches: 1729    (Lando-format / Lando-author / merge / Revert commits already excluded)
 ==============================================================================
 
 Known aliases (applied in HTML report, NOT below):
@@ -11,8 +11,10 @@ Known aliases (applied in HTML report, NOT below):
 
 ==============================================================================
 
-[ 1] Nicolas Silva  —  296 patch(es)
+[ 1] Nicolas Silva  —  298 patch(es)
     ----------------------------------------------------------------------
+      2026-08-03  71d6fc2eae4f  Bug 2054652 - Check resource namespaces during displaylist building. r=gfx-reviewers,lsalzman
+      2026-08-03  3aec55d8ef64  Bug 2060237 - Ensure set_profiler_hooks is called before we create the render backend threads. r=gfx-reviewers,jnicol
       2026-07-31  ffbcca35a7e0  Bug 2059424 - Transform-feedback followup. r=lsalzman
       2026-07-31  f31830e7293d  Bug 2059188 - Add the missing WebGL texel unpack specializations. r=gfx-reviewers,lsalzman
       2026-07-30  bbe53c66dcee  Bug 2057205 - Don't repeat a non-repeating gradient because of rounding. r=gw
@@ -635,8 +637,13 @@ Known aliases (applied in HTML report, NOT below):
       2026-02-07  94f387072e19  Bug 2015274. In image gtests run all standard animated tests for all animated image types. r=saschanaz
       2026-02-07  b286f1aa2dcd  Bug 2015274. In image gtests use the testcase flags for expectations instead of hard coding expectations. r=saschanaz
 
-[ 4] Lee Salzman  —  86 patch(es)
+[ 4] Lee Salzman  —  91 patch(es)
     ----------------------------------------------------------------------
+      2026-08-03  46db1e662d01  Bug 2060010. r=gfx-reviewers,nical
+      2026-08-03  17e5d50fcd1f  Bug 2059997. r=gfx-reviewers,nical
+      2026-08-03  f224b8c73275  Bug 2060000. r=gfx-reviewers,nical
+      2026-08-03  52e8917eedfa  Bug 2058032. r=jfkthame
+      2026-08-03  9bf81106a5c2  Bug 2059607 - Check for failed MapBufferRange in GetBufferSubData. r=gfx-reviewers,nical
       2026-07-30  abd107bf6390  Bug 2054842. r=gfx-reviewers,nical
       2026-07-30  953e4e483f8a  Bug 2054673. r=gfx-reviewers,gw
       2026-07-30  55cf76d00b5a  Bug 2054842. r=gfx-reviewers,nical
@@ -974,7 +981,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-02-12  7359a48cea62  Bug 2016347 - Do not use out-of-class C++ default destructor r=emilio,necko-reviewers,layout-reviewers,valentin
       2026-02-12  a437cd7714c4  Bug 2016034 - Use move instead of copy for nsCOMPtr in various place r=emilio,necko-reviewers,profiles-reviewers,layout-reviewers,mossop,kershaw
 
-[ 8] Jamie Nicol  —  69 patch(es)
+[ 8] Jamie Nicol  —  66 patch(es)
     ----------------------------------------------------------------------
       2026-07-31  e0593ce383e4  Bug 2059358 - Use eglWaitUntilWorkScheduledANGLE to synchronise webrender on Metal ANGLE with core animation transaction. r=gfx-reviewers,nical
       2026-07-31  c6182c4189b3  Bug 2059358 - Perform server-side wait on GpuFenceMTLSharedEvent when running webrender on Metal ANGLE. r=gfx-reviewers,nical
@@ -1042,9 +1049,6 @@ Known aliases (applied in HTML report, NOT below):
       2026-02-09  63c3d4c4f36a  Bug 2014923 - Ensure the correct GeckoResult is completed for screen pixels returned from the compositor. r=gfx-reviewers,geckoview-reviewers,ohall,lsalzman
       2026-02-09  07b490265b0e  Bug 2014923 - Reject existing screen pixels request when a new request is received. r=gfx-reviewers,lsalzman
       2026-02-05  2754a61f93de  Bug 2014723 - Reject screen pixels request if WebRenderBridgeParent is destroyed. r=gfx-reviewers,lsalzman
-      2026-02-04  090b5329bbff  Bug 1661106 - Capture screen pixels by blitting into HardwareBuffer. r=gfx-reviewers,geckoview-reviewers,lsalzman,ohall
-      2026-02-04  fdc8203cc058  Bug 1661106 - Add ScopedGLHelper for creating EGL Image from Android HardwareBuffer. r=gfx-reviewers,lsalzman
-      2026-02-04  b2a8ae84e518  Bug 1661106 - Make UiCompositorBridgeParent::RecvRequestScreenPixels a bit more asynchronous. r=gfx-reviewers,geckoview-reviewers,lsalzman,ohall
 
 [ 9] Sotaro Ikeda  —  61 patch(es)
     ----------------------------------------------------------------------
@@ -1660,17 +1664,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-03-18  cc79f1945a0f  Bug 1657973 part 1: Plumb BrowsingContext id to PrintTargetSkPDF::BeginPrinting and make it available to nsDeviceContext::End/AbortDocument. r=emilio,geckoview-reviewers,win-reviewers,layout-reviewers,gstoll,m_kato
       2026-03-09  b6baf56f7e74  Bug 2021813: Make nsDisplayListBuilder::IsForPrinting return true when painting an OOP iframe embedded in a document being printed. r=layout-reviewers,emilio
 
-[35] Updatebot  —  7 patch(es)
-    ----------------------------------------------------------------------
-      2026-06-26  26c7adbdaada  Bug 2049949 - Update WebGPU CTS to b128863553525c1aa5a36c79744476f245e97655 r=webgpu-reviewers,teoxoy
-      2026-05-04  df38c479325d  Bug 2035913 - Update WebGPU CTS to 3b327ebc44f11212fd3872972a6dd394634fb9e3 r=webgpu-reviewers,nical
-      2026-04-16  72dee4b301bc  Bug 2032151 - Update WebGPU CTS to ad254c6c299805ff855f86fc6e7efab10f9ba9e1 r=webgpu-reviewers,teoxoy
-      2026-03-18  2ed3cd3d2926  Bug 2024003 - Update WebGPU CTS to 5ca78e5515baa2e2c6681f1b2dae2926cc8884d7 r=webgpu-reviewers,jimb,ErichDonGubler
-      2026-03-10  3576519db220  Bug 2020764 - Update WebGPU CTS to d213d4b8dba58ca7a0685e30cfaf1d29f4fc5d5b r=webgpu-reviewers,nical,ErichDonGubler
-      2026-02-19  f0741e4dd473  Bug 2017212 - Update WebGPU CTS to f93e7e2fe4c355d590866f47db63547fc65675ab. r=webgpu-reviewers,ErichDonGubler
-      2026-02-04  5400cc6cbe5c  Bug 2014043 - Update WebGPU CTS to 5cfc580345c90401bfe6d2ac4133d28051b3e0f6 r=webgpu-reviewers,ErichDonGubler
-
-[36] Bas Schouten  —  6 patch(es)
+[35] Bas Schouten  —  6 patch(es)
     ----------------------------------------------------------------------
       2026-05-25  0688a6c6699a  Bug 2040243: Remove legacy mirrors for a large set of probes primarily used for performance monitoring. r=chutten,perftest-reviewers,geckoview-reviewers,home-newtab-reviewers,layout-reviewers,jwatt,sparky,mconley,ohall
       2026-05-23  07c887df831a  Bug 2040243: Remove legacy mirrors for a large set of probes primarily used for performance monitoring. r=chutten,perftest-reviewers,geckoview-reviewers,home-newtab-reviewers,layout-reviewers,jwatt,sparky,mconley,ohall
@@ -1679,7 +1673,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-05-06  991c89d3d119  Bug 2036751: Add telemetry alerting to a number of important high-level performance probes. r=sparky,tabbrowser-reviewers,sthompson
       2026-04-30  3703d9cebb7b  Bug 2033454: Move critical parts of PerfStats into mozglue and make lockless. r=acreskey
 
-[37] Chun-Min Chang  —  6 patch(es)
+[36] Chun-Min Chang  —  6 patch(es)
     ----------------------------------------------------------------------
       2026-07-18  7ae92e67d094  Bug 2050480 - Unify NVImage NV12/NV21 to I420 conversion into a shared helper r=gfx-reviewers,bradwerth
       2026-05-09  8500567d78bc  Bug 2015268 - Add tests r=gfx-reviewers,bradwerth
@@ -1688,7 +1682,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-17  9225ae77810d  Bug 2031524 - Pass aDst by reference in SwizzleChunkOpaqueCopy r=gfx-reviewers,bradwerth
       2026-02-26  4fd494b83df8  Bug 2015268 - Validate YCbCr descriptor fields in CreateBackendIndependentTextureHost r=aosmond,gfx-reviewers,bradwerth
 
-[38] Dan Robertson  —  6 patch(es)
+[37] Dan Robertson  —  6 patch(es)
     ----------------------------------------------------------------------
       2026-03-12  ecc8cc0185b0  Bug 1801658 - Implement VisualViewport.onscrollend r=emilio,saschanaz
       2026-03-09  d45d09fdc7da  Bug 1963375 - Avoid premature scrollend events for click and hold scrolls. r=hiro,layout-reviewers
@@ -1697,16 +1691,16 @@ Known aliases (applied in HTML report, NOT below):
       2026-02-18  c5f9b8ce899f  Bug 1801658 - Implement VisualViewport.onscrollend r=emilio,saschanaz
       2026-02-09  14c694ce058a  Bug 2008571 - Scroll snap for mousewheel pixel scrolls. r=hiro
 
-[39] Sajid Anwar  —  6 patch(es)
+[38] Updatebot  —  6 patch(es)
     ----------------------------------------------------------------------
-      2026-06-24  27a54e29f89d  Bug 2048827 - Improve FreeType2 fallback logic for ex-height and cap-height. r=layout-reviewers,jfkthame
-      2026-05-21  2862395c8b52  Bug 2041003 - Check for initialized HarfBuzz shaper before retrieving font baselines. r=layout-reviewers,emilio
-      2026-05-19  7301b087c642  Bug 2029869 - Synthesize vertical font metrics/baselines from horizontal metrics/baselines. r=layout-reviewers,jfkthame
-      2026-05-11  8699ee2727ec  Bug 2029869 - Synthesize vertical font metrics/baselines from horizontal metrics/baselines. r=layout-reviewers,jfkthame
-      2026-02-09  85e033820c91  Bug 2015080 - Retrieve/synthesize font baselines lazily using HarfBuzz. r=layout-reviewers,jfkthame
-      2026-02-04  79913dfd1c90  Bug 2014156 - Use HarfBuzz to retrieve font baselines and synthesize fallbacks. r=layout-reviewers,jfkthame,emilio
+      2026-06-26  26c7adbdaada  Bug 2049949 - Update WebGPU CTS to b128863553525c1aa5a36c79744476f245e97655 r=webgpu-reviewers,teoxoy
+      2026-05-04  df38c479325d  Bug 2035913 - Update WebGPU CTS to 3b327ebc44f11212fd3872972a6dd394634fb9e3 r=webgpu-reviewers,nical
+      2026-04-16  72dee4b301bc  Bug 2032151 - Update WebGPU CTS to ad254c6c299805ff855f86fc6e7efab10f9ba9e1 r=webgpu-reviewers,teoxoy
+      2026-03-18  2ed3cd3d2926  Bug 2024003 - Update WebGPU CTS to 5ca78e5515baa2e2c6681f1b2dae2926cc8884d7 r=webgpu-reviewers,jimb,ErichDonGubler
+      2026-03-10  3576519db220  Bug 2020764 - Update WebGPU CTS to d213d4b8dba58ca7a0685e30cfaf1d29f4fc5d5b r=webgpu-reviewers,nical,ErichDonGubler
+      2026-02-19  f0741e4dd473  Bug 2017212 - Update WebGPU CTS to f93e7e2fe4c355d590866f47db63547fc65675ab. r=webgpu-reviewers,ErichDonGubler
 
-[40] Botond Ballo  —  5 patch(es)
+[39] Botond Ballo  —  5 patch(es)
     ----------------------------------------------------------------------
       2026-06-11  58c44b5003d2  Bug 2041468 - Re-enable helper_zoom_after_gpu_process_restart.html on Mac. r=hiro
       2026-05-21  5a324c849712  Bug 2041465 - Skip helper_zoom_after_gpu_process_restart.html on Mac. r=hiro
@@ -1714,13 +1708,21 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-08  c0cce005d076  Bug 2027995 - Have callers of BrowserParent::SendHandleTap hold a strong reference to the BrowserParent. r=hiro
       2026-03-25  33236199633f  Bug 2024239 - Use specific IPC messages for flushing checkerboard reports. r=hiro
 
-[41] Florian Quèze  —  5 patch(es)
+[40] Florian Quèze  —  5 patch(es)
     ----------------------------------------------------------------------
       2026-06-24  3851c2f7200b  Bug 2050057 - Read profiler screenshots as RGBA on GLES lacking GL_EXT_read_format_bgra, r=gfx-reviewers,jnicol.
       2026-06-11  b810b34d6fbb  Bug 2046753 - Bound profiler screenshot scaling textures to the device texture size limit, r=gfx-reviewers,nical.
       2026-05-23  4f4b645740cc  Bug 2040629 - Split generated webgl-conf mochitest manifest into per-cluster files, r=ahal.
       2026-04-03  b0e7e3682f28  Bug 2026600 - Skip known standalone perma-failures for mochitest-plain and mochitest-chrome, r=aryx,extension-reviewers,taskgraph-reviewers,ahal,robwu.
       2026-04-03  55c0ac8506b5  Bug 2026600 - Skip known standalone perma-failures for mochitest-plain and mochitest-chrome, r=aryx,extension-reviewers,taskgraph-reviewers,ahal,robwu.
+
+[41] Sajid Anwar  —  5 patch(es)
+    ----------------------------------------------------------------------
+      2026-06-24  27a54e29f89d  Bug 2048827 - Improve FreeType2 fallback logic for ex-height and cap-height. r=layout-reviewers,jfkthame
+      2026-05-21  2862395c8b52  Bug 2041003 - Check for initialized HarfBuzz shaper before retrieving font baselines. r=layout-reviewers,emilio
+      2026-05-19  7301b087c642  Bug 2029869 - Synthesize vertical font metrics/baselines from horizontal metrics/baselines. r=layout-reviewers,jfkthame
+      2026-05-11  8699ee2727ec  Bug 2029869 - Synthesize vertical font metrics/baselines from horizontal metrics/baselines. r=layout-reviewers,jfkthame
+      2026-02-09  85e033820c91  Bug 2015080 - Retrieve/synthesize font baselines lazily using HarfBuzz. r=layout-reviewers,jfkthame
 
 [42] Tymur Boiko  —  5 patch(es)
     ----------------------------------------------------------------------
