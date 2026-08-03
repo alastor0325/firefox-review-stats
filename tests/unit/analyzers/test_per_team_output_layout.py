@@ -156,7 +156,9 @@ def test_generate_for_team_attaches_feature_summaries(tmp_path: Path):
             cache_dir=tmp_path / ".commit_files_cache",
             archive_week=False,
             now=datetime(2026, 5, 15, tzinfo=timezone.utc),
-            summarize_fn=lambda label, patches: f"Overview of {label}",
+            summarize_fn=lambda areas: {
+                a["id"]: f"Overview of {a['label']}" for a in areas
+            },
         )
     data = json.loads((tmp_path / "playback" / "data_git.json").read_text())
     feature = data["recent_changes"]["1m"]["features"][0]

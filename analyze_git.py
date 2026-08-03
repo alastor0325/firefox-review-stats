@@ -43,6 +43,7 @@ from reviewstats.report import RECENT_CHANGES_WINDOWS, build_report
 from reviewstats.summarize import (
     DEFAULT_COPILOT_MODEL as _DEFAULT_COPILOT_MODEL,
     DEFAULT_SUMMARY_MODEL as _DEFAULT_SUMMARY_MODEL,
+    as_batch,
     dead_backend_warning,
     make_anthropic_summarizer,
     make_copilot_summarizer,
@@ -323,7 +324,7 @@ def main(argv: list[str] | None = None) -> int:
     elif backend == "anthropic" or (not backend and os.environ.get("ANTHROPIC_API_KEY")):
         model = os.environ.get("REVIEW_STATS_SUMMARY_MODEL", _DEFAULT_SUMMARY_MODEL)
         try:
-            summarize_fn = make_anthropic_summarizer(model=model)
+            summarize_fn = as_batch(make_anthropic_summarizer(model=model))
             print(f"Recent-change summaries via Anthropic (model={model}).")
         except ImportError:
             print("ANTHROPIC_API_KEY set but `anthropic` not installed — cache only.")

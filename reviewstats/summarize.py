@@ -11,17 +11,23 @@ patches), so the weekly refresh only pays for feature-sets it hasn't
 summarized before.
 
 Design:
-  * Pure helpers (`build_summary_prompt`, `summary_cache_key`,
-    `extract_summary_text`) are network-free and unit-tested directly.
-  * `summarize_features` is the orchestrator: it walks the recent-changes
-    windows, fills each feature's `summary`, and is driven by an injected
-    `summarize_fn(label, patches) -> str | None` so tests never hit the API.
-  * `make_anthropic_summarizer` builds the real `summarize_fn` against the
+  * Pure helpers (`build_summary_prompt`, `build_batch_prompt`,
+    `parse_batch_response`, `summary_cache_key`, `extract_summary_text`)
+    are network-free and unit-tested directly.
+  * `summarize_features` is the orchestrator. It runs in two passes:
+    resolve every feature area against the disk cache, then send the misses
+    to an injected `summarize_fn(areas) -> {area_id: overview}` in batches.
+    Batching is the whole reason for the two passes — a single walk can
+    only ask for one area at a time. Tests inject `summarize_fn` and never
+    hit the network.
+  * `make_copilot_summarizer` builds the CI backend by shelling out to the
+    GitHub Copilot CLI, which authenticates with the workflow's own token
+    (no third-party key stored). It is natively batched because the CLI
+    bills a ~12k-token agent preamble per invocation.
+  * `make_anthropic_summarizer` builds the local backend against the
     Anthropic SDK (imported lazily so the package is only required when a
-    summary is actually generated).
-  * `make_copilot_summarizer` builds the CI `summarize_fn` by shelling out
-    to the GitHub Copilot CLI, which authenticates with the workflow's own
-    token (no third-party key stored).
+    summary is actually generated). It stays one-area-at-a-time — a plain
+    completion API has no preamble to amortize — and `as_batch` adapts it.
 """
 
 import hashlib
@@ -44,8 +50,9 @@ DEFAULT_SUMMARY_MODEL = "claude-opus-4-8"
 # built-in GITHUB_TOKEN (permissions: copilot-requests: write), so no
 # third-party key is stored. Unlike GitHub Models it is not free — calls
 # consume GitHub AI Credits. Note it is an *agent*, not a plain completion
-# endpoint: there is no system role (see `build_copilot_prompt`) and it runs
-# with tools available (see `workdir` in `make_copilot_summarizer`).
+# endpoint: there is no system role (the instructions ride inline in
+# `build_batch_prompt`) and it runs with tools available (see `workdir` and
+# `--available-tools=` in `make_copilot_summarizer` / `build_copilot_argv`).
 COPILOT_EXECUTABLE = "copilot"
 # "auto" (Copilot picks) rather than a pinned id: which models a token may
 # use depends on the account's Copilot plan, and an unavailable id is a hard
@@ -54,9 +61,20 @@ COPILOT_EXECUTABLE = "copilot"
 # 'Model ... is not available' and only "auto" ran. Pin one via
 # REVIEW_STATS_SUMMARY_MODEL if a specific model is wanted and known good.
 DEFAULT_COPILOT_MODEL = "auto"
-COPILOT_TIMEOUT_SECONDS = 180
+# Areas per call. Copilot Free allows 200 credits/month and ~49 areas need
+# generating each week; at one call per area that overruns, at ~12 per call
+# it fits several times over. Bounded rather than unlimited so one refused
+# or truncated response costs a dozen areas, not the whole week.
+DEFAULT_BATCH_SIZE = 12
+# Per-call cap. A measured batch of 5 took 31s, so this is ~10x headroom for
+# a full batch of 12 — but it is deliberately not larger: a cold cache is ~8
+# batches (batching is per team, and each team's remainder rounds up), and
+# 8 x this must stay well inside the workflow's 60-minute job budget. A job
+# timeout is worse than a failed call, because .summary_cache/ is only
+# committed by the final step.
+COPILOT_TIMEOUT_SECONDS = 300
 
-_SYSTEM_PROMPT = (
+_STYLE_PROMPT = (
     "You explain recent changes to one part of the Firefox browser for a "
     "broad audience. Given the area name and the titles of the patches "
     "that landed in it, reason over them and write a short overview "
@@ -78,8 +96,15 @@ _SYSTEM_PROMPT = (
     "(shown in red) — use this sparingly, at most once per overview, and "
     "not merely to mark a technology name; many overviews need none. Use "
     "_underscores_ for a minor aside or caveat (e.g. 'no visible change'). "
-    "Respond with the overview text only."
 )
+
+# Kept separate from the style guidance above because the batch prompt needs
+# the same style but the opposite response format. Inlining "overview text
+# only" ahead of "respond with JSON" would contradict itself, and a model
+# that obeyed the first sentence would fail the whole batch.
+_SINGLE_RESPONSE_INSTRUCTION = "Respond with the overview text only."
+
+_SYSTEM_PROMPT = _STYLE_PROMPT + _SINGLE_RESPONSE_INSTRUCTION
 
 
 def summary_cache_key(feature: str, patch_keys: list[str]) -> str:
@@ -99,6 +124,81 @@ def build_summary_prompt(feature_label: str, patches: list[dict]) -> tuple[str, 
         "Overview:"
     )
     return _SYSTEM_PROMPT, user
+
+
+def build_batch_prompt(areas: list[dict]) -> str:
+    """One prompt covering several feature areas, answered as JSON.
+
+    Copilot charges a ~12k-token agent preamble per invocation while our
+    actual payload is ~700 tokens, so the per-area cost is almost entirely
+    fixed overhead. Asking for N areas in one call amortizes it — the
+    difference between fitting in Copilot Free's 200 credits/month and not.
+
+    `areas` is a list of {"id", "label", "patches"}. The id is the content
+    hash, which doubles as the JSON key so the response maps straight back
+    onto cache entries.
+    """
+    blocks = []
+    for area in areas:
+        titles = "\n".join(f"- {p['subject']}" for p in area["patches"])
+        blocks.append(
+            f"Area id: {area['id']}\nName: {area['label']}\n"
+            f"Patch titles that landed in this area:\n{titles}"
+        )
+    joined = "\n\n".join(blocks)
+    return (
+        f"{_STYLE_PROMPT}\n\n"
+        f"You will be given {len(areas)} separate areas below. Write one "
+        "overview for EACH of them, applying the instructions above to each "
+        "independently.\n\n"
+        "Respond with a single JSON object mapping each area id to its "
+        "overview string, and nothing else — no code fence, no commentary. "
+        'Example: {"<area id>": "<overview text>"}\n\n'
+        f"{joined}"
+    )
+
+
+def parse_batch_response(text: Optional[str], expected_ids: list[str]) -> dict:
+    """Pull {id: overview} out of a batch response.
+
+    Tolerant of a code fence or chatter around the object, since the model
+    is an agent rather than a JSON API. Anything not asked for is dropped —
+    a hallucinated key must never be written to the cache under a hash no
+    feature area maps to. Missing ids are simply absent, so a partial answer
+    still lands and only the gaps retry.
+    """
+    if not text:
+        return {}
+    wanted = set(expected_ids)
+    found: dict = {}
+    decoder = json.JSONDecoder()
+    # Try to decode an object at *every* '{', not just the first — a single
+    # first-brace/last-brace span breaks on any stray brace in the chatter,
+    # including the model echoing this prompt's own `{"<area id>": ...}`
+    # example back before answering. Also collects across multiple objects,
+    # so one-object-per-area answers still work.
+    for pos in range(len(text)):
+        if text[pos] != "{":
+            continue
+        try:
+            data, _ = decoder.raw_decode(text, pos)
+        except ValueError:
+            continue
+        if isinstance(data, dict):
+            _collect_overviews(data, wanted, found)
+    return found
+
+
+def _collect_overviews(data: dict, wanted: set, found: dict) -> None:
+    """Harvest wanted id -> overview pairs, descending one level into a
+    wrapper object (e.g. `{"overviews": {...}}`). First value for an id
+    wins, so a later restatement can't overwrite a real answer."""
+    for key, value in data.items():
+        if key in wanted and key not in found:
+            if isinstance(value, str) and value.strip():
+                found[key] = value.strip()
+        elif isinstance(value, dict):
+            _collect_overviews(value, wanted, found)
 
 
 def extract_summary_text(content: list) -> str:
@@ -131,54 +231,90 @@ def summarize_features(
     windows: dict,
     *,
     cache_dir: Path,
-    summarize_fn: Optional[Callable[[str, list[dict]], Optional[str]]],
+    summarize_fn: Optional[Callable[[list[dict]], dict]],
+    batch_size: int = DEFAULT_BATCH_SIZE,
 ) -> Counter:
     """Fill each feature's `summary` across all recent-changes windows.
 
-    Resolution order per feature area: in-run memo → on-disk cache
-    (`.summary_cache/`, committed to git) → `summarize_fn`. The disk cache
-    is consulted **even when `summarize_fn` is None** — so a run without an
-    API key (e.g. CI) still fills any overview previously generated and
-    committed locally, leaving only never-seen feature-areas blank. When a
-    key *is* present, freshly-generated overviews are written back to the
-    cache so they can be committed. `summarize_fn` returning None (failure)
-    is left un-cached so a later run can retry.
+    Two passes. The first resolves every feature area against the on-disk
+    cache (`.summary_cache/`, committed to git), deduping areas that repeat
+    across windows, and collects the misses; the second sends those misses to `summarize_fn` in
+    batches and writes the answers back. Splitting it this way is what makes
+    batching possible — a single walk can only ask for one area at a time.
+
+    `summarize_fn(areas) -> {area_id: overview}` takes a list of
+    {"id", "label", "patches"} and need not answer every one; an unanswered
+    area is left blank *and* uncached so a later run retries it. The disk
+    cache is consulted **even when `summarize_fn` is None**, so a run with
+    no backend still fills any overview previously generated and committed.
 
     Returns a Counter of {generated, reused, failed} (per unique content
     hash) so callers can sum across teams and tell a flaky area apart from a
     backend that is failing every single call — see `dead_backend_warning`.
     """
     cache_dir = Path(cache_dir)
-    memo: dict[str, Optional[str]] = {}
-    reused = generated = failed = 0  # counted per unique content hash
+    resolved: dict[str, str] = {}
+    pending: dict[str, dict] = {}  # id -> area, deduped by content hash
+    order: list[tuple[dict, str]] = []
+
     for window in windows.values():
         for feature in window.get("features", []):
             key = summary_cache_key(
-                feature["feature"],
-                [_patch_key(p) for p in feature["patches"]],
+                feature["feature"], [_patch_key(p) for p in feature["patches"]]
             )
-            if key in memo:
-                summary = memo[key]
-            else:
-                summary = _read_cached(cache_dir, key)
-                if summary is not None:
-                    reused += 1  # unchanged content → no LLM call (the guard)
-                elif summarize_fn is not None:
-                    summary = summarize_fn(feature["label"], feature["patches"])
-                    if summary:
-                        _write_cached(cache_dir, key, summary)
-                        generated += 1
-                    else:
-                        failed += 1  # left blank + un-cached → retried next run
-                memo[key] = summary
+            order.append((feature, key))
+            if key in resolved or key in pending:
+                continue  # same content in another window — one call, not two
+            cached = _read_cached(cache_dir, key)
+            if cached is not None:
+                resolved[key] = cached
+            elif summarize_fn is not None:
+                pending[key] = {
+                    "id": key,
+                    "label": feature["label"],
+                    "patches": feature["patches"],
+                }
+
+    reused = len(resolved)
+    generated = 0
+    calls = call_failures = 0  # per *call*, not per area — see dead_backend_warning
+    areas = list(pending.values())
+    for start in range(0, len(areas), batch_size):
+        chunk = areas[start : start + batch_size]
+        calls += 1
+        try:
+            answers = summarize_fn(chunk) or {}
+        except Exception as exc:  # one bad batch must not void the others
+            print(f"  [summary] batch of {len(chunk)} failed: {exc}")
+            answers = {}
+        if not isinstance(answers, dict):
+            answers = {}
+        if not answers:
+            call_failures += 1
+        for area in chunk:
+            summary = answers.get(area["id"])
             if summary:
-                feature["summary"] = summary
+                _write_cached(cache_dir, area["id"], summary)
+                resolved[area["id"]] = summary
+                generated += 1
+
+    failed = len(pending) - generated
+    for feature, key in order:
+        if resolved.get(key):
+            feature["summary"] = resolved[key]
+
     if generated or reused or failed:
         print(
             f"  [summary] {generated} generated, {reused} reused from cache, "
             f"{failed} failed (left blank, will retry next run)"
         )
-    return Counter(generated=generated, reused=reused, failed=failed)
+    return Counter(
+        generated=generated,
+        reused=reused,
+        failed=failed,
+        calls=calls,
+        call_failures=call_failures,
+    )
 
 
 def dead_backend_warning(stats: Counter) -> Optional[str]:
@@ -186,21 +322,27 @@ def dead_backend_warning(stats: Counter) -> Optional[str]:
     None.
 
     Lives next to `summarize_features` because it is a statement about that
-    function's failure semantics: a per-area None is retryable and self-heals
-    next run, but *every* call returning None is a dead backend. `failed` is
-    only ever incremented when a backend is active, so a cache-only run can
-    never trip this.
+    function's failure semantics: one bad call is retryable and self-heals
+    next run, but *every* call failing is a dead backend.
+
+    Judged on `call_failures` vs `calls`, not on `failed` — `failed` counts
+    feature areas, and since batching one call covers ~12 of them, a single
+    flaky invocation would otherwise read as a dozen independent failures.
+    `calls` is only non-zero when a backend was actually invoked, so a
+    cache-only run can never trip this.
 
     Needed because the failure is otherwise invisible — GitHub Models was
     retired on 2026-07-30 and the next weekly refresh 410'd on every single
     call, printed its usual summary line, and exited green.
     """
-    if not stats["failed"] or stats["generated"]:
+    calls = stats["calls"]
+    if not calls or stats["call_failures"] < calls:
         return None
     return (
-        f"summary backend generated 0 overviews and failed "
-        f"{stats['failed']} times — it is likely broken, not flaky. "
-        f"New feature areas will render with no overview."
+        f"summary backend produced nothing: all {calls} call(s) failed, "
+        f"leaving {stats['failed']} feature area(s) with no overview. "
+        f"Likely broken rather than flaky — check the log above for the "
+        f"per-call error."
     )
 
 
@@ -250,13 +392,31 @@ def make_anthropic_summarizer(
     return summarize
 
 
-def build_copilot_prompt(feature_label: str, patches: list[dict]) -> str:
-    """Fold the system + user prompts into one string for the Copilot CLI.
+def as_batch(
+    per_area_fn: Callable[[str, list[dict]], Optional[str]],
+) -> Callable[[list[dict]], dict]:
+    """Adapt a one-area-at-a-time summarizer to the batch contract.
 
-    The CLI takes a single prompt (`-p`) and has no system-message concept,
-    so the instructions have to ride inline with the request."""
-    system, user = build_summary_prompt(feature_label, patches)
-    return f"{system}\n\n{user}"
+    Only Copilot needs true batching — its per-call agent preamble dwarfs
+    the payload. A plain completion API has no such overhead, so Anthropic
+    keeps its simpler per-area implementation and loops here."""
+
+    def batch(areas: list[dict]) -> dict:
+        out = {}
+        for area in areas:
+            # Guard per area, not per batch: these are real completed calls
+            # that have already been paid for, so one area raising must not
+            # discard the summaries its neighbours already returned.
+            try:
+                summary = per_area_fn(area["label"], area["patches"])
+            except Exception as exc:
+                print(f"  [summary] error for {area['label']!r}: {exc}")
+                continue
+            if summary:
+                out[area["id"]] = summary
+        return out
+
+    return batch
 
 
 def build_copilot_argv(
@@ -341,35 +501,42 @@ def make_copilot_summarizer(
     run=_run_copilot,
     timeout: int = COPILOT_TIMEOUT_SECONDS,
     workdir: Optional[str] = None,
-) -> Callable[[str, list[dict]], Optional[str]]:
-    """Build a `summarize_fn` backed by the GitHub Copilot CLI.
+) -> Callable[[list[dict]], dict]:
+    """Build a batch `summarize_fn` backed by the GitHub Copilot CLI.
 
     Authenticates via the ambient GITHUB_TOKEN, so no third-party key is
     stored. `run(argv, cwd=, timeout=) -> (rc, stdout, stderr)` is
-    injectable for tests. Any failure returns None so the refresh degrades
-    to no overview for that one area rather than failing the whole run.
+    injectable for tests. Any failure returns {} so the refresh degrades to
+    no overviews for that batch rather than failing the whole run.
+
+    Batched rather than one call per area because the CLI bills a ~12k-token
+    agent preamble per invocation regardless of payload size — see
+    `build_batch_prompt`.
 
     No call pacing: unlike GitHub Models' free per-minute tier, Copilot is
-    credit-billed with no rate limit to stay under.
+    credit-billed with no rate limit to stay under (it hard-stops at the
+    plan's credit ceiling instead).
     """
 
-    def summarize(feature_label: str, patches: list[dict]) -> Optional[str]:
-        argv = build_copilot_argv(
-            build_copilot_prompt(feature_label, patches), model=model
-        )
+    def summarize(areas: list[dict]) -> dict:
+        if not areas:
+            return {}
+        ids = [a["id"] for a in areas]
+        argv = build_copilot_argv(build_batch_prompt(areas), model=model)
+        label = f"batch of {len(areas)}"
         try:
             code, out, err = run(argv, cwd=workdir, timeout=timeout)
         except Exception as exc:  # missing binary, timeout, OS error
-            print(f"  [summary] Copilot CLI error for {feature_label!r}: {exc}")
-            return None
+            print(f"  [summary] Copilot CLI error for {label}: {exc}")
+            return {}
         if code != 0:
             detail = (err or out or "").strip().splitlines()
             reason = detail[-1][:200] if detail else "no output"
-            print(
-                f"  [summary] Copilot CLI exit {code} for "
-                f"{feature_label!r}: {reason}"
-            )
-            return None
-        return extract_copilot_text(out) or None
+            print(f"  [summary] Copilot CLI exit {code} for {label}: {reason}")
+            return {}
+        answers = parse_batch_response(extract_copilot_text(out), ids)
+        if not answers:
+            print(f"  [summary] unparseable response for {label}")
+        return answers
 
     return summarize

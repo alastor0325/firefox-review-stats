@@ -13,14 +13,12 @@ permissions:
 jobs:
   refresh:
     runs-on: ubuntu-latest
-    # Was 60. The Copilot CLI backend spends ~20-40s per uncached feature
-    # area (node spawn + an agent round-trip) and there are ~60-85 of them
-    # across the three teams, so the summary step alone can run 30-40 min on
-    # top of the ~10 min for Phabricator + commits. A timeout here is
-    # expensive, not just slow: .summary_cache/ is only committed by the
-    # final step, so overviews already paid for in AI Credits are discarded
-    # and regenerated next week.
-    timeout-minutes: 120
+    # Summaries are batched (~12 feature areas per Copilot call), so the
+    # ~49 uncached areas per week cost ~5 calls at ~30-60s each, not ~49.
+    # 60 min stays comfortable. Note a timeout here is expensive, not just
+    # slow: .summary_cache/ is only committed by the final step, so any
+    # overviews already generated that run are discarded.
+    timeout-minutes: 60
 
     steps:
       - name: Checkout firefox-review-stats
