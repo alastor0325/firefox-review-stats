@@ -16,6 +16,7 @@ loop-over-TEAMS structure without hitting the network.
 """
 
 import json
+from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import patch
@@ -71,9 +72,13 @@ def test_generate_for_team_writes_into_slug_subfolder(tmp_path: Path):
 def test_generate_for_team_no_commits_short_circuits(tmp_path: Path):
     """When fetch_commits returns nothing, the helper logs and exits
     without producing any output (which would otherwise be an empty
-    report with broken percentile math)."""
+    report with broken percentile math).
+
+    It must still return summary counts: main() sums one per team, so a
+    bare `return` here crashes the entire refresh the first week any
+    registered team has no commits in the window."""
     with patch.object(analyze_git, "fetch_commits", return_value=[]):
-        analyze_git._generate_for_team(
+        stats = analyze_git._generate_for_team(
             PLAYBACK_TEAM,
             repo="mozilla-firefox/firefox",
             since="2026-05-01T00:00:00Z",
@@ -83,6 +88,7 @@ def test_generate_for_team_no_commits_short_circuits(tmp_path: Path):
             now=datetime(2026, 5, 15, tzinfo=timezone.utc),
         )
     assert not (tmp_path / "playback").exists()
+    assert stats is not None and stats + Counter() == Counter()
 
 
 def test_generate_for_team_meta_carries_paths_list(tmp_path: Path):
@@ -190,6 +196,9 @@ def test_main_iterates_every_registered_team(tmp_path: Path):
 
     def fake_gen(team, **_kwargs):
         call_count["n"] += 1
+        # Matches the real contract: per-team summary counts, which main()
+        # sums to decide whether to warn about a dead backend.
+        return Counter()
 
     with patch.object(analyze_git, "_generate_for_team", side_effect=fake_gen):
         analyze_git.main(["--out", str(tmp_path)])

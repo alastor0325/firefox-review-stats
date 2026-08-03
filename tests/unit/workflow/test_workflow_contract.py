@@ -111,6 +111,30 @@ def test_runs_integration_tests(workflow_text):
     )
 
 
+def test_installs_copilot_cli(workflow_text):
+    """The summary backend shells out to the `copilot` binary, which is not
+    preinstalled on the runner — without this step every area 404s on a
+    missing executable and the overviews silently go blank."""
+    assert "@github/copilot" in workflow_text
+
+
+def test_grants_copilot_requests_permission(workflow_text):
+    """Copilot CLI authenticates with the workflow's built-in GITHUB_TOKEN,
+    but only if the job requests `copilot-requests: write`."""
+    assert "copilot-requests: write" in workflow_text
+
+
+def test_does_not_use_retired_github_models(workflow_text):
+    """GitHub Models was retired 2026-07-30 — its endpoint returns 410 and
+    `models: read` grants nothing. Guard against a revert."""
+    assert "models: read" not in workflow_text
+    assert "REVIEW_STATS_SUMMARY_BACKEND: github" not in workflow_text
+
+
+def test_selects_the_copilot_summary_backend(workflow_text):
+    assert "REVIEW_STATS_SUMMARY_BACKEND: copilot" in workflow_text
+
+
 def test_git_add_line_does_not_stage_root_author_patches(workflow_text):
     """dump_author_patches.py now writes per-team
     `<slug>/author_patches.txt`. The old root-level path no longer

@@ -7,15 +7,19 @@ never touch the SDK or the network.
 import json
 import sys
 import types
+from collections import Counter
 from types import SimpleNamespace
 
 import pytest
 
 from reviewstats.summarize import (
+    build_copilot_argv,
+    build_copilot_prompt,
     build_summary_prompt,
+    extract_copilot_text,
     extract_summary_text,
     make_anthropic_summarizer,
-    make_github_models_summarizer,
+    make_copilot_summarizer,
     summarize_features,
     summary_cache_key,
 )
@@ -125,6 +129,34 @@ class TestSummarizeFeatures:
         assert "summary" not in windows["1w"]["features"][0]
         assert not list(tmp_path.glob("*.json"))
 
+    def test_returns_counts(self, tmp_path):
+        # Counts are returned (not just printed) so the caller can detect a
+        # backend that is failing every call — the GitHub Models retirement
+        # went unnoticed for a week because a 100% failure rate still
+        # printed a line and exited green.
+        windows = self._windows()
+        stats = summarize_features(
+            windows, cache_dir=tmp_path, summarize_fn=lambda l, p: None
+        )
+        assert stats == Counter(generated=0, reused=0, failed=1)
+
+    def test_counts_are_summable_across_teams(self, tmp_path):
+        # main() adds up one Counter per team, so + must work.
+        a = summarize_features(
+            self._windows(), cache_dir=tmp_path, summarize_fn=lambda l, p: "x"
+        )
+        b = summarize_features(
+            self._windows(), cache_dir=tmp_path, summarize_fn=lambda l, p: "x"
+        )
+        assert (a + b)["generated"] + (a + b)["reused"] == 2
+
+    def test_returns_counts_for_generated_and_reused(self, tmp_path):
+        windows = self._windows()
+        stats = summarize_features(
+            windows, cache_dir=tmp_path, summarize_fn=lambda l, p: "text"
+        )
+        assert stats["generated"] == 1 and stats["failed"] == 0
+
     def test_corrupt_cache_entry_is_resummarized(self, tmp_path):
         # A garbage cache file is treated as a miss → summarize_fn runs and
         # overwrites it (rather than crashing or yielding no summary).
@@ -206,35 +238,135 @@ class TestAnthropicSummarizer:
         assert fn("EME", [{"subject": "x"}]) is None
 
 
-class TestGithubModelsSummarizer:
-    def test_success_and_request_shape(self):
+class TestGithubModelsBackendRemoved:
+    """GitHub Models was retired on 2026-07-30 (every call 410s). The backend
+    is gone — this guards against it being reintroduced by a stale import."""
+
+    def test_factory_is_gone(self):
+        import reviewstats.summarize as s
+
+        assert not hasattr(s, "make_github_models_summarizer")
+        assert not hasattr(s, "GITHUB_MODELS_URL")
+
+
+class TestBuildCopilotPrompt:
+    def test_folds_system_and_user_into_one_prompt(self):
+        # Copilot CLI takes a single prompt string — no system role — so the
+        # system instructions must be carried inline.
+        system, user = build_summary_prompt("EME", [_patch("a", subject="Fix X")])
+        prompt = build_copilot_prompt("EME", [_patch("a", subject="Fix X")])
+        assert system in prompt
+        assert user in prompt
+        assert "Fix X" in prompt
+
+
+class TestBuildCopilotArgv:
+    def test_non_interactive_scriptable_flags(self):
+        argv = build_copilot_argv("hello", model="claude-sonnet-4.5")
+        assert argv[0] == "copilot"
+        # -p carries the prompt as a single argv entry (never shell-quoted).
+        assert argv[argv.index("-p") + 1] == "hello"
+        # -s: response only, no stats/decoration. --no-ask-user: never block
+        # waiting for input in CI.
+        assert "-s" in argv and "--no-ask-user" in argv
+        # The CLI refuses to run non-interactively without this.
+        assert "--allow-all-tools" in argv
+        assert "--model=claude-sonnet-4.5" in argv
+
+    def test_defaults_to_auto_model(self):
+        # Pinned model ids are gated by the token's Copilot plan and fail
+        # hard ("Model ... is not available") before any request. "auto"
+        # always resolves, so it is the only safe default.
+        from reviewstats.summarize import DEFAULT_COPILOT_MODEL
+
+        assert DEFAULT_COPILOT_MODEL == "auto"
+
+    def test_ignores_repo_custom_instructions(self):
+        # An AGENTS.md in the working tree would otherwise rewrite the
+        # overview style; the summary prompt is the only instruction.
+        assert "--no-custom-instructions" in build_copilot_argv("x", model="auto")
+
+    def test_exposes_no_tools_to_the_model(self):
+        # Summarizing titles needs no tools. --allow-all-tools only waives
+        # approval prompts; an empty --available-tools is what actually
+        # keeps the tool schemas out of every billed request.
+        argv = build_copilot_argv("x", model="auto")
+        assert "--available-tools=" in argv
+        assert "--disable-builtin-mcps" in argv
+
+    def test_model_omitted_when_falsy(self):
+        argv = build_copilot_argv("hello", model="")
+        assert not any(a.startswith("--model") for a in argv)
+
+    def test_prompt_with_newlines_stays_one_argument(self):
+        argv = build_copilot_argv("line1\nline2", model="m")
+        assert "line1\nline2" in argv
+
+
+class TestExtractCopilotText:
+    def test_plain_text(self):
+        assert extract_copilot_text("  An overview.  \n") == "An overview."
+
+    def test_strips_ansi_colour_codes(self):
+        assert extract_copilot_text("\x1b[32mGreen text.\x1b[0m") == "Green text."
+
+    def test_strips_spinner_glyphs_and_carriage_returns(self):
+        # The CLI redraws a braille spinner in place; -s should suppress it,
+        # but never let chrome leak into a committed overview.
+        raw = "⠋ Thinking\r⠙ Thinking\rReal overview.\n"
+        assert extract_copilot_text(raw) == "Real overview."
+
+    def test_drops_leading_and_trailing_blank_lines(self):
+        assert extract_copilot_text("\n\n Body. \n\n") == "Body."
+
+    def test_empty_and_none(self):
+        assert extract_copilot_text("") == ""
+        assert extract_copilot_text(None) == ""
+
+
+class TestCopilotSummarizer:
+    def test_success_and_command_shape(self):
         seen = {}
 
-        def post(url, headers, payload):
-            seen.update(url=url, headers=headers, payload=payload)
-            return {"choices": [{"message": {"content": "  GH overview.  "}}]}
+        def run(argv, *, cwd, timeout):
+            seen.update(argv=argv, cwd=cwd, timeout=timeout)
+            return 0, "  Copilot overview.  ", ""
 
-        fn = make_github_models_summarizer(
-            token="tok", model="openai/gpt-4o-mini", post=post, min_interval=0
-        )
-        assert fn("EME", [{"subject": "Fix X"}]) == "GH overview."
-        assert seen["url"].endswith("/inference/chat/completions")
-        assert seen["headers"]["Authorization"] == "Bearer tok"
-        assert seen["headers"]["X-GitHub-Api-Version"]
-        assert seen["payload"]["model"] == "openai/gpt-4o-mini"
-        # OpenAI-compatible: a system message then the user prompt.
-        assert [m["role"] for m in seen["payload"]["messages"]] == ["system", "user"]
-        assert "Fix X" in seen["payload"]["messages"][1]["content"]
+        fn = make_copilot_summarizer(model="claude-sonnet-4.5", run=run)
+        assert fn("EME", [{"subject": "Fix X"}]) == "Copilot overview."
+        assert seen["argv"][0] == "copilot"
+        assert "Fix X" in seen["argv"][seen["argv"].index("-p") + 1]
+        assert seen["timeout"] > 0
 
-    def test_http_error_returns_none(self):
-        def post(*a, **k):
-            raise RuntimeError("502")
-
-        fn = make_github_models_summarizer(token="t", post=post, min_interval=0)
-        assert fn("EME", [{"subject": "x"}]) is None
-
-    def test_malformed_response_returns_none(self):
-        fn = make_github_models_summarizer(
-            token="t", post=lambda *a, **k: {"choices": []}, min_interval=0
+    def test_nonzero_exit_returns_none(self):
+        fn = make_copilot_summarizer(
+            run=lambda *a, **k: (1, "", "not authenticated")
         )
         assert fn("EME", [{"subject": "x"}]) is None
+
+    def test_subprocess_raise_returns_none(self):
+        def run(*a, **k):
+            raise OSError("copilot: command not found")
+
+        fn = make_copilot_summarizer(run=run)
+        assert fn("EME", [{"subject": "x"}]) is None
+
+    def test_empty_output_returns_none(self):
+        # Blank stdout must not be cached as a valid (empty) overview.
+        fn = make_copilot_summarizer(
+            run=lambda *a, **k: (0, "   \n", "")
+        )
+        assert fn("EME", [{"subject": "x"}]) is None
+
+    def test_runs_outside_the_repo_checkout(self, tmp_path):
+        # The agent has tools enabled; keep its working directory away from
+        # the checkout so it cannot wander into repo files.
+        seen = {}
+
+        def run(argv, *, cwd, timeout):
+            seen["cwd"] = cwd
+            return 0, "ok", ""
+
+        fn = make_copilot_summarizer(run=run, workdir=str(tmp_path))
+        fn("EME", [{"subject": "x"}])
+        assert seen["cwd"] == str(tmp_path)

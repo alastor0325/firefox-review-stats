@@ -19,6 +19,7 @@ import argparse
 import json
 import os
 import shutil
+from collections import Counter
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -40,10 +41,11 @@ from reviewstats.recent_changes import deep_feature_bucket
 from reviewstats.render import render_html
 from reviewstats.report import RECENT_CHANGES_WINDOWS, build_report
 from reviewstats.summarize import (
-    DEFAULT_GITHUB_MODEL as _DEFAULT_GITHUB_MODEL,
+    DEFAULT_COPILOT_MODEL as _DEFAULT_COPILOT_MODEL,
     DEFAULT_SUMMARY_MODEL as _DEFAULT_SUMMARY_MODEL,
+    dead_backend_warning,
     make_anthropic_summarizer,
-    make_github_models_summarizer,
+    make_copilot_summarizer,
     summarize_features,
 )
 from reviewstats.teams import TEAMS, Team
@@ -63,15 +65,18 @@ def _generate_for_team(
     archive_week: bool,
     now: datetime,
     summarize_fn=None,
-) -> None:
+) -> dict:
     """Build one team's report from scratch and write it to
     `<out_dir>/<team.slug>/`. raw_data/ and caches are shared
     across teams, hence the explicit `cache_dir` parameter so the
     caller controls placement (root, not per-team).
 
     `summarize_fn`, when supplied, generates the per-feature "what we
-    did" summaries for the Recent Changes tab; None skips summarization
-    (the tab still renders the change lists, just without summaries)."""
+    did" summaries for the Recent Changes tab; None still fills in any
+    overview already committed to `.summary_cache/`, it just generates
+    no new ones.
+
+    Returns the team's {generated, reused, failed} summary counts."""
     print(
         f"[{team.slug}] Fetching commits from {repo} "
         f"paths={list(team.paths)} excludes={list(team.excludes)} "
@@ -85,7 +90,7 @@ def _generate_for_team(
     )
     if not commits:
         print(f"[{team.slug}] No commits found; skipping.")
-        return
+        return Counter()
     # Only create the team subfolder once we know we'll write to it —
     # an empty <slug>/ directory on disk is a misleading signal that
     # the report exists but is broken.
@@ -224,10 +229,12 @@ def _generate_for_team(
 
     # Annotate each Recent Changes feature area with a "what we did"
     # overview. Disk-cached by content hash, so the weekly refresh only
-    # summarizes feature-sets it hasn't seen. No-op when summarize_fn is None.
-    if "recent_changes" in report and summarize_fn is not None:
+    # summarizes feature-sets it hasn't seen. Runs even with no backend, so
+    # overviews already committed to .summary_cache/ are still applied.
+    summary_stats = Counter()
+    if "recent_changes" in report:
         print(f"[{team.slug}] Summarizing recent-change feature areas...")
-        summarize_features(
+        summary_stats = summarize_features(
             report["recent_changes"],
             cache_dir=out_dir / ".summary_cache",
             summarize_fn=summarize_fn,
@@ -264,6 +271,7 @@ def _generate_for_team(
         f"{report['summary']['group_tagged_patches']} tagged with "
         f"{team.group})"
     )
+    return summary_stats
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -295,35 +303,42 @@ def main(argv: list[str] | None = None) -> int:
     now = datetime.now(timezone.utc)
 
     # Pick the Recent Changes summarizer backend:
-    #   REVIEW_STATS_SUMMARY_BACKEND=github  → GitHub Models (free, uses the
+    #   REVIEW_STATS_SUMMARY_BACKEND=copilot → GitHub Copilot CLI (uses the
     #       workflow's own token; the CI default)
     #   =anthropic / ANTHROPIC_API_KEY set   → Claude API (local "nicer prose")
     #   =off, or nothing configured          → no generation; cached overviews
     #       in .summary_cache/ are still reused.
+    # An unrecognized name (a typo, or the retired `github`) warns loudly
+    # rather than falling through to the silent cache-only path — a backend
+    # that quietly never runs is the same invisible failure as one that runs
+    # and fails every call. See `dead_backend_warning` for the latter.
     backend = os.environ.get("REVIEW_STATS_SUMMARY_BACKEND", "").strip().lower()
     summarize_fn = None
     if backend == "off":
         print("Recent-change summaries disabled (backend=off); reusing cache only.")
-    elif backend == "github":
-        token = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN")
-        if token:
-            model = os.environ.get("REVIEW_STATS_SUMMARY_MODEL", _DEFAULT_GITHUB_MODEL)
-            summarize_fn = make_github_models_summarizer(token=token, model=model)
-            print(f"Recent-change summaries via GitHub Models (model={model}).")
-        else:
-            print("backend=github but no GH_TOKEN/GITHUB_TOKEN — reusing cache only.")
-    elif os.environ.get("ANTHROPIC_API_KEY"):
+    elif backend == "copilot":
+        model = os.environ.get("REVIEW_STATS_SUMMARY_MODEL", _DEFAULT_COPILOT_MODEL)
+        summarize_fn = make_copilot_summarizer(model=model)
+        print(f"Recent-change summaries via GitHub Copilot CLI (model={model}).")
+    elif backend == "anthropic" or (not backend and os.environ.get("ANTHROPIC_API_KEY")):
         model = os.environ.get("REVIEW_STATS_SUMMARY_MODEL", _DEFAULT_SUMMARY_MODEL)
         try:
             summarize_fn = make_anthropic_summarizer(model=model)
             print(f"Recent-change summaries via Anthropic (model={model}).")
         except ImportError:
             print("ANTHROPIC_API_KEY set but `anthropic` not installed — cache only.")
+    elif backend:
+        print(
+            f"::warning title=Recent-change summaries::unknown summary backend "
+            f"{backend!r} (valid: copilot, anthropic, off) — no overviews will "
+            f"be generated. GitHub Models ('github') was retired 2026-07-30."
+        )
     else:
         print("No summary backend configured — reusing cached overviews only.")
 
+    totals = Counter()
     for team in TEAMS.values():
-        _generate_for_team(
+        totals += _generate_for_team(
             team,
             repo=args.repo,
             since=since,
@@ -333,6 +348,13 @@ def main(argv: list[str] | None = None) -> int:
             now=now,
             summarize_fn=summarize_fn,
         )
+
+    warning = dead_backend_warning(totals)
+    if warning:
+        # ::warning:: surfaces on the Actions run summary. Deliberately not
+        # a hard failure — the data refresh itself is fine and still needs
+        # to be committed.
+        print(f"::warning title=Recent-change summaries::{warning}")
 
     landing_path = out_dir / "index.html"
     landing_path.write_text(

@@ -7,13 +7,20 @@ on:
   workflow_dispatch:  # allow manual runs from the Actions tab
 
 permissions:
-  contents: write  # needed to push regenerated data + html
-  models: read     # lets the workflow token call GitHub Models for overviews
+  contents: write          # needed to push regenerated data + html
+  copilot-requests: write  # lets the workflow token drive Copilot CLI for overviews
 
 jobs:
   refresh:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    # Was 60. The Copilot CLI backend spends ~20-40s per uncached feature
+    # area (node spawn + an agent round-trip) and there are ~60-85 of them
+    # across the three teams, so the summary step alone can run 30-40 min on
+    # top of the ~10 min for Phabricator + commits. A timeout here is
+    # expensive, not just slow: .summary_cache/ is only committed by the
+    # final step, so overviews already paid for in AI Credits are discarded
+    # and regenerated next week.
+    timeout-minutes: 120
 
     steps:
       - name: Checkout firefox-review-stats
@@ -31,6 +38,11 @@ jobs:
 
       - name: Install Chromium for Playwright
         run: python -m playwright install --with-deps chromium
+
+      - name: Install GitHub Copilot CLI
+        # Backend for the Recent Changes overviews. Not preinstalled on the
+        # runner; analyze_git.py shells out to the `copilot` binary.
+        run: npm install -g @github/copilot
 
       - name: Restore Phabricator HTML cache
         # Persists .phab_html_cache/ between weekly runs so analyze_phab.py
@@ -70,15 +82,18 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Generate landing report (GitHub commits)
-        # Recent Changes overviews are generated via GitHub Models (free,
-        # using the workflow's own token — no third-party key stored). Newly
-        # written overviews are committed to .summary_cache/ and reused on
-        # later runs. GH_TOKEN doubles as both the commit-API token and the
-        # GitHub Models inference token (permissions: models: read above).
+        # Recent Changes overviews are generated via the GitHub Copilot CLI,
+        # which authenticates with the workflow's own token — no third-party
+        # key stored. (This replaced GitHub Models, retired 2026-07-30.)
+        # Unlike GitHub Models it is not free: calls consume GitHub AI
+        # Credits. Newly written overviews are committed to .summary_cache/
+        # and reused on later runs, so the weekly spend is only for feature
+        # areas whose patch set actually changed.
         run: python analyze_git.py
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REVIEW_STATS_SUMMARY_BACKEND: github
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Copilot CLI reads this
+          REVIEW_STATS_SUMMARY_BACKEND: copilot
 
       - name: Generate per-author listing
         run: python dump_author_patches.py

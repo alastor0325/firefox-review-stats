@@ -19,10 +19,15 @@ Design:
   * `make_anthropic_summarizer` builds the real `summarize_fn` against the
     Anthropic SDK (imported lazily so the package is only required when a
     summary is actually generated).
+  * `make_copilot_summarizer` builds the CI `summarize_fn` by shelling out
+    to the GitHub Copilot CLI, which authenticates with the workflow's own
+    token (no third-party key stored).
 """
 
 import hashlib
 import json
+import re
+from collections import Counter
 from pathlib import Path
 from typing import Callable, Optional
 
@@ -33,13 +38,23 @@ from reviewstats.recent_changes import _patch_key
 # quality for ~5x lower cost on the weekly batch.
 DEFAULT_SUMMARY_MODEL = "claude-opus-4-8"
 
-# GitHub Models — free inference reachable from CI with the workflow's own
-# token (permissions: models: read), no third-party key stored. Used for
-# the weekly refresh; a small model is plenty for short summaries and keeps
-# us inside the free low-tier rate limit. See README → Recent-change summaries.
-GITHUB_MODELS_URL = "https://models.github.ai/inference/chat/completions"
-GITHUB_MODELS_API_VERSION = "2026-03-10"
-DEFAULT_GITHUB_MODEL = "openai/gpt-4o-mini"
+# GitHub Copilot CLI — the CI backend. It replaces GitHub Models, which was
+# retired on 2026-07-30 (its inference endpoint now returns 410 Gone). The
+# CLI keeps the property that mattered: it authenticates with the workflow's
+# built-in GITHUB_TOKEN (permissions: copilot-requests: write), so no
+# third-party key is stored. Unlike GitHub Models it is not free — calls
+# consume GitHub AI Credits. Note it is an *agent*, not a plain completion
+# endpoint: there is no system role (see `build_copilot_prompt`) and it runs
+# with tools available (see `workdir` in `make_copilot_summarizer`).
+COPILOT_EXECUTABLE = "copilot"
+# "auto" (Copilot picks) rather than a pinned id: which models a token may
+# use depends on the account's Copilot plan, and an unavailable id is a hard
+# error before any request is made — verified locally, where every pinned id
+# tried (claude-sonnet-4.5, claude-haiku-4.5, gpt-4.1, gpt-5-mini) returned
+# 'Model ... is not available' and only "auto" ran. Pin one via
+# REVIEW_STATS_SUMMARY_MODEL if a specific model is wanted and known good.
+DEFAULT_COPILOT_MODEL = "auto"
+COPILOT_TIMEOUT_SECONDS = 180
 
 _SYSTEM_PROMPT = (
     "You explain recent changes to one part of the Firefox browser for a "
@@ -117,7 +132,7 @@ def summarize_features(
     *,
     cache_dir: Path,
     summarize_fn: Optional[Callable[[str, list[dict]], Optional[str]]],
-) -> None:
+) -> Counter:
     """Fill each feature's `summary` across all recent-changes windows.
 
     Resolution order per feature area: in-run memo → on-disk cache
@@ -128,6 +143,10 @@ def summarize_features(
     key *is* present, freshly-generated overviews are written back to the
     cache so they can be committed. `summarize_fn` returning None (failure)
     is left un-cached so a later run can retry.
+
+    Returns a Counter of {generated, reused, failed} (per unique content
+    hash) so callers can sum across teams and tell a flaky area apart from a
+    backend that is failing every single call — see `dead_backend_warning`.
     """
     cache_dir = Path(cache_dir)
     memo: dict[str, Optional[str]] = {}
@@ -159,6 +178,30 @@ def summarize_features(
             f"  [summary] {generated} generated, {reused} reused from cache, "
             f"{failed} failed (left blank, will retry next run)"
         )
+    return Counter(generated=generated, reused=reused, failed=failed)
+
+
+def dead_backend_warning(stats: Counter) -> Optional[str]:
+    """Return a warning line when the backend produced nothing at all, else
+    None.
+
+    Lives next to `summarize_features` because it is a statement about that
+    function's failure semantics: a per-area None is retryable and self-heals
+    next run, but *every* call returning None is a dead backend. `failed` is
+    only ever incremented when a backend is active, so a cache-only run can
+    never trip this.
+
+    Needed because the failure is otherwise invisible — GitHub Models was
+    retired on 2026-07-30 and the next weekly refresh 410'd on every single
+    call, printed its usual summary line, and exited green.
+    """
+    if not stats["failed"] or stats["generated"]:
+        return None
+    return (
+        f"summary backend generated 0 overviews and failed "
+        f"{stats['failed']} times — it is likely broken, not flaky. "
+        f"New feature areas will render with no overview."
+    )
 
 
 def make_anthropic_summarizer(
@@ -207,68 +250,126 @@ def make_anthropic_summarizer(
     return summarize
 
 
-def _post_json(url, headers, payload, *, timeout=60):
-    """Minimal stdlib POST returning parsed JSON (no `requests` dependency)."""
-    import urllib.request
+def build_copilot_prompt(feature_label: str, patches: list[dict]) -> str:
+    """Fold the system + user prompts into one string for the Copilot CLI.
 
-    req = urllib.request.Request(
-        url,
-        data=json.dumps(payload).encode("utf-8"),
-        headers=headers,
-        method="POST",
-    )
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        return json.loads(resp.read().decode("utf-8"))
+    The CLI takes a single prompt (`-p`) and has no system-message concept,
+    so the instructions have to ride inline with the request."""
+    system, user = build_summary_prompt(feature_label, patches)
+    return f"{system}\n\n{user}"
 
 
-def make_github_models_summarizer(
+def build_copilot_argv(
+    prompt: str, *, model: str, executable: str = COPILOT_EXECUTABLE
+) -> list[str]:
+    """Argv for one non-interactive Copilot CLI run.
+
+    Flag by flag, since this is a chat endpoint being driven as one:
+      -s / --no-color        stdout is the response only, no decoration
+      --no-ask-user          never pause for input it can't get in CI
+      --allow-all-tools      the CLI requires it for non-interactive runs
+      --available-tools=     …but expose none of them. Permission flags only
+                             control approval prompts; this is what keeps the
+                             tool schemas out of the (billed) request, and
+                             the agent unable to touch anything
+      --disable-builtin-mcps skip spawning the GitHub MCP server; we're
+                             summarizing strings, and this runs ~60x a week
+      --no-custom-instructions  ignore any AGENTS.md that would otherwise
+                             reword the overviews out from under us
+
+    The prompt is a single argv entry — never shell-interpolated."""
+    argv = [
+        executable,
+        "-p", prompt,
+        "-s",
+        "--no-color",
+        "--no-ask-user",
+        "--allow-all-tools",
+        "--available-tools=",
+        "--disable-builtin-mcps",
+        "--no-custom-instructions",
+    ]
+    if model:
+        argv.append(f"--model={model}")
+    return argv
+
+
+# Belt-and-braces cleanup of the CLI's stdout. `-s` is supposed to emit only
+# the response, but this is prose that gets committed to .summary_cache/ and
+# rendered on the dashboard, so strip any terminal chrome that leaks through.
+_ANSI_RE = re.compile(r"\x1b\[[0-9;?]*[ -/]*[@-~]|\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)")
+_SPINNER_RE = re.compile(r"[⠀-⣿]")  # braille spinner frames
+
+
+def extract_copilot_text(stdout: Optional[str]) -> str:
+    """Strip ANSI escapes, spinner glyphs and in-place redraws from the CLI's
+    stdout, returning the response text."""
+    # split("\n"), not splitlines(): splitlines() also breaks on \r, which
+    # would turn each spinner redraw into its own line instead of letting
+    # the last one win. The trailing strip() drops the blank lines that
+    # leaves at either end.
+    lines = [
+        _SPINNER_RE.sub("", _ANSI_RE.sub("", raw.rstrip("\r").split("\r")[-1]))
+        for raw in (stdout or "").split("\n")
+    ]
+    return "\n".join(line.rstrip() for line in lines).strip()
+
+
+def _run_copilot(argv: list[str], *, cwd: Optional[str], timeout: int):
+    """Run the Copilot CLI, returning (returncode, stdout, stderr).
+
+    With no `cwd` the agent runs in a throwaway empty directory rather than
+    the checkout — it has tools enabled, and summarizing patch titles never
+    needs to touch repo files."""
+    import contextlib
+    import subprocess
+    import tempfile
+
+    with contextlib.ExitStack() as stack:
+        workdir = cwd or stack.enter_context(
+            tempfile.TemporaryDirectory(prefix="review-stats-summary-")
+        )
+        proc = subprocess.run(
+            argv, cwd=workdir, timeout=timeout, capture_output=True, text=True
+        )
+    return proc.returncode, proc.stdout, proc.stderr
+
+
+def make_copilot_summarizer(
     *,
-    token: str,
-    model: str = DEFAULT_GITHUB_MODEL,
-    post=_post_json,
-    min_interval: float = 5.0,
+    model: str = DEFAULT_COPILOT_MODEL,
+    run=_run_copilot,
+    timeout: int = COPILOT_TIMEOUT_SECONDS,
+    workdir: Optional[str] = None,
 ) -> Callable[[str, list[dict]], Optional[str]]:
-    """Build a `summarize_fn` backed by GitHub Models (OpenAI-compatible).
+    """Build a `summarize_fn` backed by the GitHub Copilot CLI.
 
-    Uses the workflow's own token (no third-party key). `post(url, headers,
-    payload) -> dict` is injectable for tests. `min_interval` paces calls to
-    stay under the free per-minute rate limit (~15/min → 4s spacing). Any
-    error returns None so the refresh degrades to no overview rather than
-    failing.
+    Authenticates via the ambient GITHUB_TOKEN, so no third-party key is
+    stored. `run(argv, cwd=, timeout=) -> (rc, stdout, stderr)` is
+    injectable for tests. Any failure returns None so the refresh degrades
+    to no overview for that one area rather than failing the whole run.
+
+    No call pacing: unlike GitHub Models' free per-minute tier, Copilot is
+    credit-billed with no rate limit to stay under.
     """
-    import time
-
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Content-Type": "application/json",
-        "Accept": "application/vnd.github+json",
-        "X-GitHub-Api-Version": GITHUB_MODELS_API_VERSION,
-    }
-    state = {"last": 0.0}
 
     def summarize(feature_label: str, patches: list[dict]) -> Optional[str]:
-        system, user = build_summary_prompt(feature_label, patches)
-        if min_interval:
-            wait = min_interval - (time.monotonic() - state["last"])
-            if wait > 0:
-                time.sleep(wait)
-        payload = {
-            "model": model,
-            "messages": [
-                {"role": "system", "content": system},
-                {"role": "user", "content": user},
-            ],
-            "max_tokens": 400,
-        }
+        argv = build_copilot_argv(
+            build_copilot_prompt(feature_label, patches), model=model
+        )
         try:
-            data = post(GITHUB_MODELS_URL, headers, payload)
-            text = data["choices"][0]["message"]["content"]
-        except Exception as exc:  # urllib errors, bad JSON, missing fields
-            print(f"  [summary] GitHub Models error for {feature_label!r}: {exc}")
+            code, out, err = run(argv, cwd=workdir, timeout=timeout)
+        except Exception as exc:  # missing binary, timeout, OS error
+            print(f"  [summary] Copilot CLI error for {feature_label!r}: {exc}")
             return None
-        finally:
-            if min_interval:
-                state["last"] = time.monotonic()
-        return (text or "").strip() or None
+        if code != 0:
+            detail = (err or out or "").strip().splitlines()
+            reason = detail[-1][:200] if detail else "no output"
+            print(
+                f"  [summary] Copilot CLI exit {code} for "
+                f"{feature_label!r}: {reason}"
+            )
+            return None
+        return extract_copilot_text(out) or None
 
     return summarize
