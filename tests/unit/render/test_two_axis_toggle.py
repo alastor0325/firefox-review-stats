@@ -74,8 +74,11 @@ class TestToggleBarMarkup:
         bar = m.group(1)
         view_buttons = re.findall(r'<button[^>]*data-view=', bar)
         period_buttons = re.findall(r'<button[^>]*data-period=', bar)
-        assert len(view_buttons) == 4, (
-            f"expected exactly 4 view buttons, found {len(view_buttons)}"
+        # Five views: the four review-process lenses plus Media Health, which
+        # is playback-only and hides itself when no roadmap payload is
+        # injected. See tests/unit/render/test_media_health_view.py.
+        assert len(view_buttons) == 5, (
+            f"expected exactly 5 view buttons, found {len(view_buttons)}"
         )
         # Period axis: 6-Month (data-period="total") / 3-Month / 1-Month
         # / Per-Week. 1m and 3m were added alongside the windowed

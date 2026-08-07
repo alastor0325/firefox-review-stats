@@ -15,6 +15,10 @@ Each `Team` bundles the four knobs every report needs:
   review don't count as "landed without team review"). Unlike
   `members`, these never appear in any load-distribution view — they
   are not treated as team members, only as trusted approvers.
+* `has_roadmap` — whether this team maintains a curated roadmap, which
+  gates the Media Health view. Unlike the other four views, that one is
+  not a lens on review process (which is generic across teams) but on
+  the product itself, so it legitimately exists for one team only.
 
 The slug is used as the output subdirectory name (each team gets
 its own /<slug>/index.html under the site root).
@@ -32,6 +36,7 @@ class Team:
     excludes: tuple[str, ...]
     members: dict[str, str]
     approved_reviewers: frozenset[str] = field(default_factory=frozenset)
+    has_roadmap: bool = False
 
 
 PLAYBACK_TEAM = Team(
@@ -56,6 +61,9 @@ PLAYBACK_TEAM = Team(
     # Trusted reviewers who aren't on the media-playback-reviewers Phab
     # roster but whose review still counts as valid team oversight.
     approved_reviewers=frozenset({"pehrsons", "stransky"}),
+    # The media roadmap is curated in the investigation repo; this is the
+    # only team with one, so the Media Health view is playback-only.
+    has_roadmap=True,
 )
 
 

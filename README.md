@@ -12,16 +12,17 @@ Per-team dashboards for Mozilla — review-load distribution plus a digest of wh
 
 ## What the dashboard shows
 
-Each per-team page has four views, toggled at the top:
+Each per-team page has four views, toggled at the top — plus a fifth, **Media Health**, on the playback page only:
 
 - **Team View** — Headline summary (in-scope patch count, group-tagged %, listed-members reviewing, "landed without team review" with a foldable drill-down pie + patch list). Within-group reviewer distribution, concentration metrics (Gini, bus factor), sole-reviewer-risk, total reviews per member, top patch authors, author→reviewer mapping. Four periods: **1-Month** / **3-Month** / **6-Month** rollups (same content, narrower commit slices) and **Per-Week** (most-recent-week slice for wait-time data).
 - **Member View** — Per-member profile: weekly activity (reviews + patches submitted), authors whose patches they reviewed, wait-time tiles when they're the author.
 - **Wait Queue** — Per-revision table of in-scope, member-authored patches sorted by longest wait first. Links straight into Phabricator.
 - **Recent Changes** — A "what changed in this component" digest, defaulting to **This Week** (toggle to **This Month**). Landed **patches** (one per revision; re-lands counted once) are grouped into **feature areas** — the subdirectory each patch changed the most, mapped to a friendly label — **ordered by number of patches**, with a `count/total · %` badge per area. Each area shows a short, plain-language LLM **overview** (what changed and why it matters; a key highlight may be bolded in red) with its full patch list tucked behind a **"Show N patches"** toggle, collapsed by default. Covers all landings, not just team-reviewed ones. Overviews are generated at refresh time by the Claude API (see [Recent-change summaries](#recent-change-summaries)); without an API key the tab still renders the patch lists, just without overviews.
+- **Media Health** *(playback only)* — The media roadmap and, later, the Raptor performance metrics. Two subviews: **Roadmap** and **Performance**. Roadmap renders the curated item list in three groups — **Ordered** (impact against how many users meet the problem, cost breaking ties), **Need measuring first** (unranked: low confidence, or no reach figure — the next action is to find out, not to build), and **Continuous** (spec and upkeep, budgeted as a share of time rather than ranked). Each row expands to its authored consequence, evidence and details. **Reach is shown; the score it feeds is not** — reach is a contested input worth arguing about, the arithmetic isn't. The metrics table at the bottom is the seam with Performance: every target is currently unset, which is what blocks the perennial-quality scope. Unlike the other four views, this one is about the product rather than the review process, which is why it exists for one team only. It removes itself automatically on teams with no roadmap.
 
-**Keyboard navigation:** on a team page, **←/→** cycle the view (Team → Member → Wait Queue → Recent Changes) and **Shift+←/→** cycle the period (6-Month → 3-Month → 1-Month → Per-Week, Team View only). Arrows are ignored while typing in a field, and Cmd/Alt/Ctrl+arrow are left to the OS/browser (Ctrl+← / → is the macOS Spaces switch, which is why Shift — not Ctrl — drives the period).
+**Keyboard navigation:** on a team page, **←/→** cycle the view (Team → Member → Wait Queue → Recent Changes → Media Health) and **Shift+←/→** cycle the current view's secondary axis — the period in Team View (6-Month → 3-Month → 1-Month → Per-Week), the window in Recent Changes, the section in Media Health. Arrows are ignored while typing in a field, and Cmd/Alt/Ctrl+arrow are left to the OS/browser (Ctrl+← / → is the macOS Spaces switch, which is why Shift — not Ctrl — drives the period).
 
-**Deep links:** the view and its period/window are encoded in the URL hash, so you can link straight to a state — `#team/6m`, `#team/3m`, `#team/1m`, `#team/weekly`, `#member`, `#queue`, `#recent/1w`, `#recent/1m`. The hash updates as you toggle and is restored on load and on back/forward.
+**Deep links:** the view and its period/window are encoded in the URL hash, so you can link straight to a state — `#team/6m`, `#team/3m`, `#team/1m`, `#team/weekly`, `#member`, `#queue`, `#recent/1w`, `#recent/1m`, `#health/roadmap`. The hash updates as you toggle and is restored on load and on back/forward.
 
 The landing page is a static picker that lists every registered team and links into its subfolder. **↑/↓** move a focus highlight through the teams; **Enter** opens the highlighted one.
 
@@ -102,7 +103,7 @@ python -m playwright install chromium
 Run the test suite:
 
 ```bash
-python -m pytest tests/             # 349 tests (unit + integration)
+python -m pytest tests/             # 653 tests (unit + integration)
 python -m pytest tests/unit/        # unit only
 python -m pytest tests/integration/ # value-side end-to-end checks
 ```
@@ -111,6 +112,7 @@ Generate the site:
 
 ```bash
 python analyze_git.py               # cheap (GitHub API, paginated commits)
+python analyze_git.py --roadmap-audience internal   # local only, never commit the result
 python analyze_phab.py              # slow first time per new team (Playwright + Phab)
 python dump_author_patches.py       # cheap (re-uses analyze_git's API)
 ```
@@ -121,6 +123,60 @@ Serve locally:
 python3 -m http.server 8765 --bind 127.0.0.1
 # Then open http://127.0.0.1:8765/
 ```
+
+### The Media Health view (playback only)
+
+The Roadmap subview is generated from a hand-curated YAML file that lives
+**outside this repo**, in the investigation repo:
+
+```
+~/firefox-bug-investigation/roadmap/roadmap.yaml     # override with $ROADMAP_YAML
+```
+
+`analyze_git.py` only ever **reads** it. The roadmap is slow-moving and
+human-authored, so the weekly refresh must never regenerate or overwrite it. If
+the file is absent — a fresh checkout, or CI without the investigation repo —
+the view degrades to "tab not there" rather than failing the build.
+
+Which teams get the view is set by `has_roadmap` on the `Team` dataclass
+(playback only). The template itself never learns a team name: it hides the tab
+when no roadmap payload was injected, the same way Recent Changes hides itself
+when there is no digest.
+
+#### Internal vs public — read this before publishing
+
+**This repo is public and the site is served from GitHub Pages.** The roadmap
+carries candid internal assessment: contested ownership, partner names,
+individual owners. An item — or a condition aspect — can declare what to hold
+back:
+
+```yaml
+- id: playready-content-providers
+  consequence: >          # public, neutral phrasing
+    PlayReady works, but few providers have enabled it.
+  internal:
+    withhold: [details]
+    notes: >              # never rendered at any audience
+      Canal+ is enabled. Netflix is the significant holdout.
+```
+
+```bash
+python analyze_git.py                                # public subset (default)
+python analyze_git.py --roadmap-audience internal    # everything — DO NOT COMMIT
+```
+
+`--roadmap-audience` defaults to **public**, and it has to. `internal` output is
+a strict superset of `public`, `<slug>/index.html` is git-tracked, and the
+weekly workflow runs `analyze_git.py` with no flags and then `git add -A
+playback/`. So an internal default would publish precisely the fields the
+annotation exists to protect.
+
+Withheld fields are **marked** in the expanded row, not silently dropped, so a
+reader can tell something was held back.
+
+> **Currently outstanding:** `roadmap.yaml` has no `internal:` blocks yet, so
+> the public build still renders everything. The mechanism works and is tested;
+> the annotation pass has not been done. Annotate before this view is published.
 
 ### Recent-change summaries
 

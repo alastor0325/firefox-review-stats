@@ -56,28 +56,66 @@ class TestKeydownHandler:
             "handler must react to ArrowLeft / ArrowRight"
         )
 
-    def test_shift_selects_period_axis_plain_selects_view(self):
+    def test_shift_selects_secondary_axis_plain_selects_view(self):
         html = _render()
         # Shift distinguishes the two axes (Ctrl+Arrow is the macOS
-        # Spaces shortcut, so it can't drive the period).
+        # Spaces shortcut, so it can't drive the secondary axis).
         assert re.search(r"if\s*\(\s*e\.shiftKey\s*\)", html), (
-            "period nav must branch on e.shiftKey"
+            "secondary-axis nav must branch on e.shiftKey"
         )
-        assert re.search(r"setPeriod\(", html), "period nav must call setPeriod"
         assert re.search(r"setView\(", html), "view nav must call setView"
+        # Shift dispatches through the shared view->axis table rather than a
+        # per-view if/else chain.
+        assert re.search(
+            r"VIEW_SECONDARY_AXIS\[document\.body\.dataset\.view\]", html
+        ), "shift nav must look the axis up in VIEW_SECONDARY_AXIS"
+        assert re.search(r"secondary\.set\(", html), (
+            "shift nav must call the axis's setter from the table"
+        )
 
-    def test_shift_nav_drives_secondary_axis_per_view(self):
-        """Shift+arrow drives the current view's secondary axis: the period
-        in Team View, the week/month window in Recent Changes. In other
-        views it's a no-op rather than mutating a hidden axis."""
+    def test_every_view_with_a_secondary_axis_is_in_the_table(self):
+        """Shift+arrow drives the current view's secondary axis: the period in
+        Team View, the week/month window in Recent Changes, the section in
+        Media Health. The table is the single source for all three consumers
+        (writeHash, applyHash, keyboard), so a view added to the toggle bar
+        without an entry here would have dead keyboard nav — which is exactly
+        what happened before it existed."""
         html = _render()
-        assert re.search(
-            r"dataset\.view\s*===\s*'team'", html
-        ), "Shift nav should drive the period axis when data-view is 'team'"
-        assert re.search(
-            r"dataset\.view\s*===\s*'recent'", html
-        ), "Shift nav should drive the recent-window axis when data-view is 'recent'"
-        assert re.search(r"setRecent\(", html), "recent nav must call setRecent"
+        m = re.search(
+            r"const VIEW_SECONDARY_AXIS = \{(.*?)\n\};", html, re.DOTALL
+        )
+        assert m is not None, "VIEW_SECONDARY_AXIS table missing"
+        table = m.group(1)
+        for view, axis, setter in (
+            ("team", "period", "setPeriod"),
+            ("recent", "recent", "setRecent"),
+            ("health", "health", "setHealth"),
+        ):
+            entry = re.search(rf"{view}:\s*\{{(.*?)\}}", table, re.DOTALL)
+            assert entry is not None, f"no VIEW_SECONDARY_AXIS entry for {view}"
+            assert f"axis: '{axis}'" in entry.group(1), (
+                f"{view} should drive the {axis} axis"
+            )
+            assert f"set: {setter}" in entry.group(1), (
+                f"{view} should dispatch to {setter}"
+            )
+
+    def test_views_without_a_secondary_axis_are_a_no_op(self):
+        """In Member View and Wait Queue, Shift+arrow must do nothing rather
+        than mutate a hidden axis."""
+        html = _render()
+        m = re.search(
+            r"const VIEW_SECONDARY_AXIS = \{(.*?)\n\};", html, re.DOTALL
+        )
+        table = m.group(1)
+        for view in ("member", "queue"):
+            assert not re.search(rf"\b{view}:\s*\{{", table), (
+                f"{view} has no secondary axis and must not be in the table"
+            )
+        # The lookup is guarded, so a missing entry is a no-op.
+        assert re.search(r"if\s*\(secondary\)", html), (
+            "the axis lookup must be guarded for views with no secondary axis"
+        )
 
     def test_prevent_default_when_handled(self):
         html = _render()

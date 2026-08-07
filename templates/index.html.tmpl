@@ -440,6 +440,93 @@
     font-family: var(--mono);
   }
   #queue-table td.title { word-break: break-word; overflow-wrap: anywhere; }
+
+  /* ---- Media Health / Roadmap -------------------------------------- */
+  /* The roadmap's substance is authored prose, not numbers, so rows stay
+     scannable and the paragraphs live behind a click. */
+  .rm-imp {
+    font-family: var(--mono); font-size: 10.5px; font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+  .rm-S1 { color: var(--red); }
+  .rm-S2 { color: var(--red-deep); }
+  .rm-S3 { color: var(--ink-soft); }
+  .rm-S4 { color: var(--muted); }
+  .rm-reach { font-family: var(--mono); font-size: 10.5px; color: var(--ink-soft); }
+  .rm-reach.unk { color: var(--muted); }
+  tr.rm-row { cursor: pointer; }
+  tr.rm-row:hover td { background: var(--paper); }
+  .rm-title { font-weight: 500; line-height: 1.45; }
+  .rm-cons {
+    display: block; color: var(--muted); font-size: 11.5px;
+    line-height: 1.5; margin-top: 3px;
+  }
+  tr.rm-exp > td {
+    background: var(--surface); padding: 12px 14px 15px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .rm-exp-h {
+    font-family: var(--mono); font-size: 9.5px; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--muted); font-weight: 600;
+    margin: 0 0 4px;
+  }
+  .rm-exp-p {
+    margin: 0 0 11px; font-size: 12.5px; line-height: 1.65;
+    max-width: 88ch; color: var(--ink-soft);
+  }
+  .rm-withheld {
+    background: var(--paper-warm); border-left: 2px solid var(--muted);
+    padding: 7px 11px; margin: 0 0 11px;
+    font-family: var(--mono); font-size: 10.5px; color: var(--muted);
+    line-height: 1.55;
+  }
+  .rm-tag {
+    font-family: var(--mono); font-size: 9px; color: var(--muted);
+    border: 1px solid var(--rule); border-radius: 3px; padding: 1px 4px;
+    margin: 0 3px 3px 0; display: inline-block;
+  }
+  .rm-pill {
+    font-family: var(--mono); font-size: 9px; text-transform: uppercase;
+    letter-spacing: 0.07em; padding: 2px 6px; border-radius: 9px;
+    background: var(--paper-warm); color: var(--ink-soft);
+    white-space: nowrap; display: inline-block;
+  }
+  .rm-pill.tbd { background: var(--red); color: #fff; }
+  /* Rides on .summary-grid / .stat for the shared card recipe; only the
+     narrower column and the rating accent differ. */
+  .rm-aspects { grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); }
+  .rm-aspect { border-left: 3px solid var(--rule); }
+  .rm-aspect.weak { border-left-color: var(--red); }
+  .rm-aspect.mixed, .rm-aspect.unknown { border-left-color: #C4890A; }
+  .rm-aspect.good { border-left-color: #2E7D4F; }
+  .rm-aspect h4 {
+    margin: 0 0 5px; font-size: 12.5px; font-weight: 600;
+    display: flex; justify-content: space-between; gap: 8px; align-items: baseline;
+  }
+  .rm-aspect .rm-rating {
+    font-family: var(--mono); font-size: 8.5px; text-transform: uppercase;
+    letter-spacing: 0.09em; font-weight: 700; color: var(--muted);
+  }
+  .rm-aspect.weak .rm-rating { color: var(--red); }
+  .rm-aspect p { margin: 0; font-size: 11.5px; line-height: 1.55; color: var(--muted); }
+  .rm-rests {
+    margin-top: 7px; font-family: var(--mono); font-size: 8.5px;
+    color: var(--muted); letter-spacing: 0.03em;
+  }
+  .rm-audience {
+    background: var(--paper-warm); border-left: 2px solid var(--red);
+    padding: 9px 13px; margin: 0 0 16px; font-size: 12px;
+    line-height: 1.55; color: var(--ink-soft);
+  }
+  .rm-controls { display: flex; gap: 8px; align-items: center; margin: 0 0 14px; }
+  .rm-controls input {
+    flex: 1; min-width: 210px; padding: 6px 9px; border: 1px solid var(--rule);
+    background: var(--surface); color: var(--ink); font: inherit; font-size: 12px;
+  }
+  .rm-count { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+  .rm-mono { font-family: var(--mono); font-size: 10.5px; }
+  .rm-dim { color: var(--muted); }
+  .rm-hidden { display: none !important; }
   #queue-table a {
     color: var(--ink);
     text-decoration: none;
@@ -516,6 +603,21 @@
   body:not([data-view="recent"]) .recent-only
     { display: none !important; }
 
+  /* Media Health is the 5th view, and unlike the other four it only exists
+     for the team that has a roadmap — the tab removes itself when no roadmap
+     payload was injected. Stated additively for the same reason as above. */
+  body[data-view="health"] .team-only,
+  body[data-view="health"] .member-only,
+  body[data-view="health"] .queue-only,
+  body[data-view="health"] .recent-only,
+  body:not([data-view="health"]) .health-only
+    { display: none !important; }
+
+  /* Media Health's own axis: data-health ∈ {roadmap, performance}. */
+  body[data-health="performance"] .roadmap-only,
+  body[data-health="roadmap"]     .performance-only
+    { display: none !important; }
+
   /* Period axis: `.total-only` covers the 1m / 3m / 6m (data-period=total)
      aggregate views; `.weekly-only` is just the Per-Week trend page. */
   body[data-view="team"][data-period="1m"]    .weekly-only,
@@ -523,15 +625,22 @@
   body[data-view="team"][data-period="total"] .weekly-only,
   body[data-view="team"][data-period="weekly"] .total-only { display: none !important; }
 
-  /* Two secondary toggle groups share the same top-bar component: the
-     Period axis (Team View) and the Recent-window axis (Recent Changes).
-     Only one is visible at a time, gated by data-view. */
-  .toggle-group-recent, .toggle-sep-recent { display: none; }
+  /* Three secondary toggle groups share the same top-bar component: the
+     Period axis (Team View), the Recent-window axis (Recent Changes) and the
+     Media Health axis. Only one is visible at a time, gated by data-view. */
+  .toggle-group-recent, .toggle-sep-recent,
+  .toggle-group-health, .toggle-sep-health { display: none; }
 
   body[data-view="member"] .toggle-group-period, body[data-view="member"] .toggle-sep,
   body[data-view="queue"]  .toggle-group-period, body[data-view="queue"]  .toggle-sep,
-  body[data-view="recent"] .toggle-group-period, body[data-view="recent"] .toggle-sep
+  body[data-view="recent"] .toggle-group-period, body[data-view="recent"] .toggle-sep,
+  body[data-view="health"] .toggle-group-period, body[data-view="health"] .toggle-sep
     { display: none; }
+
+  /* Default-off above, shown only in the owning view — so no rule needs to
+     name any other view, and a 6th view adds nothing here. */
+  body[data-view="health"] .toggle-group-health { display: flex; }
+  body[data-view="health"] .toggle-sep-health { display: block; }
 
   /* Recent Changes shows the week/month group instead (same styling as Period). */
   body[data-view="recent"] .toggle-group-recent { display: flex; }
@@ -650,7 +759,7 @@
   .recent-empty { color: var(--muted); font-style: italic; }
 </style>
 </head>
-<body data-view="team" data-period="total" data-recent="1w">
+<body data-view="team" data-period="total" data-recent="1w" data-health="roadmap">
 
 __GH_CORNER__
 
@@ -665,6 +774,7 @@ __GH_CORNER__
       <button data-view="member" type="button">Member View</button>
       <button data-view="queue"  type="button">Wait Queue</button>
       <button data-view="recent" type="button">Recent Changes</button>
+      <button data-view="health" type="button">Media Health</button>
     </div>
     <div class="toggle-sep" aria-hidden="true"></div>
     <div class="toggle-group toggle-group-period" role="tablist" aria-label="Period">
@@ -677,6 +787,11 @@ __GH_CORNER__
     <div class="toggle-group toggle-group-recent" role="tablist" aria-label="Recent window">
       <button data-recent="1w" class="active" type="button">This Week</button>
       <button data-recent="1m" type="button">This Month</button>
+    </div>
+    <div class="toggle-sep toggle-sep-health" aria-hidden="true"></div>
+    <div class="toggle-group toggle-group-health" role="tablist" aria-label="Media Health section">
+      <button data-health="roadmap" class="active" type="button">Roadmap</button>
+      <button data-health="performance" type="button">Performance</button>
     </div>
   </nav>
 </div>
@@ -890,6 +1005,88 @@ __GH_CORNER__
   </section>
 </div>
 
+<!-- ============= MEDIA HEALTH / ROADMAP ============= -->
+<!-- Playback only. The whole view removes itself when no roadmap payload
+     was injected, so this markup is inert on the other teams. -->
+<div class="health-only roadmap-only">
+  <div class="rm-audience" id="roadmap-audience"></div>
+
+  <section>
+    <h2>Current condition</h2>
+    <p class="footer-note" id="roadmap-summary"></p>
+    <div class="summary-grid rm-aspects" id="roadmap-aspects"></div>
+  </section>
+
+  <section>
+    <div class="rm-controls">
+      <input id="roadmap-q" type="search"
+             placeholder="Search items, consequences, owners…">
+      <span class="rm-count" id="roadmap-count"></span>
+    </div>
+
+    <h2>Ordered</h2>
+    <p class="footer-note">Most to least important. Impact against how many users meet
+      the problem, cost breaking ties. Reach is shown because it is an input we
+      argue about; the score it feeds is not. Click a row for the full
+      consequence, evidence and details.</p>
+    <div class="table-wrap">
+      <table id="roadmap-ranked">
+        <thead></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Need measuring first</h2>
+    <p class="footer-note" id="roadmap-measure-note"></p>
+    <div class="table-wrap">
+      <table id="roadmap-measure">
+        <thead></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Continuous</h2>
+    <p class="footer-note">Spec and upkeep work has no meaningful reach, so it is
+      budgeted as a share of time rather than ranked against features.</p>
+    <div class="table-wrap">
+      <table id="roadmap-continuous">
+        <thead></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Metrics behind perennial quality</h2>
+    <p class="footer-note" id="roadmap-metrics-note"></p>
+    <div class="table-wrap">
+      <table id="roadmap-metrics">
+        <thead><tr>
+          <th>Metric</th>
+          <th>Cross-browser</th>
+          <th style="width: 90px">Target</th>
+          <th style="width: 70px">Exists</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<div class="health-only performance-only">
+  <section>
+    <h2>Performance</h2>
+    <p class="footer-note">Not built yet. This is where the media Raptor metrics land —
+      current status and the cross-browser comparison. The metrics table under
+      Roadmap is the seam: every target there is unset, and this subview is what
+      will set them.</p>
+  </section>
+</div>
+
 </main>
 
 <button type="button" id="back-to-top" aria-label="Back to top" title="Back to top">↑</button>
@@ -898,6 +1095,12 @@ __GH_CORNER__
 const DATA = __DATA_JSON__;
 const PHAB_DATA = __PHAB_DATA_JSON__;
 const RECENT = DATA.recent_changes || null;
+// Only the team that has a roadmap gets a payload here; null everywhere else,
+// which is what removes the Media Health tab. The Performance subview has no
+// data source yet, so PERF is unconditionally null for now — its button hides
+// on the same rule rather than opening an empty panel.
+const ROADMAP = __ROADMAP_DATA_JSON__;
+const PERF = null;
 
 const tipEl = document.createElement('div');
 tipEl.className = 'tip-floating';
@@ -1276,6 +1479,7 @@ function bindToggle(axis) {
 const setView = bindToggle('view');
 const setPeriod = bindToggle('period');
 const setRecent = bindToggle('recent');
+const setHealth = bindToggle('health');
 
 // Deep-linkable URLs. The hash encodes the current view and its secondary
 // axis: #team/6m, #team/3m, #team/1m, #team/weekly, #member, #queue,
@@ -1284,14 +1488,34 @@ const setRecent = bindToggle('recent');
 // the hash is applied to restore that exact state.
 const PERIOD_TO_HASH = { total: '6m', '3m': '3m', '1m': '1m', weekly: 'weekly' };
 const HASH_TO_PERIOD = { '6m': 'total', '3m': '3m', '1m': '1m', weekly: 'weekly' };
+
+// Which secondary axis belongs to which view, stated once. Previously this
+// mapping was an if/else chain repeated in writeHash, applyHash and the
+// keyboard handler — adding Media Health updated two of the three and left
+// Shift+Arrow dead in the new view, which is the failure this table prevents.
+//   axis     — the data-* attribute name
+//   def      — default value when the hash omits or misspells the sub-path
+//   set      — the bindToggle setter
+//   toHash   — optional value -> hash-token map (only Period renames its values)
+//   fromHash — optional hash-token -> value map
+const VIEW_SECONDARY_AXIS = {
+  team:   { axis: 'period', def: 'total', set: setPeriod,
+            toHash: PERIOD_TO_HASH, fromHash: HASH_TO_PERIOD },
+  recent: { axis: 'recent', def: '1w', set: setRecent },
+  health: { axis: 'health', def: 'roadmap', set: setHealth },
+};
+
 let applyingHash = false;
 
 function writeHash() {
   if (applyingHash) return;
   const v = document.body.dataset.view;
   let h = v;
-  if (v === 'team') h += '/' + (PERIOD_TO_HASH[document.body.dataset.period] || '6m');
-  else if (v === 'recent') h += '/' + (document.body.dataset.recent || '1w');
+  const secondary = VIEW_SECONDARY_AXIS[v];
+  if (secondary) {
+    const current = document.body.dataset[secondary.axis] || secondary.def;
+    h += '/' + (secondary.toHash ? (secondary.toHash[current] || current) : current);
+  }
   if (('#' + h) === location.hash) return;
   try { history.replaceState(null, '', '#' + h); }
   catch (e) { location.hash = h; }  // file:// fallback
@@ -1306,8 +1530,14 @@ function applyHash() {
   applyingHash = true;
   try {
     setView(v);
-    if (v === 'team') setPeriod(HASH_TO_PERIOD[sub] || 'total');
-    else if (v === 'recent') setRecent(sub === '1m' ? '1m' : '1w');
+    const secondary = VIEW_SECONDARY_AXIS[v];
+    if (secondary) {
+      const mapped = secondary.fromHash ? secondary.fromHash[sub] : sub;
+      // Unknown or absent sub-paths fall back to the view's default rather
+      // than leaving the axis on whatever the previous view set.
+      const values = visibleAxisValues(secondary.axis);
+      secondary.set(values.includes(mapped) ? mapped : secondary.def);
+    }
   } finally {
     applyingHash = false;
   }
@@ -1333,10 +1563,186 @@ if (!RECENT) {
     .forEach(b => { b.style.display = 'none'; });
 }
 
+// Media Health is playback-only, expressed as a data gate rather than a team
+// name: no roadmap payload means no tab. Same mechanism as RECENT above, so
+// visibleAxisValues keeps keyboard cycling correct without extra work.
+if (!ROADMAP) {
+  document.querySelectorAll('.toggle-bar button[data-view="health"]')
+    .forEach(b => { b.style.display = 'none'; });
+}
+// The Performance subview has no data source yet. Hide its button so the
+// Roadmap/Performance pair doesn't advertise a panel that says "not built".
+if (!PERF) {
+  document.querySelectorAll('.toggle-bar button[data-health="performance"]')
+    .forEach(b => { b.style.display = 'none'; });
+}
+
 // Initial team-total render — reads the HTML's default data-period
 // (set to "total"; maps to "6m") and renders the matching slice.
 // bindToggle takes over from here on every subsequent click.
 renderTeamTotalView(PERIOD_TO_KEY[document.body.dataset.period] || '6m');
+
+// ---- Media Health / Roadmap -----------------------------------------------
+// The roadmap is prose, unlike every other view on this page. Rows stay
+// scannable and each one expands to the authored consequence, evidence and
+// details, so the reading material is opt-in rather than a wall of text.
+function renderRoadmap() {
+  if (!ROADMAP) return;
+
+  // Reuse the page's escapers (escHtml for text, escAttr for attribute
+  // sinks); they assume a string, so normalise nullish first.
+  const esc = s => escHtml(s == null ? '' : s);
+  const escA = s => escAttr(s == null ? '' : s);
+
+  const audienceEl = document.getElementById('roadmap-audience');
+  const isPublic = ROADMAP.audience === 'public';
+  const withheldCount = ROADMAP.items.filter(i => (i.withheld || []).length).length;
+  audienceEl.innerHTML = isPublic
+    ? '<b>Public subset.</b> ' + withheldCount + ' item(s) have fields held back '
+      + 'as internal. Withheld fields are marked in the expanded rows rather '
+      + 'than silently omitted.'
+    : '<b>Internal view.</b> Everything renders, including fields marked '
+      + 'internal. This build is not for the public site.';
+
+  document.getElementById('roadmap-summary').textContent = ROADMAP.summary || '';
+
+  document.getElementById('roadmap-aspects').innerHTML =
+    (ROADMAP.aspects || []).map(a =>
+      '<div class="stat rm-aspect ' + esc(a.rating) + '">'
+      + '<h4>' + esc(a.name) + '<span class="rm-rating">' + esc(a.rating) + '</span></h4>'
+      + '<p>' + esc(a.text) + '</p>'
+      + '<div class="rm-rests">rests on: '
+      + ((a.rests_on || []).map(esc).join(' · ') || '—') + '</div></div>'
+    ).join('');
+
+  const m = ROADMAP.counts;
+  const lowConf = ROADMAP.items.filter(
+    i => i.bucket === 'measure' && i.confidence === 'low').length;
+  document.getElementById('roadmap-measure-note').textContent =
+    'Unranked, ' + m.measure + ' items. ' + lowConf + ' are low-confidence '
+    + 'guesses; ' + (m.measure - lowConf) + ' are claims we are confident about '
+    + 'that simply have no reach figure. Those are two different problems with '
+    + 'two different next actions.';
+
+  document.getElementById('roadmap-metrics-note').textContent =
+    ROADMAP.metrics_without_target + ' of ' + ROADMAP.metrics.length
+    + ' metrics have no target. Until they do, the perennial scope cannot be '
+    + 'driven by them — this is the seam with the Performance subview.';
+
+  document.getElementById('roadmap-metrics').querySelector('tbody').innerHTML =
+    ROADMAP.metrics.map(x =>
+      '<tr><td>' + esc(x.title) + '</td>'
+      + '<td class="rm-dim">'
+      + ((x.cross_browser || []).map(esc).join(', ') || '—') + '</td>'
+      + '<td><span class="rm-pill' + (x.target === 'TBD' ? ' tbd' : '') + '">'
+      + esc(x.target) + '</span></td>'
+      + '<td class="rm-dim">' + (x.exists ? 'yes' : 'no') + '</td></tr>'
+    ).join('');
+
+  function ownerCell(it) {
+    if ((it.withheld || []).includes('owner')) {
+      return '<span class="rm-dim">withheld</span>';
+    }
+    return it.owner
+      ? esc(it.owner)
+      : '<span class="rm-dim">unowned</span>';
+  }
+
+  function expansion(it) {
+    let h = '';
+    if (it.consequence) {
+      h += '<div class="rm-exp-h">Consequence</div>'
+         + '<p class="rm-exp-p">' + esc(it.consequence) + '</p>';
+    }
+    for (const [field, label] of [['evidence', 'Evidence'], ['details', 'Details']]) {
+      if ((it.withheld || []).includes(field)) {
+        h += '<div class="rm-exp-h">' + label + '</div>'
+           + '<div class="rm-withheld">Withheld from the public build — '
+           + 'this field is marked internal.</div>';
+      } else if (it[field]) {
+        h += '<div class="rm-exp-h">' + label + '</div>'
+           + '<p class="rm-exp-p">' + esc(it[field]) + '</p>';
+      }
+    }
+    h += '<div class="rm-exp-h">Attributes</div><p class="rm-exp-p">'
+       + '<span class="rm-tag">' + esc(it.type) + '</span>'
+       + '<span class="rm-tag">cost ' + esc(it.cost) + '</span>'
+       + '<span class="rm-tag">conf ' + esc(it.confidence) + '</span>'
+       + (it.demand ? '<span class="rm-tag">demand ' + esc(it.demand) + '</span>' : '')
+       + (it.scope ? '<span class="rm-tag">' + esc(it.scope) + '</span>' : '')
+       + (it.initiative ? '<span class="rm-tag">init: ' + esc(it.initiative) + '</span>' : '')
+       + (it.tags || []).map(t => '<span class="rm-tag">' + esc(t) + '</span>').join('')
+       + '</p>';
+    return h;
+  }
+
+  // One column definition for all three bucket tables, so adding or resizing
+  // a column is a single edit and the expansion colspan cannot drift.
+  const RM_COLS = [
+    ['Impact', '58px'], ['Reach', '62px'], ['Item', null],
+    ['Owner', '110px'], ['Cost', '58px'], ['Conf', '60px'],
+  ];
+  const RM_HEAD = '<tr>' + RM_COLS.map(
+    ([label, w]) => '<th' + (w ? ' style="width: ' + w + '"' : '') + '>'
+      + label + '</th>').join('') + '</tr>';
+
+  function fill(tableId, bucket) {
+    const table = document.getElementById(tableId);
+    table.querySelector('thead').innerHTML = RM_HEAD;
+    const rows = ROADMAP.items.filter(i => i.bucket === bucket);
+    table.querySelector('tbody').innerHTML =
+      rows.map(it => {
+        const unknownReach = !it.reach || it.reach === 'UNKNOWN';
+        const search = [it.title, it.consequence, it.owner || '',
+                        (it.tags || []).join(' ')].join(' ').toLowerCase();
+        return '<tr class="rm-row" data-search="' + escA(search) + '">'
+          + '<td><span class="rm-imp rm-' + esc(it.impact) + '">'
+          + esc(it.impact) + '</span></td>'
+          + '<td><span class="rm-reach' + (unknownReach ? ' unk' : '') + '">'
+          + (unknownReach ? '—' : 'r' + esc(it.reach)) + '</span></td>'
+          + '<td><span class="rm-title">' + esc(it.title) + '</span>'
+          + '<span class="rm-cons">' + esc(it.consequence) + '</span></td>'
+          + '<td>' + ownerCell(it) + '</td>'
+          + '<td class="rm-mono">' + esc(it.cost) + '</td>'
+          + '<td class="rm-mono rm-dim">' + esc(it.confidence) + '</td></tr>'
+          + '<tr class="rm-exp rm-hidden"><td colspan="' + RM_COLS.length + '">'
+          + expansion(it) + '</td></tr>';
+      }).join('');
+  }
+  fill('roadmap-ranked', 'ranked');
+  fill('roadmap-measure', 'measure');
+  fill('roadmap-continuous', 'continuous');
+
+  // fill() emits each row immediately followed by its expansion row, so the
+  // pair is nextElementSibling. Resolved once here: the previous form ran a
+  // full-document attribute query per row on every keystroke, which scaled
+  // with the whole page (the Wait Queue alone builds hundreds of rows).
+  const rmPairs = [...document.querySelectorAll('tr.rm-row')]
+    .map(tr => [tr, tr.nextElementSibling]);
+
+  for (const [tr, exp] of rmPairs) {
+    tr.addEventListener('click', () => {
+      if (exp) exp.classList.toggle('rm-hidden');
+    });
+  }
+
+  const q = document.getElementById('roadmap-q');
+  const counter = document.getElementById('roadmap-count');
+  function applyFilter() {
+    const t = q.value.trim().toLowerCase();
+    let n = 0;
+    for (const [tr, exp] of rmPairs) {
+      const show = !t || tr.dataset.search.includes(t);
+      tr.classList.toggle('rm-hidden', !show);
+      if (exp && !show) exp.classList.add('rm-hidden');
+      if (show) n++;
+    }
+    counter.textContent = n + ' of ' + ROADMAP.counts.total + ' shown';
+  }
+  q.addEventListener('input', applyFilter);
+  applyFilter();
+}
+renderRoadmap();
 
 // Keyboard navigation mirroring the toggle bar:
 //   Left / Right         → cycle the view axis (Team → Member → Wait Queue)
@@ -1369,14 +1775,15 @@ document.addEventListener('keydown', (e) => {
   if (isTypingTarget(e.target)) return;
   const dir = e.key === 'ArrowRight' ? 1 : -1;
   if (e.shiftKey) {
-    // Shift+arrow drives the secondary axis of the current view: the
-    // period in Team View, the week/month window in Recent Changes.
-    if (document.body.dataset.view === 'team') {
-      const values = visibleAxisValues('period');
-      setPeriod(cycleValue(values, document.body.dataset.period, dir));
-    } else if (document.body.dataset.view === 'recent') {
-      const values = visibleAxisValues('recent');
-      setRecent(cycleValue(values, document.body.dataset.recent, dir));
+    // Shift+arrow drives the secondary axis of the current view: the period
+    // in Team View, the week/month window in Recent Changes, the section in
+    // Media Health. One table so a new view cannot be added to the toggle bar
+    // and the hash while silently having dead keyboard navigation — which is
+    // exactly what happened when Media Health was first wired up.
+    const secondary = VIEW_SECONDARY_AXIS[document.body.dataset.view];
+    if (secondary) {
+      const values = visibleAxisValues(secondary.axis);
+      secondary.set(cycleValue(values, document.body.dataset[secondary.axis], dir));
     }
   } else {
     const values = visibleAxisValues('view');
