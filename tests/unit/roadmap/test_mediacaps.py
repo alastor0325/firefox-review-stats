@@ -661,3 +661,93 @@ class TestTheVerdictBarAnswersWhetherFirefoxIsCovered:
 
     def test_a_gap_is_not_green(self):
         assert "--pm-ahead" not in self._rule("gap")
+
+
+class TestFlacIsACodecNotAContainer:
+    """FLAC is probed as a codec only; `audio/flac` is not listed as a container.
+
+    Its container card held exactly one row -- the FLAC codec in a FLAC stream --
+    which the codec checks in MP4, Matroska and Ogg already answer. The
+    conformance list still asks about `audio/flac` type strings, so the Firefox
+    bug found there (FlacDecoder::IsSupportedType never reads the codecs
+    parameter) is still detected; that list is independent of the container set.
+    """
+
+    def test_flac_is_not_a_container(self):
+        from reviewstats.mediacaps import CONTAINER_MIMES
+        assert "FLAC" not in CONTAINER_MIMES
+
+    def test_no_audio_flac_container_mime_is_probed(self):
+        from reviewstats.mediacaps import CONTAINER_MIMES
+        mimes = [m for ms in CONTAINER_MIMES.values() for m in ms]
+        assert "audio/flac" not in mimes
+
+    def test_the_probe_page_still_asks_for_flac_as_a_codec(self):
+        """Removing the container must not remove the codec -- FLAC in MP4 is a
+        real gap question, and FLAC in Matroska is one of the measured
+        differences."""
+        import pathlib
+        page = pathlib.Path("media-capabilities/index.html").read_text(
+            encoding="utf-8")
+        assert "'FLAC'" in page
+
+    def test_the_probe_page_no_longer_declares_a_flac_container(self):
+        import pathlib, re
+        page = pathlib.Path("media-capabilities/index.html").read_text(
+            encoding="utf-8")
+        assert not re.search(r"name:\s*'FLAC'", page)
+
+    def test_conformance_still_covers_the_flac_bug(self):
+        import pathlib
+        page = pathlib.Path("media-capabilities/index.html").read_text(
+            encoding="utf-8")
+        assert 'audio/flac; codecs="ac-3"' in page
+
+
+class TestBrowsersAreNamedPlainly:
+    """The browser list shows a short name and a version, nothing else.
+
+    The probe's own labels carry their caveat in the name -- "Firefox (Playwright
+    Gecko build)", "WebKit (Playwright build, not Safari)" -- which put the
+    qualification in the one place it cannot be shortened. The caveat is real and
+    survives as a tooltip; the visible line is the browser and its version.
+    """
+
+    def _browsers(self):
+        from reviewstats.mediacaps import build_payload
+        results = []
+        for target, label in (("firefox-playwright", "Firefox (Playwright Gecko build)"),
+                              ("chrome", "Chrome"),
+                              ("webkit", "WebKit (Playwright build, not Safari)")):
+            results.append({
+                "target": target, "label": label, "browser_version": "1.0",
+                "probedAt": "2026-08-10T00:00:00Z", "combos": [],
+                "bare": {}, "conformance": [], "apis": {},
+            })
+        return build_payload(results)["browsers"]
+
+    def test_every_browser_has_a_short_name(self):
+        assert [b["name"] for b in self._browsers()] == [
+            "Firefox", "Chrome", "WebKit"]
+
+    def test_the_short_name_carries_no_parenthetical(self):
+        for b in self._browsers():
+            assert "(" not in b["name"]
+
+    def test_the_full_label_is_still_available_for_the_caveat(self):
+        labels = [b["label"] for b in self._browsers()]
+        assert "Firefox (Playwright Gecko build)" in labels
+
+    def test_the_container_view_browsers_carry_the_short_name_too(self):
+        """There are two browser lists in the payload, and the table reads the one
+        inside `by_container`. Adding the field to only the top-level list left the
+        page showing the long labels with every test passing."""
+        from reviewstats.mediacaps import build_container_view
+        v = build_container_view([{
+            "target": "firefox-playwright",
+            "label": "Firefox (Playwright Gecko build)",
+            "browser_version": "1.0", "bare": {},
+            "combos": [combo("MP4", "AAC-LC", kind="audio",
+                             canPlayType="probably")],
+        }])
+        assert [b["name"] for b in v["browsers"]] == ["Firefox"]

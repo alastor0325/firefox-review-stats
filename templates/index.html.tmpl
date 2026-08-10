@@ -939,6 +939,13 @@
      it. Same reason the grid is lighter than the marks. */
   /* Group heading inside a container table. Quieter than the surface heading
      above it, louder than the rows -- it is a divider, not a section. */
+  /* Hover affordance for the build caveat on a browser row. */
+  .pm-caveat {
+    display: inline-block; width: 12px; height: 12px; line-height: 12px;
+    text-align: center; border-radius: 50%; font-size: 8.5px; font-weight: 700;
+    background: var(--rule); color: var(--ink-soft); cursor: help;
+    vertical-align: 1px;
+  }
   .pm-kind {
     margin: 10px 0 2px; font-size: 10px; font-family: var(--mono);
     text-transform: uppercase; letter-spacing: .06em; color: var(--ink-soft);
@@ -2570,7 +2577,6 @@ function renderMetrics() {
         ;
     }
 
-    const strip = cv.codec_gaps && cv.codec_gaps.playback || [];
     document.getElementById('pm-caps').innerHTML =
       '<h2>Codec and container support, measured</h2>'
       + '<p class="footer-note">Asked of each browser directly rather than read '
@@ -2583,59 +2589,37 @@ function renderMetrics() {
       + 'open it in Safari or a local Firefox build to get answers this '
       + 'automated run cannot reach.</p>'
       + '<ul class="pm-facts">'
-      + cv.browsers.map(b => '<li><b>' + esc(b.label) + '</b> ' + esc(b.version)
-          + (b.is_proxy_for_safari
-              ? ' \u2014 a WebKit build, not Safari: it lacks the platform codec '
-                + 'integration Safari gets from the OS, so a "no" here is weaker '
-                + 'evidence'
-              : (b.is_nonshipping_build
-                  ? ' \u2014 a Playwright Gecko build, not a shipping Firefox '
-                    + 'configuration; codec support is exactly where build flags '
-                    + 'differ'
-                  : ''))
-          + '</li>').join('')
+      + cv.browsers.map(b => {
+          const caveat = b.is_proxy_for_safari
+            ? 'A WebKit build, not Safari: it lacks the platform codec '
+              + 'integration Safari gets from the OS, so a "no" here is weaker '
+              + 'evidence.'
+            : (b.is_nonshipping_build
+                ? 'A Playwright Gecko build, not a shipping Firefox '
+                  + 'configuration; codec support is exactly where build flags '
+                  + 'differ.'
+                : '');
+          // Caveat on hover rather than inline: it is real, and it was also
+          // three lines of prose above the table it qualifies.
+          return '<li' + (caveat ? ' title="' + escA(caveat) + '"' : '')
+            + '><b>' + esc(b.name || b.label) + '</b> ' + esc(b.version)
+            + (caveat ? ' <span class="pm-caveat">?</span>' : '') + '</li>';
+        }).join('')
       + '</ul>'
       + '<h3 style="font-size:12.5px;margin:14px 0 4px">How to read this</h3>'
       + '<ul class="pm-facts">'
-      + Object.entries(SURF_FULL).map(([k, v]) =>
-          '<li><b>' + esc(SURF[k]) + '</b> \u2014 ' + esc(v.replace(/^[^\u2014]*\u2014 /, ''))
-          + '</li>').join('')
-      + '<li>A chip reads <b>gaps / supported</b>. <code>4/16</code> means 16 of '
-      + 'the probed combinations are supported by at least one engine, and we '
-      + 'lack 4 of them. <code>\u2713</code> means no gaps; <code>\u2013</code> '
-      + 'means no engine supports anything here.</li>'
-      + '<li><span class="pm-badge pm-b-gap">behind</span> at least one '
-      + 'combination is supported by another engine and not by us \u2014 '
-      + 'something to implement.</li>'
-      + '<li><span class="pm-badge pm-b-over">we alone accept</span> we say yes '
-      + 'where no other engine does. Sometimes we are simply stricter or looser '
-      + 'about the codecs parameter; the '
-      + 'cases that are genuinely wrong.</li>'
-      + '<li><span class="pm-badge pm-b-ok">verified parity</span> every engine '
-      + 'agrees and at least one supports it \u2014 tested and fine, not '
-      + 'untested.</li>'
-      + '<li><span class="pm-badge pm-b-none">no engine support</span> nothing '
-      + 'supports it, so there is no gap to close.</li>'
-      + '<li>Rows are grouped into <b>Video codecs</b> and <b>Audio codecs</b>, '
-      + 'worst first. The bar on the left of each row says whether <b>we</b> are '
-      + 'covered: green where Firefox supports it, amber where another engine '
-      + 'does and we do not, slate where we accept something no other engine '
-      + 'will.</li>'
-      + '<li>Combinations <b>no engine supports</b> are left out — they are not '
-      + 'a gap, not an overclaim and not a win. The probe asks every codec a '
-      + 'container could plausibly carry, so there are a fair few; VP8 in MP4 is '
-      + 'one, refused by all three engines.</li>'
+      + '<li>Three surfaces per container: <b>Playback</b> a plain media '
+      + 'element, <b>Streaming</b> via Media Source, <b>Recording</b> via '
+      + 'MediaRecorder.</li>'
+      + '<li>A chip reads <b>gaps / supported</b> \u2014 <code>4/16</code> means '
+      + '16 combinations work somewhere and we lack 4. <code>\u2713</code> no '
+      + 'gaps, <code>\u2013</code> nothing supported here.</li>'
+      + '<li>The bar left of each row is <b>our</b> position: green we support '
+      + 'it, amber another engine does and we do not, slate we accept what no '
+      + 'other engine will.</li>'
+      + '<li>Combinations no engine supports are left out.</li>'
       + '</ul>'
-      + (strip.length
-          ? '<h3 style="font-size:12.5px;margin:14px 0 4px">Codecs we lack, '
-            + 'across containers</h3><p class="footer-note">The codec-shaped view '
-            + 'of the same data, for questions like "should we ship xHE-AAC".</p>'
-            + '<ul class="pm-facts">' + strip.map(g =>
-                '<li><b>' + esc(g.codec) + '</b> \u2014 behind in ' + g.count
-                + ' container' + (g.count === 1 ? '' : 's') + ': '
-                + g.containers.map(esc).join(', ') + '</li>').join('')
-            + '</ul>'
-          : '')
+
       + cv.containers.map(c => {
           const [word, cls] = BADGE[c.worst] || BADGE.parity;
           return '<details class="pm-card pm-cont"><summary>'

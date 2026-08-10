@@ -113,10 +113,12 @@ const CONTAINERS = [
   // which is how these are used in practice and what engines actually answer.
   { name: 'ADTS/AAC', video: null, audio: 'audio/aac', bare: ['audio/aac'],
     videoCodecs: [], audioCodecs: ['AAC-LC', 'HE-AAC', 'xHE-AAC'] },
+  // No FLAC container entry: `audio/flac` carries exactly one codec, so its card
+  // was a single row that the FLAC codec checks in MP4, Matroska and Ogg already
+  // answer. The CONFORMANCE list below still asks about `audio/flac` type
+  // strings, so the Firefox bug found there is still detected.
   { name: 'MP3', video: null, audio: 'audio/mpeg', bare: ['audio/mpeg'],
     videoCodecs: [], audioCodecs: ['MP3'] },
-  { name: 'FLAC', video: null, audio: 'audio/flac', bare: ['audio/flac'],
-    videoCodecs: [], audioCodecs: ['FLAC'] },
   { name: 'WAV', video: null, audio: 'audio/wav', bare: ['audio/wav'],
     videoCodecs: [], audioCodecs: ['PCM'] },
 ];

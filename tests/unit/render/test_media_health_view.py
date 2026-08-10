@@ -820,9 +820,15 @@ class TestMeasuredCaps:
         html = _joined(self._render_caps())
         assert "Video codecs" in html and "Audio codecs" in html
 
-    def test_codec_index_is_offered_alongside_the_container_grouping(self):
+    def test_the_codec_index_is_not_rendered(self):
+        """Removed on request. It restated the container tables codec-first --
+        thirteen lines of "behind in 1 container: X" -- above the tables that
+        already showed it. `build_container_view` still computes `codec_gaps`, so
+        the codec-first question is still answerable from the data.
+        """
         html = _joined(self._render_caps())
-        assert "Codecs we lack, across containers" in html
+        assert "Codecs we lack, across containers" not in html
+        assert "behind in " not in html
 
     def test_links_to_the_public_probe_page(self):
         html = self._render_caps()

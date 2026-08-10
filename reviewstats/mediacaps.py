@@ -12,12 +12,11 @@ those answers into a table.
 
 Two decisions shape the output.
 
-**Grouped by container, not codec.** A container has a *measured* header — the
-probe asks the bare MIME type too — whereas a codec-level header could only ever
-be a derived count. Disagreements also turn out to be container-shaped in
-practice: WebKit implements no Matroska at all, so 12 "differences" are one fact.
-The codec framing is served by a separate derived index rather than a second
-grouping.
+**Grouped by container, then split into video and audio.** Disagreements turn out
+to be container-shaped in practice: WebKit implements no Matroska at all, so 12
+"differences" are one fact. Within a container, video and audio are separate
+questions, so they are separate groups. The codec framing is served by a derived
+index rather than a second grouping.
 
 **A difference is not automatically a gap.** Splitting by direction matters more
 than counting: of 36 playback differences, 13 are gaps (we lack it, another engine
@@ -37,12 +36,11 @@ accordingly rather than treating every cell as equivalent.
 # parameter was not given or could not be confirmed.
 _PLAYS = ("probably", "maybe")
 
-# The surfaces a probe reports, in reading order. These are the MediaCapabilities
-# answers, not the legacy ones: decodingInfo gives a definite boolean, where
-# canPlayType gives a deliberately vague
-# tri-state whose "maybe" is unreadable without explanation. The legacy fields are
-# still collected and compared -- a disagreement between the two API generations
-# is itself worth knowing -- but they do not drive the table.
+# The surfaces a probe reports, in reading order. These are driven by the
+# MediaCapabilities answers, not the legacy ones: decodingInfo gives a definite
+# boolean, where canPlayType gives a deliberately vague tri-state whose "maybe" is
+# unreadable without explanation. The legacy fields are still collected, and are
+# still what answers a surface when the precise call refuses -- see `answer`.
 SURFACES = ("playback", "streaming", "recording")
 
 # Which probe field answers each surface, and what to fall back to. Not one API
@@ -89,10 +87,10 @@ SURFACE_SOURCE = {
 # `hw-decode-matrix` still needs a real per-configuration answer -- nothing here
 # closes it.
 
-# Bare MIME types the probe asks about, grouped to the container they belong to,
-# so a container card can show a measured header rather than a derived count.
-# HLS appears here and in no codec combination -- it is container-level only, and
-# saying so beats leaving it invisible.
+# Bare MIME types the probe asks about, grouped to the container they belong to.
+# These no longer produce rows of their own -- MediaCapabilities cannot answer a
+# bare type, and the group repeating them was dropped -- but they are still what
+# `answer` falls back to when the precise call refuses, so the mapping stays.
 CONTAINER_MIMES = {
     "MP4": ["video/mp4", "audio/mp4"],
     "WebM": ["video/webm", "audio/webm"],
@@ -101,8 +99,9 @@ CONTAINER_MIMES = {
     "MPEG-2 TS": ["video/mp2t"],
     "ADTS/AAC": ["audio/aac"],
     "MP3": ["audio/mpeg"],
-    "FLAC": ["audio/flac"],
     "WAV": ["audio/wav"],
+    # No FLAC: a single-codec container whose one row the FLAC codec checks in
+    # MP4, Matroska and Ogg already answer.
     "HLS": ["application/vnd.apple.mpegurl", "application/x-mpegurl"],
 }
 
@@ -112,6 +111,18 @@ OVERCLAIM = "overclaim"  # we claim it, nobody else does -> fix conformance
 AHEAD = "ahead"          # we have it, some engine does not
 PARITY = "parity"        # everyone agrees, and at least one supports it
 NONE = "none"            # no engine supports it
+
+
+def short_name(label: str, target: str) -> str:
+    """The engine's name with the build caveat stripped off.
+
+    The probe labels its engines "Firefox (Playwright Gecko build)" and "WebKit
+    (Playwright build, not Safari)", which puts the qualification inside the name,
+    where it cannot be shortened away. The caveat still travels on `label` for the
+    tooltip; this is what the list shows.
+    """
+    name = str(label or "").split("(")[0].strip()
+    return name or str(target or "").split("-")[0].title()
 
 
 def classify(firefox: str, others: list) -> str:
@@ -367,6 +378,7 @@ def build_container_view(results: list) -> dict:
     ))
     browsers = [{
         "target": r.get("target", ""), "label": r.get("label", ""),
+        "name": short_name(r.get("label", ""), r.get("target", "")),
         "version": r.get("browser_version", ""),
         "is_proxy_for_safari": bool(r.get("is_proxy_for_safari")),
         "is_nonshipping_build": bool(r.get("is_nonshipping_build")),
@@ -510,6 +522,7 @@ def build_payload(results: list) -> dict | None:
         "probed_at": max((r.get("probedAt") or "") for r in results),
         "browsers": [{
             "target": r.get("target"), "label": r.get("label"),
+            "name": short_name(r.get("label"), r.get("target")),
             "version": r.get("browser_version"),
             "is_proxy_for_safari": bool(r.get("is_proxy_for_safari")),
             "is_nonshipping_build": bool(r.get("is_nonshipping_build")),
