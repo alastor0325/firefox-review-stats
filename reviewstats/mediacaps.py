@@ -113,6 +113,31 @@ PARITY = "parity"        # everyone agrees, and at least one supports it
 NONE = "none"            # no engine supports it
 
 
+# Three levels of how well we cover what is achievable, plus the degenerate case
+# where nothing is achievable. Reuses the roadmap's good/mixed/weak vocabulary
+# rather than inventing a fourth colour scheme for the same idea.
+LEVELS = ("none", "partial", "full", "empty")
+LEVEL_RANK = {"none": 0, "partial": 1, "full": 2, "empty": 3}
+
+
+def support_level(ours: int, universe: int) -> str:
+    """How much of what any engine supports do we support.
+
+    Replaces a behind/parity pair that behaved like a boolean: anything short of
+    perfect read as "behind", so a container we cover 13 of 14 combinations in
+    looked identical to one we cover none of.
+
+    `universe` is combinations at least one engine supports, which is what makes
+    the ratio meaningful -- 0 of 0 is "nobody can do this", not a failing on our
+    part, so it gets its own level rather than counting as full marks.
+    """
+    if universe <= 0:
+        return "empty"
+    if ours >= universe:
+        return "full"
+    return "none" if ours <= 0 else "partial"
+
+
 def short_name(label: str, target: str) -> str:
     """The engine's name with the build caveat stripped off.
 
@@ -446,6 +471,12 @@ def build_container_view(results: list) -> dict:
             # "0 gaps" mean something. 0/5 is verified parity; 0/0 is nobody
             # supports this, which is a different fact.
             counts["supported"] = len(rows) - counts[NONE]
+            # What *we* support, which is what the chip reports. The old figure
+            # was the gap count, which rises as things get worse -- the wrong
+            # direction for a number read at a glance beside a status badge.
+            counts["ours"] = sum(
+                1 for x in rows
+                if x["support"].get(us) in ("yes", "partial"))
             groups = group_by_kind(rows)
             surfaces[surf] = {
                 "rows": rows, "counts": counts, "groups": groups,
@@ -455,11 +486,15 @@ def build_container_view(results: list) -> dict:
                 "bare": bare[surf],
             }
 
+        # Aggregated across the three surfaces: the card badge answers "how well
+        # do we do this container", not "which surface is worst".
+        ours_total = sum(surfaces[s]["counts"]["ours"] for s in SURFACES)
+        universe_total = sum(surfaces[s]["counts"]["supported"] for s in SURFACES)
+        level = support_level(ours_total, universe_total)
         worst = (GAP if any(surfaces[s]["counts"][GAP] for s in SURFACES)
                  else OVERCLAIM if any(surfaces[s]["counts"][OVERCLAIM]
                                        for s in SURFACES)
-                 else NONE if all(surfaces[s]["counts"]["supported"] == 0
-                                  for s in SURFACES)
+                 else NONE if universe_total == 0
                  else PARITY)
         # A container is "probed" if it has real codec combinations; HLS has only
         # the container-level answer, and saying so beats implying it is untested.
@@ -469,6 +504,9 @@ def build_container_view(results: list) -> dict:
         )
         containers.append({
             "name": name,
+            "level": level,
+            "ours": ours_total,
+            "achievable": universe_total,
             "mimes": CONTAINER_MIMES.get(name, []),
             "surfaces": surfaces,
             "worst": worst,
@@ -479,7 +517,11 @@ def build_container_view(results: list) -> dict:
 
     # Worst first; clean containers stay visible at the end.
     order = {GAP: 0, OVERCLAIM: 1, PARITY: 2, NONE: 3}
-    containers.sort(key=lambda c: (order.get(c["worst"], 9), -c["gaps"],
+    # By level first, so the order agrees with the badges a reader scans down the
+    # column; then by how much is missing, so two "partial" cards are not
+    # alphabetical when one is 1/14 and the other 13/14.
+    containers.sort(key=lambda c: (LEVEL_RANK.get(c["level"], 9),
+                                   -(c["achievable"] - c["ours"]),
                                    c["name"]))
 
     # Codec index: answers the codec-shaped question ("should we ship xHE-AAC?")

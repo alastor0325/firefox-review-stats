@@ -239,6 +239,14 @@ plausibly carry, so there are a fair few — VP8 in MP4 is one, refused by all t
 engines. `build_matrix.py` prints how many were dropped, since the page no longer
 does.
 
+Each container card carries a **coverage level** — `no support`, `partial`, or
+`full support` — computed as how many of the combinations *any* engine supports we
+support too, aggregated over the three surfaces. The per-surface chips show the
+same ratio (`10/14` = 14 work somewhere, we have 10). An earlier version showed the
+gap count and a behind/parity pair, which behaved like a boolean: 13 of 14 read the
+same as 0 of 14, and the figure rose as things got worse. Containers sort by level,
+then by how much is missing.
+
 Each row carries a coloured bar on the left saying whether **we** are covered:
 green where Firefox supports it, amber where another engine does and we do not,
 slate where we accept something no other engine will. `ahead` and `parity` share

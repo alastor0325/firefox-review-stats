@@ -751,3 +751,108 @@ class TestBrowsersAreNamedPlainly:
                              canPlayType="probably")],
         }])
         assert [b["name"] for b in v["browsers"]] == ["Firefox"]
+
+
+class TestChipCountsWhatWeSupport:
+    """The chip counted gaps; it now counts support.
+
+    `4/14` meant "14 combinations work in some engine and we lack 4 of them" --
+    a number that goes *up* as things get worse, which is the wrong direction for
+    a figure read at a glance next to a green/amber badge. It now reads `10/14`:
+    how many of the 14 we support.
+    """
+
+    def _counts(self, *combos):
+        from reviewstats.mediacaps import build_container_view
+        ff = result("firefox", "FF", [c[0] for c in combos])
+        cr = result("chrome", "Cr", [c[1] for c in combos])
+        v = build_container_view([ff, cr])
+        return v["containers"][0]["surfaces"]["playback"]["counts"]
+
+    def _pair(self, codec, ours, theirs):
+        return (combo("MP4", codec, kind="audio", canPlayType=ours),
+                combo("MP4", codec, kind="audio", canPlayType=theirs))
+
+    def test_ours_counts_the_rows_firefox_supports(self):
+        c = self._counts(self._pair("AAC-LC", "probably", "probably"),
+                         self._pair("AC-3", "no", "probably"))
+        assert c["ours"] == 1
+        assert c["supported"] == 2
+
+    def test_ours_and_gaps_account_for_every_supported_row(self):
+        c = self._counts(self._pair("AAC-LC", "probably", "probably"),
+                         self._pair("AC-3", "no", "probably"),
+                         self._pair("MP3", "probably", "no"))
+        assert c["ours"] + c["gap"] == c["supported"]
+
+
+class TestThreeSupportLevels:
+    """One badge with three levels, replacing behind / verified parity.
+
+    Those two read as a boolean -- anything short of perfect was "behind" --
+    so a container we support 13 of 14 combinations in looked the same as one we
+    support none of. The level is computed from how much of the *achievable* set
+    we cover, using the same good/mixed/weak vocabulary the roadmap ratings use.
+    """
+
+    def test_full_support_when_we_match_every_engine(self):
+        from reviewstats.mediacaps import support_level
+        assert support_level(14, 14) == "full"
+
+    def test_partial_when_we_have_some_but_not_all(self):
+        from reviewstats.mediacaps import support_level
+        assert support_level(10, 14) == "partial"
+
+    def test_none_when_we_have_nothing_others_do(self):
+        from reviewstats.mediacaps import support_level
+        assert support_level(0, 14) == "none"
+
+    def test_an_unsupportable_container_is_its_own_level(self):
+        """Nobody supports anything here, so we are not behind -- there is
+        nothing to be behind on. Calling that "full support" would be absurd."""
+        from reviewstats.mediacaps import support_level
+        assert support_level(0, 0) == "empty"
+
+    def test_the_container_carries_its_level(self):
+        from reviewstats.mediacaps import build_container_view
+        ff = result("firefox", "FF", [
+            combo("MP4", "AAC-LC", kind="audio", canPlayType="probably"),
+            combo("MP4", "AC-3", kind="audio", canPlayType="no")])
+        cr = result("chrome", "Cr", [
+            combo("MP4", "AAC-LC", kind="audio", canPlayType="probably"),
+            combo("MP4", "AC-3", kind="audio", canPlayType="probably")])
+        c = build_container_view([ff, cr])["containers"][0]
+        assert c["level"] == "partial"
+
+    def test_levels_are_ordered_worst_first_across_containers(self):
+        """The section already sorts containers worst-first; the level has to
+        agree with that order or the badges look shuffled."""
+        from reviewstats.mediacaps import LEVEL_RANK
+        assert (LEVEL_RANK["none"] < LEVEL_RANK["partial"]
+                < LEVEL_RANK["full"] <= LEVEL_RANK["empty"])
+
+    def test_containers_are_ordered_by_level(self):
+        """The badges are the first thing scanned down the column, so the order
+        has to agree with them. Sorting by the old verdict left "no support" cards
+        below "partial" ones, which read as unsorted."""
+        from reviewstats.mediacaps import LEVEL_RANK, build_container_view
+
+        def pair(container, codec, ours, theirs):
+            return (combo(container, codec, kind="audio", canPlayType=ours),
+                    combo(container, codec, kind="audio", canPlayType=theirs))
+
+        spec = [
+            pair("MP4", "AAC-LC", "probably", "probably"),   # MP4 -> full
+            pair("Ogg", "Vorbis", "probably", "probably"),   # Ogg -> partial
+            pair("Ogg", "Opus", "no", "probably"),
+            pair("WAV", "PCM", "no", "probably"),            # WAV -> none
+        ]
+        v = build_container_view([
+            result("firefox", "FF", [a for a, _ in spec]),
+            result("chrome", "Cr", [b for _, b in spec]),
+        ])
+        ranks = [LEVEL_RANK[c["level"]] for c in v["containers"]]
+        assert ranks == sorted(ranks), (
+            "container order disagrees with the level badges: "
+            + ", ".join(f'{c["name"]}={c["level"]}' for c in v["containers"])
+        )

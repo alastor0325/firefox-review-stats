@@ -743,11 +743,12 @@ class TestMeasuredCaps:
         assert "pm-cont-h" in html
         assert "cv.containers.map" in html
 
-    def test_every_probed_container_appears_even_at_parity(self):
+    def test_every_probed_container_appears_even_at_full_support(self):
         """WebM used to vanish because all engines agree, which read as
-        'forgotten' rather than 'verified'."""
-        assert "BADGE" in self._render_caps()
-        assert "verified parity" in self._render_caps()
+        'forgotten' rather than 'measured and fine'."""
+        html = self._render_caps()
+        assert "LEVEL" in html
+        assert "full support" in html
 
     def test_a_container_level_only_probe_says_so(self):
         """HLS has no codec combinations. Invisible is worse than labelled."""
@@ -764,14 +765,13 @@ class TestMeasuredCaps:
         assert "st.counts.supported" in html
         assert "'/' + sup" in html
 
-    def test_we_alone_accept_is_a_distinct_verdict_from_a_gap(self):
-        """Us accepting something nobody else does is not a gap, and the fix is
-        different. It is also not automatically a bug — sometimes we are simply
-        looser about the codecs parameter, which is why the genuinely-invalid
-        cases live in their own conformance check."""
+    def test_we_alone_accept_is_still_distinguishable_on_a_row(self):
+        """It left the card badge -- which now reports coverage, a different
+        question -- but it is still its own row colour, because it is not a gap
+        and the fix is different: we are answering yes where nobody else does."""
         html = _joined(self._render_caps())
-        assert "we alone accept" in html
         assert "we accept it and no other engine does" in html
+        assert "tr.pm-v-overclaim td:first-child" in html
 
     def test_the_conformance_section_is_not_rendered(self):
         """Removed from the dashboard on request. The check itself still runs in
@@ -788,10 +788,11 @@ class TestMeasuredCaps:
         assert "How to read this" in html
         # "container only" was replaced by the group heading that says the same
         # thing once, so the legend explains the groups instead of a row label.
-        for term in ("behind", "we alone accept", "verified parity",
-                     "no engine support", "Video codecs", "Audio codecs"):
+        for term in ("full support", "partial", "no support",
+                     "Video codecs", "Audio codecs"):
             assert term in html, term
-        assert "gaps / supported" in html
+        # The chip figure counts support now, so its explanation must too.
+        assert "what we support / what any engine supports" in html
 
     def test_surface_names_are_spelled_out(self):
         """"Play" and "Stream" were too terse to guess."""

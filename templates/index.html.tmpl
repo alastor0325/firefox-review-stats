@@ -894,9 +894,11 @@
     text-transform: uppercase; letter-spacing: .06em; padding: 2px 6px;
     border-radius: 3px; white-space: nowrap; color: #fff;
   }
-  .pm-b-gap { background: var(--pm-behind); color: var(--ink) }
-  .pm-b-over { background: var(--rate-unknown) }
-  .pm-b-ok { background: var(--pm-ahead) }
+  /* Three coverage levels, on the roadmap's rating ramp so the same idea wears
+     the same colour across the page. */
+  .pm-b-weak { background: var(--rate-weak) }
+  .pm-b-mixed { background: var(--rate-mixed); color: var(--ink) }
+  .pm-b-ok { background: var(--rate-good) }
   .pm-b-none { background: var(--muted) }
   .pm-chips { display: flex; gap: 5px }
   .pm-chip {
@@ -905,10 +907,13 @@
     color: var(--ink-soft);
   }
   .pm-chip b { color: var(--ink) }
-  .pm-chip.gap { border-color: var(--pm-behind) }
-  .pm-chip.gap b { color: var(--pm-behind) }
-  .pm-chip.ok { border-color: var(--pm-ahead) }
-  .pm-chip.ok b { color: var(--pm-ahead) }
+  /* Chip ring/figure match the badge ramp: none < partial < full. */
+  .pm-chip.gap { border-color: var(--rate-weak) }
+  .pm-chip.gap b { color: var(--rate-weak) }
+  .pm-chip.part { border-color: var(--rate-mixed) }
+  .pm-chip.part b { color: var(--rate-mixed) }
+  .pm-chip.ok { border-color: var(--rate-good) }
+  .pm-chip.ok b { color: var(--rate-good) }
   /* Row verdict, as a left edge so it survives greyscale. */
   tr.pm-v-gap td:first-child { box-shadow: inset 3px 0 0 var(--pm-behind) }
   tr.pm-v-overclaim td:first-child { box-shadow: inset 3px 0 0 var(--rate-unknown) }
@@ -2503,11 +2508,14 @@ function renderMetrics() {
       no: ['no', 'pm-w no', 'not supported'],
       unknown: ['?', 'pm-w unk', 'the probe could not answer'],
     };
-    const BADGE = {
-      gap: ['behind', 'pm-b-gap'],
-      overclaim: ['we alone accept', 'pm-b-over'],
-      parity: ['verified parity', 'pm-b-ok'],
-      none: ['no engine support', 'pm-b-none'],
+    // Three levels of coverage, plus the case where there is nothing to cover.
+    // The previous pair behaved like a boolean: 13 of 14 read as "behind", the
+    // same as 0 of 14.
+    const LEVEL = {
+      none:    ['no support',    'pm-b-weak'],
+      partial: ['partial',       'pm-b-mixed'],
+      full:    ['full support',  'pm-b-ok'],
+      empty:   ['nothing to support', 'pm-b-none'],
     };
     const VERDICT = {
       gap: 'we lack it, another engine has it',
@@ -2524,14 +2532,16 @@ function renderMetrics() {
           return '<span class="pm-chip none">' + esc(SURF[surf])
             + ' <b>\u2013</b></span>';
         }
-        const g = st.counts.gap, sup = st.counts.supported;
-        const cls = g ? 'gap' : (sup ? 'ok' : 'none');
-        const body = g ? g + '/' + sup
-          : (sup ? '\u2713' : '\u2013');
-        const tip = g ? g + ' of ' + sup + ' supported combinations are ones we '
-            + 'lack and another engine has'
-          : (sup ? 'parity on all ' + sup + ' supported combinations'
-                 : 'no engine supports any codec in this container');
+        // Counts what we support, not what we lack: a figure beside a status
+        // badge should rise as things improve.
+        const ours = st.counts.ours, sup = st.counts.supported;
+        const cls = !sup ? 'none' : (ours >= sup ? 'ok'
+                                     : (ours ? 'part' : 'gap'));
+        const body = sup ? ours + '/' + sup : '\u2013';
+        const tip = sup
+          ? 'we support ' + ours + ' of the ' + sup + ' combinations at least '
+            + 'one engine supports'
+          : 'no engine supports any codec in this container';
         return '<span class="pm-chip ' + cls + '" title="' + escA(tip) + '">'
           + esc(SURF[surf]) + ' <b>' + body + '</b></span>';
       }).join('');
@@ -2611,9 +2621,14 @@ function renderMetrics() {
       + '<li>Three surfaces per container: <b>Playback</b> a plain media '
       + 'element, <b>Streaming</b> via Media Source, <b>Recording</b> via '
       + 'MediaRecorder.</li>'
-      + '<li>A chip reads <b>gaps / supported</b> \u2014 <code>4/16</code> means '
-      + '16 combinations work somewhere and we lack 4. <code>\u2713</code> no '
-      + 'gaps, <code>\u2013</code> nothing supported here.</li>'
+      + '<li>A chip reads <b>what we support / what any engine supports</b> '
+      + '\u2014 <code>10/14</code> means 14 combinations work somewhere and we '
+      + 'have 10. <code>\u2013</code> means nothing works anywhere.</li>'
+      + '<li>The badge is that ratio as a level: <span class="pm-badge '
+      + 'pm-b-ok">full support</span> we match every engine, '
+      + '<span class="pm-badge pm-b-mixed">partial</span> we have some, '
+      + '<span class="pm-badge pm-b-weak">no support</span> we have none that '
+      + 'others do.</li>'
       + '<li>The bar left of each row is <b>our</b> position: green we support '
       + 'it, amber another engine does and we do not, slate we accept what no '
       + 'other engine will.</li>'
@@ -2621,7 +2636,7 @@ function renderMetrics() {
       + '</ul>'
 
       + cv.containers.map(c => {
-          const [word, cls] = BADGE[c.worst] || BADGE.parity;
+          const [word, cls] = LEVEL[c.level] || LEVEL.partial;
           return '<details class="pm-card pm-cont"><summary>'
             + '<div class="pm-cont-h"><span class="pm-cont-n">' + esc(c.name)
             + '<small>' + (c.mimes.length ? esc(c.mimes.join(', ')) : 'no MIME type')
