@@ -554,3 +554,37 @@ def build_container_view(results: list) -> dict:
 
     return {"browsers": browsers, "containers": containers,
             "codec_gaps": codec_gaps, "surface_labels": SURFACE_LABELS}
+
+
+def build_payload(results: list) -> dict | None:
+    """Assemble everything the dashboard reads, from raw probe results.
+
+    Lives here rather than in `tools/media-caps/build_matrix.py` so the site
+    generator can rebuild it at render time. It used to be a committed derived
+    file that only that script refreshed, which meant a change to this module
+    plus a site regeneration rendered the *previous* transform -- the container
+    rows kept the old "container only" label with every test green, because no
+    test reads on-disk JSON. The raw results are tracked, so the derived shape
+    does not need to be.
+
+    Returns None when there is nothing probed, so the caller can drop the section
+    rather than render an empty one.
+    """
+    if not results:
+        return None
+    return {
+        "probed_at": max((r.get("probedAt") or "") for r in results),
+        "browsers": [{
+            "target": r.get("target"), "label": r.get("label"),
+            "version": r.get("browser_version"),
+            "is_proxy_for_safari": bool(r.get("is_proxy_for_safari")),
+            "is_nonshipping_build": bool(r.get("is_nonshipping_build")),
+        } for r in results],
+        "surfaces": {s: build_support_matrix(results, surface=s)
+                     for s in SURFACES},
+        # Container-first grouping is what the page renders; the flat
+        # disagreement lists above are kept for the counts.
+        "by_container": build_container_view(results),
+        "conformance": build_conformance(results),
+        "apis": build_api_table(results),
+    }

@@ -26,7 +26,7 @@ from pathlib import Path
 from reviewstats.commit_files import fetch_commit_files_cached
 from reviewstats.github_commits import _get_auth_token, fetch_commits
 from reviewstats.landing import render_landing_page
-from reviewstats.mediacaps import SURFACES
+from reviewstats.mediacaps import SURFACES, build_payload
 from reviewstats.metrics import (
     classify_landed_without_team_review_by_subdir,
     has_team_review,
@@ -65,6 +65,26 @@ _DEFAULT_REPO = "mozilla-firefox/firefox"
 DEFAULT_ROADMAP_YAML = (
     Path.home() / "firefox-bug-investigation" / "roadmap" / "roadmap.yaml"
 )
+
+# Raw per-engine probe output from tools/media-caps/run_probe.py. Tracked in the
+# repo, so the derived support table is rebuilt from it on every render instead of
+# being committed alongside -- see build_payload for why.
+CAPS_RESULTS = Path(__file__).resolve().parent / "tools" / "media-caps" / "results"
+
+
+def load_probe_results(directory: Path) -> list:
+    """Every engine's probe output, in a stable order. Empty when unprobed."""
+    if not directory.is_dir():
+        return []
+    out = []
+    for f in sorted(directory.glob("*.json")):
+        if f.name == "summary.json":
+            continue
+        try:
+            out.append(json.loads(f.read_text(encoding="utf-8")))
+        except (OSError, json.JSONDecodeError) as exc:
+            print(f"Skipping unreadable probe result {f.name}: {exc}")
+    return out
 
 
 def _load_roadmap_view(team: Team, *, audience: str) -> dict | None:
@@ -314,18 +334,18 @@ def _generate_for_team(
               f"{metrics_data['counts']['total']} comparable cross-browser "
               f"({metrics_data['window_days']}-day window)")
 
-        # Measured codec/container support, produced by tools/media-caps/. Rides
-        # in the metrics payload because it answers the same question -- how do
-        # we compare -- and is refreshed on its own cadence.
-        caps_path = team_dir / "data_mediacaps.json"
-        if caps_path.exists():
-            metrics_data["caps"] = json.loads(
-                caps_path.read_text(encoding="utf-8"))
+        # Measured codec/container support. Rebuilt from the raw probe results
+        # every render rather than read from a derived file: a stored one went
+        # stale as soon as reviewstats.mediacaps changed, so regenerating the site
+        # rendered the previous transform with every test still passing. The raw
+        # results are tracked, and the transform is pure and cheap.
+        caps = build_payload(load_probe_results(CAPS_RESULTS))
+        if caps:
+            metrics_data["caps"] = caps
             # SURFACES[0] rather than a literal: the surface keys are owned by
             # reviewstats.mediacaps, and spelling one here meant renaming them
             # crashed the generator while all 877 tests stayed green.
-            surfaces = metrics_data["caps"].get("surfaces") or {}
-            diff = (surfaces.get(SURFACES[0]) or {}).get("counts")
+            diff = (caps["surfaces"].get(SURFACES[0]) or {}).get("counts")
             if diff:
                 print(f"[{team.slug}] Media caps: {diff['differing']} of "
                       f"{diff['total']} codec/container combos differ across "

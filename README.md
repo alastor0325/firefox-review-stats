@@ -193,9 +193,17 @@ media-capabilities/index.html            # the probe page (public)
 ```
 
 ```bash
-.venv/bin/python tools/media-caps/run_probe.py     # drive it across engines
-.venv/bin/python tools/media-caps/build_matrix.py  # -> playback/data_mediacaps.json
+.venv/bin/python tools/media-caps/run_probe.py      # drive it across engines
+.venv/bin/python tools/media-caps/build_matrix.py   # summarise what they said
 ```
+
+`run_probe.py` writes one raw JSON per engine into `tools/media-caps/results/`,
+and those files are tracked. The support table is **derived from them at render
+time** — `analyze_git.py` rebuilds it every run — so there is no second file to
+keep in step. An earlier version committed the derived table, which went stale the
+moment the transform changed: regenerating the site rendered the *previous* shape
+with every test green, because no test reads on-disk JSON. `build_matrix.py` is
+now a read-only summary of the last probe.
 
 `run_probe.py` drives Playwright's Gecko, real Chrome, and Playwright's WebKit.
 Two caveats are recorded in the output and shown on the page: Playwright's WebKit

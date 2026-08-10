@@ -119,7 +119,8 @@ Ordered so the Quick unknowns are front-loaded and steps 1–3 are safe to do no
 **1. Gitignore the Media Health data artifacts — do first.**
 `playback/data_metrics.json` is untracked and *not* ignored, and
 `.github/workflows/refresh.yml` runs `git add -A index.html playback/ …`. The next cron
-(Mondays 09:00 UTC) will commit it. Same will apply to `data_mediacaps.json`.
+(Mondays 09:00 UTC) will commit it. The measured caps table needs no equivalent: it is derived from the
+tracked `tools/media-caps/results/*.json` at render time, not committed.
 *Not a leak today* — both are public-derived — but the wrong default once the section is
 partly internal, and it keeps generated data out of the repo regardless.
 

@@ -580,3 +580,52 @@ class TestRowsNoEngineSupportsAreHidden:
                         combo("MP4", "AV1", kind="video", canPlayType="no"))
         assert st["groups"] == []
         assert st["hidden_none"] == 2
+
+
+class TestPayloadIsDerivedNotStored:
+    """The caps payload is rebuilt from the raw probe results every render.
+
+    It used to be a committed derived file (`playback/data_mediacaps.json`) that
+    only `build_matrix.py` refreshed. Changing the builder and regenerating the
+    site therefore produced a page built from the *old* transform: the container
+    rows still read "container only" after that label had been replaced, and
+    nothing failed, because on-disk JSON is not something a test looks at. The raw
+    probe results are tracked, so the derived shape does not need to be.
+    """
+
+    def test_build_payload_produces_every_section_the_page_reads(self):
+        from reviewstats.mediacaps import SURFACES, build_payload
+        payload = build_payload([_probe_result("firefox", "FF"),
+                                 _probe_result("chrome", "Cr")])
+        for key in ("probed_at", "browsers", "surfaces", "by_container",
+                    "conformance", "apis"):
+            assert key in payload, key
+        assert set(payload["surfaces"]) == set(SURFACES)
+
+    def test_empty_results_give_no_payload_rather_than_a_broken_one(self):
+        from reviewstats.mediacaps import build_payload
+        assert build_payload([]) is None
+
+    def test_the_generator_does_not_read_a_prebaked_caps_file(self):
+        """The staleness this class exists to prevent."""
+        import pathlib
+        src = pathlib.Path("analyze_git.py").read_text(encoding="utf-8")
+        assert "data_mediacaps.json" not in src, (
+            "the generator reads a stored derived file again — a builder change "
+            "will silently render the previous transform"
+        )
+        assert "build_payload" in src
+
+
+def _probe_result(target, label):
+    return {
+        "target": target, "label": label, "browser_version": "1",
+        "is_proxy_for_safari": False, "is_nonshipping_build": False,
+        "probedAt": "2026-08-10T12:00:00Z",
+        "combos": [combo("MP4", "AAC-LC", kind="audio", canPlayType="probably")],
+        "bare": {"video/mp4": {"canPlayType": "no", "mse": "no",
+                               "recorder": "no"}},
+        "conformance": [{"type": 'audio/flac; codecs="ac-3"',
+                         "canPlayType": "no"}],
+        "apis": {"MediaSource in Worker": True},
+    }
