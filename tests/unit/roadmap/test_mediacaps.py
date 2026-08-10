@@ -614,30 +614,50 @@ class TestContainerRowsAreGone:
         assert st["hidden_none"] == 0
 
 
-class TestEveryRowCarriesAVerdictMarker:
-    """Parity used to render with no leading colour bar at all.
+class TestTheVerdictBarAnswersWhetherFirefoxIsCovered:
+    """The left-hand bar went through two wrong versions before this one.
 
-    Absence-as-a-value: gap, overclaim and ahead each got a coloured bar and
-    parity got nothing, so the most common row looked like the style had failed to
-    apply rather than like a deliberate "agreed". Parity now gets a neutral marker
-    -- present, so the encoding is consistent, and grey, so colour still carries
-    the news.
+    First parity had no bar at all, so the most common row read as unstyled.
+    Then it got a neutral grey one -- which was worse in a different way: a row
+    where all three engines answer `yes` is a *good* state, and grey said "nothing
+    to report here" about full support. A reader reasonably asked why universally
+    supported codecs were not green.
+
+    So the bar encodes Firefox's position rather than the shape of the agreement:
+    green when we support it (whether or not everyone else does), and a warning
+    colour when we do not, or when we accept something no other engine will.
+    `ahead` and `parity` therefore share green on purpose -- for the team reading
+    this, both mean covered.
     """
 
-    def test_parity_is_styled_explicitly_rather_than_by_omission(self):
+    def _css(self):
         import pathlib
-        css = pathlib.Path("templates/index.html.tmpl").read_text(encoding="utf-8")
-        assert "tr.pm-v-parity td:first-child" in css, (
-            "parity has no rule, so a parity row is bar-less and reads as unstyled"
-        )
+        return pathlib.Path("templates/index.html.tmpl").read_text(encoding="utf-8")
 
-    def test_the_parity_marker_is_neutral_not_a_status_colour(self):
-        import pathlib, re
-        css = pathlib.Path("templates/index.html.tmpl").read_text(encoding="utf-8")
-        rule = re.search(r"tr\.pm-v-parity td:first-child \{([^}]*)\}", css)
-        assert rule, "parity rule missing"
-        body = rule.group(1)
-        for status in ("--pm-behind", "--pm-ahead", "--rate-unknown"):
-            assert status not in body, (
-                f"parity uses {status}, which means something else on this page"
-            )
+    def _rule(self, verdict):
+        import re
+        m = re.search(r"tr\.pm-v-%s td:first-child \{([^}]*)\}" % verdict,
+                      self._css())
+        assert m, f"no bar rule for {verdict}"
+        return m.group(1)
+
+    def test_every_verdict_that_can_be_displayed_has_a_bar(self):
+        """`none` is excluded from the table, so the other four all need one."""
+        for verdict in ("gap", "overclaim", "ahead", "parity"):
+            assert self._rule(verdict)
+
+    def test_parity_is_green_because_every_engine_supports_it(self):
+        assert "--pm-ahead" in self._rule("parity")
+
+    def test_parity_and_ahead_read_the_same(self):
+        """Both mean Firefox is covered. Distinguishing them by colour implied a
+        difference in whether the team should act, and there is none."""
+        assert self._rule("parity").strip() == self._rule("ahead").strip()
+
+    def test_parity_is_not_grey(self):
+        """The regression this replaces: grey read as "no data" on a row with
+        three yeses."""
+        assert "--rule" not in self._rule("parity")
+
+    def test_a_gap_is_not_green(self):
+        assert "--pm-ahead" not in self._rule("gap")

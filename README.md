@@ -239,10 +239,15 @@ plausibly carry, so there are a fair few — VP8 in MP4 is one, refused by all t
 engines. `build_matrix.py` prints how many were dropped, since the page no longer
 does.
 
-Each row carries a coloured bar on the left for its verdict: a gap, an overclaim,
-ahead, or **grey for parity**. Parity used to render with no bar at all, which
-read as a styling miss rather than as "every engine agrees" — and it is the most
-common row.
+Each row carries a coloured bar on the left saying whether **we** are covered:
+green where Firefox supports it, amber where another engine does and we do not,
+slate where we accept something no other engine will. `ahead` and `parity` share
+green on purpose — for a team reading this, both mean covered.
+
+That took two tries to get right. Parity first rendered with no bar, which read as
+a styling miss; then with a neutral grey one, which was worse — grey said "nothing
+to report" on a row showing three `yes` answers. Encoding Firefox's position rather
+than the shape of the agreement is what fixed it.
 
 > **`powerEfficient` and `smooth` are collected but not shown.** Two reasons,
 > either sufficient. `powerEfficient` is not a hardware-decode flag — Firefox and

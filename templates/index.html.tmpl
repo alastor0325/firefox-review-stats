@@ -913,9 +913,10 @@
   tr.pm-v-gap td:first-child { box-shadow: inset 3px 0 0 var(--pm-behind) }
   tr.pm-v-overclaim td:first-child { box-shadow: inset 3px 0 0 var(--rate-unknown) }
   tr.pm-v-ahead td:first-child { box-shadow: inset 3px 0 0 var(--pm-ahead) }
-  /* Present, so every row is marked and none looks unstyled; grey, so colour
-     still carries the news. Parity is the most common row on the page. */
-  tr.pm-v-parity td:first-child { box-shadow: inset 3px 0 0 var(--rule) }
+  /* Same green as `ahead`, deliberately. The bar answers "is Firefox covered?",
+     and parity means all three engines support it -- a good state. Grey here read
+     as "no data" on a row showing three yeses. */
+  tr.pm-v-parity td:first-child { box-shadow: inset 3px 0 0 var(--pm-ahead) }
 
   details.pm-none > summary {
     font-family: var(--mono); font-size: 9.5px; color: var(--ink-soft);
@@ -2616,8 +2617,10 @@ function renderMetrics() {
       + '<li><span class="pm-badge pm-b-none">no engine support</span> nothing '
       + 'supports it, so there is no gap to close.</li>'
       + '<li>Rows are grouped into <b>Video codecs</b> and <b>Audio codecs</b>, '
-      + 'worst first, and the coloured bar on the left of each row is its '
-      + 'verdict — grey means every engine agrees.</li>'
+      + 'worst first. The bar on the left of each row says whether <b>we</b> are '
+      + 'covered: green where Firefox supports it, amber where another engine '
+      + 'does and we do not, slate where we accept something no other engine '
+      + 'will.</li>'
       + '<li>Combinations <b>no engine supports</b> are left out — they are not '
       + 'a gap, not an overclaim and not a win. The probe asks every codec a '
       + 'container could plausibly carry, so there are a fair few; VP8 in MP4 is '
