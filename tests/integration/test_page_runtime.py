@@ -39,7 +39,6 @@ FILLED_BY_JS = [
     "roadmap-continuous",
     "pm-lede",
     "pm-cards",
-    "pm-coverage",
 ]
 
 

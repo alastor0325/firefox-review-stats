@@ -1213,7 +1213,7 @@
   .recent-empty { color: var(--muted); font-style: italic; }
 </style>
 </head>
-<body data-view="team" data-period="total" data-recent="1w" data-health="roadmap">
+<body data-view="team" data-period="total" data-recent="1w" data-health="metrics">
 
 __GH_CORNER__
 
@@ -1244,8 +1244,8 @@ __GH_CORNER__
     </div>
     <div class="toggle-sep toggle-sep-health" aria-hidden="true"></div>
     <div class="toggle-group toggle-group-health" role="tablist" aria-label="Media Health section">
-      <button data-health="roadmap" class="active" type="button">Roadmap</button>
-      <button data-health="metrics" type="button">Metrics</button>
+      <button data-health="metrics" class="active" type="button">Metrics</button>
+      <button data-health="roadmap" type="button">Roadmap</button>
     </div>
   </nav>
 </div>
@@ -1520,14 +1520,6 @@ __GH_CORNER__
     <h2>Where Firefox stands</h2>
     <div id="pm-lede"></div>
     <div id="pm-cards"></div>
-  </section>
-
-  <section>
-    <h2>What can be compared at all</h2>
-    <p class="footer-note" id="pm-coverage-note"></p>
-    <div class="table-wrap"><table id="pm-coverage">
-      <thead></thead><tbody></tbody>
-    </table></div>
   </section>
 
   <section id="pm-caps"></section>
@@ -1947,7 +1939,7 @@ const VIEW_SECONDARY_AXIS = {
   team:   { axis: 'period', def: 'total', set: setPeriod,
             toHash: PERIOD_TO_HASH, fromHash: HASH_TO_PERIOD },
   recent: { axis: 'recent', def: '1w', set: setRecent },
-  health: { axis: 'health', def: 'roadmap', set: setHealth },
+  health: { axis: 'health', def: 'metrics', set: setHealth },
 };
 
 let applyingHash = false;
@@ -2599,15 +2591,12 @@ function renderMetrics() {
 
     document.getElementById('pm-caps').innerHTML =
       '<h2>Codec and container support, measured</h2>'
-      + '<p class="footer-note">Asked of each browser directly rather than read '
-      + 'out of its source \u2014 which is how an earlier version of this table '
-      + 'came to claim Chrome plays PCM and AC-3 in Matroska, when shipping '
-      + 'Chrome answers no to both. Probed '
-      + esc((caps.probed_at || '').slice(0, 10)) + '. '
+      + '<p class="footer-note">Measured on '
+      + esc((caps.probed_at || '').slice(0, 10)) + ' in '
+      + cv.browsers.map(b => esc(b.name || b.label) + ' '
+          + esc(b.version)).join(', ') + '. '
       + '<a href="../media-capabilities/index.html" target="_blank" '
-      + 'rel="noopener">Run the probe in your own browser \u2197</a> \u2014 '
-      + 'open it in Safari or a local Firefox build to get answers this '
-      + 'automated run cannot reach.</p>'
+      + 'rel="noopener">Run the probe yourself \u2197</a></p>' 
       + '<ul class="pm-facts">'
       + cv.browsers.map(b => {
           const caveat = b.is_proxy_for_safari
@@ -2663,41 +2652,9 @@ function renderMetrics() {
                   + 'accepted.</p>')
             + '</div></details>';
         }).join('')
-      + '<p class="pm-legend"><b>yes</b> supported &nbsp; <b>maybe</b> the '
-      + 'browser may be able to play it \u2014 the normal answer for a bare type '
-      + 'with no codecs parameter, not partial support &nbsp; <b>no</b> not '
-      + 'supported &nbsp; <b>?</b> the probe could not answer '
-      + '</p>'
       ;
   }
 
-  // --- coverage ---
-  const cov = METRICS.coverage;
-  document.getElementById('pm-coverage-note').textContent =
-    'Which browsers actually produced samples in the last ' + METRICS.window_days
-    + ' days, measured from the Perfherder signature dump rather than read off '
-    + 'test config. A suite with only Firefox cannot answer a comparison '
-    + 'question at all. Note ve (WebCodecs encode) does have cross-browser data '
-    + 'and is not charted above yet.';
-  const t = document.getElementById('pm-coverage');
-  t.querySelector('thead').innerHTML = '<tr><th>Suite</th>'
-    + cov.browsers.map(b => '<th style="text-align:center">' + esc(b)
-        + (b === 'custom-car' ? ' <span class="info" data-tip="Chromium build '
-          + 'used as a performance reference">?</span>' : '') + '</th>').join('')
-    + '</tr>';
-  t.querySelector('tbody').innerHTML = cov.rows.map(r =>
-      '<tr><td>' + esc(r.label || r.suite)
-      + ' <span style="color:var(--ink-soft);font-family:var(--mono);font-size:10px">'
-      + esc(r.suite) + '</span></td>'
-      + cov.browsers.map(b => {
-          const on = (r.measured || []).includes(b);
-          return '<td class="pm-cell ' + (on ? 'yes' : 'no') + '" title="'
-            + escA(b + (on ? ' is measured' : ' is not measured'))
-            + '">' + (on ? '\u25CF' : '\u2013') + '</td>';
-        }).join('') + '</tr>').join('');
-  document.getElementById('pm-coverage').insertAdjacentHTML('afterend',
-    '<p class="pm-legend">\u25CF measured in the window &nbsp; \u2013 not '
-    + 'measured</p>');
 }
 renderMetrics();
 

@@ -120,9 +120,10 @@ class TestSecondaryAxis:
         for v in ("roadmap", "metrics"):
             assert re.search(rf'<button[^>]*data-health="{v}"', html), v
 
-    def test_roadmap_is_the_default_subview(self):
+    def test_metrics_is_the_default_subview(self):
+        """Metrics leads the Media Health tabs, so it is what `#health` opens."""
         m = re.search(r"<body[^>]*>", _render(_ROADMAP))
-        assert 'data-health="roadmap"' in m.group(0)
+        assert 'data-health="metrics"' in m.group(0)
 
     def test_health_toggle_group_is_targetable(self):
         """The CSS hide rule needs the group to carry its own class, the
@@ -834,7 +835,7 @@ class TestMeasuredCaps:
     def test_links_to_the_public_probe_page(self):
         html = self._render_caps()
         assert "media-capabilities/index.html" in html
-        assert "Run the probe in your own browser" in html
+        assert "Run the probe yourself" in html
 
     def test_evidence_strength_is_stated_per_engine(self):
         html = _joined(self._render_caps())
@@ -868,15 +869,20 @@ class TestSupportAnswersAreWords:
         for word in ("'yes'", "'maybe'", "'no'"):
             assert word in html, word
 
-    def test_maybe_is_explained_as_normal_not_degraded(self):
+    def test_the_answer_legend_is_not_rendered(self):
+        """The yes/maybe/no/? legend was removed. The words are plain English and
+        each cell keeps a tooltip, so `maybe` is still explained where it appears
+        rather than in a standing paragraph under every card."""
         html = self._caps_html()
-        assert "not partial support" in html
-        assert "no codecs parameter" in html
+        assert "not partial support" not in html
+        assert "the probe could not answer</p>" not in html
 
-    def test_legend_defines_every_answer(self):
+    def test_maybe_is_still_explained_on_the_cell_itself(self):
         html = self._caps_html()
-        for word in ("yes", "maybe", "no"):
-            assert f"<b>{word}</b>" in html, word
+        assert "no codecs parameter" in html, (
+            "removing the legend must not remove the explanation entirely — "
+            "`maybe` is the one answer a reader cannot guess"
+        )
 
 
 from tests.unit.roadmap.test_mediacaps import combo, result  # noqa: E402
@@ -995,4 +1001,44 @@ class TestCombinationCountReadsCorrectly:
         )
         assert "' combinations'" not in html, (
             "an unconditional plural is still in the template"
+        )
+
+
+class TestMetricsComesBeforeRoadmap:
+    """Metrics is the first Media Health subview and the default.
+
+    Order matters here beyond taste: the first tab is what a reader lands on, so
+    the default (`data-health` on <body>, and the hash fallback) has to move with
+    the button order or the page opens on a tab that is not the active one.
+    """
+
+    def _html(self):
+        return render_html(_MINIMAL_DATA, roadmap_data=_ROADMAP)
+
+    def test_the_metrics_button_precedes_the_roadmap_button(self):
+        """Scoped to the buttons: `data-health` also appears in CSS selectors
+        earlier in the document, so a document-wide index comparison passed while
+        Roadmap was still the first tab."""
+        import re
+        html = self._html()
+        buttons = re.findall(r'<button data-health="(\w+)"', html)
+        assert buttons[:2] == ["metrics", "roadmap"], buttons
+
+    def test_metrics_is_the_button_marked_active(self):
+        import re
+        html = self._html()
+        m = re.search(r'<button data-health="(\w+)" class="active"', html)
+        assert m and m.group(1) == "metrics", (
+            "the active class is on a tab that is no longer first"
+        )
+
+    def test_the_body_default_axis_is_metrics(self):
+        assert 'data-health="metrics"' in self._html().split("<body")[1][:200]
+
+    def test_the_hash_default_is_metrics(self):
+        """`#health` with no subview must resolve to the tab that is shown."""
+        html = self._html()
+        assert "def: 'metrics'" in html, (
+            "the deep-link default still points at Roadmap, so #health opens a "
+            "different tab than the one highlighted"
         )
