@@ -220,6 +220,17 @@ answer: WebKit raises a `TypeError` from `decodingInfo` for every Matroska
 configuration while answering `canPlayType` for the same input, and reporting
 that as unknown would hide a real measured `no` behind an API quirk.
 
+Each container table is grouped into **Video codecs** and **Audio codecs** (plus
+a **Container itself** group for the bare type), worst-first within each group and
+between them. Interleaving the two by verdict alone meant reading past six audio
+codecs to reach AV1.
+
+Combinations **no engine supports** are counted and not listed. They are not a
+gap, not an overclaim and not a win, and the probe asks every codec a container
+could plausibly carry, so there are a fair few — VP8 in MP4 is one, refused by all
+three engines. The count is always stated so a shorter table cannot be mistaken
+for full coverage.
+
 > **`powerEfficient` is not a hardware-decode flag.** It is rendered as
 > `efficient`, named for the flag, deliberately. Measured here, Firefox and
 > Chrome both report it true for MP3, FLAC, Vorbis and AAC — 16 and 19 audio rows

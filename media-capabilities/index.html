@@ -80,7 +80,12 @@ const CODEC_STRINGS = {
 const CONTAINERS = [
   { name: 'MP4', video: 'video/mp4', audio: 'audio/mp4',
     bare: ['video/mp4', 'audio/mp4'],
-    videoCodecs: ['H.264 baseline', 'H.264 high', 'HEVC main', 'VP9', 'AV1'],
+    // VP8 is asked here even though VP9 and AV1 are the ones with ISO-BMFF
+    // sample-entry registrations, so the table answers "why VP9 and not VP8?"
+    // with a measurement instead of an assumption. If no engine takes it, the
+    // row is counted and not listed, which is the answer.
+    videoCodecs: ['H.264 baseline', 'H.264 high', 'HEVC main', 'VP8', 'VP9',
+                  'AV1'],
     audioCodecs: ['AAC-LC', 'HE-AAC', 'xHE-AAC', 'MP3', 'Opus', 'FLAC',
                   'AC-3', 'E-AC-3', 'ALAC'] },
   { name: 'WebM', video: 'video/webm', audio: 'audio/webm',

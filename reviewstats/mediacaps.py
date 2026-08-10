@@ -152,6 +152,66 @@ def _verdict(value: object) -> str:
     return "no"
 
 
+def _says_nothing(support: dict) -> bool:
+    """True for a bare-type row where every engine answered `maybe`.
+
+    `maybe` is the correct answer to a type with no codecs parameter -- the
+    browser cannot know without codec information -- so unanimous `maybe` reduces
+    to "we all recognise this container name" and takes a full row to say it. Six
+    rows on the page were this: MP4 video and audio, WebM video and audio, Ogg
+    audio, WAV.
+
+    Deliberately narrower than unanimous-anything. Three identical `no`s mean no
+    engine supports the container, which is worth a row, and the surviving bare
+    rows carry real findings -- HLS has no codec combinations at all, so its bare
+    rows are the only place its support is visible.
+    """
+    return set(support.values()) == {"partial"}
+
+
+KIND_LABELS = {"container": "Container itself", "video": "Video codecs",
+               "audio": "Audio codecs"}
+
+# Worst first, the rule the roadmap cards and sub-cards also follow.
+_VERDICT_RANK = {GAP: 0, OVERCLAIM: 1, AHEAD: 2, PARITY: 3, NONE: 4}
+
+
+def group_by_kind(rows: list) -> list:
+    """Split rows into container / video / audio groups, worst first.
+
+    Two things were wrong with one flat list. Video and audio are different
+    questions, and worst-first sorting interleaved them -- a container's table ran
+    AC-3, ALAC, E-AC-3, xHE-AAC, MP3, Opus, AV1, AAC-LC, so finding the video
+    codecs meant filtering audio out by eye.
+
+    Rows **no engine supports** are left out. They are not a gap, not an
+    overclaim, and not a win, so there is nothing to act on, and the probe
+    produces many of them because it asks every codec a container could
+    plausibly carry. They stay in `counts`, and the caller is given
+    `hidden_none` so it can say how many it dropped -- a silently shortened
+    table reads as full coverage.
+
+    Groups are ordered by their own worst verdict, so the group holding a gap
+    leads, and an emptied group is omitted rather than left as a bare heading.
+    """
+    groups = []
+    for kind in ("container", "video", "audio"):
+        shown = [r for r in rows
+                 if r["kind"] == kind and r["verdict"] != NONE]
+        if not shown:
+            continue
+        groups.append({
+            "kind": kind,
+            "label": KIND_LABELS.get(kind, kind.title()),
+            "rows": shown,
+            "worst": min(_VERDICT_RANK[r["verdict"]] for r in shown),
+        })
+    # Container-level rows stay on top -- they explain the codec rows beneath --
+    # and the rest go worst first.
+    groups.sort(key=lambda g: (0 if g["kind"] == "container" else 1, g["worst"]))
+    return groups
+
+
 def _plays(value: object) -> bool:
     return str(value or "") in _PLAYS
 
@@ -382,10 +442,15 @@ def build_container_view(results: list) -> dict:
                     entry = (r.get("bare") or {}).get(mt)
                     if entry is not None:
                         sup[r["target"]] = answer(entry, surf, bare=True)
-                if sup:
+                if sup and not _says_nothing(sup):
                     rows.append({
-                        "kind": "container", "codec": "container only",
-                        "codec_string": mt, "support": sup,
+                        # The MIME type IS the row's identity here. It used to
+                        # be labelled "container only" with the type in the
+                        # second column, which read as "Container itself:
+                        # container only, container only" once the rows were
+                        # grouped under a heading that already says it.
+                        "kind": "container", "codec": mt,
+                        "codec_string": "", "support": sup,
                         "eff": {}, "smooth": {},
                         "verdict": classify(
                             sup.get(us, "unknown"),
@@ -426,17 +491,23 @@ def build_container_view(results: list) -> dict:
                 })
             # Container-level rows first (they explain the codec rows beneath),
             # then gaps, our conformance bugs, wins, and the rest.
-            rank = {GAP: 0, OVERCLAIM: 1, AHEAD: 2, PARITY: 3, NONE: 4}
             rows.sort(key=lambda x: (0 if x["kind"] == "container" else 1,
-                                     rank[x["verdict"]], x["kind"], x["codec"]))
+                                     _VERDICT_RANK[x["verdict"]], x["kind"],
+                                     x["codec"]))
             counts = {v: sum(1 for x in rows if x["verdict"] == v)
                       for v in (GAP, OVERCLAIM, AHEAD, PARITY, NONE)}
             # Denominator is combinations at least one engine supports: it makes
             # "0 gaps" mean something. 0/5 is verified parity; 0/0 is nobody
             # supports this, which is a different fact.
             counts["supported"] = len(rows) - counts[NONE]
-            surfaces[surf] = {"rows": rows, "counts": counts,
-                              "bare": bare[surf]}
+            groups = group_by_kind(rows)
+            surfaces[surf] = {
+                "rows": rows, "counts": counts, "groups": groups,
+                # Stated, not silent: how many combinations were left out because
+                # no engine supports them.
+                "hidden_none": len(rows) - sum(len(g["rows"]) for g in groups),
+                "bare": bare[surf],
+            }
 
         worst = (GAP if any(surfaces[s]["counts"][GAP] for s in SURFACES)
                  else OVERCLAIM if any(surfaces[s]["counts"][OVERCLAIM]

@@ -134,13 +134,25 @@ def page_state(rendered):
         pytest.skip("no browser available to execute the page")
 
     errors: list[str] = []
+    failed_urls: list[str] = []
     with sync_playwright() as pw:
         browser = pw.chromium.launch(headless=True, executable_path=CHROME)
         try:
             page = browser.new_page()
+            # Resource-load failures are reported separately below, with the URL
+            # attached. Chrome's console message for them carries no URL, and
+            # treating it as a page error made this suite fail intermittently on
+            # a Google web font 404 that says nothing about the page.
             page.on("console", lambda m: errors.append(f"console.{m.type}: {m.text}")
-                    if m.type == "error" else None)
+                    if m.type == "error"
+                    and "Failed to load resource" not in m.text else None)
             page.on("pageerror", lambda e: errors.append(f"uncaught: {e}"))
+            # Chrome logs a bare "Failed to load resource: ... 404" with no URL,
+            # which is undiagnosable. Record what actually failed.
+            page.on("response", lambda r: failed_urls.append(
+                f"{r.status} {r.url}") if r.status >= 400 else None)
+            page.on("requestfailed", lambda r: failed_urls.append(
+                f"requestfailed {r.url}"))
             page.goto(rendered.resolve().as_uri(), wait_until="load",
                       timeout=60_000)
             page.wait_for_timeout(800)
@@ -155,7 +167,8 @@ def page_state(rendered):
                 "'.toggle-bar button[data-view]')].map(b => b.dataset.view)")
         finally:
             browser.close()
-    return {"errors": errors, "lengths": lengths, "views": views}
+    return {"errors": errors, "failed_urls": failed_urls,
+            "lengths": lengths, "views": views}
 
 
 class TestPageExecutes:
@@ -164,7 +177,23 @@ class TestPageExecutes:
         every container below it stays empty, while static tests stay green."""
         assert page_state["errors"] == [], (
             "page reported errors: " + "; ".join(page_state["errors"])
+            + " | failed requests: "
+            + ("; ".join(page_state["failed_urls"]) or "none recorded")
         )
+
+    def test_no_local_asset_fails_to_load(self, page_state):
+        """Split out from the check above, which used to fail on any 404.
+
+        A missing *local* file is a real defect — a stylesheet or script the
+        template references and the build does not emit. A failed fetch from
+        fonts.gstatic.com or a CDN is the network being the network; asserting on
+        it made this suite fail roughly one run in six on a web font, which is the
+        fastest way to get a guard like this ignored.
+        """
+        local = [u for u in page_state["failed_urls"]
+                 if "://fonts." not in u and "cdn." not in u
+                 and "https://" not in u and "http://" not in u]
+        assert local == [], "local assets failed to load: " + "; ".join(local)
 
     @pytest.mark.parametrize("container", FILLED_BY_JS)
     def test_container_is_populated(self, page_state, container):

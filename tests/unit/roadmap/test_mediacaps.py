@@ -392,3 +392,191 @@ class TestSurfaceKeysAreOwnedHere:
                 f'surface key "{name}" spelled literally in the generator — '
                 "renaming it will crash the build with every test green"
             )
+
+
+class TestVacuousBareRowsAreDropped:
+    """A bare-type row where every engine answers `maybe` is not a finding.
+
+    `maybe` is the spec-correct answer for a type with no codecs parameter -- the
+    browser genuinely cannot know -- so three identical maybes say only "this is a
+    container we all recognise". Six such rows were on the page (MP4 video+audio,
+    WebM video+audio, Ogg audio, WAV) taking a full row each to say nothing.
+
+    The rule is unanimous-`maybe` specifically, not unanimous-anything: three
+    identical `no`s mean nobody supports the container, which is real news, and
+    the informative bare rows are load-bearing -- HLS has no codec combinations
+    at all, so its bare rows are the only place its support appears.
+    """
+
+    def _view(self, ff_bare, cr_bare):
+        from reviewstats.mediacaps import build_container_view
+        ff = result("firefox", "FF", [combo("MP4", "AAC-LC", canPlayType="probably")],
+                    bare={"video/mp4": ff_bare})
+        cr = result("chrome", "Cr", [combo("MP4", "AAC-LC", canPlayType="probably")],
+                    bare={"video/mp4": cr_bare})
+        v = build_container_view([ff, cr])
+        mp4 = [c for c in v["containers"] if c["name"] == "MP4"][0]
+        return mp4["surfaces"]["playback"]["rows"]
+
+    def _bare_rows(self, rows):
+        # Keyed on `kind`, not on a display label. Keying on the words
+        # "container only" broke when the row started showing the MIME type,
+        # which is a rename rather than a behaviour change.
+        return [r for r in rows if r["kind"] == "container"]
+
+    def test_a_unanimous_maybe_row_is_not_rendered(self):
+        rows = self._view({"canPlayType": "maybe"}, {"canPlayType": "maybe"})
+        assert self._bare_rows(rows) == []
+
+    def test_a_disagreeing_bare_row_survives(self):
+        """The HLS case: Firefox no, others maybe. Dropping this loses HLS."""
+        rows = self._view({"canPlayType": "no"}, {"canPlayType": "maybe"})
+        assert len(self._bare_rows(rows)) == 1
+
+    def test_a_unanimous_no_row_survives(self):
+        """Nobody supports the container — that is information, not noise."""
+        rows = self._view({"canPlayType": "no"}, {"canPlayType": "no"})
+        assert len(self._bare_rows(rows)) == 1
+
+    def test_a_unanimous_yes_row_survives(self):
+        rows = self._view({"canPlayType": "probably"}, {"canPlayType": "probably"})
+        assert len(self._bare_rows(rows)) == 1
+
+    def test_codec_rows_are_untouched_by_the_rule(self):
+        """The rule is about bare types only. A real codec answering `maybe`
+        everywhere would be a genuine oddity worth seeing."""
+        from reviewstats.mediacaps import build_container_view
+        ff = result("firefox", "FF", [combo("MP4", "AAC-LC", canPlayType="maybe")])
+        cr = result("chrome", "Cr", [combo("MP4", "AAC-LC", canPlayType="maybe")])
+        v = build_container_view([ff, cr])
+        mp4 = [c for c in v["containers"] if c["name"] == "MP4"][0]
+        codecs = [r for r in mp4["surfaces"]["playback"]["rows"]
+                  if r["kind"] != "container"]
+        assert len(codecs) == 1
+
+
+class TestAudioAndVideoAreSeparateGroups:
+    """Video and audio codecs are different questions and were interleaved.
+
+    Worst-first sorting mixed them: a container's table ran AC-3, ALAC, E-AC-3,
+    xHE-AAC, MP3, Opus, AV1, AAC-LC ... so a reader scanning for video codec
+    coverage had to filter audio out by eye. The rows carry `kind` already, so the
+    split is free; ordering stays worst-first *within* each group and the groups
+    themselves are ordered worst-first, which is the rule everywhere else on the
+    page.
+    """
+
+    def _groups(self):
+        from reviewstats.mediacaps import build_container_view
+        ff = result("firefox", "FF", [
+            combo("MP4", "AAC-LC", kind="audio", canPlayType="probably"),
+            combo("MP4", "AV1", kind="video", canPlayType="no"),
+            combo("MP4", "Opus", kind="audio", canPlayType="probably"),
+            combo("MP4", "VP9", kind="video", canPlayType="probably"),
+        ])
+        cr = result("chrome", "Cr", [
+            combo("MP4", "AAC-LC", kind="audio", canPlayType="probably"),
+            combo("MP4", "AV1", kind="video", canPlayType="probably"),
+            combo("MP4", "Opus", kind="audio", canPlayType="probably"),
+            combo("MP4", "VP9", kind="video", canPlayType="probably"),
+        ])
+        v = build_container_view([ff, cr])
+        mp4 = [c for c in v["containers"] if c["name"] == "MP4"][0]
+        return mp4["surfaces"]["playback"]["groups"]
+
+    def test_video_and_audio_are_separate_groups(self):
+        kinds = [g["kind"] for g in self._groups()]
+        assert "video" in kinds and "audio" in kinds
+
+    def test_no_group_mixes_kinds(self):
+        for g in self._groups():
+            assert {r["kind"] for r in g["rows"]} == {g["kind"]}
+
+    def test_groups_are_labelled_for_a_reader(self):
+        labels = {g["kind"]: g["label"] for g in self._groups()}
+        assert labels["video"] == "Video codecs"
+        assert labels["audio"] == "Audio codecs"
+
+    def test_the_group_holding_the_gap_comes_first(self):
+        """Worst-first, the same rule the cards and sub-cards follow. The AV1 gap
+        is in video, so video leads even though audio sorts first by name."""
+        assert self._groups()[0]["kind"] == "video"
+
+    def test_rows_stay_worst_first_inside_a_group(self):
+        video = [g for g in self._groups() if g["kind"] == "video"][0]
+        assert video["rows"][0]["codec"] == "AV1"
+
+    def test_every_displayed_row_appears_in_exactly_one_group(self):
+        from reviewstats.mediacaps import build_container_view
+        ff = result("firefox", "FF", [
+            combo("MP4", "AAC-LC", kind="audio", canPlayType="probably"),
+            combo("MP4", "AV1", kind="video", canPlayType="no"),
+        ], bare={"video/mp4": {"canPlayType": "no", "mse": "no",
+                               "recorder": "no"}})
+        v = build_container_view([ff])
+        mp4 = [c for c in v["containers"] if c["name"] == "MP4"][0]
+        st = mp4["surfaces"]["playback"]
+        grouped = [r for g in st["groups"] for r in g["rows"]]
+        # Grouping partitions the displayed rows: no row is dropped except the
+        # ones no engine supports, and none is duplicated across groups.
+        keys = [(r["kind"], r["codec"]) for r in grouped]
+        assert len(keys) == len(set(keys)), "a row appears in two groups"
+        from reviewstats.mediacaps import NONE
+        displayable = [(r["kind"], r["codec"]) for r in st["rows"]
+                       if r["verdict"] != NONE]
+        assert set(keys) == set(displayable)
+
+
+class TestRowsNoEngineSupportsAreHidden:
+    """A combination no browser supports is not a finding about Firefox.
+
+    It is not a gap (nobody has it), not an overclaim, and not a win -- there is
+    nothing for the team to do with it, and the probe generates plenty because it
+    asks every codec a container could plausibly carry. They are counted and the
+    count is stated, so the table is shorter without being silently truncated.
+    """
+
+    def _view(self, *combos):
+        from reviewstats.mediacaps import build_container_view
+        ff = result("firefox", "FF", list(combos))
+        cr = result("chrome", "Cr", list(combos))
+        v = build_container_view([ff, cr])
+        mp4 = [c for c in v["containers"] if c["name"] == "MP4"][0]
+        return mp4["surfaces"]["playback"]
+
+    def test_a_row_nobody_supports_is_not_displayed(self):
+        st = self._view(combo("MP4", "AAC-LC", kind="audio", canPlayType="probably"),
+                        combo("MP4", "ALAC", kind="audio", canPlayType="no"))
+        shown = [r["codec"] for g in st["groups"] for r in g["rows"]]
+        assert "ALAC" not in shown
+        assert "AAC-LC" in shown
+
+    def test_how_many_were_hidden_is_reported(self):
+        """Silent truncation reads as "we covered everything". The page says how
+        many rows it dropped so a reader can tell the difference."""
+        st = self._view(combo("MP4", "AAC-LC", kind="audio", canPlayType="probably"),
+                        combo("MP4", "ALAC", kind="audio", canPlayType="no"),
+                        combo("MP4", "AC-3", kind="audio", canPlayType="no"))
+        assert st["hidden_none"] == 2
+
+    def test_the_hidden_rows_are_still_counted(self):
+        """Dropping them from the table must not change the measured totals --
+        `counts` feeds the container ranking and the summary line."""
+        st = self._view(combo("MP4", "AAC-LC", kind="audio", canPlayType="probably"),
+                        combo("MP4", "ALAC", kind="audio", canPlayType="no"))
+        assert st["counts"]["none"] == 1
+        assert len(st["rows"]) == 2
+
+    def test_a_group_with_nothing_left_is_dropped_entirely(self):
+        """Not an empty "Video codecs" heading with no rows under it."""
+        st = self._view(combo("MP4", "AAC-LC", kind="audio", canPlayType="probably"),
+                        combo("MP4", "AV1", kind="video", canPlayType="no"))
+        assert [g["kind"] for g in st["groups"]] == ["audio"]
+
+    def test_a_surface_nobody_supports_at_all_yields_no_groups(self):
+        """FLAC-in-MSE is this: every engine says no to everything. The caller
+        renders the fact rather than an empty table."""
+        st = self._view(combo("MP4", "AAC-LC", kind="audio", canPlayType="no"),
+                        combo("MP4", "AV1", kind="video", canPlayType="no"))
+        assert st["groups"] == []
+        assert st["hidden_none"] == 2

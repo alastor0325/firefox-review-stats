@@ -939,6 +939,12 @@
   td.pm-w.yes { color: var(--pm-ahead); font-weight: 700 }
   /* Recessive: hardware acceleration qualifies a "yes", it does not compete with
      it. Same reason the grid is lighter than the marks. */
+  /* Group heading inside a container table. Quieter than the surface heading
+     above it, louder than the rows -- it is a divider, not a section. */
+  .pm-kind {
+    margin: 10px 0 2px; font-size: 10px; font-family: var(--mono);
+    text-transform: uppercase; letter-spacing: .06em; color: var(--ink-soft);
+  }
   .pm-hw {
     font-size: 8.5px; font-weight: 600; letter-spacing: .04em;
     text-transform: uppercase; color: var(--ink-soft);
@@ -2534,8 +2540,11 @@ function renderMetrics() {
     function surfaceTable(c, surf) {
       const st = c.surfaces[surf];
       if (!st || !st.rows.length) return '';
-      const shown = st.rows.filter(r => r.verdict !== 'none');
-      const hidden = st.rows.filter(r => r.verdict === 'none');
+      // Grouped video / audio, worst-first, with the rows no engine supports
+      // already left out by the builder. They are counted, not listed: nobody
+      // supporting a combination is not a finding about Firefox, and the probe
+      // asks every codec a container could plausibly carry, so there are many.
+      const groups = st.groups || [];
       const head = '<tr><th>Codec</th><th>Codec string</th>'
         + cv.browsers.map(b => '<th style="text-align:center">'
             + esc(b.target.split('-')[0]) + '</th>').join('') + '</tr>';
@@ -2564,27 +2573,23 @@ function renderMetrics() {
                         : '')) + '">' + g + chip + '</td>';
           }).join('')
         + '</tr>';
-      const bare = st.bare || {};
-      const bareRow = Object.keys(bare).length
-        ? '<p class="pm-legend">Container itself: '
-          + cv.browsers.map(b => esc(b.target.split('-')[0]) + ' <b>'
-              + (CELL[bare[b.target]] || CELL.unknown)[0] + '</b>').join(' &nbsp; ')
-          + '</p>'
-        : '';
       return '<h4 style="margin:12px 0 3px;font-size:11.5px;'
         + 'font-family:var(--mono);text-transform:uppercase;'
         + 'letter-spacing:.07em;color:var(--ink-soft)">' + esc(SURF[surf])
-        + '</h4>' + bareRow
-        + (shown.length
-            ? '<div class="table-wrap"><table><thead>' + head + '</thead><tbody>'
-              + shown.map(body).join('') + '</tbody></table></div>'
-            : '<p class="footer-note">Nothing supported by any engine.</p>')
-        + (hidden.length
-            ? '<details class="pm-none"><summary>' + hidden.length
-              + ' combinations no engine supports</summary>'
-              + '<div class="table-wrap"><table><thead>' + head
-              + '</thead><tbody>' + hidden.map(body).join('')
-              + '</tbody></table></div></details>'
+        + '</h4>'
+        + (groups.length
+            ? groups.map(gr =>
+                // Video and audio are different questions; interleaving them by
+                // verdict meant reading past six audio codecs to find AV1.
+                '<p class="pm-kind">' + esc(gr.label) + '</p>'
+                + '<div class="table-wrap"><table><thead>' + head
+                + '</thead><tbody>' + gr.rows.map(body).join('')
+                + '</tbody></table></div>').join('')
+            : '<p class="footer-note">No engine supports any codec here.</p>')
+        + (st.hidden_none
+            ? '<p class="footer-note">' + st.hidden_none + ' further '
+              + (st.hidden_none === 1 ? 'combination is' : 'combinations are')
+              + ' supported by no engine and not listed.</p>'
             : '');
     }
 
@@ -2634,9 +2639,15 @@ function renderMetrics() {
       + 'untested.</li>'
       + '<li><span class="pm-badge pm-b-none">no engine support</span> nothing '
       + 'supports it, so there is no gap to close.</li>'
-      + '<li>A <b>container only</b> row is the bare MIME type with no codecs '
-      + 'parameter. For HLS and single-codec containers like FLAC or WAV that is '
-      + 'how sites actually ask, so it is the row that matters.</li>'
+      + '<li>Rows are grouped into <b>Video codecs</b> and <b>Audio codecs</b>, '
+      + 'worst first, and a <b>Container itself</b> group holds the bare MIME '
+      + 'type asked with no codecs parameter. For HLS and single-codec '
+      + 'containers like FLAC or WAV that is how sites actually ask, so it is '
+      + 'the row that matters.</li>'
+      + '<li>Combinations <b>no engine supports</b> are counted but not listed: '
+      + 'they are not a gap, not an overclaim and not a win. The probe asks '
+      + 'every codec a container could plausibly carry, so there are a fair '
+      + 'few — VP8 in MP4, for one, which all three engines refuse.</li>'
       + '</ul>'
       + (strip.length
           ? '<h3 style="font-size:12.5px;margin:14px 0 4px">Codecs we lack, '

@@ -665,61 +665,78 @@ class TestMeasuredCaps:
     are container-shaped -- WebKit implements no Matroska at all, which is one
     fact rather than twelve."""
 
-    _CAPS = dict(_ROADMAP, caps={
-        "probed_at": "2026-08-10T12:00:00Z",
-        "by_container": {
-            "surface_labels": {"canPlayType": "Play", "mse": "Stream",
-                               "recorder": "Record"},
-            "browsers": [
-                {"target": "firefox-playwright", "label": "Firefox (Gecko build)",
-                 "version": "153.0", "is_proxy_for_safari": False,
-                 "is_nonshipping_build": True},
-                {"target": "chrome", "label": "Chrome", "version": "151",
-                 "is_proxy_for_safari": False, "is_nonshipping_build": False},
-                {"target": "webkit", "label": "WebKit", "version": "26.5",
-                 "is_proxy_for_safari": True, "is_nonshipping_build": False},
-            ],
-            "containers": [
-                {"name": "Matroska", "mimes": ["video/x-matroska"],
-                 "worst": "gap", "gaps": 3, "combos": 18, "probed": True,
-                 "surfaces": {s: {
-                     "rows": [{"kind": "audio", "codec": "FLAC",
-                               "codec_string": "flac", "verdict": "gap",
-                               "support": {"firefox-playwright": "no",
-                                           "chrome": "yes", "webkit": "no"}},
-                              {"kind": "audio", "codec": "AC-3",
-                               "codec_string": "ac-3", "verdict": "none",
-                               "support": {"firefox-playwright": "no",
-                                           "chrome": "no", "webkit": "no"}}],
-                     "counts": {"gap": 1, "overclaim": 0, "ahead": 0,
-                                "parity": 0, "none": 1, "supported": 1},
-                     "bare": {"firefox-playwright": "yes", "chrome": "yes",
-                              "webkit": "no"}}
-                     for s in ("canPlayType", "mse", "recorder")}},
-                {"name": "WebM", "mimes": ["video/webm"], "worst": "parity",
-                 "gaps": 0, "combos": 13, "probed": True,
-                 "surfaces": {s: {
-                     "rows": [{"kind": "audio", "codec": "Opus",
-                               "codec_string": "opus", "verdict": "parity",
-                               "support": {"firefox-playwright": "yes",
-                                           "chrome": "yes", "webkit": "yes"}}],
-                     "counts": {"gap": 0, "overclaim": 0, "ahead": 0,
-                                "parity": 1, "none": 0, "supported": 1},
-                     "bare": {}}
-                     for s in ("canPlayType", "mse", "recorder")}},
-                {"name": "HLS", "mimes": ["application/vnd.apple.mpegurl"],
-                 "worst": "none", "gaps": 0, "combos": 0, "probed": False,
-                 "surfaces": {s: {"rows": [], "counts": {}, "bare": {}}
-                              for s in ("canPlayType", "mse", "recorder")}},
-            ],
-            "codec_gaps": {"canPlayType": [
-                {"codec": "xHE-AAC", "containers": ["ADTS/AAC", "MP4",
-                                                    "Matroska"], "count": 3}]},
-        },
-    })
+    # Built by the real builder from probe-shaped input, not hand-written. The
+    # hand-written version drifted the moment the surface keys were renamed --
+    # every assertion still passed against a payload the generator could no
+    # longer produce.
+    @staticmethod
+    def _caps_payload():
+        from reviewstats.mediacaps import (
+            SURFACES, build_api_table, build_conformance, build_container_view)
+
+        def cmb(container, codec, kind, ff, cr, wk):
+            """One probe combo per engine answer."""
+            return (container, codec, kind, {"firefox-playwright": ff,
+                                             "chrome": cr, "webkit": wk})
+
+        spec = [
+            # Matroska: a real gap, plus a row nobody supports.
+            cmb("Matroska", "FLAC", "audio", "no", "yes", "no"),
+            cmb("Matroska", "AC-3", "audio", "no", "no", "no"),
+            cmb("Matroska", "VP9", "video", "yes", "yes", "no"),
+            # WebM: verified parity, and both kinds so the split is exercised.
+            cmb("WebM", "Opus", "audio", "yes", "yes", "yes"),
+            cmb("WebM", "VP8", "video", "yes", "yes", "yes"),
+        ]
+        engines = [("firefox-playwright", "Firefox (Gecko build)", "153.0",
+                    False, True),
+                   ("chrome", "Chrome", "151", False, False),
+                   ("webkit", "WebKit", "26.5", True, False)]
+        results = []
+        for target, label, version, proxy, nonship in engines:
+            combos = []
+            for container, codec, kind, answers in spec:
+                v = answers[target]
+                combos.append({
+                    "container": container, "kind": kind, "codec": codec,
+                    "codecString": codec.lower(),
+                    "canPlayType": "probably" if v == "yes" else v,
+                    "mse": v, "recorder": v,
+                    "decodeFile": "yes+smooth+hw" if v == "yes" else v,
+                    "decodeMse": v,
+                })
+            results.append({
+                "target": target, "label": label, "browser_version": version,
+                "is_proxy_for_safari": proxy, "is_nonshipping_build": nonship,
+                "probedAt": "2026-08-10T12:00:00Z",
+                "combos": combos,
+                # HLS is container-level only -- no codec combinations exist.
+                "bare": {"video/x-matroska": {"canPlayType": "maybe", "mse": v,
+                                              "recorder": "no"},
+                         "application/vnd.apple.mpegurl": {
+                             "canPlayType": "no" if target.startswith("firefox")
+                                            else "maybe",
+                             "mse": "no", "recorder": "no"}},
+                "conformance": [{
+                    "type": 'audio/flac; codecs="ac-3"',
+                    "canPlayType": "probably" if target.startswith("firefox")
+                                   else "no"}],
+                "apis": {"MediaSource in Worker": target != "webkit"},
+            })
+        return {
+            "probed_at": "2026-08-10T12:00:00Z",
+            "browsers": [{"target": t, "label": lb, "version": v,
+                          "is_proxy_for_safari": p, "is_nonshipping_build": n}
+                         for t, lb, v, p, n in engines],
+            "surfaces": {},
+            "by_container": build_container_view(results),
+            "conformance": build_conformance(results),
+            "apis": build_api_table(results),
+        }
 
     def _render_caps(self):
-        return render_html(_MINIMAL_DATA, roadmap_data=self._CAPS)
+        caps = dict(_ROADMAP, caps=self._caps_payload())
+        return render_html(_MINIMAL_DATA, roadmap_data=caps)
 
     def test_grouped_by_container(self):
         html = self._render_caps()
@@ -766,8 +783,11 @@ class TestMeasuredCaps:
     def test_every_badge_and_chip_is_explained_before_the_cards(self):
         html = _joined(self._render_caps())
         assert "How to read this" in html
+        # "container only" was replaced by the group heading that says the same
+        # thing once, so the legend explains the groups instead of a row label.
         for term in ("behind", "we alone accept", "verified parity",
-                     "no engine support", "container only"):
+                     "no engine support", "Video codecs", "Audio codecs",
+                     "Container itself", "not listed"):
             assert term in html, term
         assert "gaps / supported" in html
 
@@ -778,10 +798,23 @@ class TestMeasuredCaps:
         assert "MediaRecorder.isTypeSupported" in html
         assert "canPlayType" in html
 
-    def test_rows_nobody_supports_are_collapsed_not_dropped(self):
-        html = self._render_caps()
-        assert "combinations no engine supports" in html
-        assert "details class=\"pm-none\"" in html
+    def test_rows_nobody_supports_are_not_listed_at_all(self):
+        """Replaces an earlier rule that kept them in a collapsed table.
+
+        A combination no browser supports is not a gap, not an overclaim and not
+        a win, so there is nothing to act on, and the probe generates many of them
+        because it asks every codec a container could plausibly carry. The count
+        is still stated so the shorter table cannot be mistaken for full coverage.
+        """
+        html = _joined(self._render_caps())
+        assert 'class="pm-none"' not in html, (
+            "the collapsed no-engine-support table is back"
+        )
+        assert "supported by no engine and not listed" in html
+
+    def test_video_and_audio_are_rendered_as_separate_groups(self):
+        html = _joined(self._render_caps())
+        assert "Video codecs" in html and "Audio codecs" in html
 
     def test_codec_index_is_offered_alongside_the_container_grouping(self):
         html = _joined(self._render_caps())
@@ -813,7 +846,8 @@ class TestSupportAnswersAreWords:
 
     def _caps_html(self):
         return _joined(render_html(_MINIMAL_DATA,
-                                  roadmap_data=TestMeasuredCaps._CAPS))
+                                  roadmap_data=dict(
+            _ROADMAP, caps=TestMeasuredCaps._caps_payload())))
 
     def test_no_partial_circle_glyph_anywhere(self):
         assert "◐" not in self._caps_html()
