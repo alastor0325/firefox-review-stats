@@ -1001,11 +1001,14 @@ class TestContainerHeaderAlignment:
         )
         assert "px" in line
 
-    def test_the_three_chips_share_one_fixed_width(self):
+    def test_the_chips_share_equal_columns(self):
+        """One column per surface, equal width, or the chips drift by label and
+        number width. Asserted against SURFACES so adding a surface without
+        widening the grid fails here rather than on screen."""
+        from reviewstats.mediacaps import SURFACES
         chips = self._rule(".pm-chips")
-        assert "repeat(3," in chips, (
-            "chips must be equal fixed columns or Playback/Streaming/Recording "
-            "drift by label and number width"
+        assert f"repeat({len(SURFACES)}," in chips, (
+            f"{len(SURFACES)} surfaces but the chip grid is: {chips.strip()}"
         )
 
     def test_the_badge_column_has_a_consistent_edge(self):

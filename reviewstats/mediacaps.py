@@ -41,7 +41,7 @@ _PLAYS = ("probably", "maybe")
 # boolean, where canPlayType gives a deliberately vague tri-state whose "maybe" is
 # unreadable without explanation. The legacy fields are still collected, and are
 # still what answers a surface when the precise call refuses -- see `answer`.
-SURFACES = ("playback", "streaming", "recording")
+SURFACES = ("playback", "streaming", "recording", "wcdecode", "wcencode")
 
 # Which probe field answers each surface, and what to fall back to. Not one API
 # everywhere, because neither covers everything:
@@ -57,10 +57,22 @@ SURFACE_FIELDS = {
     "playback":  {"codec": "decodeFile", "bare": "canPlayType"},
     "streaming": {"codec": "decodeMse",  "bare": "mse"},
     "recording": {"codec": "recorder",   "bare": "recorder"},
+    # WebCodecs is a separate API with its own registries, and it answers a
+    # different question: raw codec access with no container. It is kept apart
+    # from the three above rather than folded in, because the answers genuinely
+    # differ -- Firefox's VideoEncoder does VP9 and AV1 that its MediaRecorder
+    # refuses, so reporting MediaRecorder alone made "we cannot record VP9" read
+    # as "we cannot encode VP9". Only the first is true.
+    #
+    # There is no bare fallback: WebCodecs takes a codec, never a container type,
+    # so a container-level question has no meaning here.
+    "wcdecode":  {"codec": "wcDecode",   "bare": "wcDecode"},
+    "wcencode":  {"codec": "wcEncode",   "bare": "wcEncode"},
 }
 
 SURFACE_LABELS = {
     "playback": "Playback", "streaming": "Streaming", "recording": "Recording",
+    "wcdecode": "WebCodecs decode", "wcencode": "WebCodecs encode",
 }
 
 # Which API actually answered, so the page can say so rather than implying all
@@ -70,6 +82,8 @@ SURFACE_SOURCE = {
     "streaming": "mediaCapabilities.decodingInfo({type:'media-source'})",
     "recording": "MediaRecorder.isTypeSupported "
                  "(encodingInfo throws on Chrome)",
+    "wcdecode": "VideoDecoder/AudioDecoder.isConfigSupported",
+    "wcencode": "VideoEncoder/AudioEncoder.isConfigSupported",
 }
 
 # `powerEfficient` and `smooth` are deliberately NOT surfaced, though the probe

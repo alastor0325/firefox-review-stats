@@ -216,9 +216,25 @@ all the same generation:
 
 | Surface | Measured with | Why |
 |---|---|---|
-| Playback | `decodingInfo({type:'file'})` | definite answer, plus `powerEfficient` |
+| Playback | `decodingInfo({type:'file'})` | definite answer |
 | Streaming | `decodingInfo({type:'media-source'})` | same |
 | Recording | `MediaRecorder.isTypeSupported` | `encodingInfo({type:'record'})` **throws on Chrome** for every configuration tried; driving the column with it reported Chrome as recording nothing |
+| WC decode | `VideoDecoder`/`AudioDecoder.isConfigSupported` | separate API, separate registry |
+| WC encode | `VideoEncoder`/`AudioEncoder.isConfigSupported` | the only place encode support is visible — see below |
+
+> **WebCodecs is a separate category because its answers differ.** In WebM,
+> Firefox's `MediaRecorder` accepts `vp8` alone, so the Recording column shows VP9
+> and AV1 as gaps — but `VideoEncoder.isConfigSupported` reports **yes** for both,
+> at parity with Chrome and WebKit. Reporting MediaRecorder alone made "we cannot
+> record VP9" read as "we cannot encode VP9", and only the first is true. The gap
+> is the wiring between the two, not the encoder.
+
+Codec-string spellings are **not** interchangeable, and the correct one depends on
+the surface. Measured in WebM: `codecs="vp9"` gets `no` from Chrome's
+`decodingInfo` and `yes` from its `MediaRecorder`; `codecs="vp09.00.10.08"` gets
+the reverse. Picking either alone writes a false `no` into the table, so the probe
+asks every accepted spelling and keeps the strongest answer per surface. `maybe`
+outranks `no`, and errors rank below any real answer.
 
 MediaCapabilities requires a codecs parameter, so it cannot answer a bare
 container type at all — it errors. Bare rows therefore read `canPlayType` /

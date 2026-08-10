@@ -881,7 +881,7 @@
      different column widths and the badges and chips came out ragged. */
   .pm-cont-h {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 96px 372px 104px;
+    grid-template-columns: minmax(0, 1fr) 96px 560px 104px;
     align-items: center; gap: 12px; padding: 9px 4px;
   }
   /* The pill varies in width ("partial" vs "full support"); pinning its right
@@ -909,7 +909,7 @@
   .pm-b-none { background: var(--muted) }
   /* Equal columns so Playback / Streaming / Recording line up regardless of
      label length or whether the figure is "10/14" or a dash. */
-  .pm-chips { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px }
+  .pm-chips { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px }
   .pm-chip {
     font-family: var(--mono); font-size: 9px; padding: 2px 6px;
     border-radius: 3px; border: 1px solid var(--rule); white-space: nowrap;
@@ -2482,7 +2482,8 @@ function renderMetrics() {
     // "Play/Stream/Record" was too terse to be guessable. Short label for the
     // chip, full name for the legend and the expanded tables.
     const SURF = {playback: 'Playback', streaming: 'Streaming',
-                  recording: 'Recording'};
+                  recording: 'Recording', wcdecode: 'WC decode',
+                  wcencode: 'WC encode'};
     // Name the API each column was actually measured with. They are not all the
     // same generation: playback and streaming use MediaCapabilities, which gives
     // a definite answer plus hardware-acceleration info, while recording falls

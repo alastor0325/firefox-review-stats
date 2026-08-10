@@ -229,13 +229,29 @@ async function encoding(type, isVideo, res) {
   });
 }
 
-async function webcodecs(codec, isVideo) {
+// Decode and encode are separate registries and separate answers, and asking
+// only about decoding hid the more interesting fact: Firefox's VideoEncoder does
+// VP9 and AV1, while its MediaRecorder accepts vp8 alone. "Cannot record VP9" and
+// "cannot encode VP9" are different claims, and only the first is true.
+async function webcodecs(codec, isVideo, direction) {
   return await safeAsync(async () => {
-    const C = isVideo ? window.VideoDecoder : window.AudioDecoder;
+    const C = direction === 'encode'
+      ? (isVideo ? window.VideoEncoder : window.AudioEncoder)
+      : (isVideo ? window.VideoDecoder : window.AudioDecoder);
     if (!C || typeof C.isConfigSupported !== 'function') return 'absent';
-    const cfg = isVideo
-      ? { codec, width: 1280, height: 720 }
-      : { codec, sampleRate: 48000, numberOfChannels: 2 };
+    let cfg;
+    if (isVideo) {
+      cfg = { codec, width: 1280, height: 720 };
+      // An encoder config is invalid without a bitrate, so a shared config
+      // reports "no" for codecs the encoder in fact supports.
+      if (direction === 'encode') {
+        cfg.bitrate = 2000000;
+        cfg.framerate = 30;
+      }
+    } else {
+      cfg = { codec, sampleRate: 48000, numberOfChannels: 2 };
+      if (direction === 'encode') cfg.bitrate = 128000;
+    }
     const r = await C.isConfigSupported(cfg);
     return r && r.supported ? 'yes' : 'no';
   });
@@ -348,6 +364,17 @@ async function run() {
           encodeRecord: await best(t => encoding(t, isVideo, hd)),
           decodeFile4k: isVideo
             ? await best(t => decoding(t, true, 'file', uhd)) : '',
+          // WebCodecs is its own API with its own registries, and it answers a
+          // different question than the three surfaces above: raw codec access
+          // with no container at all. It is also where the encode story lives --
+          // Firefox's VideoEncoder does VP9 and AV1 that its MediaRecorder will
+          // not accept, so reporting only MediaRecorder made "we cannot record
+          // VP9" read as "we cannot encode VP9", which is false. Keyed by codec
+          // label because WebCodecs uses its own codec strings.
+          wcDecode: await webcodecs(
+            (isVideo ? WC_VIDEO : WC_AUDIO)[label], isVideo, 'decode'),
+          wcEncode: await webcodecs(
+            (isVideo ? WC_VIDEO : WC_AUDIO)[label], isVideo, 'encode'),
         });
       }
     }
@@ -361,10 +388,16 @@ async function run() {
   }
 
   for (const [label, codec] of Object.entries(WC_VIDEO)) {
-    results.webcodecs.video[label] = await webcodecs(codec, true);
+    results.webcodecs.video[label] = {
+      decode: await webcodecs(codec, true, 'decode'),
+      encode: await webcodecs(codec, true, 'encode'),
+    };
   }
   for (const [label, codec] of Object.entries(WC_AUDIO)) {
-    results.webcodecs.audio[label] = await webcodecs(codec, false);
+    results.webcodecs.audio[label] = {
+      decode: await webcodecs(codec, false, 'decode'),
+      encode: await webcodecs(codec, false, 'encode'),
+    };
   }
 
   window.__MEDIA_CAPS__ = results;
