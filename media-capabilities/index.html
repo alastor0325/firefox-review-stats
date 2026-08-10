@@ -69,6 +69,27 @@ const CODEC_STRINGS = {
   'PCM':            '1',      // WAV format tag 1 = linear PCM, not "pcm"
 };
 
+// Accepted spellings per codec, strongest-typed first. Only the codecs with more
+// than one live spelling need an entry; everything else falls back to
+// CODEC_STRINGS.
+const ALIASES = {
+  'VP9': ['vp09.00.10.08', 'vp9'],
+  'AV1': ['av01.0.04M.08', 'av1'],
+  'VP8': ['vp8', 'vp8.0'],
+};
+
+// Orders probe answers so "the best of several spellings" is well defined.
+// `maybe` outranks `no` because it is a real, if hedged, yes; errors and absent
+// rank below everything, since they are the absence of an answer.
+function rank(v) {
+  const s = String(v == null ? '' : v);
+  if (s.startsWith('yes') || s === 'probably') return 4;
+  if (s === 'maybe') return 3;
+  if (s === 'no') return 2;
+  if (s.startsWith('error')) return 1;
+  return 0;                                  // '' | 'absent'
+}
+
 // Only combinations that are actually meaningful. An earlier version of this
 // page cross-produced all 18 codecs into all 9 containers, which asked things
 // like `audio/flac; codecs="ac-3"`. Every engine answers no to those, so the
@@ -289,22 +310,44 @@ async function run() {
       const major = kind === 'video' ? c.video : c.audio;
       if (!major) continue;
       for (const label of list) {
-        const codec = CODEC_STRINGS[label];
-        const type = `${major}; codecs="${codec}"`;
         const isVideo = kind === 'video';
         const hd = RESOLUTIONS[0], uhd = RESOLUTIONS[1];
+        // Every accepted spelling of the codec, best answer wins per surface.
+        //
+        // One spelling is not enough, and the reason is measured rather than
+        // assumed. In WebM, Chrome answers `no` to
+        // `decodingInfo({codecs:"vp9"})` but `yes` to `vp09.00.10.08`; its
+        // MediaRecorder does the exact opposite, accepting `vp9` and rejecting
+        // `vp09.*`. Picking either one alone puts a false `no` in the table --
+        // first "Chrome cannot record VP9", then "Chrome cannot play VP9" -- so
+        // the probe asks both and keeps the strongest answer. A browser that
+        // accepts any valid spelling supports the codec; the string it insists on
+        // is its business.
+        const spellings = ALIASES[label] || [CODEC_STRINGS[label]];
+        const types = spellings.map(cs => `${major}; codecs="${cs}"`);
+        const best = async fn => {
+          let out = 'absent';
+          for (const t of types) {
+            const v = await fn(t);
+            if (rank(v) > rank(out)) out = v;
+          }
+          return out;
+        };
         results.combos.push({
-          container: c.name, kind, codec: label, codecString: codec, type,
+          container: c.name, kind, codec: label,
+          codecString: spellings[0], type: types[0],
+          spellings,
           // Legacy, kept so the two APIs can be compared -- where they
           // disagree, that is itself a finding.
-          canPlayType: canPlay(type),
-          mse: mseSupported(type),
-          recorder: recorderSupported(type),
+          canPlayType: await best(async t => canPlay(t)),
+          mse: await best(async t => mseSupported(t)),
+          recorder: await best(async t => recorderSupported(t)),
           // Precise answers. `+hw` means powerEfficient: hardware accelerated.
-          decodeFile: await decoding(type, isVideo, 'file', hd),
-          decodeMse: await decoding(type, isVideo, 'media-source', hd),
-          encodeRecord: await encoding(type, isVideo, hd),
-          decodeFile4k: isVideo ? await decoding(type, true, 'file', uhd) : '',
+          decodeFile: await best(t => decoding(t, isVideo, 'file', hd)),
+          decodeMse: await best(t => decoding(t, isVideo, 'media-source', hd)),
+          encodeRecord: await best(t => encoding(t, isVideo, hd)),
+          decodeFile4k: isVideo
+            ? await best(t => decoding(t, true, 'file', uhd)) : '',
         });
       }
     }

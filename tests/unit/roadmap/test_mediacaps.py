@@ -856,3 +856,49 @@ class TestThreeSupportLevels:
             "container order disagrees with the level badges: "
             + ", ".join(f'{c["name"]}={c["level"]}' for c in v["containers"])
         )
+
+
+class TestEverySpellingIsAsked:
+    """Each codec is probed under every accepted spelling, best answer wins.
+
+    One spelling is not enough, and which one is right turned out to depend on the
+    *surface*, not the container. Measured in WebM:
+
+        video/webm; codecs="vp9"              decodingInfo: Chrome no,  recorder: Chrome yes
+        video/webm; codecs="vp09.00.10.08"    decodingInfo: Chrome yes, recorder: Chrome no
+
+    So either choice alone writes a false `no` into the table. Asking `vp09.*`
+    reported "Chrome cannot record VP9"; switching to `vp9` reported "Chrome
+    cannot play VP9". Both are wrong about a browser that has shipped VP9 for
+    years. A browser supports the codec if it accepts any valid spelling.
+    """
+
+    def _page(self):
+        import pathlib
+        return pathlib.Path("media-capabilities/index.html").read_text(
+            encoding="utf-8")
+
+    def test_vp9_and_av1_have_both_spellings(self):
+        page = self._page()
+        assert "'VP9': ['vp09.00.10.08', 'vp9']" in page
+        assert "'AV1': ['av01.0.04M.08', 'av1']" in page
+
+    def test_the_probe_takes_the_best_answer_across_spellings(self):
+        page = self._page()
+        assert "if (rank(v) > rank(out))" in page
+
+    def test_a_hedged_yes_outranks_a_no(self):
+        """`maybe` is a real answer; ranking it below `no` would let one spelling's
+        flat rejection mask another's partial acceptance."""
+        page = self._page()
+        i, j = page.index("if (s === 'maybe')"), page.index("if (s === 'no')")
+        assert i < j
+
+    def test_an_error_never_beats_a_real_answer(self):
+        page = self._page()
+        assert "if (s.startsWith('error')) return 1" in page
+
+    def test_no_per_container_spelling_override_remains(self):
+        """The abandoned fix. It could not be right: the spelling varies by
+        surface, and a container-level override cannot express that."""
+        assert "codecStrings" not in self._page()
