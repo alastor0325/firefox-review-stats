@@ -94,6 +94,18 @@ def _joined(html: str) -> str:
     return re.sub(r"'\s*\+\s*'", "", html)
 
 
+def _visible(html: str) -> str:
+    """`_joined`, minus the JS comment lines.
+
+    Assertions that a phrase is *absent* kept matching the comment explaining why
+    it was removed -- the source says "removed the How to read this list", so
+    searching for "How to read this" found it. Comments are not rendered, so an
+    absence check has to ignore them.
+    """
+    return _joined("\n".join(
+        ln for ln in html.splitlines() if not ln.strip().startswith("//")))
+
+
 class TestViewAxis:
     def test_health_button_present(self):
         assert re.search(r'<button[^>]*data-view="health"', _render(_ROADMAP)), (
@@ -784,16 +796,31 @@ class TestMeasuredCaps:
         assert "combinations that cannot exist" not in html
         assert "Type that cannot exist" not in html
 
-    def test_every_badge_and_chip_is_explained_before_the_cards(self):
+    def test_the_preamble_is_one_line_and_names_the_surfaces(self):
+        """The "How to read this" list was removed a bullet at a time until only
+        the surface names were left -- the one part a reader cannot infer from the
+        cards. The heading went with the list rather than standing over one item.
+        """
+        html = _visible(self._render_caps())
+        assert "How to read this" not in html
+        assert "Three surfaces per container" in html
+        for surface in ("Playback", "Streaming", "Recording"):
+            assert surface in html, surface
+
+    def test_the_badge_and_chip_are_no_longer_explained_in_prose(self):
+        """Removed on request. They stay legible through the words themselves
+        ("full support", "partial") and the cell tooltips."""
         html = _joined(self._render_caps())
-        assert "How to read this" in html
-        # "container only" was replaced by the group heading that says the same
-        # thing once, so the legend explains the groups instead of a row label.
-        for term in ("full support", "partial", "no support",
-                     "Video codecs", "Audio codecs"):
-            assert term in html, term
-        # The chip figure counts support now, so its explanation must too.
-        assert "what we support / what any engine supports" in html
+        assert "what we support / what any engine supports" not in html
+        assert "we match every engine" not in html
+
+    def test_the_probe_date_is_stated_without_repeating_the_versions(self):
+        html = _joined(self._render_caps())
+        assert "Measured on" in html
+        # The engine list sits immediately below; naming versions here said it
+        # twice.
+        assert "Measured on ' + esc((caps.probed_at || '').slice(0, 10)) + ' in" \
+            not in html
 
     def test_surface_names_are_spelled_out(self):
         """"Play" and "Stream" were too terse to guess."""
@@ -915,9 +942,7 @@ class TestPerDeviceFactsAreNotPublished:
     def test_the_legend_does_not_mention_powerefficient(self):
         """Comment lines are stripped first: the source still explains *why* the
         flag is not shown, which is the opposite of showing it."""
-        html = "\n".join(ln for ln in self._html().splitlines()
-                         if not ln.strip().startswith("//"))
-        assert "powerEfficient" not in html
+        assert "powerEfficient" not in _visible(self._html())
 
     def test_the_page_makes_no_hardware_acceleration_claim(self):
         html = self._html()

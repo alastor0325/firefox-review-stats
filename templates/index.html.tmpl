@@ -2591,10 +2591,10 @@ function renderMetrics() {
 
     document.getElementById('pm-caps').innerHTML =
       '<h2>Codec and container support, measured</h2>'
+      // Date only. The engines and their versions are listed immediately below,
+      // so naming them here said it twice.
       + '<p class="footer-note">Measured on '
-      + esc((caps.probed_at || '').slice(0, 10)) + ' in '
-      + cv.browsers.map(b => esc(b.name || b.label) + ' '
-          + esc(b.version)).join(', ') + '. '
+      + esc((caps.probed_at || '').slice(0, 10)) + '. '
       + '<a href="../media-capabilities/index.html" target="_blank" '
       + 'rel="noopener">Run the probe yourself \u2197</a></p>' 
       + '<ul class="pm-facts">'
@@ -2615,20 +2615,12 @@ function renderMetrics() {
             + (caveat ? ' <span class="pm-caveat">?</span>' : '') + '</li>';
         }).join('')
       + '</ul>'
-      + '<h3 style="font-size:12.5px;margin:14px 0 4px">How to read this</h3>'
-      + '<ul class="pm-facts">'
-      + '<li>Three surfaces per container: <b>Playback</b> a plain media '
-      + 'element, <b>Streaming</b> via Media Source, <b>Recording</b> via '
-      + 'MediaRecorder.</li>'
-      + '<li>A chip reads <b>what we support / what any engine supports</b> '
-      + '\u2014 <code>10/14</code> means 14 combinations work somewhere and we '
-      + 'have 10. <code>\u2013</code> means nothing works anywhere.</li>'
-      + '<li>The badge is that ratio as a level: <span class="pm-badge '
-      + 'pm-b-ok">full support</span> we match every engine, '
-      + '<span class="pm-badge pm-b-mixed">partial</span> we have some, '
-      + '<span class="pm-badge pm-b-weak">no support</span> we have none that '
-      + 'others do.</li>'
-      + '</ul>'
+      // One line rather than a "How to read this" list: with the chip and badge
+      // bullets removed, the heading stood over a single item. The three surface
+      // names are the only part a reader cannot infer from the cards.
+      + '<p class="footer-note">Three surfaces per container: '
+      + '<b>Playback</b> a plain media element, <b>Streaming</b> via Media '
+      + 'Source, <b>Recording</b> via MediaRecorder.</p>'
 
       + cv.containers.map(c => {
           const [word, cls] = LEVEL[c.level] || LEVEL.partial;
