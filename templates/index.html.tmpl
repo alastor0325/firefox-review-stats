@@ -492,26 +492,136 @@
     white-space: nowrap; display: inline-block;
   }
   .rm-pill.tbd { background: var(--red); color: #fff; }
-  /* Rides on .summary-grid / .stat for the shared card recipe; only the
-     narrower column and the rating accent differ. */
-  .rm-aspects { grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); }
-  .rm-aspect { border-left: 3px solid var(--rule); }
-  .rm-aspect.weak { border-left-color: var(--red); }
-  .rm-aspect.mixed, .rm-aspect.unknown { border-left-color: #C4890A; }
-  .rm-aspect.good { border-left-color: #2E7D4F; }
-  .rm-aspect h4 {
-    margin: 0 0 5px; font-size: 12.5px; font-weight: 600;
-    display: flex; justify-content: space-between; gap: 8px; align-items: baseline;
+  /* Rating colours, declared once and read by all three places a rating is
+     shown: the aspect's left stripe, the rating chip at every level, and the
+     dot on the spine. `unknown` is deliberately not the same amber as `mixed`:
+     "we cannot answer this" is a different statement from "partly fine", and
+     colouring them alike hid that. */
+  :root {
+    --rate-good: #2E7D4F;
+    --rate-mixed: #C4890A;
+    --rate-weak: #B3002A;
+    --rate-unknown: #6B7B8C;
   }
-  .rm-aspect .rm-rating {
+
+  /* Condition tree. Single column, full content width: three levels of
+     nesting need horizontal room, and in a two-column grid expanding one card
+     resizes its row and visibly shifts the unrelated card beside it. */
+  .rm-aspects {
+    display: block; margin: 4px 0 18px;
+    border: 1px solid var(--rule); background: var(--surface);
+  }
+  .rm-aspect {
+    border-bottom: 1px solid var(--rule);
+    border-left: 3px solid var(--rule);
+  }
+  .rm-aspect:last-child { border-bottom: 0; }
+  .rm-aspect.good { border-left-color: var(--rate-good); }
+  .rm-aspect.mixed { border-left-color: var(--rate-mixed); }
+  .rm-aspect.weak { border-left-color: var(--rate-weak); }
+  .rm-aspect.unknown { border-left-color: var(--rate-unknown); }
+  .rm-aspect > summary {
+    list-style: none; cursor: pointer; padding: 12px 16px 13px; display: block;
+  }
+  .rm-aspect > summary::-webkit-details-marker { display: none; }
+  .rm-aspect > summary:hover { background: var(--paper); }
+  .rm-aspect-h {
+    display: flex; justify-content: space-between; align-items: baseline;
+    gap: 10px; margin-bottom: 4px;
+  }
+  .rm-aspect-name {
+    font-family: var(--serif);
+    font-variation-settings: "opsz" 90, "wght" 500, "SOFT" 20;
+    font-size: 15px; letter-spacing: -0.01em;
+  }
+  .rm-aspect > summary > p {
+    margin: 0; font-size: 12px; line-height: 1.55; color: var(--muted);
+    max-width: 92ch;
+  }
+  .rm-rating {
     font-family: var(--mono); font-size: 8.5px; text-transform: uppercase;
     letter-spacing: 0.09em; font-weight: 700; color: var(--muted);
+    white-space: nowrap;
   }
-  .rm-aspect.weak .rm-rating { color: var(--red); }
-  .rm-aspect p { margin: 0; font-size: 11.5px; line-height: 1.55; color: var(--muted); }
-  .rm-rests {
+  .good > summary .rm-rating, .good > .rm-node-h .rm-rating,
+  .rm-aspect.good > summary .rm-rating { color: var(--rate-good); }
+  .mixed > summary .rm-rating, .mixed > .rm-node-h .rm-rating,
+  .rm-aspect.mixed > summary .rm-rating { color: var(--rate-mixed); }
+  .weak > summary .rm-rating, .weak > .rm-node-h .rm-rating,
+  .rm-aspect.weak > summary .rm-rating { color: var(--rate-weak); }
+  .unknown > summary .rm-rating, .unknown > .rm-node-h .rm-rating,
+  .rm-aspect.unknown > summary .rm-rating { color: var(--rate-unknown); }
+  /* Expand affordance. Two signals, both only present when there is something
+     to open: a chevron in the header row, and a line saying what is inside.
+     A leaf has neither and shows its items directly, so expandable and
+     terminal rows are never ambiguous. */
+  .rm-chev {
+    font-family: var(--mono); font-size: 11px; line-height: 1;
+    color: var(--muted); transition: transform 0.14s; display: inline-block;
+    transform-origin: 50% 50%;
+  }
+  details[open] > summary .rm-chev { transform: rotate(90deg); color: var(--ink); }
+  summary:hover .rm-chev { color: var(--ink); }
+  .rm-expand {
     margin-top: 7px; font-family: var(--mono); font-size: 8.5px;
-    color: var(--muted); letter-spacing: 0.03em;
+    letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted);
+  }
+  details[open] > summary .rm-expand { color: var(--ink); }
+  /* Parity tail tags: which other engines ship what we are missing. */
+  .rm-parity {
+    font-family: var(--mono); font-size: 8px; letter-spacing: 0.05em;
+    text-transform: uppercase; padding: 1px 5px; border-radius: 8px;
+    border: 1px solid var(--rule); color: var(--muted);
+    background: var(--paper); white-space: nowrap;
+  }
+  .rm-parity-wrap { display: inline-flex; gap: 3px; margin-left: 2px; }
+  a.rm-parity { text-decoration: none; }
+  a.rm-parity:hover {
+    border-color: var(--ink); color: var(--ink); background: var(--surface);
+  }
+
+  /* Every level below the aspect. Nesting is DOM-nested, so one margin rule
+     compounds into the indent per level. */
+  .rm-kids { background: var(--paper); }
+  .rm-aspect > .rm-kids { border-top: 1px solid var(--rule); padding: 4px 0; }
+  .rm-node {
+    position: relative; margin-left: 22px; padding: 8px 16px 9px 14px;
+    border-left: 1px solid var(--rule);
+  }
+  .rm-node > summary {
+    list-style: none; cursor: pointer; display: block; margin: -8px -16px -9px -14px;
+    padding: 8px 16px 9px 14px;
+  }
+  .rm-node > summary::-webkit-details-marker { display: none; }
+  .rm-node > summary:hover { background: var(--paper-warm); }
+  /* Elbow from the spine to this node, and a rating dot sitting on the spine. */
+  .rm-node::before {
+    content: ""; position: absolute; left: 0; top: 16px;
+    width: 9px; height: 1px; background: var(--rule);
+  }
+  .rm-node::after {
+    content: ""; position: absolute; left: -3.5px; top: 12.5px;
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--rule); border: 1px solid var(--paper);
+  }
+  .rm-node.good::after { background: var(--rate-good); }
+  .rm-node.mixed::after { background: var(--rate-mixed); }
+  .rm-node.weak::after { background: var(--rate-weak); }
+  .rm-node.unknown::after { background: var(--rate-unknown); }
+  .rm-node-h {
+    display: flex; justify-content: space-between; align-items: baseline;
+    gap: 8px; font-size: 12px; font-weight: 600; margin-bottom: 3px;
+  }
+  .rm-node p {
+    margin: 0; font-size: 11px; line-height: 1.5; color: var(--muted);
+    max-width: 88ch;
+  }
+  /* Deeper levels read as detail, not as peers of their parent. */
+  .rm-node .rm-node .rm-node-h { font-weight: 500; font-size: 11.5px; }
+  .rm-sub-items { margin-top: 5px; display: flex; flex-wrap: wrap; gap: 3px; }
+  .rm-sub-none {
+    font-family: var(--mono); font-size: 8.5px; color: var(--muted);
+    letter-spacing: 0.03em; margin-top: 5px;
   }
   .rm-audience {
     background: var(--paper-warm); border-left: 2px solid var(--red);
@@ -526,6 +636,329 @@
   .rm-count { font-family: var(--mono); font-size: 10px; color: var(--muted); }
   .rm-mono { font-family: var(--mono); font-size: 10.5px; }
   .rm-dim { color: var(--muted); }
+  /* Coverage grid. Narrow fixed columns so a 13-codec matrix still fits, and
+     a glyph rather than a word per cell so the shape is readable at a glance. */
+  table.rm-mx { table-layout: auto; }
+  table.rm-mx th.rm-mx-col {
+    font-family: var(--mono); font-size: 9px; text-transform: none;
+    letter-spacing: 0; text-align: center; padding: 5px 4px; white-space: nowrap;
+  }
+  table.rm-mx th.rm-mx-row {
+    font-family: var(--sans); font-size: 12px; font-weight: 600;
+    text-transform: none; letter-spacing: 0; color: var(--ink);
+    white-space: nowrap; padding-right: 12px;
+  }
+  td.rm-mx-cell, span.rm-mx-cell {
+    text-align: center; font-size: 13px; line-height: 1; padding: 6px 4px;
+  }
+  span.rm-mx-cell { padding: 0 2px; }
+  .rm-cell-yes { color: var(--rate-good); }
+  .rm-cell-hw  { color: var(--rate-mixed); }
+  .rm-cell-no  { color: var(--rule); }
+  /* ---- Metrics: cross-browser comparison ---------------------------- */
+  /* Emphasis form: Firefox is the subject, other browsers are context. One
+     accent plus grey, not a three-hue categorical palette -- the question is
+     "where do we stand", not "tell three series apart".
+     `--pm-behind` is deliberately NOT the Firefox accent: sharing a hex made
+     every Firefox mark render in the colour that elsewhere means "losing". */
+  :root {
+    --pm-us: var(--red-deep);
+    --pm-them: #6E675E;            /* context grey, AA against white */
+    /* Split on lightness, not only hue: the previous green/brown pair measured
+       1.08:1 against each other and merged under deuteranopia. Neither is the
+       Firefox accent, which would otherwise paint winning marks in the colour
+       that means losing. */
+    --pm-ahead: #1E6B3A;           /* dark green, L* ~40 */
+    --pm-behind: #E0A03C;          /* light amber,  L* ~70 */
+  }
+  .pm-stats {
+    display: flex; gap: 26px; flex-wrap: wrap; margin: 2px 0 12px;
+  }
+  .pm-stat .pm-stat-v {
+    font-family: var(--serif); font-size: 22px; line-height: 1;
+    font-variation-settings: "opsz" 72, "wght" 500, "SOFT" 20;
+  }
+  .pm-stat .pm-stat-l {
+    font-family: var(--mono); font-size: 9px; text-transform: uppercase;
+    letter-spacing: 0.09em; color: var(--ink-soft); margin-top: 4px;
+  }
+  .pm-scope {
+    font-family: var(--mono); font-size: 10px; color: var(--ink-soft);
+    letter-spacing: 0.03em; margin: 0 0 10px;
+  }
+  .pm-row {
+    display: grid; grid-template-columns: 210px minmax(0, 1fr) 150px;
+    align-items: center; gap: 10px;
+    padding: 8px 0; border-bottom: 1px solid var(--rule-soft);
+  }
+  .pm-row:last-child { border-bottom: 0; }
+  .pm-row-label { font-size: 12.5px; font-weight: 500 }
+  .pm-row-label small {
+    display: block; color: var(--ink-soft); font-weight: 400; font-size: 10.5px;
+  }
+  .pm-row-label em {
+    display: block; font-size: 10px; color: var(--ink-soft); font-style: normal;
+  }
+  /* Diverging track: parity is the centre, RIGHT is better for us — the number
+     line, and consistent with every other bar on this page growing rightward.
+     Direction is normalised upstream so one reading works for every row. Scale is
+     FIXED, not data-derived: a rebased scale would change every bar length week
+     to week. */
+  .pm-diverge {
+    position: relative; height: 22px;
+    background: linear-gradient(var(--rule-soft), var(--rule-soft)) center/1px 100% no-repeat;
+  }
+  .pm-bar { position: absolute; top: 5px; height: 12px; border-radius: 3px;
+            min-width: 3px; }
+  .pm-bar.ahead { background: var(--pm-ahead) }
+  .pm-bar.behind { background: var(--pm-behind) }
+  .pm-diverge.uncompared {
+    background: repeating-linear-gradient(135deg, var(--paper-warm) 0 4px,
+                var(--surface) 4px 8px);
+    border-radius: 3px;
+  }
+  .pm-ticks { position: relative; height: 12px }
+  .pm-ticks span {
+    position: absolute; transform: translateX(-50%);
+    font-family: var(--mono); font-size: 9px; color: var(--ink-soft);
+  }
+  .pm-verdict {
+    font-family: var(--mono); font-size: 11px; text-align: right;
+    white-space: nowrap; color: var(--ink-soft);
+  }
+  .pm-verdict b { font-variant-numeric: tabular-nums; font-size: 12px }
+  .pm-verdict.ahead b { color: var(--pm-ahead) }
+  .pm-verdict.behind b { color: var(--pm-behind) }
+  .pm-verdict.none { font-size: 10px }
+  .pm-flag {
+    font-family: var(--mono); font-size: 8.5px; text-transform: uppercase;
+    letter-spacing: 0.06em; color: var(--ink-soft);
+  }
+  /* Compact warning in the collapsed row; the detail it stands for is in the
+     expansion, so the row stays scannable. */
+  .pm-warn-icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 14px; height: 14px; margin-left: 6px; border-radius: 50%;
+    background: var(--rate-mixed); color: #fff; font-weight: 700;
+    font-size: 10px; font-family: var(--mono); vertical-align: middle;
+    cursor: help;
+  }
+  .pm-card.is-stale > summary .pm-diverge { opacity: 0.72 }
+
+  /* Expandable metric card, mirroring the roadmap tree so both subviews of
+     Media Health behave the same way. */
+  .pm-cat { margin: 0 0 16px }
+  .pm-cat-h {
+    display: flex; justify-content: space-between; align-items: baseline;
+    gap: 12px; padding: 6px 0 4px; border-bottom: 1px solid var(--rule);
+    font-family: var(--serif); font-size: 14px;
+    font-variation-settings: "opsz" 90, "wght" 500, "SOFT" 20;
+  }
+  .pm-cat-meta {
+    font-family: var(--mono); font-size: 9px; text-transform: uppercase;
+    letter-spacing: 0.07em; color: var(--ink-soft); font-weight: 400;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .pm-card { border-bottom: 1px solid var(--rule-soft) }
+  .pm-card:last-child { border-bottom: 0 }
+  .pm-card > summary { list-style: none; cursor: pointer }
+  .pm-card > summary::-webkit-details-marker { display: none }
+  .pm-card > summary:hover { background: var(--paper) }
+  .pm-card > summary .pm-row { border-bottom: 0 }
+  .pm-card > summary .pm-flag::before { content: "\25B8 " }
+  .pm-card[open] > summary .pm-flag::before { content: "\25BE " }
+  .pm-card-body {
+    padding: 4px 0 14px 12px; margin-left: 6px;
+    border-left: 1px solid var(--rule);
+  }
+  .pm-facts {
+    margin: 10px 0 8px; padding-left: 16px; font-size: 11.5px;
+    line-height: 1.6; color: var(--ink-soft);
+  }
+  .pm-facts b { color: var(--ink) }
+  .pm-source {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.03em;
+  }
+  .pm-source.none { color: var(--ink-soft) }
+  .pm-head { border-bottom: 1px solid var(--rule); padding-bottom: 2px }
+  .pm-bar.stale {
+    background-image: repeating-linear-gradient(135deg,
+      rgba(255,255,255,.55) 0 3px, transparent 3px 6px);
+  }
+  @media (max-width: 820px) { .pm-card-body { padding-left: 4px; margin-left: 0 } }
+
+  /* Dot plot: median dot on a p25-p75 range, one row per browser. */
+  .pm-plot { margin: 8px 0 2px }
+  .pm-plot-row {
+    display: grid; grid-template-columns: 130px minmax(0, 1fr) 190px;
+    align-items: center; gap: 10px; padding: 4px 0;
+  }
+  .pm-browser {
+    font-family: var(--mono); font-size: 10.5px; display: flex;
+    align-items: center; gap: 5px; color: var(--ink-soft);
+  }
+  .pm-swatch {
+    width: 9px; height: 9px; border-radius: 50%; flex: none;
+    background: var(--pm-them);
+  }
+  .pm-browser.us { color: var(--ink); font-weight: 600 }
+  .pm-browser.us .pm-swatch { background: var(--pm-us) }
+  /* Gridlines at the tick positions, so a dot can be read against something. */
+  .pm-track {
+    position: relative; height: 18px;
+    background:
+      linear-gradient(var(--rule-soft), var(--rule-soft)) 0/1px 100% no-repeat,
+      linear-gradient(var(--rule-soft), var(--rule-soft)) 25%/1px 100% no-repeat,
+      linear-gradient(var(--rule-soft), var(--rule-soft)) 50%/1px 100% no-repeat,
+      linear-gradient(var(--rule-soft), var(--rule-soft)) 75%/1px 100% no-repeat,
+      linear-gradient(var(--rule-soft), var(--rule-soft)) 100%/1px 100% no-repeat;
+  }
+  .pm-range {
+    position: absolute; top: 8px; height: 3px; min-width: 2px;
+    background: var(--pm-them); opacity: 0.75; border-radius: 2px;
+  }
+  .pm-dot {
+    position: absolute; top: 5px; width: 9px; height: 9px; border-radius: 50%;
+    background: var(--pm-them); margin-left: -4.5px;
+    box-shadow: 0 0 0 2px var(--surface);
+  }
+  /* A faint tint on the favourable half. This is the piece that carries
+     direction without moving a single value: the tint flips per metric, the
+     numbers never do. */
+  .pm-track.better-left::before, .pm-track.better-right::before {
+    content: ""; position: absolute; top: 0; bottom: 0; width: 50%;
+    background: var(--pm-ahead); opacity: 0.11;
+  }
+  .pm-track.better-left::before { left: 0; border-right: 1px dashed var(--rule) }
+  .pm-track.better-right::before { right: 0; border-left: 1px dashed var(--rule) }
+  /* Band label, so the tint is not left to be inferred. */
+  .pm-band {
+    display: grid; grid-template-columns: 130px minmax(0, 1fr) 190px; gap: 10px;
+  }
+  .pm-band-in {
+    position: relative; height: 12px; font-family: var(--mono); font-size: 8.5px;
+    text-transform: uppercase; letter-spacing: 0.08em; color: var(--pm-ahead);
+    font-weight: 700;
+  }
+  .pm-band-in span { position: absolute; top: 0 }
+  .pm-band-in.better-left span { left: 2px }
+  .pm-band-in.better-right span { right: 2px }
+  .pm-dot.leader { box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--pm-ahead) }
+  .pm-best {
+    font-family: var(--mono); font-size: 8.5px; text-transform: uppercase;
+    letter-spacing: 0.06em; color: var(--pm-ahead); font-weight: 700;
+  }
+  .pm-dot.nospread { background: var(--surface); border: 2px solid var(--pm-them) }
+  .pm-plot-row.us .pm-range { background: var(--pm-us) }
+  .pm-plot-row.us .pm-dot { background: var(--pm-us) }
+  .pm-plot-row.us .pm-dot.nospread { background: var(--surface);
+    border-color: var(--pm-us) }
+  .pm-value {
+    font-family: var(--mono); font-size: 11px; text-align: right;
+    font-variant-numeric: tabular-nums; color: var(--ink);
+  }
+  .pm-value span { color: var(--ink-soft); font-size: 10px }
+  .pm-axis {
+    display: grid; grid-template-columns: 130px minmax(0, 1fr) 190px; gap: 10px;
+  }
+  .pm-axis-dir {
+    font-family: var(--mono); font-size: 9px; color: var(--ink-soft);
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .pm-axis-dir.strong { color: var(--ink); font-weight: 700; font-size: 9.5px }
+  .pm-warn {
+    background: var(--paper-warm); border-left: 2px solid var(--rate-mixed);
+    padding: 7px 11px; margin: 6px 0 0; font-size: 11.5px; line-height: 1.5;
+    color: var(--ink-soft);
+  }
+  .pm-legend {
+    font-family: var(--mono); font-size: 9.5px; color: var(--ink-soft);
+    margin: 6px 0 0;
+  }
+  /* Container cards: one per container, three surface chips in the header. */
+  .pm-cont-h {
+    display: grid; grid-template-columns: 1fr auto auto auto;
+    align-items: center; gap: 12px; padding: 9px 4px;
+  }
+  .pm-cont-n { font-size: 13px; font-weight: 600 }
+  .pm-cont-n small {
+    display: block; font-family: var(--mono); font-size: 9px;
+    color: var(--ink-soft); font-weight: 400;
+  }
+  .pm-cont-n2 {
+    font-family: var(--mono); font-size: 9px; color: var(--ink-soft);
+    text-align: right; white-space: nowrap;
+  }
+  .pm-badge {
+    font-family: var(--mono); font-size: 8.5px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .06em; padding: 2px 6px;
+    border-radius: 3px; white-space: nowrap; color: #fff;
+  }
+  .pm-b-gap { background: var(--pm-behind); color: var(--ink) }
+  .pm-b-over { background: var(--rate-unknown) }
+  .pm-b-ok { background: var(--pm-ahead) }
+  .pm-b-none { background: var(--muted) }
+  .pm-chips { display: flex; gap: 5px }
+  .pm-chip {
+    font-family: var(--mono); font-size: 9px; padding: 2px 6px;
+    border-radius: 3px; border: 1px solid var(--rule); white-space: nowrap;
+    color: var(--ink-soft);
+  }
+  .pm-chip b { color: var(--ink) }
+  .pm-chip.gap { border-color: var(--pm-behind) }
+  .pm-chip.gap b { color: var(--pm-behind) }
+  .pm-chip.ok { border-color: var(--pm-ahead) }
+  .pm-chip.ok b { color: var(--pm-ahead) }
+  /* Row verdict, as a left edge so it survives greyscale. */
+  tr.pm-v-gap td:first-child { box-shadow: inset 3px 0 0 var(--pm-behind) }
+  tr.pm-v-overclaim td:first-child { box-shadow: inset 3px 0 0 var(--rate-unknown) }
+  tr.pm-v-ahead td:first-child { box-shadow: inset 3px 0 0 var(--pm-ahead) }
+  .pm-v-key {
+    font-family: var(--mono); font-size: 8.5px; font-weight: 700;
+    padding: 1px 4px; border-radius: 2px; background: var(--paper-warm);
+  }
+  .pm-v-key.pm-v-gap { color: var(--pm-behind) }
+  .pm-v-key.pm-v-overclaim { color: var(--rate-unknown) }
+  .pm-v-key.pm-v-ahead { color: var(--pm-ahead) }
+  details.pm-none > summary {
+    font-family: var(--mono); font-size: 9.5px; color: var(--ink-soft);
+    cursor: pointer; padding: 6px 0; list-style: none;
+  }
+  details.pm-none > summary::before { content: "\25B8 " }
+  details.pm-none[open] > summary::before { content: "\25BE " }
+  @media (max-width: 820px) {
+    .pm-cont-h { grid-template-columns: 1fr; gap: 4px }
+    .pm-cont-n2 { text-align: left }
+  }
+  /* Support answers as words. Colour carries emphasis, the word carries the
+     meaning, so the table needs no glyph legend to be readable. */
+  td.pm-w {
+    text-align: center; font-family: var(--mono); font-size: 9.5px;
+    text-transform: uppercase; letter-spacing: .04em;
+  }
+  td.pm-w.yes { color: var(--pm-ahead); font-weight: 700 }
+  /* Recessive: hardware acceleration qualifies a "yes", it does not compete with
+     it. Same reason the grid is lighter than the marks. */
+  .pm-hw {
+    font-size: 8.5px; font-weight: 600; letter-spacing: .04em;
+    text-transform: uppercase; color: var(--ink-soft);
+    border: 1px solid var(--rule); border-radius: 3px;
+    padding: 0 2px; margin-left: 3px; vertical-align: 1px;
+  }
+  td.pm-w.maybe { color: var(--rate-mixed) }
+  td.pm-w.no { color: var(--muted) }
+  td.pm-w.unk { color: var(--muted); font-style: italic }
+  td.pm-cell { text-align: center; font-size: 13px; line-height: 1 }
+  td.pm-cell.yes { color: var(--pm-ahead) }
+  td.pm-cell.no { color: var(--muted) }
+
+  @media (max-width: 820px) {
+    /* Below this the fixed label columns squeeze the track to nothing, so the
+       chart silently disappears. Stack instead. */
+    .pm-row, .pm-plot-row, .pm-axis { grid-template-columns: minmax(0, 1fr) }
+    .pm-verdict, .pm-value { text-align: left }
+    .pm-axis-dir { display: none }
+  }
   .rm-hidden { display: none !important; }
   #queue-table a {
     color: var(--ink);
@@ -613,9 +1046,9 @@
   body:not([data-view="health"]) .health-only
     { display: none !important; }
 
-  /* Media Health's own axis: data-health ∈ {roadmap, performance}. */
-  body[data-health="performance"] .roadmap-only,
-  body[data-health="roadmap"]     .performance-only
+  /* Media Health's own axis: data-health ∈ {roadmap, metrics}. */
+  body[data-health="metrics"] .roadmap-only,
+  body[data-health="roadmap"]     .metrics-only
     { display: none !important; }
 
   /* Period axis: `.total-only` covers the 1m / 3m / 6m (data-period=total)
@@ -791,7 +1224,7 @@ __GH_CORNER__
     <div class="toggle-sep toggle-sep-health" aria-hidden="true"></div>
     <div class="toggle-group toggle-group-health" role="tablist" aria-label="Media Health section">
       <button data-health="roadmap" class="active" type="button">Roadmap</button>
-      <button data-health="performance" type="button">Performance</button>
+      <button data-health="metrics" type="button">Metrics</button>
     </div>
   </nav>
 </div>
@@ -1014,7 +1447,7 @@ __GH_CORNER__
   <section>
     <h2>Current condition</h2>
     <p class="footer-note" id="roadmap-summary"></p>
-    <div class="summary-grid rm-aspects" id="roadmap-aspects"></div>
+    <div class="rm-aspects" id="roadmap-aspects"></div>
   </section>
 
   <section>
@@ -1059,32 +1492,24 @@ __GH_CORNER__
       </table>
     </div>
   </section>
-
-  <section>
-    <h2>Metrics behind perennial quality</h2>
-    <p class="footer-note" id="roadmap-metrics-note"></p>
-    <div class="table-wrap">
-      <table id="roadmap-metrics">
-        <thead><tr>
-          <th>Metric</th>
-          <th>Cross-browser</th>
-          <th style="width: 90px">Target</th>
-          <th style="width: 70px">Exists</th>
-        </tr></thead>
-        <tbody></tbody>
-      </table>
-    </div>
-  </section>
 </div>
 
-<div class="health-only performance-only">
+<div class="health-only metrics-only">
   <section>
-    <h2>Performance</h2>
-    <p class="footer-note">Not built yet. This is where the media Raptor metrics land —
-      current status and the cross-browser comparison. The metrics table under
-      Roadmap is the seam: every target there is unset, and this subview is what
-      will set them.</p>
+    <h2>Where Firefox stands</h2>
+    <div id="pm-lede"></div>
+    <div id="pm-cards"></div>
   </section>
+
+  <section>
+    <h2>What can be compared at all</h2>
+    <p class="footer-note" id="pm-coverage-note"></p>
+    <div class="table-wrap"><table id="pm-coverage">
+      <thead></thead><tbody></tbody>
+    </table></div>
+  </section>
+
+  <section id="pm-caps"></section>
 </div>
 
 </main>
@@ -1096,11 +1521,10 @@ const DATA = __DATA_JSON__;
 const PHAB_DATA = __PHAB_DATA_JSON__;
 const RECENT = DATA.recent_changes || null;
 // Only the team that has a roadmap gets a payload here; null everywhere else,
-// which is what removes the Media Health tab. The Performance subview has no
-// data source yet, so PERF is unconditionally null for now — its button hides
-// on the same rule rather than opening an empty panel.
+// which is what removes the Media Health tab. Both subviews are driven by this
+// one payload: Roadmap renders `items`, Performance renders `metrics`.
 const ROADMAP = __ROADMAP_DATA_JSON__;
-const PERF = null;
+const METRICS = __METRICS_DATA_JSON__;
 
 const tipEl = document.createElement('div');
 tipEl.className = 'tip-floating';
@@ -1570,12 +1994,6 @@ if (!ROADMAP) {
   document.querySelectorAll('.toggle-bar button[data-view="health"]')
     .forEach(b => { b.style.display = 'none'; });
 }
-// The Performance subview has no data source yet. Hide its button so the
-// Roadmap/Performance pair doesn't advertise a panel that says "not built".
-if (!PERF) {
-  document.querySelectorAll('.toggle-bar button[data-health="performance"]')
-    .forEach(b => { b.style.display = 'none'; });
-}
 
 // Initial team-total render — reads the HTML's default data-period
 // (set to "total"; maps to "6m") and renders the matching slice.
@@ -1606,14 +2024,101 @@ function renderRoadmap() {
 
   document.getElementById('roadmap-summary').textContent = ROADMAP.summary || '';
 
+  // Each aspect is a big category rendered as a card that expands into the
+  // sub-categories it is made of. <details> keeps the open/closed state and
+  // the keyboard and assistive-tech behaviour without any JS.
+  const itemById = new Map(ROADMAP.items.map(i => [i.id, i]));
+
+  // Items show their severity, so a node's rating can be checked against the
+  // work under it rather than taken on trust.
+  function itemChips(ids) {
+    if (!ids || !ids.length) return '';
+    return '<div class="rm-sub-items">' + ids.map(id => {
+      const it = itemById.get(id);
+      const imp = it ? it.impact : '';
+      return '<span class="rm-tag" title="' + escA(it ? it.title : id) + '">'
+        + (imp ? '<b class="rm-imp rm-' + esc(imp) + '">' + esc(imp) + '</b> ' : '')
+        + esc(id) + '</span>';
+    }).join('') + '</div>';
+  }
+
+  // One function for every level below the aspect. A node with children is a
+  // <details> so it expands; a leaf is a plain block. Nesting is unbounded:
+  // codec support needed three levels because "what plays" and "what each API
+  // accepts" are different questions that a flat list was mixing together.
+  // Which other engines ship what this node describes. Rendered as tail tags
+  // so a card can be read as "Chrome and Safari both have this"; absent means
+  // unverified rather than "they lack it too".
+  // Each tag links to the per-engine support page it was verified against, so
+  // the claim is checkable rather than asserted. A tag is only ever produced
+  // with a proof link -- the model drops unanchored parity.
+  function parityTags(list, url) {
+    if (!list || !list.length) return '';
+    const tags = list.map(e => 'parity-' + esc(e)).join(' ');
+    const tip = list.join(' and ')
+      + ' ship this and we do not — open the support page';
+    if (!url) return '<span class="rm-parity-wrap">'
+      + '<span class="rm-parity">' + tags + '</span></span>';
+    return '<span class="rm-parity-wrap">'
+      + '<a class="rm-parity" href="' + escA(url) + '" target="_blank"'
+      + ' rel="noopener" title="' + escA(tip) + '"'
+      + ' onclick="event.stopPropagation()">' + tags + ' \u2197</a></span>';
+  }
+
+  function nodeHead(n, expandable) {
+    return '<div class="rm-node-h"><span>' + esc(n.name) + '</span>'
+      + '<span>' + parityTags(n.parity, n.parity_url)
+      + ' <span class="rm-rating">' + esc(n.rating) + '</span>'
+      + (expandable ? ' <span class="rm-chev">\u25B8</span>' : '')
+      + '</span></div>';
+  }
+
+  function insideLabel(n) {
+    return n.sub.length + (n.sub.length === 1 ? ' sub-category' : ' sub-categories')
+      + (n.item_count ? ' · ' + n.item_count
+          + (n.item_count === 1 ? ' item' : ' items') : '');
+  }
+
+  function renderNode(n) {
+    const body = '<p>' + esc(n.text) + '</p>';
+
+    if (n.has_children) {
+      return '<details class="rm-node ' + esc(n.rating) + '">'
+        + '<summary>' + nodeHead(n, true) + body
+        + '<div class="rm-expand">' + insideLabel(n) + '</div></summary>'
+        + '<div class="rm-kids">' + n.sub.map(renderNode).join('') + '</div>'
+        + '</details>';
+    }
+
+    const items = itemChips(n.rests_on);
+    return '<div class="rm-node ' + esc(n.rating) + '">' + nodeHead(n, false)
+      + body
+      + (items || '<div class="rm-sub-none">nothing on the roadmap for this</div>')
+      + '</div>';
+  }
+
   document.getElementById('roadmap-aspects').innerHTML =
-    (ROADMAP.aspects || []).map(a =>
-      '<div class="stat rm-aspect ' + esc(a.rating) + '">'
-      + '<h4>' + esc(a.name) + '<span class="rm-rating">' + esc(a.rating) + '</span></h4>'
-      + '<p>' + esc(a.text) + '</p>'
-      + '<div class="rm-rests">rests on: '
-      + ((a.rests_on || []).map(esc).join(' · ') || '—') + '</div></div>'
-    ).join('');
+    (ROADMAP.aspects || []).map(a => {
+      const subs = a.sub || [];
+      const expandable = subs.length > 0;
+      // No parity tag on a category card: it would carry one proof link while
+      // covering several children. Tags live on the node that names the item.
+      const head = '<div class="rm-aspect-h">'
+        + '<span class="rm-aspect-name">' + esc(a.name) + '</span>'
+        + '<span><span class="rm-rating">' + esc(a.rating) + '</span>'
+        + (expandable ? ' <span class="rm-chev">\u25B8</span>' : '')
+        + '</span></div>';
+      const body = '<p>' + esc(a.text) + '</p>';
+      if (!expandable) {
+        return '<div class="rm-aspect ' + esc(a.rating) + '">'
+          + '<div style="padding: 12px 16px 13px">' + head + body + '</div></div>';
+      }
+      return '<details class="rm-aspect ' + esc(a.rating) + '">'
+        + '<summary>' + head + body
+        + '<div class="rm-expand">' + insideLabel(a) + '</div></summary>'
+        + '<div class="rm-kids">' + subs.map(renderNode).join('') + '</div>'
+        + '</details>';
+    }).join('');
 
   const m = ROADMAP.counts;
   const lowConf = ROADMAP.items.filter(
@@ -1624,20 +2129,16 @@ function renderRoadmap() {
     + 'that simply have no reach figure. Those are two different problems with '
     + 'two different next actions.';
 
-  document.getElementById('roadmap-metrics-note').textContent =
-    ROADMAP.metrics_without_target + ' of ' + ROADMAP.metrics.length
-    + ' metrics have no target. Until they do, the perennial scope cannot be '
-    + 'driven by them — this is the seam with the Performance subview.';
-
-  document.getElementById('roadmap-metrics').querySelector('tbody').innerHTML =
-    ROADMAP.metrics.map(x =>
-      '<tr><td>' + esc(x.title) + '</td>'
-      + '<td class="rm-dim">'
-      + ((x.cross_browser || []).map(esc).join(', ') || '—') + '</td>'
-      + '<td><span class="rm-pill' + (x.target === 'TBD' ? ' tbd' : '') + '">'
-      + esc(x.target) + '</span></td>'
-      + '<td class="rm-dim">' + (x.exists ? 'yes' : 'no') + '</td></tr>'
-    ).join('');
+  // The scalar metric table used to live in the Metrics subview and
+  // contradicted the measured coverage matrix on the same page (claiming Safari
+  // on suites Safari never ran). The Metrics subview now renders real numbers
+  // from Perfherder, so only the coverage grids remain here.
+  // The roadmap's hand-authored coverage grids used to render here. They are
+  // superseded by the measured probe in the Metrics subview (#pm-caps): reading
+  // Chromium's codec list said Chrome plays PCM and AC-3 in Matroska, and
+  // shipping Chrome answers no to both. The markup for them is gone, so nothing
+  // is written here -- writing to a removed element threw and took the rest of
+  // this function, and renderMetrics(), down with it.
 
   function ownerCell(it) {
     if ((it.withheld || []).includes('owner')) {
@@ -1743,6 +2244,500 @@ function renderRoadmap() {
   applyFilter();
 }
 renderRoadmap();
+
+// ---- Media Health / Metrics ------------------------------------------------
+// Cross-browser comparison of the media Raptor metrics that actually run on
+// more than one browser. Emphasis form: Firefox carries the accent, every other
+// browser is context grey, because the question is where we stand rather than
+// telling three series apart.
+function renderMetrics() {
+  if (!METRICS) return;
+  const esc = s => escHtml(s == null ? '' : s);
+  const escA = s => escAttr(s == null ? '' : s);
+  const pct = (v, max) => max > 0 ? Math.max(0, Math.min(100, 100 * v / max)) : 0;
+
+  // Taskcluster platform slugs are unreadable; every metric here is one machine
+  // configuration and the reader has to know which.
+  const PLATFORM = {
+    'macosx1470-64-shippable': 'macOS 14 · Intel',
+    'linux2404-64-shippable': 'Linux 24.04',
+    'windows11-64-24h2-shippable': 'Windows 11',
+  };
+  const plat = p => PLATFORM[p] || p;
+
+  // Fixed scale, deliberately not derived from the data: a rebased scale would
+  // silently change every bar length whenever a new extreme appeared, breaking
+  // week-over-week reading on a weekly-refreshed page. Anything past the top is
+  // clipped and marked.
+  const CAP = 4;
+  const half = f => 50 * Math.min(1, (f - 1) / (CAP - 1));
+
+  const c = METRICS.counts;
+  const scopes = [...new Set(METRICS.metrics.map(m => plat(m.platform)))];
+  document.getElementById('pm-lede').innerHTML =
+    '<div class="pm-stats">'
+    + '<div class="pm-stat"><div class="pm-stat-v">' + c.total + '</div>'
+    + '<div class="pm-stat-l">metrics charted</div></div>'
+    + '<div class="pm-stat"><div class="pm-stat-v">' + c.compared + '</div>'
+    + '<div class="pm-stat-l">have another browser</div></div>'
+    + '<div class="pm-stat"><div class="pm-stat-v">' + c.firefox_only + '</div>'
+    + '<div class="pm-stat-l">Firefox only</div></div>'
+    + '<div class="pm-stat"><div class="pm-stat-v">' + METRICS.window_days + 'd</div>'
+    + '<div class="pm-stat-l">window</div></div></div>'
+    + '<p class="pm-scope">All figures: ' + esc(scopes.join(' / '))
+    + ' &middot; median of runs to '
+    + esc((METRICS.generated_at || '').slice(0, 10))
+    + ' &middot; compared against the strongest rival on the same suite, '
+    + 'platform and codec &middot; direction normalised, so right is always '
+    + 'better for Firefox</p>';
+
+  // --- categories of expandable metric cards ---------------------------
+  // One card per metric, grouped by category. Collapsed it answers "where do we
+  // stand"; expanded it shows the per-browser breakdown, the exact window, and a
+  // link into Perfherder's own graph for the series it was computed from -- so
+  // every number on this page is checkable rather than asserted.
+  //
+  // Fixed scale, deliberately not derived from the data: a rebased scale would
+  // silently change every bar length whenever a new extreme appeared, breaking
+  // week-over-week reading on a weekly-refreshed page.
+  const ticks = [1, 2, 3, 4];
+  const tickRow = '<div class="pm-ticks">'
+    + ticks.slice().reverse().map(t =>
+        '<span style="left:' + (50 - half(t)) + '%">'
+        + (t === 1 ? '1\u00D7' : t + '\u00D7') + '</span>').join('')
+    + ticks.slice(1).map(t =>
+        '<span style="left:' + (50 + half(t)) + '%">' + t + '\u00D7</span>').join('')
+    + '</div>';
+
+  function divergeBar(m) {
+    const cmp = m.comparison;
+    if (!cmp.factor) return '<div class="pm-diverge uncompared"></div>';
+    const w = half(cmp.factor);
+    const st = m.stale ? ' stale' : '';
+    // Right = ahead. Number line, and consistent with every other bar here.
+    const bar = cmp.ahead
+      ? '<div class="pm-bar ahead' + st + '" style="left:50%;width:' + w + '%"></div>'
+      : '<div class="pm-bar behind' + st + '" style="right:50%;width:' + w + '%"></div>';
+    return '<div class="pm-diverge">' + bar + '</div>';
+  }
+
+  function verdictOf(m) {
+    const cmp = m.comparison;
+    if (!cmp.factor) {
+      return '<span class="pm-verdict none">no other browser<br>measured yet</span>';
+    }
+    return '<span class="pm-verdict ' + (cmp.ahead ? 'ahead' : 'behind')
+      + '"><b>' + cmp.factor.toFixed(2) + '\u00D7</b> '
+      + (cmp.ahead ? 'ahead' : 'behind')
+      + (cmp.factor > CAP ? ' \u2192' : '') + '<br>' + esc(cmp.versus)
+      + (cmp.rival_count > 1 ? ' (best of ' + cmp.rival_count + ')' : '')
+      + '</span>';
+  }
+
+  // Compact warning. The detail it stands for lives in the expansion, so the
+  // collapsed row stays scannable.
+  function warnIcon(m) {
+    const why = [];
+    if (m.stale) why.push('data is ' + m.days_behind + ' days old');
+    if (m.noisy) why.push('run-to-run spread is wide');
+    if (!why.length) return '';
+    return '<span class="pm-warn-icon" title="' + escA(why.join('; ')
+      + ' \u2014 expand for detail') + '">!</span>';
+  }
+
+  function dotRows(m) {
+    const max = m.axis_max * 1.08;
+    const fmt = v => max < 10 ? v.toFixed(1) : String(Math.round(v));
+    const browsers = Object.keys(m.series).sort(
+      (a, b) => (a === 'firefox' ? -1 : b === 'firefox' ? 1 : a.localeCompare(b)));
+    const leader = browsers.reduce((best, b) =>
+      best === null ? b
+        : (m.lower_is_better
+            ? (m.series[b].median < m.series[best].median ? b : best)
+            : (m.series[b].median > m.series[best].median ? b : best)), null);
+    const rows = browsers.map(b => {
+      const s = m.series[b], us = b === 'firefox';
+      const l = pct(s.p25, max), r = pct(s.p75, max);
+      const flat = s.p75 <= s.p25;
+      return '<div class="pm-plot-row' + (us ? ' us' : '') + '">'
+        + '<div class="pm-browser' + (us ? ' us' : '')
+        + '"><span class="pm-swatch"></span>' + esc(b) + '</div>'
+        + '<div class="pm-track ' + (m.lower_is_better ? 'better-left' : 'better-right')
+        + '" title="' + escA(b + ': median ' + s.median + ' ' + m.unit
+            + ', p25-p75 ' + s.p25 + '-' + s.p75 + ', ' + s.n
+            + ' runs, run-to-run CV ' + s.cv + '%') + '">'
+        + (flat ? '' : '<div class="pm-range" style="left:' + l + '%;width:'
+            + Math.max(0.4, r - l) + '%"></div>')
+        + '<div class="pm-dot' + (flat ? ' nospread' : '')
+        + (b === leader ? ' leader' : '')
+        + '" style="left:' + pct(s.median, max) + '%"></div></div>'
+        + '<div class="pm-value">'
+        + (b === leader ? '<b class="pm-best">best</b> ' : '')
+        + s.median + ' ' + esc(m.unit)
+        + ' <span>&nbsp;n=' + s.n + ' &middot; CV ' + Math.round(s.cv)
+        + '%</span></div></div>';
+    }).join('');
+    // Ticks always ascend left to right; direction is stated beside the unit and
+    // tinted on the favourable half, never by flipping the ruler.
+    const side = m.lower_is_better ? 'better-left' : 'better-right';
+    const band = '<div class="pm-band"><span></span>'
+      + '<div class="pm-band-in ' + side + '"><span>\u2713 better this way</span></div>'
+      + '<span></span></div>';
+    const axis = '<div class="pm-axis"><span></span><div class="pm-ticks">'
+      + [0, 0.25, 0.5, 0.75, 1].map(f =>
+          '<span style="left:' + (f * 100) + '%">' + fmt(max * f) + '</span>').join('')
+      + '</div><span class="pm-axis-dir strong" style="text-align:right">'
+      + esc(m.unit) + '</span></div>';
+    return band + rows + axis;
+  }
+
+  function metricCard(m) {
+    const facts = [];
+    facts.push(m.window_days + '-day window'
+      + (m.window_end ? ' ending ' + esc(m.window_end) : ''));
+    if (m.stale) {
+      facts.push('<b>this suite has stopped producing \u2014 the window is the '
+        + 'same length, so the medians stay comparable, but it ends about '
+        + m.days_behind + ' days ago</b>');
+    }
+    if (m.noisy) {
+      facts.push('run-to-run spread here is wider than most differences worth '
+        + 'detecting, so read small gaps with care');
+    }
+    if (m.note) facts.push(esc(m.note));
+    facts.push('platform ' + esc(plat(m.platform)));
+
+    const link = m.graph_url
+      ? '<a class="pm-source" href="' + escA(m.graph_url) + '" target="_blank"'
+        + ' rel="noopener" onclick="event.stopPropagation()">'
+        + 'open these exact series in Perfherder \u2197</a>'
+      : '<span class="pm-source none">no signature recorded \u2014 cannot link</span>';
+
+    return '<details class="pm-card' + (m.stale ? ' is-stale' : '') + '">'
+      + '<summary><div class="pm-row">'
+      + '<div class="pm-row-label">' + esc(m.title) + warnIcon(m)
+      + '<em class="pm-flag">expand for browsers, window and source</em></div>'
+      + divergeBar(m) + verdictOf(m) + '</div></summary>'
+      + '<div class="pm-card-body">'
+      + '<div class="pm-plot">' + dotRows(m) + '</div>'
+      + '<ul class="pm-facts"><li>' + facts.join('</li><li>') + '</li></ul>'
+      + link + '</div></details>';
+  }
+
+  // Categories keep a family together -- every WebCodecs codec in one place --
+  // and are ordered worst-first by their weakest member, like the roadmap cards.
+  const cats = METRICS.groups.map(g => {
+    const worst = Math.min(...g.metrics.map(m => {
+      const c = m.comparison;
+      if (!c.factor) return 99;          // uncompared sorts last
+      return c.ahead ? 50 + c.factor : -c.factor;
+    }));
+    return { g, worst };
+  }).sort((a, b) => a.worst - b.worst);
+
+  document.getElementById('pm-cards').innerHTML =
+    '<div class="pm-row pm-head">'
+    + '<span class="pm-axis-dir">metric</span>'
+    + '<span class="pm-axis-dir" style="text-align:center">'
+    + '\u25C0 firefox behind &nbsp;|&nbsp; parity &nbsp;|&nbsp; firefox ahead \u25B6</span>'
+    + '<span class="pm-axis-dir" style="text-align:right">vs</span></div>'
+    + '<div class="pm-row" style="padding:0"><span></span>' + tickRow
+    + '<span></span></div>'
+    + cats.map(({ g }) =>
+        // No direction pill here: the tinted "better this way" band inside each
+        // expanded plot already says it, next to the marks it applies to.
+        // Repeating it in the header was the same fact three times over.
+        '<div class="pm-cat"><div class="pm-cat-h">' + esc(g.title)
+        + '<span class="pm-cat-meta">'
+        + '<span>' + esc(plat(g.platform)) + ' \u00B7 ' + esc(g.unit) + ' \u00B7 '
+        + g.metrics.length + (g.metrics.length === 1 ? ' metric' : ' metrics')
+        + '</span></span></div>'
+        + g.metrics.map(metricCard).join('') + '</div>').join('');
+
+  // --- measured codec/container support ---------------------------------
+  // Container-first, because a container has a MEASURED header (the probe asks
+  // the bare MIME type too) whereas a codec header could only be a derived
+  // count -- and because disagreements are container-shaped in practice: WebKit
+  // implements no Matroska at all, which is one fact, not twelve.
+  //
+  // Every probed container is shown whether or not it differs. The previous
+  // disagreements-only table made WebM, MP3 and WAV vanish, so a reader could not
+  // tell "tested and fine" from "never tested".
+  const caps = METRICS.caps;
+  const cv = caps && caps.by_container;
+  if (cv && cv.containers.length) {
+    // "Play/Stream/Record" was too terse to be guessable. Short label for the
+    // chip, full name for the legend and the expanded tables.
+    const SURF = {playback: 'Playback', streaming: 'Streaming',
+                  recording: 'Recording'};
+    // Name the API each column was actually measured with. They are not all the
+    // same generation: playback and streaming use MediaCapabilities, which gives
+    // a definite answer plus hardware-acceleration info, while recording falls
+    // back to MediaRecorder because encodingInfo throws on Chrome for every
+    // configuration -- driving that column with it would report Chrome as
+    // recording nothing.
+    const SURF_FULL = {
+      playback: 'Playback \u2014 a plain <video> or <audio> element '
+        + '(decodingInfo, type: file)',
+      streaming: 'Streaming \u2014 adaptive streaming via Media Source '
+        + 'Extensions (decodingInfo, type: media-source)',
+      recording: 'Recording \u2014 capturing to a file '
+        + '(MediaRecorder.isTypeSupported)',
+    };
+    // Words, not glyphs. A filled/half/empty circle set needed a legend to
+    // decode and still read as a severity ramp, which "maybe" is not: for a bare
+    // MIME type with no codecs parameter, `maybe` is the spec-correct answer --
+    // the browser cannot be certain without codec information. It is not partial
+    // or degraded support, so it must not look like a half-full symbol.
+    const CELL = {
+      yes: ['yes', 'pm-w yes', 'supported'],
+      partial: ['maybe', 'pm-w maybe',
+                'the browser says it may be able to play this. For a bare type '
+                + 'with no codecs parameter that is the normal, correct answer'],
+      no: ['no', 'pm-w no', 'not supported'],
+      unknown: ['?', 'pm-w unk', 'the probe could not answer'],
+    };
+    const BADGE = {
+      gap: ['behind', 'pm-b-gap'],
+      overclaim: ['we alone accept', 'pm-b-over'],
+      parity: ['verified parity', 'pm-b-ok'],
+      none: ['no engine support', 'pm-b-none'],
+    };
+    const VERDICT = {
+      gap: 'we lack it, another engine has it',
+      overclaim: 'we accept it and no other engine does',
+      ahead: 'we have it, another engine does not',
+      parity: 'all engines agree',
+      none: 'no engine supports it',
+    };
+
+    function chips(c) {
+      return Object.keys(SURF).map(surf => {
+        const st = c.surfaces[surf];
+        if (!st || !st.rows.length) {
+          return '<span class="pm-chip none">' + esc(SURF[surf])
+            + ' <b>\u2013</b></span>';
+        }
+        const g = st.counts.gap, sup = st.counts.supported;
+        const cls = g ? 'gap' : (sup ? 'ok' : 'none');
+        const body = g ? g + '/' + sup
+          : (sup ? '\u2713' : '\u2013');
+        const tip = g ? g + ' of ' + sup + ' supported combinations are ones we '
+            + 'lack and another engine has'
+          : (sup ? 'parity on all ' + sup + ' supported combinations'
+                 : 'no engine supports any codec in this container');
+        return '<span class="pm-chip ' + cls + '" title="' + escA(tip) + '">'
+          + esc(SURF[surf]) + ' <b>' + body + '</b></span>';
+      }).join('');
+    }
+
+    function surfaceTable(c, surf) {
+      const st = c.surfaces[surf];
+      if (!st || !st.rows.length) return '';
+      const shown = st.rows.filter(r => r.verdict !== 'none');
+      const hidden = st.rows.filter(r => r.verdict === 'none');
+      const head = '<tr><th>Codec</th><th>Codec string</th>'
+        + cv.browsers.map(b => '<th style="text-align:center">'
+            + esc(b.target.split('-')[0]) + '</th>').join('') + '</tr>';
+      const body = r => '<tr class="pm-v-' + esc(r.verdict) + '">'
+        + '<td>' + esc(r.codec) + '</td>'
+        + '<td class="rm-mono" style="font-size:9.5px;color:var(--ink-soft)">'
+        + esc(r.codec_string) + '</td>'
+        + cv.browsers.map(b => {
+            const [g, cls, tip] = CELL[r.support[b.target]] || CELL.unknown;
+            // MediaCapabilities reports `powerEfficient`, which canPlayType had
+            // no answer for. It is NOT a hardware-decode flag: both Firefox and
+            // Chrome report it true for MP3, FLAC and AAC, and neither has a
+            // hardware MP3 decoder. So it is named for the flag it is rather
+            // than relabelled as hardware support. Word, not glyph — a previous
+            // glyph set had to be explained before it could be read.
+            const eff = (r.eff || {})[b.target];
+            const chip = eff === 'efficient'
+              ? ' <span class="pm-hw" title="' + escA(b.label
+                  + ': reported powerEfficient. For video this suggests a '
+                  + 'hardware path; for audio browsers report it either way, '
+                  + 'so it means little') + '">efficient</span>'
+              : '';
+            return '<td class="' + cls + '" title="'
+              + escA(b.label + ': ' + tip
+                     + (eff === 'costly' ? ' — not reported powerEfficient'
+                        : '')) + '">' + g + chip + '</td>';
+          }).join('')
+        + '</tr>';
+      const bare = st.bare || {};
+      const bareRow = Object.keys(bare).length
+        ? '<p class="pm-legend">Container itself: '
+          + cv.browsers.map(b => esc(b.target.split('-')[0]) + ' <b>'
+              + (CELL[bare[b.target]] || CELL.unknown)[0] + '</b>').join(' &nbsp; ')
+          + '</p>'
+        : '';
+      return '<h4 style="margin:12px 0 3px;font-size:11.5px;'
+        + 'font-family:var(--mono);text-transform:uppercase;'
+        + 'letter-spacing:.07em;color:var(--ink-soft)">' + esc(SURF[surf])
+        + '</h4>' + bareRow
+        + (shown.length
+            ? '<div class="table-wrap"><table><thead>' + head + '</thead><tbody>'
+              + shown.map(body).join('') + '</tbody></table></div>'
+            : '<p class="footer-note">Nothing supported by any engine.</p>')
+        + (hidden.length
+            ? '<details class="pm-none"><summary>' + hidden.length
+              + ' combinations no engine supports</summary>'
+              + '<div class="table-wrap"><table><thead>' + head
+              + '</thead><tbody>' + hidden.map(body).join('')
+              + '</tbody></table></div></details>'
+            : '');
+    }
+
+    const strip = cv.codec_gaps && cv.codec_gaps.playback || [];
+    document.getElementById('pm-caps').innerHTML =
+      '<h2>Codec and container support, measured</h2>'
+      + '<p class="footer-note">Asked of each browser directly rather than read '
+      + 'out of its source \u2014 which is how an earlier version of this table '
+      + 'came to claim Chrome plays PCM and AC-3 in Matroska, when shipping '
+      + 'Chrome answers no to both. Probed '
+      + esc((caps.probed_at || '').slice(0, 10)) + '. '
+      + '<a href="../media-capabilities/index.html" target="_blank" '
+      + 'rel="noopener">Run the probe in your own browser \u2197</a> \u2014 '
+      + 'open it in Safari or a local Firefox build to get answers this '
+      + 'automated run cannot reach.</p>'
+      + '<ul class="pm-facts">'
+      + cv.browsers.map(b => '<li><b>' + esc(b.label) + '</b> ' + esc(b.version)
+          + (b.is_proxy_for_safari
+              ? ' \u2014 a WebKit build, not Safari: it lacks the platform codec '
+                + 'integration Safari gets from the OS, so a "no" here is weaker '
+                + 'evidence'
+              : (b.is_nonshipping_build
+                  ? ' \u2014 a Playwright Gecko build, not a shipping Firefox '
+                    + 'configuration; codec support is exactly where build flags '
+                    + 'differ'
+                  : ''))
+          + '</li>').join('')
+      + '</ul>'
+      + '<h3 style="font-size:12.5px;margin:14px 0 4px">How to read this</h3>'
+      + '<ul class="pm-facts">'
+      + Object.entries(SURF_FULL).map(([k, v]) =>
+          '<li><b>' + esc(SURF[k]) + '</b> \u2014 ' + esc(v.replace(/^[^\u2014]*\u2014 /, ''))
+          + '</li>').join('')
+      + '<li>A chip reads <b>gaps / supported</b>. <code>4/16</code> means 16 of '
+      + 'the probed combinations are supported by at least one engine, and we '
+      + 'lack 4 of them. <code>\u2713</code> means no gaps; <code>\u2013</code> '
+      + 'means no engine supports anything here.</li>'
+      + '<li><span class="pm-badge pm-b-gap">behind</span> at least one '
+      + 'combination is supported by another engine and not by us \u2014 '
+      + 'something to implement.</li>'
+      + '<li><span class="pm-badge pm-b-over">we alone accept</span> we say yes '
+      + 'where no other engine does. Sometimes we are simply stricter or looser '
+      + 'about the codecs parameter; see the conformance check below for the '
+      + 'cases that are genuinely wrong.</li>'
+      + '<li><span class="pm-badge pm-b-ok">verified parity</span> every engine '
+      + 'agrees and at least one supports it \u2014 tested and fine, not '
+      + 'untested.</li>'
+      + '<li><span class="pm-badge pm-b-none">no engine support</span> nothing '
+      + 'supports it, so there is no gap to close.</li>'
+      + '<li>A <b>container only</b> row is the bare MIME type with no codecs '
+      + 'parameter. For HLS and single-codec containers like FLAC or WAV that is '
+      + 'how sites actually ask, so it is the row that matters.</li>'
+      + '</ul>'
+      + (strip.length
+          ? '<h3 style="font-size:12.5px;margin:14px 0 4px">Codecs we lack, '
+            + 'across containers</h3><p class="footer-note">The codec-shaped view '
+            + 'of the same data, for questions like "should we ship xHE-AAC".</p>'
+            + '<ul class="pm-facts">' + strip.map(g =>
+                '<li><b>' + esc(g.codec) + '</b> \u2014 behind in ' + g.count
+                + ' container' + (g.count === 1 ? '' : 's') + ': '
+                + g.containers.map(esc).join(', ') + '</li>').join('')
+            + '</ul>'
+          : '')
+      + cv.containers.map(c => {
+          const [word, cls] = BADGE[c.worst] || BADGE.parity;
+          return '<details class="pm-card pm-cont"><summary>'
+            + '<div class="pm-cont-h"><span class="pm-cont-n">' + esc(c.name)
+            + '<small>' + (c.mimes.length ? esc(c.mimes.join(', ')) : 'no MIME type')
+            + '</small></span>'
+            + '<span class="pm-badge ' + cls + '">' + word + '</span>'
+            + '<span class="pm-chips">' + chips(c) + '</span>'
+            + '<span class="pm-cont-n2">'
+            + (c.probed ? c.combos + ' combinations'
+                        : 'container-level probe only')
+            + '</span></div></summary>'
+            + '<div class="pm-card-body">'
+            + (c.probed
+                ? Object.keys(SURF).map(sf => surfaceTable(c, sf)).join('')
+                : '<p class="footer-note">No codec combinations were probed for '
+                  + 'this container \u2014 only whether the container itself is '
+                  + 'accepted.</p>')
+            + '<p class="pm-legend">'
+            + Object.entries(VERDICT).map(([k, v]) =>
+                '<span class="pm-v-key pm-v-' + k + '">' + k + '</span> ' + v)
+              .join(' &nbsp; ')
+            + '</p></div></details>';
+        }).join('')
+      + '<p class="pm-legend"><b>yes</b> supported &nbsp; <b>maybe</b> the '
+      + 'browser may be able to play it \u2014 the normal answer for a bare type '
+      + 'with no codecs parameter, not partial support &nbsp; <b>no</b> not '
+      + 'supported &nbsp; <b>?</b> the probe could not answer '
+      + '&nbsp; <span class="pm-hw">efficient</span> the browser reported '
+      + '<span class="rm-mono">powerEfficient</span> for this configuration. '
+      + 'This is not a hardware-decode flag — Firefox and Chrome both report '
+      + 'it for MP3 and FLAC, which neither decodes in hardware. Read it as a '
+      + 'hint for video and as noise for audio.</p>'
+      + (function () {
+          const cf = caps.conformance;
+          if (!cf || !cf.rows.length) return '';
+          const head = '<tr><th>Type that cannot exist</th>'
+            + cf.browsers.map(b => '<th style="text-align:center">'
+                + esc(b.target.split('-')[0]) + '</th>').join('')
+            + '<th>Why it is invalid</th></tr>';
+          const body = cf.rows.map(r => '<tr>'
+            + '<td class="rm-mono" style="font-size:10px">' + esc(r.type) + '</td>'
+            + cf.browsers.map(b => {
+                const v = r.support[b.target];
+                const wrong = v === 'yes' || v === 'partial';
+                return '<td class="pm-cell ' + (wrong ? '' : 'yes') + '" title="'
+                  + escA(wrong ? 'wrongly accepted' : 'correctly rejected') + '">'
+                  + (wrong ? '\u2717' : '\u2713') + '</td>';
+              }).join('')
+            + '<td style="color:var(--ink-soft)">' + esc(r.why) + '</td></tr>').join('');
+          return '<h3 style="font-size:12.5px;margin:18px 0 4px">Conformance: '
+            + 'combinations that cannot exist</h3>'
+            + '<p class="footer-note">Every engine should answer no to all of '
+            + 'these. An engine that says yes is ignoring the codecs parameter, '
+            + 'so a site feature-detecting gets a false positive. '
+            + '\u2713 correctly rejected, \u2717 wrongly accepted.</p>'
+            + '<div class="table-wrap"><table><thead>' + head + '</thead><tbody>'
+            + body + '</tbody></table></div>';
+        })();
+  }
+
+  // --- coverage ---
+  const cov = METRICS.coverage;
+  document.getElementById('pm-coverage-note').textContent =
+    'Which browsers actually produced samples in the last ' + METRICS.window_days
+    + ' days, measured from the Perfherder signature dump rather than read off '
+    + 'test config. A suite with only Firefox cannot answer a comparison '
+    + 'question at all. Note ve (WebCodecs encode) does have cross-browser data '
+    + 'and is not charted above yet.';
+  const t = document.getElementById('pm-coverage');
+  t.querySelector('thead').innerHTML = '<tr><th>Suite</th>'
+    + cov.browsers.map(b => '<th style="text-align:center">' + esc(b)
+        + (b === 'custom-car' ? ' <span class="info" data-tip="Chromium build '
+          + 'used as a performance reference">?</span>' : '') + '</th>').join('')
+    + '</tr>';
+  t.querySelector('tbody').innerHTML = cov.rows.map(r =>
+      '<tr><td>' + esc(r.label || r.suite)
+      + ' <span style="color:var(--ink-soft);font-family:var(--mono);font-size:10px">'
+      + esc(r.suite) + '</span></td>'
+      + cov.browsers.map(b => {
+          const on = (r.measured || []).includes(b);
+          return '<td class="pm-cell ' + (on ? 'yes' : 'no') + '" title="'
+            + escA(b + (on ? ' is measured' : ' is not measured'))
+            + '">' + (on ? '\u25CF' : '\u2013') + '</td>';
+        }).join('') + '</tr>').join('');
+  document.getElementById('pm-coverage').insertAdjacentHTML('afterend',
+    '<p class="pm-legend">\u25CF measured in the window &nbsp; \u2013 not '
+    + 'measured</p>');
+}
+renderMetrics();
 
 // Keyboard navigation mirroring the toggle bar:
 //   Left / Right         → cycle the view axis (Team → Member → Wait Queue)

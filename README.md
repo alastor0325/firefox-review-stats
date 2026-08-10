@@ -178,6 +178,61 @@ reader can tell something was held back.
 > the public build still renders everything. The mechanism works and is tested;
 > the annotation pass has not been done. Annotate before this view is published.
 
+#### Codec and container support — measured, not read from source
+
+The support matrix used to be written by reading Firefox and Chromium source, and
+that produced wrong claims: Chromium's `mkv_audio_codecs` lists PCM and AC-3, so
+the table said Chrome plays both in Matroska. Shipping Chrome answers `no` to
+both — the codec list says what the code mentions, not what a build ships.
+
+So support is **measured** by asking browsers directly. There is a probe page in
+the repo, published alongside the dashboard so anyone can re-run it by hand:
+
+```
+media-capabilities/index.html            # the probe page (public)
+```
+
+```bash
+.venv/bin/python tools/media-caps/run_probe.py     # drive it across engines
+.venv/bin/python tools/media-caps/build_matrix.py  # -> playback/data_mediacaps.json
+```
+
+`run_probe.py` drives Playwright's Gecko, real Chrome, and Playwright's WebKit.
+Two caveats are recorded in the output and shown on the page: Playwright's WebKit
+is **not Safari** — it lacks the platform codec integration Safari gets from the
+OS — and Playwright's Gecko is not a shipping Firefox configuration. Neither
+refresh is part of the weekly run; re-run them when you want fresh answers.
+
+Each of the three surfaces names the API that answered it, because they are not
+all the same generation:
+
+| Surface | Measured with | Why |
+|---|---|---|
+| Playback | `decodingInfo({type:'file'})` | definite answer, plus `powerEfficient` |
+| Streaming | `decodingInfo({type:'media-source'})` | same |
+| Recording | `MediaRecorder.isTypeSupported` | `encodingInfo({type:'record'})` **throws on Chrome** for every configuration tried; driving the column with it reported Chrome as recording nothing |
+
+MediaCapabilities requires a codecs parameter, so it cannot answer a bare
+container type at all — it errors. Bare rows therefore read `canPlayType` /
+`MediaSource.isTypeSupported`. Those rows are how HLS support is visible, so
+losing them loses HLS. A precise call that *throws* also falls back to the legacy
+answer: WebKit raises a `TypeError` from `decodingInfo` for every Matroska
+configuration while answering `canPlayType` for the same input, and reporting
+that as unknown would hide a real measured `no` behind an API quirk.
+
+> **`powerEfficient` is not a hardware-decode flag.** It is rendered as
+> `efficient`, named for the flag, deliberately. Measured here, Firefox and
+> Chrome both report it true for MP3, FLAC, Vorbis and AAC — 16 and 19 audio rows
+> — and no shipping browser has a hardware MP3 or FLAC decoder. Cheap software
+> decoding satisfies the spec. Treat it as a hint for video and as noise for
+> audio; the `hw-decode-matrix` roadmap item still needs a real answer.
+
+The probe also asks about type strings that **cannot exist** (`audio/flac;
+codecs="ac-3"`). That found a Firefox conformance bug: `FlacDecoder::
+IsSupportedType` never reads the codecs parameter
+(`dom/media/flac/FlacDecoder.cpp:16-21`), so Firefox alone accepts three invalid
+pairs that Chrome and WebKit both reject.
+
 ### Recent-change summaries
 
 The Recent Changes tab's per-area overviews are generated in `analyze_git.py`. They're **optional** — with no backend the tab still renders the patch lists. `analyze_git.py` picks a backend from `REVIEW_STATS_SUMMARY_BACKEND`:

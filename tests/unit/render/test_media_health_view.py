@@ -1,7 +1,7 @@
 """Tests for the Media Health view — a 5th view, playback only.
 
 The view sits after Recent Changes on the `data-view` axis and carries its own
-secondary axis, `data-health` ∈ {roadmap, performance}, in the same top-bar
+secondary axis, `data-health` ∈ {roadmap, metrics}, in the same top-bar
 component the Period and Recent-window groups already use.
 
 It is gated on data availability rather than on a team name: roadmap data is
@@ -41,8 +41,26 @@ _ROADMAP = {
     "updated": "2026-08-07",
     "audience": "public",
     "summary": "one honest paragraph",
-    "aspects": [{"name": "Playing ordinary video", "rating": "good",
-                 "text": "t", "rests_on": ["mkv-missing-formats"]}],
+    "aspects": [{
+        "name": "Playing ordinary video", "rating": "good", "text": "t",
+        "rests_on": ["mkv-missing-formats"], "item_count": 1,
+        "subs_withheld": 0,
+        "sub": [
+            {"name": "Format and codec coverage", "rating": "mixed",
+             "text": "two kinds of hole", "depth": 1, "has_children": True,
+             "rests_on": ["mkv-missing-formats"], "item_count": 1,
+             "sub": [
+                 {"name": "Container gaps", "rating": "mixed",
+                  "text": "MKV refuses some codecs", "depth": 2,
+                  "has_children": False,
+                  "rests_on": ["mkv-missing-formats"], "item_count": 1,
+                  "sub": []},
+             ]},
+            {"name": "Streaming protocols", "rating": "mixed", "depth": 1,
+             "has_children": False, "text": "HLS is Android-only",
+             "rests_on": [], "item_count": 0, "sub": []},
+        ],
+    }],
     "items": [{
         "bucket": "ranked", "withheld": [], "id": "remote-playback",
         "impact": "S2", "reach": "3", "type": "MISSING",
@@ -63,6 +81,17 @@ _ROADMAP = {
 
 def _render(roadmap=None) -> str:
     return render_html(_MINIMAL_DATA, roadmap_data=roadmap)
+
+
+def _joined(html: str) -> str:
+    """Collapse JS string concatenation so assertions can match logical text.
+
+    The renderer builds prose with `'weaker ' + 'evidence'`, so a literal
+    substring search for "weaker evidence" fails on working code. Several
+    assertions in this file were written that way and failed for that reason
+    alone; matching the outcome rather than the line-wrapping is the fix.
+    """
+    return re.sub(r"'\s*\+\s*'", "", html)
 
 
 class TestViewAxis:
@@ -88,7 +117,7 @@ class TestViewAxis:
 class TestSecondaryAxis:
     def test_health_axis_buttons_present(self):
         html = _render(_ROADMAP)
-        for v in ("roadmap", "performance"):
+        for v in ("roadmap", "metrics"):
             assert re.search(rf'<button[^>]*data-health="{v}"', html), v
 
     def test_roadmap_is_the_default_subview(self):
@@ -143,9 +172,9 @@ class TestCSSMatrix:
             _render(_ROADMAP),
         ), ".health-only must be hidden outside the health view"
 
-    def test_roadmap_panel_hidden_when_performance_selected(self):
+    def test_roadmap_panel_hidden_when_metrics_selected(self):
         assert re.search(
-            r'body\[data-health="performance"\][^{]*\.roadmap-only'
+            r'body\[data-health="metrics"\][^{]*\.roadmap-only'
             r'[^{]*\{[^}]*display:\s*none',
             _render(_ROADMAP),
         )
@@ -169,10 +198,56 @@ class TestGatingOnData:
         assert m is not None, "ROADMAP payload not injected"
         assert json.loads(m.group(1).replace("\\u003c", "<"))["counts"]["total"] == 1
 
-    def test_performance_button_hidden_until_that_data_exists(self):
-        """The Performance subview is not built yet; its button hides on the
-        same data-availability principle rather than shipping a dead tab."""
-        assert re.search(r'if\s*\(\s*!PERF\s*\)', _render(_ROADMAP))
+    def test_both_subviews_are_reachable(self):
+        """Media Health has two subviews and both must be selectable. Neither
+        is gated: Roadmap renders the items and Performance renders the
+        metrics, and both come from the one roadmap payload."""
+        html = _render(_ROADMAP)
+        assert not re.search(r'if\s*\(\s*!PERF\s*\)', html), (
+            "the Performance button must not be hidden — it has content"
+        )
+        assert "const PERF" not in html, (
+            "no PERF gate: Performance is populated whenever ROADMAP is"
+        )
+
+
+class TestSubviewContentSplit:
+    """Roadmap holds the item list; Performance holds the metrics. The metrics
+    are the seam with the Raptor work, so they belong on the Performance side
+    rather than buried at the bottom of the roadmap."""
+
+    def _panel(self, html, cls):
+        m = re.search(
+            rf'<div class="health-only {cls}-only">(.*?)\n</div>',
+            html, re.DOTALL,
+        )
+        assert m is not None, f"{cls} panel not found"
+        return m.group(1)
+
+    def test_metrics_panel_holds_the_cross_browser_charts(self):
+        """The roadmap's TBD-target table used to live here and contradicted the
+        measured coverage matrix on the same page — it claimed Safari on suites
+        Safari has never run. Real Perfherder numbers replaced it."""
+        panel = self._panel(_render(_ROADMAP), "metrics")
+        assert 'id="pm-cards"' in panel
+        assert 'id="roadmap-metrics"' not in panel
+
+    def test_metrics_table_is_not_in_the_roadmap_panel(self):
+        panel = self._panel(_render(_ROADMAP), "roadmap")
+        assert 'id="roadmap-metrics"' not in panel
+
+    def test_item_tables_are_in_the_roadmap_panel(self):
+        panel = self._panel(_render(_ROADMAP), "roadmap")
+        for t in ("roadmap-ranked", "roadmap-measure", "roadmap-continuous"):
+            assert f'id="{t}"' in panel, t
+
+    def test_item_tables_are_not_in_the_metrics_panel(self):
+        panel = self._panel(_render(_ROADMAP), "metrics")
+        assert 'id="roadmap-ranked"' not in panel
+
+    def test_metrics_panel_has_no_placeholder_text(self):
+        panel = self._panel(_render(_ROADMAP), "metrics")
+        assert "Not built yet" not in panel
 
 
 class TestHashRouting:
@@ -226,3 +301,581 @@ class TestRoadmapRendering:
         """A reader should be able to tell whether they are looking at the
         public subset or the internal one."""
         assert "ROADMAP.audience" in _render(_ROADMAP)
+
+
+class TestAuthoredMatrixIsGone:
+    """The roadmap's hand-authored container/codec grid used to render here. It is
+    superseded by the measured probe (see TestMeasuredCaps): reading Chromium's
+    codec list said Chrome plays PCM and AC-3 in Matroska, and shipping Chrome
+    answers no to both.
+
+    The `kind: matrix` support in the MODEL is still exercised in
+    tests/unit/roadmap/test_roadmap.py — only the rendering was removed. Deleting
+    the markup while leaving the JS that wrote to it is what caused the blank-page
+    regression, so this asserts both halves are gone together.
+    """
+
+    def test_no_renderer_writes_to_the_removed_container(self):
+        html = _render(_ROADMAP)
+        assert "roadmap-matrices" not in html, (
+            "the container and its renderer must be removed together"
+        )
+
+    def test_measured_caps_container_is_there_instead(self):
+        assert 'id="pm-caps"' in _render(_ROADMAP)
+
+
+class TestConditionTree:
+    """The condition section is a single-column tree, not a card grid: three
+    levels of nesting need horizontal room, and in a grid expanding one card
+    resizes its row and shifts the unrelated card beside it."""
+
+    def test_container_is_a_single_column_not_a_grid(self):
+        html = _render(_ROADMAP)
+        assert 'class="rm-aspects" id="roadmap-aspects"' in html, (
+            "the aspect container must not ride on .summary-grid any more"
+        )
+        m = re.search(r"\.rm-aspects \{(.*?)\}", html, re.DOTALL)
+        assert m is not None
+        assert "display: block" in m.group(1), (
+            "condition tree should be a single column"
+        )
+
+    def test_aspects_are_expandable_rows(self):
+        html = _render(_ROADMAP)
+        assert re.search(r"'<details class=\"rm-aspect ", html)
+
+    def test_one_recursive_renderer_for_every_level_below_the_aspect(self):
+        html = _render(_ROADMAP)
+        assert "function renderNode(n)" in html
+        assert re.search(r"n\.sub\.map\(renderNode\)", html), (
+            "renderNode must recurse into its own children"
+        )
+        assert re.search(r"subs\.map\(renderNode\)", html), (
+            "aspects must render their children through the same function"
+        )
+
+    def test_nodes_with_children_expand_leaves_do_not(self):
+        html = _render(_ROADMAP)
+        m = re.search(r"function renderNode\(n\) \{(.*?)\n  \}", html, re.DOTALL)
+        assert m is not None
+        body = m.group(1)
+        assert "if (n.has_children)" in body
+        assert "'<details class=\"rm-node " in body, "grouping nodes expand"
+        assert "'<div class=\"rm-node " in body, "leaves are plain blocks"
+
+    def test_indent_compounds_per_level(self):
+        """Levels are DOM-nested, so a single margin rule produces the
+        cumulative indent rather than one rule per depth."""
+        html = _render(_ROADMAP)
+        m = re.search(r"\.rm-node \{(.*?)\}", html, re.DOTALL)
+        assert m is not None
+        assert re.search(r"margin-left:\s*\d", m.group(1))
+        assert "border-left" in m.group(1), "expected a spine per level"
+
+    def test_elbow_and_rating_dot_are_separate_affordances(self):
+        """The left border carries hierarchy, so the rating cannot also live
+        there — it moves to a dot on the spine."""
+        html = _render(_ROADMAP)
+        assert re.search(r"\.rm-node::before \{", html), "elbow connector"
+        assert re.search(r"\.rm-node::after \{", html), "rating dot"
+        for rating in ("weak", "good"):
+            assert re.search(rf"\.rm-node\.{rating}::after", html), rating
+
+    def test_deeper_levels_are_visually_subordinate(self):
+        html = _render(_ROADMAP)
+        assert re.search(
+            r"\.rm-node \.rm-node \.rm-node-h \{", html
+        ), "level 3 headings should not read as peers of level 2"
+
+    def test_items_render_with_their_severity(self):
+        html = _render(_ROADMAP)
+        assert "function itemChips(ids)" in html
+        assert "it.impact" in html
+        assert "itemById" in html
+
+    def test_leaf_with_no_items_says_so(self):
+        assert "nothing on the roadmap for this" in _render(_ROADMAP)
+
+    def test_expandable_nodes_advertise_what_is_inside(self):
+        html = _render(_ROADMAP)
+        assert "rm-expand" in html
+        assert "function insideLabel(n)" in html
+
+
+class TestRatingColours:
+    """A rating is shown in three places — the aspect's left stripe, the chip at
+    every level, and the dot on the spine. All four states must be visually
+    distinct in all three. The single-column rewrite silently dropped the stripe
+    and left only `weak` coloured on the chip, so this is pinned."""
+
+    RATINGS = ("good", "mixed", "weak", "unknown")
+
+    def test_every_rating_has_a_token(self):
+        html = _render(_ROADMAP)
+        for r in self.RATINGS:
+            assert re.search(rf"--rate-{r}:\s*#[0-9A-Fa-f]{{6}}", html), r
+
+    def test_aspect_stripe_is_coloured_for_every_rating(self):
+        html = _render(_ROADMAP)
+        for r in self.RATINGS:
+            assert re.search(
+                rf"\.rm-aspect\.{r}\s*\{{[^}}]*border-left-color:\s*var\(--rate-{r}\)",
+                html,
+            ), f"aspect stripe missing colour for {r}"
+
+    def test_rating_chip_is_coloured_for_every_rating(self):
+        html = _render(_ROADMAP)
+        for r in self.RATINGS:
+            assert re.search(rf"\.{r}[^{{]*\.rm-rating[^{{]*\{{[^}}]*var\(--rate-{r}\)",
+                             html), f"rating chip missing colour for {r}"
+
+    def test_node_dot_is_coloured_for_every_rating(self):
+        html = _render(_ROADMAP)
+        for r in self.RATINGS:
+            assert re.search(
+                rf"\.rm-node\.{r}::after\s*\{{[^}}]*var\(--rate-{r}\)", html
+            ), f"spine dot missing colour for {r}"
+
+    def test_unknown_is_not_the_same_colour_as_mixed(self):
+        """"We cannot answer this" is a different statement from "partly fine";
+        colouring them identically hid the distinction."""
+        html = _render(_ROADMAP)
+        mixed = re.search(r"--rate-mixed:\s*(#[0-9A-Fa-f]{6})", html).group(1)
+        unknown = re.search(r"--rate-unknown:\s*(#[0-9A-Fa-f]{6})", html).group(1)
+        assert mixed.lower() != unknown.lower()
+
+    def test_colours_are_not_duplicated_as_literals(self):
+        """They were hardcoded in two places each, which is how the aspect level
+        drifted out of sync in the first place."""
+        html = _render(_ROADMAP)
+        body = html.split(":root {", 1)[1]
+        for literal in ("#C4890A", "#2E7D4F"):
+            # Allowed once, in the token declaration block itself.
+            assert body.count(literal) <= 1, f"{literal} duplicated"
+
+
+class TestExpandAffordance:
+    """A row that opens and a row that does not must never look alike. Two
+    signals on expandable rows only — a chevron in the header and a line saying
+    what is inside — and neither on a leaf, which shows its items instead."""
+
+    def test_chevron_only_rendered_when_there_is_something_to_open(self):
+        html = _render(_ROADMAP)
+        assert "expandable ? ' <span class=\"rm-chev\">" in html, (
+            "the chevron must be conditional on having children"
+        )
+
+    def test_chevron_rotates_when_open(self):
+        html = _render(_ROADMAP)
+        assert re.search(
+            r"details\[open\] > summary \.rm-chev\s*\{[^}]*rotate", html
+        ), "open state must be visible in the chevron"
+
+    def test_chevron_responds_to_hover(self):
+        assert re.search(r"summary:hover \.rm-chev\s*\{", _render(_ROADMAP)), (
+            "hover should signal that the row is interactive"
+        )
+
+    def test_leaf_nodes_get_no_chevron(self):
+        html = _render(_ROADMAP)
+        assert "nodeHead(n, false)" in html, "leaves must be rendered non-expandable"
+
+    def test_an_aspect_with_no_children_is_not_a_details(self):
+        """Otherwise it would show a disclosure triangle that opens nothing."""
+        html = _render(_ROADMAP)
+        assert "if (!expandable)" in html
+        assert "'<div class=\"rm-aspect '" in html
+
+    def test_inside_label_pluralises(self):
+        html = _render(_ROADMAP)
+        assert "' sub-category'" in html and "' sub-categories'" in html
+        assert "' item'" in html and "' items'" in html
+
+
+class TestParityTailTags:
+    _P = dict(
+        _ROADMAP,
+        aspects=[dict(_ROADMAP["aspects"][0], parity=["chrome", "safari"])],
+    )
+
+    def test_parity_tags_render_on_a_card(self):
+        html = render_html(_MINIMAL_DATA, roadmap_data=self._P)
+        assert "function parityTags(list, url)" in html
+        assert "'parity-' + esc(e)" in html
+
+    def test_no_tags_when_nothing_is_verified(self):
+        """Absent parity means unverified, so rendering nothing is correct —
+        an empty pill would read as a claim."""
+        html = render_html(_MINIMAL_DATA, roadmap_data=self._P)
+        assert "if (!list || !list.length) return '';" in html
+
+    def test_tag_explains_itself_on_hover(self):
+        html = render_html(_MINIMAL_DATA, roadmap_data=self._P)
+        assert "ship this and we do not" in html
+
+    def test_parity_tag_links_to_its_proof(self):
+        html = render_html(_MINIMAL_DATA, roadmap_data=dict(
+            _ROADMAP,
+            aspects=[dict(_ROADMAP["aspects"][0], parity=["chrome"],
+                          parity_url="https://webstatus.dev/features/x")],
+        ))
+        assert "a class=\"rm-parity\" href=" in html
+        assert "target=\"_blank\"" in html and 'rel="noopener"' in html
+
+    def test_clicking_the_link_does_not_toggle_the_card(self):
+        """The tag sits inside a <summary>, so the click must not bubble into
+        the disclosure or following a citation would collapse the card."""
+        html = _render(_ROADMAP)
+        assert "event.stopPropagation()" in html
+
+    def test_parity_url_is_threaded_from_the_payload(self):
+        html = _render(_ROADMAP)
+        assert "parityTags(n.parity, n.parity_url)" in html
+
+    def test_category_cards_never_render_a_parity_tag(self):
+        """A category card covers several children but can only link to one
+        proof, so a tag there would cite evidence for claims it does not
+        support. Tags belong on the node that names the item."""
+        html = _render(_ROADMAP)
+        assert "parityTags(a.parity" not in html, (
+            "the aspect header must not render parity tags"
+        )
+
+
+class TestMetricCards:
+    """"Where Firefox stands" is a set of expandable cards grouped by category.
+    Collapsed answers the comparison question; expanded shows the per-browser
+    breakdown, the exact window and a link to the source series — so no number on
+    the page has to be taken on trust."""
+
+    def _js(self, html):
+        m = re.search(r"function renderMetrics\(\) \{(.*?)\nrenderMetrics\(\);",
+                      html, re.DOTALL)
+        assert m is not None
+        return m.group(1)
+
+    def test_each_metric_is_an_expandable_card(self):
+        js = self._js(_render(_ROADMAP))
+        assert "function metricCard(m)" in js
+        assert "'<details class=\"pm-card" in js
+
+    def test_metrics_are_grouped_into_categories(self):
+        js = self._js(_render(_ROADMAP))
+        assert "pm-cat-h" in js
+        assert "g.metrics.map(metricCard)" in js, (
+            "a category renders its own metrics, keeping a family together"
+        )
+
+    def test_every_metric_links_to_its_source_series(self):
+        js = self._js(_render(_ROADMAP))
+        assert "m.graph_url" in js
+        assert "open these exact series in Perfherder" in js
+
+    def test_a_metric_with_no_signature_says_so_rather_than_linking(self):
+        """A dead 'see the data' link is worse than none."""
+        js = self._js(_render(_ROADMAP))
+        assert "cannot link" in js
+
+    def test_source_link_does_not_toggle_the_card(self):
+        js = self._js(_render(_ROADMAP))
+        assert "event.stopPropagation()" in js
+
+    def test_warning_is_an_icon_with_detail_in_the_expansion(self):
+        js = self._js(_render(_ROADMAP))
+        assert "function warnIcon(m)" in js
+        assert "expand for detail" in js
+        assert "pm-facts" in js, "the window and staleness detail live in the body"
+
+    def test_window_detail_is_in_the_expansion_not_the_row(self):
+        js = self._js(_render(_ROADMAP))
+        m = re.search(r"function metricCard\(m\) \{(.*?)\n  \}", js, re.DOTALL)
+        assert m is not None
+        body = m.group(1)
+        assert "window'" in body or "-day window" in body
+        assert "m.window_end" in body
+
+    def test_categories_are_ordered_worst_first(self):
+        js = self._js(_render(_ROADMAP))
+        assert re.search(r"\.sort\(\(a, b\) => a\.worst - b\.worst\)", js)
+
+
+class TestDirectionIsUnmissable:
+    """Whether lower or higher is better must be readable without hunting. It was
+    a clause in a small grey comma-list and a 0.05-opacity tint, which is how a
+    reader ends up misreading a latency plot as a score plot."""
+
+    def _js(self, html):
+        m = re.search(r"function renderMetrics\(\) \{(.*?)\nrenderMetrics\(\);",
+                      html, re.DOTALL)
+        return m.group(1)
+
+    def test_direction_is_stated_once_not_three_times(self):
+        """It was in a category pill, on the axis label, and in the band inside
+        the plot. One statement is clearer than three, and the band is the right
+        one because it sits next to the marks it applies to."""
+        js = self._js(_render(_ROADMAP))
+        assert "pm-dir-pill" not in js, "the category pill was redundant"
+        assert "better this way" in js, "the band is the single statement"
+
+    def test_axis_label_still_carries_the_unit(self):
+        """Dropping the direction phrase must not take the unit with it."""
+        js = self._js(_render(_ROADMAP))
+        assert "esc(m.unit)" in js
+
+    def test_category_header_states_platform_and_unit(self):
+        js = self._js(_render(_ROADMAP))
+        assert "plat(g.platform)" in js
+        assert "esc(g.unit)" in js
+
+    def test_favourable_side_is_labelled_not_only_tinted(self):
+        js = self._js(_render(_ROADMAP))
+        assert "better this way" in js, (
+            "the tinted half needs a label; a faint tint alone is inferable at "
+            "best and invisible at worst"
+        )
+        assert "pm-band-in" in js
+
+    def test_tint_is_actually_visible(self):
+        html = _render(_ROADMAP)
+        m = re.search(r"\.pm-track\.better-left::before[^}]*?opacity:\s*([\d.]+)",
+                      html, re.DOTALL)
+        assert m is not None, "favourable-half tint rule missing"
+        assert float(m.group(1)) >= 0.08, (
+            f"tint at {m.group(1)} is too faint to read"
+        )
+
+    def test_axis_unit_and_direction_are_not_muted(self):
+        html = _render(_ROADMAP)
+        js = self._js(html)
+        assert 'pm-axis-dir strong' in js, "direction text must not be recessive"
+        assert re.search(r"\.pm-axis-dir\.strong[^}]*color:\s*var\(--ink\)", html)
+
+    def test_ruler_still_ascends_in_every_group(self):
+        """Direction is annotated, never encoded by reversing the axis."""
+        js = self._js(_render(_ROADMAP))
+        assert re.search(r"\[0, 0\.25, 0\.5, 0\.75, 1\]\.map", js)
+        assert "reverse()" not in js.split("const axis")[-1]
+
+
+class TestMeasuredCaps:
+    """Container-first: one card per container, three surface chips in the header,
+    expanding to per-codec rows. Grouped by container because a container has a
+    measured header (the probe asks the bare MIME type) and because disagreements
+    are container-shaped -- WebKit implements no Matroska at all, which is one
+    fact rather than twelve."""
+
+    _CAPS = dict(_ROADMAP, caps={
+        "probed_at": "2026-08-10T12:00:00Z",
+        "by_container": {
+            "surface_labels": {"canPlayType": "Play", "mse": "Stream",
+                               "recorder": "Record"},
+            "browsers": [
+                {"target": "firefox-playwright", "label": "Firefox (Gecko build)",
+                 "version": "153.0", "is_proxy_for_safari": False,
+                 "is_nonshipping_build": True},
+                {"target": "chrome", "label": "Chrome", "version": "151",
+                 "is_proxy_for_safari": False, "is_nonshipping_build": False},
+                {"target": "webkit", "label": "WebKit", "version": "26.5",
+                 "is_proxy_for_safari": True, "is_nonshipping_build": False},
+            ],
+            "containers": [
+                {"name": "Matroska", "mimes": ["video/x-matroska"],
+                 "worst": "gap", "gaps": 3, "combos": 18, "probed": True,
+                 "surfaces": {s: {
+                     "rows": [{"kind": "audio", "codec": "FLAC",
+                               "codec_string": "flac", "verdict": "gap",
+                               "support": {"firefox-playwright": "no",
+                                           "chrome": "yes", "webkit": "no"}},
+                              {"kind": "audio", "codec": "AC-3",
+                               "codec_string": "ac-3", "verdict": "none",
+                               "support": {"firefox-playwright": "no",
+                                           "chrome": "no", "webkit": "no"}}],
+                     "counts": {"gap": 1, "overclaim": 0, "ahead": 0,
+                                "parity": 0, "none": 1, "supported": 1},
+                     "bare": {"firefox-playwright": "yes", "chrome": "yes",
+                              "webkit": "no"}}
+                     for s in ("canPlayType", "mse", "recorder")}},
+                {"name": "WebM", "mimes": ["video/webm"], "worst": "parity",
+                 "gaps": 0, "combos": 13, "probed": True,
+                 "surfaces": {s: {
+                     "rows": [{"kind": "audio", "codec": "Opus",
+                               "codec_string": "opus", "verdict": "parity",
+                               "support": {"firefox-playwright": "yes",
+                                           "chrome": "yes", "webkit": "yes"}}],
+                     "counts": {"gap": 0, "overclaim": 0, "ahead": 0,
+                                "parity": 1, "none": 0, "supported": 1},
+                     "bare": {}}
+                     for s in ("canPlayType", "mse", "recorder")}},
+                {"name": "HLS", "mimes": ["application/vnd.apple.mpegurl"],
+                 "worst": "none", "gaps": 0, "combos": 0, "probed": False,
+                 "surfaces": {s: {"rows": [], "counts": {}, "bare": {}}
+                              for s in ("canPlayType", "mse", "recorder")}},
+            ],
+            "codec_gaps": {"canPlayType": [
+                {"codec": "xHE-AAC", "containers": ["ADTS/AAC", "MP4",
+                                                    "Matroska"], "count": 3}]},
+        },
+    })
+
+    def _render_caps(self):
+        return render_html(_MINIMAL_DATA, roadmap_data=self._CAPS)
+
+    def test_grouped_by_container(self):
+        html = self._render_caps()
+        assert "pm-cont-h" in html
+        assert "cv.containers.map" in html
+
+    def test_every_probed_container_appears_even_at_parity(self):
+        """WebM used to vanish because all engines agree, which read as
+        'forgotten' rather than 'verified'."""
+        assert "BADGE" in self._render_caps()
+        assert "verified parity" in self._render_caps()
+
+    def test_a_container_level_only_probe_says_so(self):
+        """HLS has no codec combinations. Invisible is worse than labelled."""
+        assert "container-level probe only" in self._render_caps()
+
+    def test_three_surfaces_are_chips_not_separate_pages(self):
+        html = self._render_caps()
+        assert "pm-chips" in html and "function chips(c)" in html
+
+    def test_chip_shows_a_ratio_not_a_bare_count(self):
+        """0 of 5 is verified parity; 0 of 0 is nobody supports it. A bare zero
+        merges two different facts."""
+        html = self._render_caps()
+        assert "st.counts.supported" in html
+        assert "'/' + sup" in html
+
+    def test_we_alone_accept_is_a_distinct_verdict_from_a_gap(self):
+        """Us accepting something nobody else does is not a gap, and the fix is
+        different. It is also not automatically a bug — sometimes we are simply
+        looser about the codecs parameter, which is why the genuinely-invalid
+        cases live in their own conformance check."""
+        html = _joined(self._render_caps())
+        assert "we alone accept" in html
+        assert "we accept it and no other engine does" in html
+
+    def test_conformance_check_is_separate_from_support(self):
+        """It detects the opposite fault: an engine ignoring the codecs parameter
+        and answering yes to a combination that cannot exist."""
+        html = _joined(self._render_caps())
+        assert "combinations that cannot exist" in html
+        assert "ignoring the codecs parameter" in html
+
+    def test_every_badge_and_chip_is_explained_before_the_cards(self):
+        html = _joined(self._render_caps())
+        assert "How to read this" in html
+        for term in ("behind", "we alone accept", "verified parity",
+                     "no engine support", "container only"):
+            assert term in html, term
+        assert "gaps / supported" in html
+
+    def test_surface_names_are_spelled_out(self):
+        """"Play" and "Stream" were too terse to guess."""
+        html = _joined(self._render_caps())
+        assert "Media Source Extensions" in html
+        assert "MediaRecorder.isTypeSupported" in html
+        assert "canPlayType" in html
+
+    def test_rows_nobody_supports_are_collapsed_not_dropped(self):
+        html = self._render_caps()
+        assert "combinations no engine supports" in html
+        assert "details class=\"pm-none\"" in html
+
+    def test_codec_index_is_offered_alongside_the_container_grouping(self):
+        html = _joined(self._render_caps())
+        assert "Codecs we lack, across containers" in html
+
+    def test_links_to_the_public_probe_page(self):
+        html = self._render_caps()
+        assert "media-capabilities/index.html" in html
+        assert "Run the probe in your own browser" in html
+
+    def test_evidence_strength_is_stated_per_engine(self):
+        html = _joined(self._render_caps())
+        assert "not Safari" in html and "weaker evidence" in html
+        assert "not a shipping Firefox" in html
+
+    def test_the_reason_for_measuring_is_stated(self):
+        """So nobody reverts to reading source and repeats the mistake."""
+        assert "PCM and AC-3" in self._render_caps()
+
+
+class TestSupportAnswersAreWords:
+    """Support answers are words, not a filled/half/empty glyph ramp.
+
+    The glyph set needed a legend to decode and read as a severity ramp, which
+    `maybe` is not: for a bare MIME type with no codecs parameter, `maybe` is the
+    spec-correct answer — the browser cannot be certain without codec information.
+    A half-full circle implied partial or degraded support instead.
+    """
+
+    def _caps_html(self):
+        return _joined(render_html(_MINIMAL_DATA,
+                                  roadmap_data=TestMeasuredCaps._CAPS))
+
+    def test_no_partial_circle_glyph_anywhere(self):
+        assert "◐" not in self._caps_html()
+
+    def test_answers_render_as_words(self):
+        html = self._caps_html()
+        for word in ("'yes'", "'maybe'", "'no'"):
+            assert word in html, word
+
+    def test_maybe_is_explained_as_normal_not_degraded(self):
+        html = self._caps_html()
+        assert "not partial support" in html
+        assert "no codecs parameter" in html
+
+    def test_legend_defines_every_answer(self):
+        html = self._caps_html()
+        for word in ("yes", "maybe", "no"):
+            assert f"<b>{word}</b>" in html, word
+
+
+class TestPowerEfficiency:
+    """MediaCapabilities reports `powerEfficient`, which canPlayType could not.
+    It is tempting to render it as "hardware accelerated" and wrong to: measured
+    across engines, Firefox and Chrome both report it for MP3, FLAC, Vorbis and
+    AAC, and neither ships a hardware decoder for any of them. These tests pin
+    the honest framing, because the overstated one is the natural one to write."""
+
+    def _html(self):
+        from reviewstats.render import render_html
+        return render_html(_MINIMAL_DATA, roadmap_data=_ROADMAP)
+
+    def test_an_efficient_cell_is_marked(self):
+        assert "r.eff" in self._html(), (
+            "cells ignore the eff field — powerEfficient is measured per "
+            "browser and never shown"
+        )
+
+    def test_the_marker_is_a_word_not_a_glyph(self):
+        """A previous glyph set (filled/half/empty circles) had to be explained
+        before it could be read. Words do not."""
+        # Search from the class *use*, not the CSS rule that also names it.
+        html = _joined(self._html())
+        i = html.find('class="pm-hw"')
+        assert i != -1, "the hw marker class is never used, only styled"
+        assert ">efficient<" in html[i:i + 600]
+
+    def test_the_legend_names_the_flag_and_does_not_call_it_hardware(self):
+        html = _joined(self._html())
+        assert "powerEfficient" in html
+        assert "not a hardware-decode flag" in html, (
+            "the legend must say what this flag is not — reading it as hardware "
+            "support is the mistake it invites"
+        )
+
+    def test_the_page_never_claims_hardware_acceleration_from_this_flag(self):
+        """The guard against relabelling. If someone reintroduces the phrase, the
+        page is overstating a powerEfficient=true on MP3 as a hardware decoder."""
+        html = _joined(self._html())
+        for phrase in ("hardware accelerated", "hardware-accelerated"):
+            assert phrase not in html, (
+                f'"{phrase}" appears — powerEfficient does not mean this'
+            )
+
+    def test_the_audio_caveat_is_stated(self):
+        assert "noise for audio" in _joined(self._html())

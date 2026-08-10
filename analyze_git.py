@@ -26,6 +26,7 @@ from pathlib import Path
 from reviewstats.commit_files import fetch_commit_files_cached
 from reviewstats.github_commits import _get_auth_token, fetch_commits
 from reviewstats.landing import render_landing_page
+from reviewstats.mediacaps import SURFACES
 from reviewstats.metrics import (
     classify_landed_without_team_review_by_subdir,
     has_team_review,
@@ -39,6 +40,7 @@ from reviewstats.parse import (
 )
 from reviewstats.recent_changes import deep_feature_bucket
 from reviewstats.render import render_html
+from reviewstats.perfmetrics import build_metrics_view
 from reviewstats.roadmap import AUDIENCES, build_roadmap_view
 from reviewstats.report import RECENT_CHANGES_WINDOWS, build_report
 from reviewstats.summarize import (
@@ -299,9 +301,40 @@ def _generate_for_team(
 
     roadmap_data = _load_roadmap_view(team, audience=roadmap_audience)
 
+    # Cross-browser Raptor numbers, refreshed by fetch_perf_metrics.py rather
+    # than here: Perfherder being slow or down must not fail this build. Absent
+    # means the Metrics subview simply does not render.
+    metrics_path = team_dir / "data_metrics.json"
+    metrics_data = None
+    if roadmap_data and metrics_path.exists():
+        metrics_data = build_metrics_view(
+            json.loads(metrics_path.read_text(encoding="utf-8"))
+        )
+        print(f"[{team.slug}] Metrics: {metrics_data['counts']['compared']} of "
+              f"{metrics_data['counts']['total']} comparable cross-browser "
+              f"({metrics_data['window_days']}-day window)")
+
+        # Measured codec/container support, produced by tools/media-caps/. Rides
+        # in the metrics payload because it answers the same question -- how do
+        # we compare -- and is refreshed on its own cadence.
+        caps_path = team_dir / "data_mediacaps.json"
+        if caps_path.exists():
+            metrics_data["caps"] = json.loads(
+                caps_path.read_text(encoding="utf-8"))
+            # SURFACES[0] rather than a literal: the surface keys are owned by
+            # reviewstats.mediacaps, and spelling one here meant renaming them
+            # crashed the generator while all 877 tests stayed green.
+            surfaces = metrics_data["caps"].get("surfaces") or {}
+            diff = (surfaces.get(SURFACES[0]) or {}).get("counts")
+            if diff:
+                print(f"[{team.slug}] Media caps: {diff['differing']} of "
+                      f"{diff['total']} codec/container combos differ across "
+                      f"engines, {diff['we_lack']} where Firefox lacks support")
+
     html_path = team_dir / "index.html"
     html_path.write_text(
-        render_html(report, phab_data=phab_data, roadmap_data=roadmap_data),
+        render_html(report, phab_data=phab_data, roadmap_data=roadmap_data,
+                    metrics_data=metrics_data),
         encoding="utf-8",
     )
 
