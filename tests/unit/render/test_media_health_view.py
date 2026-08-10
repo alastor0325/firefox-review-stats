@@ -936,3 +936,63 @@ class TestPerDeviceFactsAreNotPublished:
             assert "eff" not in r and "smooth" not in r
 
 
+
+
+class TestContainerHeaderAlignment:
+    """Badge and chip columns line up down the list.
+
+    Each card is its own `<details>`, so its header was its own CSS grid -- and
+    `auto` columns only size against content *within* one grid. Every card
+    therefore resolved different widths and the badges and chips came out ragged,
+    which is most of the noise in a nine-card column.
+
+    Fixed track widths are what makes independent grids agree, so these assert the
+    tracks are fixed rather than content-sized.
+    """
+
+    def _css(self):
+        import pathlib
+        return pathlib.Path("templates/index.html.tmpl").read_text(
+            encoding="utf-8")
+
+    def _rule(self, selector):
+        import re
+        m = re.search(re.escape(selector) + r"\s*\{([^}]*)\}", self._css())
+        assert m, f"no rule for {selector}"
+        return m.group(1)
+
+    def test_the_header_grid_uses_fixed_tracks_not_auto(self):
+        cols = self._rule(".pm-cont-h")
+        assert "grid-template-columns" in cols
+        line = [l for l in cols.split(";") if "grid-template-columns" in l][0]
+        assert "auto" not in line, (
+            "auto tracks size per-card, so nothing aligns between cards: " + line
+        )
+        assert "px" in line
+
+    def test_the_three_chips_share_one_fixed_width(self):
+        chips = self._rule(".pm-chips")
+        assert "repeat(3," in chips, (
+            "chips must be equal fixed columns or Playback/Streaming/Recording "
+            "drift by label and number width"
+        )
+
+    def test_the_badge_column_has_a_consistent_edge(self):
+        assert "justify-self" in self._rule(".pm-badge-cell")
+
+
+class TestCombinationCountReadsCorrectly:
+    def test_a_single_combination_is_not_plural(self):
+        """MP3 and WAV each have one, and both read "1 combinations".
+
+        Asserted against the raw HTML, not `_joined`: that helper collapses string
+        concatenation, which made an earlier version of this test pass against the
+        unconditional `' combinations'` it was meant to catch.
+        """
+        html = render_html(_MINIMAL_DATA, roadmap_data=_ROADMAP)
+        assert "c.combos === 1" in html, (
+            "the combination count is pluralised unconditionally"
+        )
+        assert "' combinations'" not in html, (
+            "an unconditional plural is still in the template"
+        )

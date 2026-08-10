@@ -876,10 +876,17 @@
     margin: 6px 0 0;
   }
   /* Container cards: one per container, three surface chips in the header. */
+  /* Fixed tracks, not `auto`. Each card is its own grid, and an `auto` track
+     sizes against that card's content only -- so nine cards produced nine
+     different column widths and the badges and chips came out ragged. */
   .pm-cont-h {
-    display: grid; grid-template-columns: 1fr auto auto auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 96px 372px 104px;
     align-items: center; gap: 12px; padding: 9px 4px;
   }
+  /* The pill varies in width ("partial" vs "full support"); pinning its right
+     edge keeps a constant gutter to the chip column. */
+  .pm-badge-cell { justify-self: end }
   .pm-cont-n { font-size: 13px; font-weight: 600 }
   .pm-cont-n small {
     display: block; font-family: var(--mono); font-size: 9px;
@@ -900,7 +907,9 @@
   .pm-b-mixed { background: var(--rate-mixed); color: var(--ink) }
   .pm-b-ok { background: var(--rate-good) }
   .pm-b-none { background: var(--muted) }
-  .pm-chips { display: flex; gap: 5px }
+  /* Equal columns so Playback / Streaming / Recording line up regardless of
+     label length or whether the figure is "10/14" or a dash. */
+  .pm-chips { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px }
   .pm-chip {
     font-family: var(--mono); font-size: 9px; padding: 2px 6px;
     border-radius: 3px; border: 1px solid var(--rule); white-space: nowrap;
@@ -930,8 +939,9 @@
   details.pm-none > summary::before { content: "\25B8 " }
   details.pm-none[open] > summary::before { content: "\25BE " }
   @media (max-width: 820px) {
-    .pm-cont-h { grid-template-columns: 1fr; gap: 4px }
+    .pm-cont-h { grid-template-columns: minmax(0, 1fr); gap: 4px }
     .pm-cont-n2 { text-align: left }
+    .pm-badge-cell { justify-self: start }
   }
   /* Support answers as words. Colour carries emphasis, the word carries the
      meaning, so the table needs no glyph legend to be readable. */
@@ -2629,10 +2639,6 @@ function renderMetrics() {
       + '<span class="pm-badge pm-b-mixed">partial</span> we have some, '
       + '<span class="pm-badge pm-b-weak">no support</span> we have none that '
       + 'others do.</li>'
-      + '<li>The bar left of each row is <b>our</b> position: green we support '
-      + 'it, amber another engine does and we do not, slate we accept what no '
-      + 'other engine will.</li>'
-      + '<li>Combinations no engine supports are left out.</li>'
       + '</ul>'
 
       + cv.containers.map(c => {
@@ -2641,11 +2647,13 @@ function renderMetrics() {
             + '<div class="pm-cont-h"><span class="pm-cont-n">' + esc(c.name)
             + '<small>' + (c.mimes.length ? esc(c.mimes.join(', ')) : 'no MIME type')
             + '</small></span>'
-            + '<span class="pm-badge ' + cls + '">' + word + '</span>'
+            + '<span class="pm-badge-cell"><span class="pm-badge ' + cls
+            + '">' + word + '</span></span>'
             + '<span class="pm-chips">' + chips(c) + '</span>'
             + '<span class="pm-cont-n2">'
-            + (c.probed ? c.combos + ' combinations'
-                        : 'container-level probe only')
+            + (c.probed
+                ? c.combos + ' combination' + (c.combos === 1 ? '' : 's')
+                : 'container-level probe only')
             + '</span></div></summary>'
             + '<div class="pm-card-body">'
             + (c.probed
