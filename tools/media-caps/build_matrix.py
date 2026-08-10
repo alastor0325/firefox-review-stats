@@ -20,7 +20,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from reviewstats.mediacaps import build_payload  # noqa: E402
+from reviewstats.mediacaps import (  # noqa: E402
+    build_conformance,
+    build_payload,
+)
 
 HERE = Path(__file__).resolve().parent
 RESULTS = HERE / "results"
@@ -59,6 +62,20 @@ def main(argv: list[str] | None = None) -> int:
                  for st in cont["surfaces"].values())
     print(f"  {hidden} rows no engine supports (counted, not listed)")
     print(f"  apis         {len(payload['apis'])} tracked")
+
+    # Reported here rather than on the dashboard, where the section was removed.
+    # Still worth running: it is how the FlacDecoder::IsSupportedType bug turned
+    # up -- Firefox accepts type strings that cannot exist because the codecs
+    # parameter is never read.
+    cf = build_conformance(load_results(Path(args.results)))
+    wrong = [(r["type"], t) for r in cf.get("rows", [])
+             for t, v in r["support"].items() if v in ("yes", "partial")]
+    if wrong:
+        print(f"  conformance  {len(wrong)} impossible type(s) wrongly accepted:")
+        for ty, target in wrong:
+            print(f"                 {target}: {ty}")
+    else:
+        print("  conformance  all impossible types correctly rejected")
     return 0
 
 

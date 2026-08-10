@@ -394,67 +394,6 @@ class TestSurfaceKeysAreOwnedHere:
             )
 
 
-class TestVacuousBareRowsAreDropped:
-    """A bare-type row where every engine answers `maybe` is not a finding.
-
-    `maybe` is the spec-correct answer for a type with no codecs parameter -- the
-    browser genuinely cannot know -- so three identical maybes say only "this is a
-    container we all recognise". Six such rows were on the page (MP4 video+audio,
-    WebM video+audio, Ogg audio, WAV) taking a full row each to say nothing.
-
-    The rule is unanimous-`maybe` specifically, not unanimous-anything: three
-    identical `no`s mean nobody supports the container, which is real news, and
-    the informative bare rows are load-bearing -- HLS has no codec combinations
-    at all, so its bare rows are the only place its support appears.
-    """
-
-    def _view(self, ff_bare, cr_bare):
-        from reviewstats.mediacaps import build_container_view
-        ff = result("firefox", "FF", [combo("MP4", "AAC-LC", canPlayType="probably")],
-                    bare={"video/mp4": ff_bare})
-        cr = result("chrome", "Cr", [combo("MP4", "AAC-LC", canPlayType="probably")],
-                    bare={"video/mp4": cr_bare})
-        v = build_container_view([ff, cr])
-        mp4 = [c for c in v["containers"] if c["name"] == "MP4"][0]
-        return mp4["surfaces"]["playback"]["rows"]
-
-    def _bare_rows(self, rows):
-        # Keyed on `kind`, not on a display label. Keying on the words
-        # "container only" broke when the row started showing the MIME type,
-        # which is a rename rather than a behaviour change.
-        return [r for r in rows if r["kind"] == "container"]
-
-    def test_a_unanimous_maybe_row_is_not_rendered(self):
-        rows = self._view({"canPlayType": "maybe"}, {"canPlayType": "maybe"})
-        assert self._bare_rows(rows) == []
-
-    def test_a_disagreeing_bare_row_survives(self):
-        """The HLS case: Firefox no, others maybe. Dropping this loses HLS."""
-        rows = self._view({"canPlayType": "no"}, {"canPlayType": "maybe"})
-        assert len(self._bare_rows(rows)) == 1
-
-    def test_a_unanimous_no_row_survives(self):
-        """Nobody supports the container — that is information, not noise."""
-        rows = self._view({"canPlayType": "no"}, {"canPlayType": "no"})
-        assert len(self._bare_rows(rows)) == 1
-
-    def test_a_unanimous_yes_row_survives(self):
-        rows = self._view({"canPlayType": "probably"}, {"canPlayType": "probably"})
-        assert len(self._bare_rows(rows)) == 1
-
-    def test_codec_rows_are_untouched_by_the_rule(self):
-        """The rule is about bare types only. A real codec answering `maybe`
-        everywhere would be a genuine oddity worth seeing."""
-        from reviewstats.mediacaps import build_container_view
-        ff = result("firefox", "FF", [combo("MP4", "AAC-LC", canPlayType="maybe")])
-        cr = result("chrome", "Cr", [combo("MP4", "AAC-LC", canPlayType="maybe")])
-        v = build_container_view([ff, cr])
-        mp4 = [c for c in v["containers"] if c["name"] == "MP4"][0]
-        codecs = [r for r in mp4["surfaces"]["playback"]["rows"]
-                  if r["kind"] != "container"]
-        assert len(codecs) == 1
-
-
 class TestAudioAndVideoAreSeparateGroups:
     """Video and audio codecs are different questions and were interleaved.
 
@@ -598,8 +537,12 @@ class TestPayloadIsDerivedNotStored:
         payload = build_payload([_probe_result("firefox", "FF"),
                                  _probe_result("chrome", "Cr")])
         for key in ("probed_at", "browsers", "surfaces", "by_container",
-                    "conformance", "apis"):
+                    "apis"):
             assert key in payload, key
+        # No conformance: that section was removed from the page, and shipping
+        # data nothing renders is how it comes back by accident. The check still
+        # runs -- build_matrix.py reports it.
+        assert "conformance" not in payload
         assert set(payload["surfaces"]) == set(SURFACES)
 
     def test_empty_results_give_no_payload_rather_than_a_broken_one(self):
@@ -629,3 +572,72 @@ def _probe_result(target, label):
                          "canPlayType": "no"}],
         "apis": {"MediaSource in Worker": True},
     }
+
+
+class TestContainerRowsAreGone:
+    """The bare-MIME rows are no longer part of the table.
+
+    They were introduced because HLS had no codec combinations at all, so without
+    them HLS read as "no engine support". The probe now asks HLS codec
+    combinations too, and those carry the same fact -- Firefox `no` to
+    H.264-in-HLS where Chrome and WebKit say `yes` -- so the extra group was a
+    second way of saying it, under a heading that repeated the row label.
+    """
+
+    def _view(self):
+        from reviewstats.mediacaps import build_container_view
+        ff = result("firefox", "FF", [
+            combo("MP4", "AAC-LC", kind="audio", canPlayType="probably")],
+            bare={"video/mp4": {"canPlayType": "no", "mse": "no",
+                                "recorder": "no"}})
+        cr = result("chrome", "Cr", [
+            combo("MP4", "AAC-LC", kind="audio", canPlayType="probably")],
+            bare={"video/mp4": {"canPlayType": "probably", "mse": "yes",
+                                "recorder": "no"}})
+        v = build_container_view([ff, cr])
+        return [c for c in v["containers"] if c["name"] == "MP4"][0]
+
+    def test_no_container_kind_group_is_produced(self):
+        assert all(g["kind"] != "container"
+                   for st in self._view()["surfaces"].values()
+                   for g in st["groups"])
+
+    def test_no_container_kind_row_is_produced(self):
+        assert all(r["kind"] != "container"
+                   for st in self._view()["surfaces"].values()
+                   for r in st["rows"])
+
+    def test_bare_rows_do_not_inflate_the_not_listed_count(self):
+        """The count means "no engine supports this". Dropping container rows
+        into it would claim two unsupported combinations that do not exist."""
+        st = self._view()["surfaces"]["playback"]
+        assert st["hidden_none"] == 0
+
+
+class TestEveryRowCarriesAVerdictMarker:
+    """Parity used to render with no leading colour bar at all.
+
+    Absence-as-a-value: gap, overclaim and ahead each got a coloured bar and
+    parity got nothing, so the most common row looked like the style had failed to
+    apply rather than like a deliberate "agreed". Parity now gets a neutral marker
+    -- present, so the encoding is consistent, and grey, so colour still carries
+    the news.
+    """
+
+    def test_parity_is_styled_explicitly_rather_than_by_omission(self):
+        import pathlib
+        css = pathlib.Path("templates/index.html.tmpl").read_text(encoding="utf-8")
+        assert "tr.pm-v-parity td:first-child" in css, (
+            "parity has no rule, so a parity row is bar-less and reads as unstyled"
+        )
+
+    def test_the_parity_marker_is_neutral_not_a_status_colour(self):
+        import pathlib, re
+        css = pathlib.Path("templates/index.html.tmpl").read_text(encoding="utf-8")
+        rule = re.search(r"tr\.pm-v-parity td:first-child \{([^}]*)\}", css)
+        assert rule, "parity rule missing"
+        body = rule.group(1)
+        for status in ("--pm-behind", "--pm-ahead", "--rate-unknown"):
+            assert status not in body, (
+                f"parity uses {status}, which means something else on this page"
+            )

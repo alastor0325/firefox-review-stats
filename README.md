@@ -233,24 +233,39 @@ a **Container itself** group for the bare type), worst-first within each group a
 between them. Interleaving the two by verdict alone meant reading past six audio
 codecs to reach AV1.
 
-Combinations **no engine supports** are counted and not listed. They are not a
-gap, not an overclaim and not a win, and the probe asks every codec a container
-could plausibly carry, so there are a fair few — VP8 in MP4 is one, refused by all
-three engines. The count is always stated so a shorter table cannot be mistaken
-for full coverage.
+Combinations **no engine supports** are left out. They are not a gap, not an
+overclaim and not a win, and the probe asks every codec a container could
+plausibly carry, so there are a fair few — VP8 in MP4 is one, refused by all three
+engines. `build_matrix.py` prints how many were dropped, since the page no longer
+does.
 
-> **`powerEfficient` is not a hardware-decode flag.** It is rendered as
-> `efficient`, named for the flag, deliberately. Measured here, Firefox and
-> Chrome both report it true for MP3, FLAC, Vorbis and AAC — 16 and 19 audio rows
-> — and no shipping browser has a hardware MP3 or FLAC decoder. Cheap software
-> decoding satisfies the spec. Treat it as a hint for video and as noise for
-> audio; the `hw-decode-matrix` roadmap item still needs a real answer.
+Each row carries a coloured bar on the left for its verdict: a gap, an overclaim,
+ahead, or **grey for parity**. Parity used to render with no bar at all, which
+read as a styling miss rather than as "every engine agrees" — and it is the most
+common row.
+
+> **`powerEfficient` and `smooth` are collected but not shown.** Two reasons,
+> either sufficient. `powerEfficient` is not a hardware-decode flag — Firefox and
+> Chrome both report it for MP3, FLAC, Vorbis and AAC, and neither ships a
+> hardware decoder for any of them. And both are **per device**: the answer
+> describes whichever machine ran the probe, so a general cross-browser table
+> would invite reading "Firefox has hardware AV1 decode" off one laptop's GPU.
+> The probe page still reports them, which is where a per-device fact belongs.
+> `hw-decode-matrix` therefore still needs a real per-configuration answer.
 
 The probe also asks about type strings that **cannot exist** (`audio/flac;
 codecs="ac-3"`). That found a Firefox conformance bug: `FlacDecoder::
 IsSupportedType` never reads the codecs parameter
 (`dom/media/flac/FlacDecoder.cpp:16-21`), so Firefox alone accepts three invalid
-pairs that Chrome and WebKit both reject.
+pairs that Chrome and WebKit both reject. This check is **not on the dashboard** —
+it is reported by `build_matrix.py`:
+
+```
+conformance  3 impossible type(s) wrongly accepted:
+               firefox-playwright: audio/flac; codecs="ac-3"
+               firefox-playwright: audio/flac; codecs="alac"
+               firefox-playwright: audio/flac; codecs="opus"
+```
 
 ### Recent-change summaries
 

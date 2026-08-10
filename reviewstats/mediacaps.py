@@ -38,8 +38,8 @@ accordingly rather than treating every cell as equivalent.
 _PLAYS = ("probably", "maybe")
 
 # The surfaces a probe reports, in reading order. These are the MediaCapabilities
-# answers, not the legacy ones: decodingInfo gives a definite boolean plus
-# `smooth` and `powerEfficient`, where canPlayType gives a deliberately vague
+# answers, not the legacy ones: decodingInfo gives a definite boolean, where
+# canPlayType gives a deliberately vague
 # tri-state whose "maybe" is unreadable without explanation. The legacy fields are
 # still collected and compared -- a disagreement between the two API generations
 # is itself worth knowing -- but they do not drive the table.
@@ -74,28 +74,20 @@ SURFACE_SOURCE = {
                  "(encodingInfo throws on Chrome)",
 }
 
-def power_efficiency(value: object) -> str:
-    """efficient / costly / unknown, from a flattened decodingInfo answer.
-
-    This is `powerEfficient`, and it is NOT a hardware-decode flag, however often
-    it gets read as one. Measured here, both Firefox and Chrome report it true for
-    MP3, FLAC, Vorbis and AAC -- 16 and 19 audio rows respectively -- and no
-    shipping browser has a hardware MP3 or FLAC decoder. The spec only asks
-    whether decoding is power efficient, and cheap software decoding qualifies.
-
-    So it is suggestive for video, where the expensive path is the hardware one,
-    and close to meaningless for audio. The dashboard says which flag this is
-    rather than relabelling it as hardware support, and `hw-decode-matrix` still
-    needs a real answer -- this does not close it.
-    """
-    v = str(value or "")
-    if not v.startswith("yes"):
-        return "unknown"
-    return "efficient" if "+hw" in v else "costly"
-
-
-def smoothness(value: object) -> bool:
-    return "+smooth" in str(value or "")
+# `powerEfficient` and `smooth` are deliberately NOT surfaced, though the probe
+# collects both. Two reasons, either sufficient:
+#
+#   * powerEfficient is not a hardware-decode flag. Firefox and Chrome both report
+#     it for MP3, FLAC, Vorbis and AAC, and neither ships a hardware decoder for
+#     any of them -- cheap software decoding satisfies the spec.
+#   * Both are **per device**. The answer describes whichever machine ran the
+#     probe, so putting it in a general cross-browser table invites reading
+#     "Firefox has hardware AV1 decode" off one laptop's GPU.
+#
+# The probe page still reports them, which is where a per-device fact belongs: a
+# reader who runs it locally gets an answer about their own hardware. So
+# `hw-decode-matrix` still needs a real per-configuration answer -- nothing here
+# closes it.
 
 # Bare MIME types the probe asks about, grouped to the container they belong to,
 # so a container card can show a measured header rather than a derived count.
@@ -152,50 +144,33 @@ def _verdict(value: object) -> str:
     return "no"
 
 
-def _says_nothing(support: dict) -> bool:
-    """True for a bare-type row where every engine answered `maybe`.
-
-    `maybe` is the correct answer to a type with no codecs parameter -- the
-    browser cannot know without codec information -- so unanimous `maybe` reduces
-    to "we all recognise this container name" and takes a full row to say it. Six
-    rows on the page were this: MP4 video and audio, WebM video and audio, Ogg
-    audio, WAV.
-
-    Deliberately narrower than unanimous-anything. Three identical `no`s mean no
-    engine supports the container, which is worth a row, and the surviving bare
-    rows carry real findings -- HLS has no codec combinations at all, so its bare
-    rows are the only place its support is visible.
-    """
-    return set(support.values()) == {"partial"}
+def _plays(value: object) -> bool:
+    return str(value or "") in _PLAYS
 
 
-KIND_LABELS = {"container": "Container itself", "video": "Video codecs",
-               "audio": "Audio codecs"}
+KIND_LABELS = {"video": "Video codecs", "audio": "Audio codecs"}
 
 # Worst first, the rule the roadmap cards and sub-cards also follow.
 _VERDICT_RANK = {GAP: 0, OVERCLAIM: 1, AHEAD: 2, PARITY: 3, NONE: 4}
 
 
 def group_by_kind(rows: list) -> list:
-    """Split rows into container / video / audio groups, worst first.
+    """Split rows into video and audio groups, worst first.
 
-    Two things were wrong with one flat list. Video and audio are different
-    questions, and worst-first sorting interleaved them -- a container's table ran
-    AC-3, ALAC, E-AC-3, xHE-AAC, MP3, Opus, AV1, AAC-LC, so finding the video
-    codecs meant filtering audio out by eye.
+    Video and audio are different questions, and worst-first sorting interleaved
+    them -- a container's table ran AC-3, ALAC, E-AC-3, xHE-AAC, MP3, Opus, AV1,
+    AAC-LC, so finding the video codecs meant filtering audio out by eye.
 
     Rows **no engine supports** are left out. They are not a gap, not an
-    overclaim, and not a win, so there is nothing to act on, and the probe
-    produces many of them because it asks every codec a container could
-    plausibly carry. They stay in `counts`, and the caller is given
-    `hidden_none` so it can say how many it dropped -- a silently shortened
-    table reads as full coverage.
+    overclaim and not a win, so there is nothing to act on, and the probe produces
+    many of them because it asks every codec a container could plausibly carry.
+    They remain in `counts`.
 
     Groups are ordered by their own worst verdict, so the group holding a gap
     leads, and an emptied group is omitted rather than left as a bare heading.
     """
     groups = []
-    for kind in ("container", "video", "audio"):
+    for kind in ("video", "audio"):
         shown = [r for r in rows
                  if r["kind"] == kind and r["verdict"] != NONE]
         if not shown:
@@ -206,14 +181,8 @@ def group_by_kind(rows: list) -> list:
             "rows": shown,
             "worst": min(_VERDICT_RANK[r["verdict"]] for r in shown),
         })
-    # Container-level rows stay on top -- they explain the codec rows beneath --
-    # and the rest go worst first.
-    groups.sort(key=lambda g: (0 if g["kind"] == "container" else 1, g["worst"]))
+    groups.sort(key=lambda g: g["worst"])
     return groups
-
-
-def _plays(value: object) -> bool:
-    return str(value or "") in _PLAYS
 
 
 
@@ -430,32 +399,7 @@ def build_container_view(results: list) -> dict:
 
         surfaces = {}
         for surf in SURFACES:
-            # The bare container type is a first-class row, not just a header.
-            # Without it, HLS -- which has no codec combinations and is supported
-            # by Chrome and WebKit but not us -- came out as "no engine support",
-            # and FLAC and WAV looked unsupported because only nonsense codec
-            # combinations were being counted.
             rows = []
-            for mt in CONTAINER_MIMES.get(name, []):
-                sup = {}
-                for r in usable:
-                    entry = (r.get("bare") or {}).get(mt)
-                    if entry is not None:
-                        sup[r["target"]] = answer(entry, surf, bare=True)
-                if sup and not _says_nothing(sup):
-                    rows.append({
-                        # The MIME type IS the row's identity here. It used to
-                        # be labelled "container only" with the type in the
-                        # second column, which read as "Container itself:
-                        # container only, container only" once the rows were
-                        # grouped under a heading that already says it.
-                        "kind": "container", "codec": mt,
-                        "codec_string": "", "support": sup,
-                        "eff": {}, "smooth": {},
-                        "verdict": classify(
-                            sup.get(us, "unknown"),
-                            [v for t, v in sup.items() if t != us]),
-                    })
             keys = []
             for r in usable:
                 for c in r["combos"]:
@@ -466,25 +410,15 @@ def build_container_view(results: list) -> dict:
                         keys.append(k)
             for kind, codec in keys:
                 support, codec_string = {}, ""
-                eff, smooth = {}, {}
                 for r in usable:
                     for c in r["combos"]:
                         if (c.get("container") == name and c.get("kind") == kind
                                 and c.get("codec") == codec):
                             support[r["target"]] = answer(c, surf)
-                            # Acceleration and smoothness come from the
-                            # MediaCapabilities field specifically -- they are
-                            # only reported there, so they read the raw answer
-                            # rather than the possibly-fallen-back verdict.
-                            raw = c.get(SURFACE_FIELDS[surf]["codec"])
-                            eff[r["target"]] = power_efficiency(raw)
-                            smooth[r["target"]] = smoothness(raw)
                             codec_string = c.get("codecString", "")
                 rows.append({
                     "kind": kind, "codec": codec, "codec_string": codec_string,
                     "support": support,
-                    "eff": eff,
-                    "smooth": smooth,
                     "verdict": classify(
                         support.get(us, "unknown"),
                         [v for t, v in support.items() if t != us]),
@@ -585,6 +519,11 @@ def build_payload(results: list) -> dict | None:
         # Container-first grouping is what the page renders; the flat
         # disagreement lists above are kept for the counts.
         "by_container": build_container_view(results),
-        "conformance": build_conformance(results),
+        # No "conformance" key: the section was removed from the dashboard, and
+        # embedding data nothing renders is how it gets rendered again by
+        # accident. `build_conformance` still runs -- build_matrix.py reports it
+        # -- because it found a real Firefox bug: FlacDecoder::IsSupportedType
+        # never reads the codecs parameter, so we alone accept three type strings
+        # that cannot exist.
         "apis": build_api_table(results),
     }

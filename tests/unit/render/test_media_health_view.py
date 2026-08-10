@@ -773,12 +773,15 @@ class TestMeasuredCaps:
         assert "we alone accept" in html
         assert "we accept it and no other engine does" in html
 
-    def test_conformance_check_is_separate_from_support(self):
-        """It detects the opposite fault: an engine ignoring the codecs parameter
-        and answering yes to a combination that cannot exist."""
+    def test_the_conformance_section_is_not_rendered(self):
+        """Removed from the dashboard on request. The check itself still runs in
+        `tools/media-caps` and on the probe page, so the finding it produced --
+        Firefox alone accepting three impossible type strings, because
+        FlacDecoder::IsSupportedType never reads the codecs parameter -- is not
+        lost, just no longer shown here."""
         html = _joined(self._render_caps())
-        assert "combinations that cannot exist" in html
-        assert "ignoring the codecs parameter" in html
+        assert "combinations that cannot exist" not in html
+        assert "Type that cannot exist" not in html
 
     def test_every_badge_and_chip_is_explained_before_the_cards(self):
         html = _joined(self._render_caps())
@@ -786,8 +789,7 @@ class TestMeasuredCaps:
         # "container only" was replaced by the group heading that says the same
         # thing once, so the legend explains the groups instead of a row label.
         for term in ("behind", "we alone accept", "verified parity",
-                     "no engine support", "Video codecs", "Audio codecs",
-                     "Container itself", "not listed"):
+                     "no engine support", "Video codecs", "Audio codecs"):
             assert term in html, term
         assert "gaps / supported" in html
 
@@ -796,7 +798,7 @@ class TestMeasuredCaps:
         html = _joined(self._render_caps())
         assert "Media Source Extensions" in html
         assert "MediaRecorder.isTypeSupported" in html
-        assert "canPlayType" in html
+        assert "decodingInfo" in html
 
     def test_rows_nobody_supports_are_not_listed_at_all(self):
         """Replaces an earlier rule that kept them in a collapsed table.
@@ -810,7 +812,9 @@ class TestMeasuredCaps:
         assert 'class="pm-none"' not in html, (
             "the collapsed no-engine-support table is back"
         )
-        assert "supported by no engine and not listed" in html
+        # No count line either: it was removed deliberately, so nothing on the
+        # page should reintroduce a running tally of skipped rows.
+        assert "not listed" not in html
 
     def test_video_and_audio_are_rendered_as_separate_groups(self):
         html = _joined(self._render_caps())
@@ -868,48 +872,60 @@ class TestSupportAnswersAreWords:
             assert f"<b>{word}</b>" in html, word
 
 
-class TestPowerEfficiency:
-    """MediaCapabilities reports `powerEfficient`, which canPlayType could not.
-    It is tempting to render it as "hardware accelerated" and wrong to: measured
-    across engines, Firefox and Chrome both report it for MP3, FLAC, Vorbis and
-    AAC, and neither ships a hardware decoder for any of them. These tests pin
-    the honest framing, because the overstated one is the natural one to write."""
+from tests.unit.roadmap.test_mediacaps import combo, result  # noqa: E402
+
+
+class TestPerDeviceFactsAreNotPublished:
+    """`powerEfficient` and `smooth` were rendered, then removed on purpose.
+
+    Two reasons, either sufficient. It is not a hardware-decode flag -- Firefox
+    and Chrome both report it for MP3, FLAC, Vorbis and AAC, and neither ships a
+    hardware decoder for any of them. And it is **per device**: the answer comes
+    from whatever machine ran the probe, so publishing it in a general
+    cross-browser table invites reading "Firefox has hardware AV1 decode" off a
+    fact about one laptop's GPU.
+
+    The probe page still reports it, which is the right place for it -- a reader
+    running it locally gets an answer about their own hardware. The dashboard is
+    not that, so `hw-decode-matrix` still needs a real, per-configuration answer.
+    """
 
     def _html(self):
         from reviewstats.render import render_html
-        return render_html(_MINIMAL_DATA, roadmap_data=_ROADMAP)
+        return _joined(render_html(_MINIMAL_DATA, roadmap_data=_ROADMAP))
 
-    def test_an_efficient_cell_is_marked(self):
-        assert "r.eff" in self._html(), (
-            "cells ignore the eff field — powerEfficient is measured per "
-            "browser and never shown"
-        )
+    def test_no_efficiency_chip_is_rendered(self):
+        html = self._html()
+        assert 'class="pm-hw"' not in html
+        assert ">efficient<" not in html
 
-    def test_the_marker_is_a_word_not_a_glyph(self):
-        """A previous glyph set (filled/half/empty circles) had to be explained
-        before it could be read. Words do not."""
-        # Search from the class *use*, not the CSS rule that also names it.
-        html = _joined(self._html())
-        i = html.find('class="pm-hw"')
-        assert i != -1, "the hw marker class is never used, only styled"
-        assert ">efficient<" in html[i:i + 600]
+    def test_the_legend_does_not_mention_powerefficient(self):
+        """Comment lines are stripped first: the source still explains *why* the
+        flag is not shown, which is the opposite of showing it."""
+        html = "\n".join(ln for ln in self._html().splitlines()
+                         if not ln.strip().startswith("//"))
+        assert "powerEfficient" not in html
 
-    def test_the_legend_names_the_flag_and_does_not_call_it_hardware(self):
-        html = _joined(self._html())
-        assert "powerEfficient" in html
-        assert "not a hardware-decode flag" in html, (
-            "the legend must say what this flag is not — reading it as hardware "
-            "support is the mistake it invites"
-        )
-
-    def test_the_page_never_claims_hardware_acceleration_from_this_flag(self):
-        """The guard against relabelling. If someone reintroduces the phrase, the
-        page is overstating a powerEfficient=true on MP3 as a hardware decoder."""
-        html = _joined(self._html())
-        for phrase in ("hardware accelerated", "hardware-accelerated"):
+    def test_the_page_makes_no_hardware_acceleration_claim(self):
+        html = self._html()
+        for phrase in ("hardware accelerated", "hardware-accelerated",
+                       "hardware decode"):
             assert phrase not in html, (
-                f'"{phrase}" appears — powerEfficient does not mean this'
+                f'"{phrase}" appears — no measurement here supports it, and it '
+                "would be a per-device claim in a general table"
             )
 
-    def test_the_audio_caveat_is_stated(self):
-        assert "noise for audio" in _joined(self._html())
+    def test_the_view_data_carries_no_per_device_fields(self):
+        """Removed from the payload too, not just hidden in the template — a
+        field in the JSON is a field someone renders later."""
+        from reviewstats.mediacaps import build_container_view
+        ff = result("firefox", "FF",
+                    [combo("MP4", "AV1", kind="video", canPlayType="probably",
+                           decodeFile="yes+smooth+hw")])
+        v = build_container_view([ff])
+        rows = v["containers"][0]["surfaces"]["playback"]["rows"]
+        assert rows, "fixture produced no rows"
+        for r in rows:
+            assert "eff" not in r and "smooth" not in r
+
+

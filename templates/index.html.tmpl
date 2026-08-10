@@ -913,13 +913,10 @@
   tr.pm-v-gap td:first-child { box-shadow: inset 3px 0 0 var(--pm-behind) }
   tr.pm-v-overclaim td:first-child { box-shadow: inset 3px 0 0 var(--rate-unknown) }
   tr.pm-v-ahead td:first-child { box-shadow: inset 3px 0 0 var(--pm-ahead) }
-  .pm-v-key {
-    font-family: var(--mono); font-size: 8.5px; font-weight: 700;
-    padding: 1px 4px; border-radius: 2px; background: var(--paper-warm);
-  }
-  .pm-v-key.pm-v-gap { color: var(--pm-behind) }
-  .pm-v-key.pm-v-overclaim { color: var(--rate-unknown) }
-  .pm-v-key.pm-v-ahead { color: var(--pm-ahead) }
+  /* Present, so every row is marked and none looks unstyled; grey, so colour
+     still carries the news. Parity is the most common row on the page. */
+  tr.pm-v-parity td:first-child { box-shadow: inset 3px 0 0 var(--rule) }
+
   details.pm-none > summary {
     font-family: var(--mono); font-size: 9.5px; color: var(--ink-soft);
     cursor: pointer; padding: 6px 0; list-style: none;
@@ -945,12 +942,7 @@
     margin: 10px 0 2px; font-size: 10px; font-family: var(--mono);
     text-transform: uppercase; letter-spacing: .06em; color: var(--ink-soft);
   }
-  .pm-hw {
-    font-size: 8.5px; font-weight: 600; letter-spacing: .04em;
-    text-transform: uppercase; color: var(--ink-soft);
-    border: 1px solid var(--rule); border-radius: 3px;
-    padding: 0 2px; margin-left: 3px; vertical-align: 1px;
-  }
+
   td.pm-w.maybe { color: var(--rate-mixed) }
   td.pm-w.no { color: var(--muted) }
   td.pm-w.unk { color: var(--muted); font-style: italic }
@@ -2541,7 +2533,7 @@ function renderMetrics() {
       const st = c.surfaces[surf];
       if (!st || !st.rows.length) return '';
       // Grouped video / audio, worst-first, with the rows no engine supports
-      // already left out by the builder. They are counted, not listed: nobody
+      // already left out by the builder. Not shown at all: nobody
       // supporting a combination is not a finding about Firefox, and the probe
       // asks every codec a container could plausibly carry, so there are many.
       const groups = st.groups || [];
@@ -2554,23 +2546,11 @@ function renderMetrics() {
         + esc(r.codec_string) + '</td>'
         + cv.browsers.map(b => {
             const [g, cls, tip] = CELL[r.support[b.target]] || CELL.unknown;
-            // MediaCapabilities reports `powerEfficient`, which canPlayType had
-            // no answer for. It is NOT a hardware-decode flag: both Firefox and
-            // Chrome report it true for MP3, FLAC and AAC, and neither has a
-            // hardware MP3 decoder. So it is named for the flag it is rather
-            // than relabelled as hardware support. Word, not glyph — a previous
-            // glyph set had to be explained before it could be read.
-            const eff = (r.eff || {})[b.target];
-            const chip = eff === 'efficient'
-              ? ' <span class="pm-hw" title="' + escA(b.label
-                  + ': reported powerEfficient. For video this suggests a '
-                  + 'hardware path; for audio browsers report it either way, '
-                  + 'so it means little') + '">efficient</span>'
-              : '';
+            // No powerEfficient / smooth chip here on purpose: both are
+            // per-device, so they describe the machine that ran the probe rather
+            // than the browser, which is not what a general table can say.
             return '<td class="' + cls + '" title="'
-              + escA(b.label + ': ' + tip
-                     + (eff === 'costly' ? ' — not reported powerEfficient'
-                        : '')) + '">' + g + chip + '</td>';
+              + escA(b.label + ': ' + tip) + '">' + g + '</td>';
           }).join('')
         + '</tr>';
       return '<h4 style="margin:12px 0 3px;font-size:11.5px;'
@@ -2586,11 +2566,7 @@ function renderMetrics() {
                 + '</thead><tbody>' + gr.rows.map(body).join('')
                 + '</tbody></table></div>').join('')
             : '<p class="footer-note">No engine supports any codec here.</p>')
-        + (st.hidden_none
-            ? '<p class="footer-note">' + st.hidden_none + ' further '
-              + (st.hidden_none === 1 ? 'combination is' : 'combinations are')
-              + ' supported by no engine and not listed.</p>'
-            : '');
+        ;
     }
 
     const strip = cv.codec_gaps && cv.codec_gaps.playback || [];
@@ -2632,7 +2608,7 @@ function renderMetrics() {
       + 'something to implement.</li>'
       + '<li><span class="pm-badge pm-b-over">we alone accept</span> we say yes '
       + 'where no other engine does. Sometimes we are simply stricter or looser '
-      + 'about the codecs parameter; see the conformance check below for the '
+      + 'about the codecs parameter; the '
       + 'cases that are genuinely wrong.</li>'
       + '<li><span class="pm-badge pm-b-ok">verified parity</span> every engine '
       + 'agrees and at least one supports it \u2014 tested and fine, not '
@@ -2640,14 +2616,12 @@ function renderMetrics() {
       + '<li><span class="pm-badge pm-b-none">no engine support</span> nothing '
       + 'supports it, so there is no gap to close.</li>'
       + '<li>Rows are grouped into <b>Video codecs</b> and <b>Audio codecs</b>, '
-      + 'worst first, and a <b>Container itself</b> group holds the bare MIME '
-      + 'type asked with no codecs parameter. For HLS and single-codec '
-      + 'containers like FLAC or WAV that is how sites actually ask, so it is '
-      + 'the row that matters.</li>'
-      + '<li>Combinations <b>no engine supports</b> are counted but not listed: '
-      + 'they are not a gap, not an overclaim and not a win. The probe asks '
-      + 'every codec a container could plausibly carry, so there are a fair '
-      + 'few — VP8 in MP4, for one, which all three engines refuse.</li>'
+      + 'worst first, and the coloured bar on the left of each row is its '
+      + 'verdict — grey means every engine agrees.</li>'
+      + '<li>Combinations <b>no engine supports</b> are left out — they are not '
+      + 'a gap, not an overclaim and not a win. The probe asks every codec a '
+      + 'container could plausibly carry, so there are a fair few; VP8 in MP4 is '
+      + 'one, refused by all three engines.</li>'
       + '</ul>'
       + (strip.length
           ? '<h3 style="font-size:12.5px;margin:14px 0 4px">Codecs we lack, '
@@ -2677,47 +2651,14 @@ function renderMetrics() {
                 : '<p class="footer-note">No codec combinations were probed for '
                   + 'this container \u2014 only whether the container itself is '
                   + 'accepted.</p>')
-            + '<p class="pm-legend">'
-            + Object.entries(VERDICT).map(([k, v]) =>
-                '<span class="pm-v-key pm-v-' + k + '">' + k + '</span> ' + v)
-              .join(' &nbsp; ')
-            + '</p></div></details>';
+            + '</div></details>';
         }).join('')
       + '<p class="pm-legend"><b>yes</b> supported &nbsp; <b>maybe</b> the '
       + 'browser may be able to play it \u2014 the normal answer for a bare type '
       + 'with no codecs parameter, not partial support &nbsp; <b>no</b> not '
       + 'supported &nbsp; <b>?</b> the probe could not answer '
-      + '&nbsp; <span class="pm-hw">efficient</span> the browser reported '
-      + '<span class="rm-mono">powerEfficient</span> for this configuration. '
-      + 'This is not a hardware-decode flag — Firefox and Chrome both report '
-      + 'it for MP3 and FLAC, which neither decodes in hardware. Read it as a '
-      + 'hint for video and as noise for audio.</p>'
-      + (function () {
-          const cf = caps.conformance;
-          if (!cf || !cf.rows.length) return '';
-          const head = '<tr><th>Type that cannot exist</th>'
-            + cf.browsers.map(b => '<th style="text-align:center">'
-                + esc(b.target.split('-')[0]) + '</th>').join('')
-            + '<th>Why it is invalid</th></tr>';
-          const body = cf.rows.map(r => '<tr>'
-            + '<td class="rm-mono" style="font-size:10px">' + esc(r.type) + '</td>'
-            + cf.browsers.map(b => {
-                const v = r.support[b.target];
-                const wrong = v === 'yes' || v === 'partial';
-                return '<td class="pm-cell ' + (wrong ? '' : 'yes') + '" title="'
-                  + escA(wrong ? 'wrongly accepted' : 'correctly rejected') + '">'
-                  + (wrong ? '\u2717' : '\u2713') + '</td>';
-              }).join('')
-            + '<td style="color:var(--ink-soft)">' + esc(r.why) + '</td></tr>').join('');
-          return '<h3 style="font-size:12.5px;margin:18px 0 4px">Conformance: '
-            + 'combinations that cannot exist</h3>'
-            + '<p class="footer-note">Every engine should answer no to all of '
-            + 'these. An engine that says yes is ignoring the codecs parameter, '
-            + 'so a site feature-detecting gets a false positive. '
-            + '\u2713 correctly rejected, \u2717 wrongly accepted.</p>'
-            + '<div class="table-wrap"><table><thead>' + head + '</thead><tbody>'
-            + body + '</tbody></table></div>';
-        })();
+      + '</p>'
+      ;
   }
 
   // --- coverage ---
