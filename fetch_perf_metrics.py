@@ -39,6 +39,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from reviewstats.perfmetrics import (
+    is_safe_to_write,
     pick_signature,
     select_recent_window,
     summarize,
@@ -275,6 +276,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--team", default="playback",
                     help="Output team directory (default playback).")
     ap.add_argument("--out", default=str(Path(__file__).resolve().parent))
+    ap.add_argument("--allow-shrink", action="store_true",
+                    help="Write even if the metric count collapsed (see "
+                         "reviewstats.perfmetrics.is_safe_to_write).")
     args = ap.parse_args(argv)
 
     try:
@@ -288,6 +292,22 @@ def main(argv: list[str] | None = None) -> int:
 
     path = Path(args.out) / args.team / "data_metrics.json"
     path.parent.mkdir(parents=True, exist_ok=True)
+
+    # A successful response with nothing usable in it must not blank the subview.
+    existing = 0
+    if path.exists():
+        try:
+            existing = len(
+                (json.loads(path.read_text(encoding="utf-8")) or {})
+                .get("metrics") or [])
+        except (OSError, json.JSONDecodeError):
+            existing = 0
+    ok, why = is_safe_to_write(len(data.get("metrics") or []), existing)
+    if not ok and not args.allow_shrink:
+        print(f"{why}. Pass --allow-shrink if this is intended.",
+              file=sys.stderr)
+        return 1
+
     path.write_text(json.dumps(data, indent=2), encoding="utf-8")
     n = len(data["metrics"])
     compared = sum(1 for m in data["metrics"] if len(m["series"]) > 1)

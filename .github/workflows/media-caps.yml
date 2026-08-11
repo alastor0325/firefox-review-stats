@@ -13,14 +13,20 @@
 #     exist. The weekly refresh runs on ubuntu with Chromium only, which is fine
 #     for its own scraping but wrong for this.
 #
-# Monthly rather than weekly: browser codec support moves in release cycles, and
-# macOS runner minutes cost ten times Linux.
+# Quarterly rather than weekly, and deliberately so. Browser codec support moves
+# in release cycles measured in months, the job needs a macOS runner with three
+# browser installs, and macOS runner minutes cost ten times Linux. The weekly
+# refresh handles what actually changes weekly -- review data and the Perfherder
+# metrics -- and needs no browsers for either.
+#
+# Run it by hand (workflow_dispatch) after any release that is expected to move
+# codec support; waiting for the quarter is not the only option.
 name: Media capability probe
 
 on:
   schedule:
-    # 07:00 UTC on the 1st of each month.
-    - cron: '0 7 1 * *'
+    # 07:00 UTC on the 1st of January, April, July and October.
+    - cron: '0 7 1 1,4,7,10 *'
   workflow_dispatch:
     inputs:
       commit:

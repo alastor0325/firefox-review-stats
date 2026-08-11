@@ -433,6 +433,37 @@ tests/integration/
 
 The workflow runs `pytest tests/` so both layers gate every weekly refresh.
 
+## Refresh cadences — what runs when, and why
+
+Two schedules, because the two data sources move at different speeds and need
+different machines:
+
+| Job | Cadence | Runner | What it refreshes |
+|---|---|---|---|
+| `refresh.yml` | weekly (Mon 09:00 UTC) | `ubuntu-latest` | review data, and the Perfherder **metrics** |
+| `media-caps.yml` | quarterly + manual | `macos-latest` | the measured **codec/container matrix** |
+
+The weekly job needs no browsers for the metrics: Perfherder is plain HTTP. It
+installs Playwright's Chromium only for the Phabricator scraping it already did.
+
+The probe job is separate for reasons that are not preferences — it needs **real
+Chrome** (Chromium ships without H.264/AAC/HEVC) and its answers are
+platform-specific, so it must run on macOS to match the committed results. Codec
+support moves in browser release cycles, so quarterly is the cadence; use
+`workflow_dispatch` after a release you expect to move it.
+
+`fetch_perf_metrics.py` was in **no** workflow until this was wired up, so the
+metrics only moved when someone ran it locally — and the page showed its date,
+which reads as provenance rather than as a warning. Two safeguards now:
+
+- The weekly step is `continue-on-error`. Perfherder being down costs the Metrics
+  subview one week of freshness, not the whole build; the fetcher leaves the
+  previous file in place and exits nonzero.
+- A *successful* fetch that returns nothing, or less than half the previous metric
+  count, is **refused** (`is_safe_to_write`). That path was unguarded: a suite
+  rename on the Perfherder side would have written an empty file over a good one
+  and silently emptied the subview.
+
 ## CI / weekly refresh
 
 `.github/workflows/refresh.yml` fires on Monday 09:00 UTC and on manual `workflow_dispatch`. Each run:

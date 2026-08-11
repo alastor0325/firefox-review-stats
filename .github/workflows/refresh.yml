@@ -79,6 +79,20 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # Perfherder over HTTP -- no browser needed, so this belongs in the weekly
+      # job. The codec/container probe does NOT: it needs three real browsers on
+      # macOS and its answers move in browser release cycles, so it lives in
+      # media-caps.yml on a much longer cadence.
+      #
+      # continue-on-error because the report is mostly review data: Perfherder
+      # being slow or down should cost the Metrics subview one week of freshness,
+      # not the whole build. The fetcher leaves the previous file in place and
+      # exits nonzero, and refuses to overwrite good data with an empty or
+      # collapsed result.
+      - name: Fetch media performance metrics (Perfherder)
+        continue-on-error: true
+        run: python fetch_perf_metrics.py --days 30
+
       - name: Generate landing report (GitHub commits)
         # Recent Changes overviews are generated via the GitHub Copilot CLI,
         # which authenticates with the workflow's own token — no third-party

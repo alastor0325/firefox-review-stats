@@ -264,3 +264,37 @@ def build_metrics_view(raw: dict) -> dict:
             "firefox_only": len(rendered) - compared,
         },
     }
+
+
+# A refresh that loses most of the metrics is a broken query, not news. Perfherder
+# renaming a suite is enough to cause it, and the result would be a blank Metrics
+# subview with a fresh date on it.
+_COLLAPSE_RATIO = 0.5
+
+
+def is_safe_to_write(new_count: int, existing_count: int) -> tuple[bool, str]:
+    """Whether a freshly fetched metric set should replace what is on disk.
+
+    The fetcher already handles Perfherder being unreachable -- leave the file,
+    exit nonzero. This covers the case it did not: a *successful* response with
+    nothing usable in it, which took the success path and wrote an empty file over
+    a good one. Suite renames on the Perfherder side do that, and the failure is
+    invisible: the page renders, the subview is just empty.
+
+    A first run legitimately has nothing to compare against, so an empty write is
+    allowed only when there was nothing there before.
+    """
+    if existing_count <= 0:
+        return True, ""
+    if new_count <= 0:
+        return False, (
+            f"refusing to overwrite {existing_count} metrics with an empty "
+            "result -- a successful fetch that found nothing usually means a "
+            "suite was renamed, not that the data went away"
+        )
+    if new_count < existing_count * _COLLAPSE_RATIO:
+        return False, (
+            f"refusing to overwrite {existing_count} metrics with {new_count} "
+            "-- that many fewer looks like a broken query rather than a refresh"
+        )
+    return True, ""

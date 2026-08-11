@@ -434,3 +434,97 @@ class TestGraphUrl:
         r["metrics"][0]["series"]["firefox"]["signature_id"] = 999
         v = build_metrics_view(r)
         assert "999" in v["metrics"][0]["graph_url"]
+
+
+class TestTheWeeklyRefreshKeepsMetricsHonest:
+    """The metrics were refreshed by hand and by nothing else.
+
+    `fetch_perf_metrics.py` appeared in no workflow, so `data_metrics.json` only
+    moved when someone ran it locally. The page showed its date, which reads as
+    provenance rather than as a warning, so a fetcher that quietly stopped running
+    would look like a fresh page with old numbers.
+    """
+
+    def test_the_weekly_workflow_fetches_metrics(self):
+        import pathlib
+        wf = pathlib.Path(".github/workflows/refresh.yml").read_text(
+            encoding="utf-8")
+        assert "fetch_perf_metrics.py" in wf, (
+            "nothing refreshes the Metrics subview on a schedule"
+        )
+
+    def test_metrics_are_fetched_before_the_page_is_generated(self):
+        """analyze_git.py reads data_metrics.json off disk, so fetching after it
+        would publish the previous week's numbers.
+
+        Compares the `run:` lines, not any mention: the file names also appear in
+        comments earlier in the workflow, and matching those passed while the real
+        order was wrong.
+        """
+        import pathlib
+        lines = pathlib.Path(".github/workflows/refresh.yml").read_text(
+            encoding="utf-8").splitlines()
+        def step(cmd):
+            for i, ln in enumerate(lines):
+                if ln.strip().startswith("run:") and cmd in ln:
+                    return i
+            raise AssertionError(f"no step runs {cmd}")
+        assert step("fetch_perf_metrics.py") < step("analyze_git.py")
+
+    def test_a_perfherder_outage_does_not_fail_the_weekly_build(self):
+        """The report is mostly review data; losing one panel must not lose all of
+        it. The fetcher already leaves the old file alone and exits 1, so the step
+        has to tolerate that exit."""
+        import pathlib
+        wf = pathlib.Path(".github/workflows/refresh.yml").read_text(
+            encoding="utf-8")
+        i = wf.index("fetch_perf_metrics.py")
+        window = wf[max(0, i - 400):i + 200]
+        assert "continue-on-error: true" in window, window
+
+    def test_the_probe_workflow_runs_rarely_not_weekly(self):
+        """Codec support moves in release cycles, and the job needs a macOS runner
+        plus three browser installs. Weekly would be waste."""
+        import pathlib
+        wf = pathlib.Path(".github/workflows/media-caps.yml").read_text(
+            encoding="utf-8")
+        cron = [l for l in wf.splitlines() if "cron:" in l][0]
+        # Month field must not be '*': that would be monthly or more often.
+        fields = cron.split("'")[1].split()
+        assert fields[3] != "*", f"runs every month or oftener: {cron.strip()}"
+
+
+class TestEmptyResultsDoNotOverwriteGoodData:
+    """A successful fetch that finds nothing must not blank the subview.
+
+    The network failure path was handled -- leave the file, exit 1 -- but a
+    response with zero usable signatures took the success path and wrote an empty
+    metrics file over a good one. Perfherder renaming a suite is enough to cause
+    that, and it is how the Metrics subview would silently empty out.
+    """
+
+    def test_an_empty_fetch_is_refused_when_data_already_exists(self):
+        from reviewstats.perfmetrics import is_safe_to_write
+        ok, why = is_safe_to_write(new_count=0, existing_count=10)
+        assert not ok and "empty" in why.lower()
+
+    def test_an_empty_fetch_is_allowed_on_a_first_run(self):
+        from reviewstats.perfmetrics import is_safe_to_write
+        ok, _ = is_safe_to_write(new_count=0, existing_count=0)
+        assert ok
+
+    def test_a_normal_fetch_is_allowed(self):
+        from reviewstats.perfmetrics import is_safe_to_write
+        ok, _ = is_safe_to_write(new_count=10, existing_count=10)
+        assert ok
+
+    def test_a_large_drop_is_refused_as_well(self):
+        """Ten metrics becoming one is not a refresh, it is a broken query."""
+        from reviewstats.perfmetrics import is_safe_to_write
+        ok, why = is_safe_to_write(new_count=1, existing_count=10)
+        assert not ok and "fewer" in why.lower()
+
+    def test_a_modest_drop_is_allowed(self):
+        from reviewstats.perfmetrics import is_safe_to_write
+        ok, _ = is_safe_to_write(new_count=9, existing_count=10)
+        assert ok
