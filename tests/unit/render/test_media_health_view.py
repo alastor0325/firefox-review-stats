@@ -1267,3 +1267,32 @@ class TestTheRatingIsShownWithItsReasoning:
         """Explicitly our own judgement: Bugzilla severity is one reporter's triage
         of one bug, and most of these items have no bug at all."""
         assert "deliberately not Bugzilla" in self._html()
+
+
+class TestThePublicBuildHasNoAudienceBanner:
+    """The banner element is hidden in the public build, not merely emptied.
+
+    Setting innerHTML to '' left the styled container rendering: a beige bar with a
+    red left rule and no content in it. Removing text is not removing a banner.
+    """
+
+    def _html(self):
+        return _joined(render_html(_MINIMAL_DATA, roadmap_data=_ROADMAP))
+
+    def test_the_element_is_hidden_not_just_emptied(self):
+        html = self._html()
+        assert "audienceEl.hidden = true" in html, (
+            "the public build empties the banner without hiding it, leaving a "
+            "styled empty bar"
+        )
+
+    def test_a_display_rule_backs_the_hidden_attribute(self):
+        """A class with `background` and `padding` overrides `hidden` unless a
+        display rule says otherwise."""
+        assert ".rm-audience[hidden] { display: none }" in self._html()
+
+    def test_the_internal_build_still_warns(self):
+        """There the banner is a warning, not a disclosure: do not publish this."""
+        html = self._html()
+        assert "This build is not for the public site" in html
+        assert "audienceEl.hidden = false" in html
