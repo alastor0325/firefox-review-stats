@@ -28,6 +28,11 @@ import pytest
 # Reuse the fixtures the render tests already maintain.
 from tests.unit.render.test_media_health_view import _MINIMAL_DATA, _ROADMAP
 
+# Real Chrome when it is here, Playwright's Chromium otherwise. Unlike the codec
+# probe -- where Chromium is wrong because it ships without H.264/AAC/HEVC -- this
+# test only asks whether the page's JavaScript runs, and any Chromium answers that
+# equally well. Pinning the macOS Chrome path meant this file SKIPPED on the
+# ubuntu weekly runner, so the one test that catches a blank page never ran in CI.
 CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 
 # Containers the page's JS is responsible for filling. If the script dies early,
@@ -129,13 +134,18 @@ def page_state(rendered):
     pytest.importorskip("playwright", reason="playwright not installed")
     from playwright.sync_api import sync_playwright
 
-    if not pathlib.Path(CHROME).exists():
-        pytest.skip("no browser available to execute the page")
+
 
     errors: list[str] = []
     failed_urls: list[str] = []
     with sync_playwright() as pw:
-        browser = pw.chromium.launch(headless=True, executable_path=CHROME)
+        launch = {"headless": True}
+        if pathlib.Path(CHROME).exists():
+            launch["executable_path"] = CHROME
+        try:
+            browser = pw.chromium.launch(**launch)
+        except Exception as exc:  # no browser downloaded at all
+            pytest.skip(f"no Chromium available to execute the page: {exc}")
         try:
             page = browser.new_page()
             # Resource-load failures are reported separately below, with the URL
