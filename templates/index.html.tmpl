@@ -452,6 +452,24 @@
   .rm-S2 { color: var(--red-deep); }
   .rm-S3 { color: var(--ink-soft); }
   .rm-S4 { color: var(--muted); }
+  .rm-churn {
+    font-family: var(--mono); font-size: 8.5px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .04em; padding: 1px 5px;
+    border-radius: 3px; white-space: nowrap; cursor: help;
+  }
+  /* Only the two that cost us a user get colour; the rest stay context grey, so
+     the column reads as a shortlist rather than a rainbow. */
+  .rm-c-leaves { background: var(--rate-weak); color: #fff }
+  .rm-c-2nd, .rm-c-second-browser { background: var(--rate-mixed); color: var(--ink) }
+  .rm-c-annoys { background: var(--pill); color: var(--ink-soft) }
+  .rm-c-invisible { background: transparent; color: var(--muted) }
+  .rm-val { font-family: var(--mono); font-size: 11px; cursor: help }
+  .rm-qw {
+    display: inline-block; margin-right: 6px; padding: 0 4px;
+    font-family: var(--mono); font-size: 8.5px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .04em;
+    background: var(--rate-good); color: #fff; border-radius: 3px; cursor: help;
+  }
   /* Marks a row whose position is not evidence-backed. Quiet: it qualifies the
      order, it is not a severity. */
   .rm-flag {
@@ -1506,11 +1524,12 @@ __GH_CORNER__
     </div>
 
     <h2>Ordered</h2>
-    <p class="footer-note">Most to least important: impact first, cost breaking
-      ties. Rows we cannot yet order on evidence sit at the end, marked — whether
-      we can rank something is a fact about our evidence, not about the work, so it
-      does not decide whether you see it. Click a row for the full consequence,
-      evidence and details.</p>
+    <p class="footer-note">Ordered by whether not doing it costs us the user, then
+      by what the user gets, then cheapest first. <b>Churn</b> and <b>Value</b> are
+      our own judgement, deliberately not Bugzilla's severity — that is one
+      reporter's triage of one bug and most of these have none. Hover either for
+      what the levels mean. <b>quick win</b> marks high value or real churn at a
+      cost we can absorb. Click a row for the reasoning, evidence and details.</p>
     <div class="table-wrap">
       <table id="roadmap-ranked">
         <thead></thead>
@@ -2176,8 +2195,18 @@ function renderRoadmap() {
            + '<p class="rm-exp-p">' + esc(it[field]) + '</p>';
       }
     }
+    // Why this row is rated the way it is. The rating is a judgement, so the
+    // reasoning has to travel with it or the columns are just assertions.
+    if (it.rating_note) {
+      h += '<div class="rm-exp-h">Why this rating</div>'
+         + '<p class="rm-exp-p">' + esc(it.rating_note) + '</p>';
+    }
     h += '<div class="rm-exp-h">Attributes</div><p class="rm-exp-p">'
        + '<span class="rm-tag">' + esc(it.type) + '</span>'
+       // Owner moves here from its own column, where it was blank on 30 of 39
+       // rows. In a tag list a blank simply does not appear.
+       + '<span class="rm-tag">owner ' + ownerCell(it) + '</span>'
+       + (it.fills ? '<span class="rm-tag">' + esc(it.fills) + '</span>' : '')
        + '<span class="rm-tag">cost ' + esc(it.cost) + '</span>'
        + '<span class="rm-tag">conf ' + esc(it.confidence) + '</span>'
        + (it.demand ? '<span class="rm-tag">demand ' + esc(it.demand) + '</span>' : '')
@@ -2192,13 +2221,36 @@ function renderRoadmap() {
   // the expansion colspan cannot drift. Reach is gone: it was a guess shown beside
   // measured numbers, and it was also what forced the three-bucket split, since an
   // unknown reach made an item unrankable.
+  // Owner was empty on 30 of 39 rows and Conf read "high" on 32, so both were
+  // columns of one repeated value taking width from the only thing that varies.
+  // What replaces them is the rating: does not doing this cost us the user, what
+  // does the user get, and how big is it.
   const RM_COLS = [
-    ['Impact', '58px'], ['Item', null],
-    ['Owner', '110px'], ['Cost', '58px'], ['Conf', '60px'],
+    ['Churn', '104px'], ['Value', '62px'], ['Item', null], ['Cost', '58px'],
   ];
   const RM_HEAD = '<tr>' + RM_COLS.map(
     ([label, w]) => '<th' + (w ? ' style="width: ' + w + '"' : '') + '>'
       + label + '</th>').join('') + '</tr>';
+
+  // Four separately arguable dimensions instead of one impact number. The number
+  // was unfalsifiable -- most items had nothing behind it -- and verification found
+  // a quarter of them rating a premise that was stale or wrong.
+  const CHURN_SHORT = {
+    'LEAVES': 'leaves', 'SECOND-BROWSER': '2nd browser',
+    'ANNOYS': 'annoys', 'INVISIBLE': 'invisible', '-': '-',
+  };
+  const CHURN_TIP = {
+    'LEAVES': 'A user meeting this switches browser.',
+    'SECOND-BROWSER': 'The user keeps another browser for this task.',
+    'ANNOYS': 'The user notices and stays.',
+    'INVISIBLE': 'Only developers notice.',
+  };
+  const VALUE_TIP = {
+    4: '4 - content that failed now works',
+    3: '3 - something bad now works well',
+    2: '2 - a capability sites can adopt',
+    1: '1 - refinement',
+  };
 
   function fill(tableId) {
     const table = document.getElementById(tableId);
@@ -2209,21 +2261,31 @@ function renderRoadmap() {
       ROADMAP.items.map(it => {
         const search = [it.title, it.consequence, it.owner || '',
                         (it.tags || []).join(' ')].join(' ').toLowerCase();
+        const churn = it.churn || '-';
         return '<tr class="rm-row'
           + (it.needs_measuring ? ' rm-unmeasured' : '')
           + '" data-search="' + escA(search) + '">'
-          + '<td><span class="rm-imp rm-' + esc(it.impact) + '">'
-          + esc(it.impact) + '</span></td>'
-          + '<td><span class="rm-title">' + esc(it.title) + '</span>'
+          + '<td><span class="rm-churn rm-c-' + esc(churn.toLowerCase())
+          + '" data-tip="' + escA(CHURN_TIP[churn] || '') + '">'
+          + esc(CHURN_SHORT[churn] || churn) + '</span></td>'
+          + '<td><span class="rm-val" data-tip="'
+          + escA(VALUE_TIP[it.user_value] || '') + '">'
+          + esc(it.user_value || '-') + '</span></td>'
+          + '<td>'
+          + (it.quick_win ? '<span class="rm-qw" data-tip="High value or real '
+              + 'churn, at a cost we can absorb - the shortlist worth picking up '
+              + 'now.">quick win</span> ' : '')
+          + '<span class="rm-title">' + esc(it.title) + '</span>'
           + (it.needs_measuring
               ? '<span class="rm-flag" data-tip="Not ordered on evidence yet: '
                 + 'confidence is low, so its position here is a placeholder.">'
                 + 'needs measuring</span>'
               : '')
           + '<span class="rm-cons">' + esc(it.consequence) + '</span></td>'
-          + '<td>' + ownerCell(it) + '</td>'
-          + '<td class="rm-mono">' + esc(it.cost) + '</td>'
-          + '<td class="rm-mono rm-dim">' + esc(it.confidence) + '</td></tr>'
+          // Owner and Conf are gone: empty on 30 of 39 rows and "high" on 32
+          // respectively, so both were columns of one repeated value. Owner is
+          // still shown in the expansion, where a blank costs nothing.
+          + '<td class="rm-mono">' + esc(it.cost) + '</td></tr>'
           + '<tr class="rm-exp rm-hidden"><td colspan="' + RM_COLS.length + '">'
           + expansion(it) + '</td></tr>';
       }).join('');

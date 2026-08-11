@@ -1213,3 +1213,53 @@ class TestProvenanceIsOnThePage:
         html = self._html()
         i = html.index("caps.warnings")
         assert "--rate-weak" in html[max(0, i - 300):i + 300]
+
+
+class TestTheRatingIsShownWithItsReasoning:
+    """Churn and Value replace Owner and Conf, and the reasoning travels with them.
+
+    Measured across the items: Owner was empty on 30 of 39 rows and Conf read
+    "high" on 32, so both were columns of one repeated value taking width from the
+    only fields that vary. And since the rating is a judgement rather than a
+    measurement, a column of levels with no reasoning behind it is just an
+    assertion -- so each row's `rating_note` renders in the expansion.
+    """
+
+    def _html(self):
+        return _joined(render_html(_MINIMAL_DATA, roadmap_data=_ROADMAP))
+
+    def test_columns_are_churn_value_item_cost(self):
+        import re
+        html = render_html(_MINIMAL_DATA, roadmap_data=_ROADMAP)
+        m = re.search(r"const RM_COLS = \[(.*?)\];", html, re.DOTALL)
+        cols = re.findall(r"\['([^']+)'", m.group(1))
+        assert cols == ["Churn", "Value", "Item", "Cost"], cols
+
+    def test_owner_and_conf_are_not_columns_any_more(self):
+        import re
+        html = render_html(_MINIMAL_DATA, roadmap_data=_ROADMAP)
+        m = re.search(r"const RM_COLS = \[(.*?)\];", html, re.DOTALL)
+        assert "Owner" not in m.group(1) and "Conf" not in m.group(1)
+
+    def test_owner_survives_in_the_expansion(self):
+        """Removed from the table, not from the data -- in a tag list a blank
+        simply does not appear."""
+        assert "owner ' + ownerCell(it)" in self._html()
+
+    def test_the_reasoning_renders(self):
+        html = self._html()
+        assert "Why this rating" in html
+        assert "it.rating_note" in html
+
+    def test_churn_levels_are_explained_on_hover(self):
+        html = self._html()
+        assert "switches browser" in html
+        assert "Only developers notice" in html
+
+    def test_a_quick_win_marker_exists(self):
+        assert "quick win" in self._html()
+
+    def test_bugzilla_severity_is_not_presented_as_the_anchor(self):
+        """Explicitly our own judgement: Bugzilla severity is one reporter's triage
+        of one bug, and most of these items have no bug at all."""
+        assert "deliberately not Bugzilla" in self._html()

@@ -74,7 +74,8 @@ def _worst_first(nodes: list[dict]) -> list[dict]:
 # payload, so adding a field to the YAML cannot silently publish it.
 _ITEM_FIELDS = (
     "id", "scope", "sub_scope", "initiative", "type", "title", "consequence",
-    "details", "evidence", "owner", "impact", "confidence", "cost",
+    "details", "evidence", "owner", "fills", "user_value", "churn",
+    "rating_note", "confidence", "cost",
     "demand", "support",
 )
 
@@ -135,6 +136,89 @@ def is_continuous(item: dict) -> bool:
     return item.get("type") in CONTINUOUS_TYPES
 
 
+
+# ---------------------------------------------------------------------------
+# Our own rating, replacing a single impact number.
+#
+# The impact field was unfalsifiable: most items had nothing behind it, and a
+# quarter of them turned out to be rating a premise that was stale or wrong.
+# Bugzilla's severity is deliberately not used as the anchor either -- that is one
+# reporter's triage of one bug, it exists for a handful of these items, and where
+# it existed we disagreed with it as often as we agreed.
+#
+# So four things are rated separately, because they are separately arguable:
+#
+#   fills       the kind of hole being closed
+#   user_value  what a user actually gets
+#   churn       whether NOT doing it costs us the user
+#   cost        how much work
+#
+# Order is churn, then user_value, then cheapest first. That puts "users leave over
+# this and it is not expensive" at the top, which is the only question a roadmap
+# order needs to answer.
+
+# What kind of hole. Ordered worst first for display grouping.
+FILLS = ("BLOCKED", "BROKEN", "ABSENT-API", "POLISH")
+FILLS_LABEL = {
+    "BLOCKED": "content does not work",
+    "BROKEN": "works, but badly",
+    "ABSENT-API": "sites cannot use it",
+    "POLISH": "refinement",
+}
+
+# Does failing this cost us the user? This is the dimension a severity number
+# cannot express, and the one that most deserves to drive the order.
+CHURN = ("LEAVES", "SECOND-BROWSER", "ANNOYS", "INVISIBLE")
+CHURN_LABEL = {
+    "LEAVES": "user switches browser",
+    "SECOND-BROWSER": "user keeps another browser for this",
+    "ANNOYS": "user notices and stays",
+    "INVISIBLE": "only developers notice",
+}
+CHURN_RANK = {v: i for i, v in enumerate(CHURN)}
+
+# What a user gets if we do it. 4 is highest.
+USER_VALUE_LABEL = {
+    4: "content that failed now works",
+    3: "something bad now works well",
+    2: "a capability sites can adopt",
+    1: "refinement",
+}
+
+# Cheap enough that the value is worth having now.
+_QUICK_COSTS = ("S", "M")
+
+
+def is_quick_win(item: dict) -> bool:
+    """High value or real churn, at a cost we can absorb.
+
+    Deliberately not "cheapest first" alone: a cheap fix nobody notices is not a
+    win. Either the user gets something substantial (value 3 or 4) or we are
+    losing users over it, and it is S or M.
+    """
+    if str(item.get("cost")) not in _QUICK_COSTS:
+        return False
+    if int(item.get("user_value") or 0) >= 3:
+        return True
+    return str(item.get("churn")) in ("LEAVES", "SECOND-BROWSER")
+
+
+def rating_key(item: dict) -> tuple:
+    """Sort key: churn, then user value, then cheapest.
+
+    An unrated item sorts last rather than defaulting to severe -- a missing
+    judgement must not read as an urgent one.
+    """
+    rated = 0 if item.get("churn") and item.get("user_value") else 1
+    return (
+        rated,
+        CHURN_RANK.get(str(item.get("churn")), len(CHURN)),
+        -int(item.get("user_value") or 0),
+        COST_ORDER.get(str(item.get("cost")), 9),
+        str(item.get("title", "")),
+    )
+
+
 def rankable(item: dict) -> bool:
     """Whether we can honestly place this item in a priority order.
 
@@ -150,35 +234,18 @@ def rankable(item: dict) -> bool:
 
 
 def priority(item: dict) -> int:
-    """Impact weight. Only meaningful for `rankable` items.
-
-    This was impact x reach. Reach is gone -- it was a guess presented beside
-    measured numbers, and it was also what forced the three-bucket split, since an
-    unknown reach made an item unrankable. Impact alone is coarser and honest.
-    """
-    return IMPACT_WEIGHT[item["impact"]]
+    """Kept as a thin alias so callers do not break; the real order is
+    `rating_key`. Impact-as-a-number is gone: see the note above FILLS."""
+    return -CHURN_RANK.get(str(item.get("churn")), len(CHURN))
 
 
 def sort_items(items: list[dict]) -> list[dict]:
-    """One list: rankable items by priority, then the ones we cannot rank yet.
+    """One list, ordered by our own rating -- see rating_key.
 
-    Order within the rankable set is impact, then cost, then title. Continuous
-    work is not a separate bucket any more either; it sorts by the same key as
-    everything else.
-
-    Returns a single list rather than a tuple of three. Three buckets asked a
-    reader to hold three orderings at once, and the split leaked a methodology
-    decision -- "can we rank this?" -- into a product view.
+    Unrankable items (low confidence) still sort after rated ones, marked rather
+    than separated.
     """
-    def key(i: dict) -> tuple:
-        return (
-            0 if rankable(i) else 1,      # unrankable last, still present
-            -priority(i),
-            COST_ORDER[i["cost"]],
-            i["title"],
-        )
-
-    return sorted(items, key=key)
+    return sorted(items, key=lambda i: (0 if rankable(i) else 1, *rating_key(i)))
 
 
 def strip_internal(item: dict, *, audience: str) -> dict:
@@ -217,6 +284,7 @@ def _render_item(item: dict, *, audience: str) -> dict:
     """
     filtered = strip_internal(item, audience=audience)
     out = {"needs_measuring": not rankable(item),
+           "quick_win": is_quick_win(filtered),
            "withheld": filtered["withheld"]}
 
     for field in _ITEM_FIELDS:

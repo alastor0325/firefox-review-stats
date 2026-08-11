@@ -88,32 +88,32 @@ class TestRankable:
 # priority
 # --------------------------------------------------------------------------
 
-class TestPriority:
-    """Priority is impact weight alone. It was impact x reach.
+class TestImpactAsANumberIsGone:
+    """`impact` was a single S1-S4 judgement and it is removed.
 
-    Reach was a guess sitting beside measured numbers, and it was also what forced
-    the three-bucket split -- an unknown reach made an item unrankable. Dropping it
-    loses the S4-wide-vs-S1-narrow collision the old score had, which is a
-    simplification rather than a loss: the collision needed a tiebreak to stop an
-    S3 outranking an S1 alphabetically.
+    It was unfalsifiable - most items had nothing behind it - and a quarter of them
+    were rating a premise that verification showed to be stale or wrong, so the
+    number was precise about something untrue. Four separately arguable dimensions
+    replace it: see TestOurOwnRating.
     """
 
-    @pytest.mark.parametrize("impact,expected", [
-        ("S1", 4), ("S2", 3), ("S3", 2), ("S4", 1)])
-    def test_priority_is_the_impact_weight(self, impact, expected):
+    def test_priority_no_longer_reads_an_impact_field(self):
         from reviewstats.roadmap import priority
-        assert priority({"impact": impact}) == expected
+        # An item with no impact at all must still order.
+        assert isinstance(priority({"churn": "LEAVES"}), int)
 
-    def test_severity_always_orders_ahead_of_breadth(self):
-        """An S1 can no longer be outscored by a wide-reaching S4."""
+    def test_priority_follows_churn_not_impact(self):
         from reviewstats.roadmap import priority
-        assert priority({"impact": "S1"}) > priority({"impact": "S4"})
+        assert priority({"churn": "LEAVES"}) > priority({"churn": "INVISIBLE"})
 
-    def test_reach_is_ignored_if_present_in_the_data(self):
-        """Old rows still carry it; it must not affect the order."""
-        from reviewstats.roadmap import priority
-        assert priority({"impact": "S2", "reach": 4}) == priority(
-            {"impact": "S2", "reach": 1})
+    def test_an_impact_field_left_in_the_data_changes_nothing(self):
+        """Old rows may still carry it; it must not influence the order."""
+        from reviewstats.roadmap import rating_key
+        a = rating_key({"churn": "ANNOYS", "user_value": 2, "cost": "M",
+                        "impact": "S1", "title": "a"})
+        b = rating_key({"churn": "ANNOYS", "user_value": 2, "cost": "M",
+                        "title": "a"})
+        assert a == b
 
 
 class TestSortItems:
@@ -137,10 +137,15 @@ class TestSortItems:
         assert isinstance(out, list)
         assert len(out) == 4
 
-    def test_higher_impact_comes_first(self):
+    def test_higher_churn_comes_first(self):
         from reviewstats.roadmap import sort_items
-        ids = [i["id"] for i in sort_items(self._items())]
-        assert ids.index("s1") < ids.index("s3")
+        items = [
+            {"id": "annoy", "title": "a", "churn": "ANNOYS", "user_value": 2,
+             "cost": "M", "confidence": "high"},
+            {"id": "leave", "title": "b", "churn": "LEAVES", "user_value": 2,
+             "cost": "M", "confidence": "high"},
+        ]
+        assert [i["id"] for i in sort_items(items)] == ["leave", "annoy"]
 
     def test_items_we_cannot_rank_sit_at_the_end(self):
         """Marked, not hidden: an S1 we are unsure about still has to be read."""
@@ -1044,3 +1049,90 @@ class TestOneListNotThreeBuckets:
         from reviewstats.roadmap import rankable
         assert rankable({"confidence": "high", "reach": "UNKNOWN"}) is True
         assert rankable({"confidence": "low"}) is False
+
+
+class TestOurOwnRating:
+    """Impact is replaced by four dimensions we can argue about separately.
+
+    A single S1-S4 impact number was unfalsifiable: 33 of 39 items had no external
+    anchor at all, and where one existed we disagreed with it as often as not. Worse,
+    a quarter of the items turned out to be rating a premise that was stale or wrong,
+    so the number was precise about something untrue.
+
+    Bugzilla's severity is deliberately NOT the anchor - that is their triage of a
+    single bug report, and it does not exist for most of these. Instead each item
+    carries:
+
+      fills       what kind of hole this closes
+      user_value  what a user gets if we do it
+      churn       whether not doing it costs us the user
+      cost        how much work
+
+    Ordering is churn, then user_value, then cheapest first - so "users leave over
+    this and it is cheap" floats to the top, which is the question a roadmap is for.
+    """
+
+    def _item(self, **kw):
+        base = {"id": "x", "title": "t", "consequence": "c",
+                "fills": "BLOCKED", "user_value": 4, "churn": "LEAVES",
+                "cost": "M", "confidence": "high"}
+        base.update(kw)
+        return base
+
+    def test_churn_dominates_the_order(self):
+        """A cheap polish item must not outrank something users leave over."""
+        from reviewstats.roadmap import sort_items
+        items = [self._item(id="polish", churn="ANNOYS", user_value=1, cost="S"),
+                 self._item(id="leaves", churn="LEAVES", user_value=4, cost="XL")]
+        assert [i["id"] for i in sort_items(items)] == ["leaves", "polish"]
+
+    def test_value_breaks_a_churn_tie(self):
+        from reviewstats.roadmap import sort_items
+        items = [self._item(id="low", churn="ANNOYS", user_value=1),
+                 self._item(id="high", churn="ANNOYS", user_value=3)]
+        assert [i["id"] for i in sort_items(items)] == ["high", "low"]
+
+    def test_cheapest_first_when_value_and_churn_tie(self):
+        from reviewstats.roadmap import sort_items
+        items = [self._item(id="big", cost="XL"), self._item(id="small", cost="S")]
+        assert [i["id"] for i in sort_items(items)] == ["small", "big"]
+
+    def test_a_quick_win_is_high_value_and_cheap(self):
+        from reviewstats.roadmap import is_quick_win
+        assert is_quick_win(self._item(user_value=4, cost="M")) is True
+        assert is_quick_win(self._item(user_value=4, cost="XL")) is False
+        # churn must be neutral here, or the churn branch catches it -- which is
+        # the intended behaviour, asserted separately below.
+        assert is_quick_win(
+            self._item(user_value=1, cost="S", churn="INVISIBLE")) is False
+
+    def test_churn_alone_can_make_a_quick_win(self):
+        """Users leaving is worth doing even at middling user value."""
+        from reviewstats.roadmap import is_quick_win
+        assert is_quick_win(
+            self._item(user_value=2, churn="LEAVES", cost="M")) is True
+        assert is_quick_win(
+            self._item(user_value=2, churn="INVISIBLE", cost="M")) is False
+
+    def test_an_unrated_item_sorts_last_rather_than_defaulting_high(self):
+        """A missing rating must not be silently treated as severe."""
+        from reviewstats.roadmap import sort_items
+        items = [self._item(id="rated"),
+                 {"id": "unrated", "title": "t", "cost": "M",
+                  "confidence": "high"}]
+        assert [i["id"] for i in sort_items(items)][-1] == "unrated"
+
+    def test_the_rendered_item_carries_all_four_dimensions(self):
+        from reviewstats.roadmap import build_roadmap_view
+        v = build_roadmap_view({"items": [self._item()], "condition": []},
+                               audience="internal")
+        it = v["items"][0]
+        for f in ("fills", "user_value", "churn", "cost", "quick_win"):
+            assert f in it, f
+
+    def test_impact_is_no_longer_required(self):
+        """Items carry no `impact` field; nothing may depend on one."""
+        from reviewstats.roadmap import build_roadmap_view
+        v = build_roadmap_view({"items": [self._item()], "condition": []},
+                               audience="internal")
+        assert "impact" not in v["items"][0]
