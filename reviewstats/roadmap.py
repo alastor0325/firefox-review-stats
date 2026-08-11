@@ -79,7 +79,7 @@ def _worst_first(nodes: list[dict]) -> list[dict]:
 _ITEM_FIELDS = (
     "id", "scope", "sub_scope", "initiative", "type", "title", "consequence",
     "details", "evidence", "owner", "fills", "user_value", "churn",
-    "rating_note", "confidence", "cost",
+    "rating_note", "solution", "confidence", "cost",
     "demand", "support",
 )
 
@@ -193,13 +193,31 @@ USER_VALUE_LABEL = {
 _QUICK_COSTS = ("S", "M")
 
 
-def is_quick_win(item: dict) -> bool:
-    """We are losing users over it, and it is cheap.
+# Whether a way to do it exists. This gates the quick-win marker, because "cheap"
+# is a judgement and a cheap-looking item can be impossible: H.264 High 10 and
+# YUV444 are refused by the Windows and macOS decoders outright, so the work is not
+# a medium change, it is obtaining a decoder that does not exist there.
+SOLUTION = ("known", "partial", "blocked", "unknown")
+SOLUTION_LABEL = {
+    "known": "the mechanism exists - wiring, enabling or an allowlist",
+    "partial": "proven somewhere - one platform or channel - not everywhere",
+    "blocked": "no available component can do it",
+    "unknown": "not investigated",
+}
 
-    Churn alone, deliberately. `user_value` used to count here too, but it is no
-    longer displayed, and a marker driven by a field nobody can see is the same
-    hidden-arithmetic problem the score had.
+
+def is_quick_win(item: dict) -> bool:
+    """Real churn, low cost, AND a solution we know exists.
+
+    The solution gate was added after two items carried this marker while being
+    infeasible on the platforms that matter. `partial` does not qualify either: a
+    marker meaning "quick on Linux, impossible on Windows" is not a shortlist entry.
+
+    Churn rather than user_value, deliberately -- a marker driven by a field nobody
+    can see is the hidden-arithmetic problem the old score had.
     """
+    if str(item.get("solution")) != "known":
+        return False
     if str(item.get("cost")) not in _QUICK_COSTS:
         return False
     return str(item.get("churn")) in ("LEAVES", "SECOND-BROWSER")

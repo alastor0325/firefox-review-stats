@@ -1108,10 +1108,13 @@ class TestOurOwnRating:
         assert [i["id"] for i in sort_items(items)] == ["small", "big"]
 
     def test_a_quick_win_is_real_churn_at_low_cost(self):
+        """Feasibility is gated separately -- see
+        TestQuickWinRequiresAViableSolution -- so these fixtures declare it."""
         from reviewstats.roadmap import is_quick_win
-        assert is_quick_win(self._item(churn="LEAVES", cost="M")) is True
-        assert is_quick_win(self._item(churn="LEAVES", cost="XL")) is False
-        assert is_quick_win(self._item(churn="INVISIBLE", cost="S")) is False
+        ok = dict(solution="known")
+        assert is_quick_win(self._item(churn="LEAVES", cost="M", **ok)) is True
+        assert is_quick_win(self._item(churn="LEAVES", cost="XL", **ok)) is False
+        assert is_quick_win(self._item(churn="INVISIBLE", cost="S", **ok)) is False
 
     def test_value_no_longer_makes_a_quick_win(self):
         """It is invisible in the table, so it must not drive a visible marker."""
@@ -1122,10 +1125,10 @@ class TestOurOwnRating:
     def test_churn_alone_can_make_a_quick_win(self):
         """Users leaving is worth doing even at middling user value."""
         from reviewstats.roadmap import is_quick_win
-        assert is_quick_win(
-            self._item(user_value=2, churn="LEAVES", cost="M")) is True
-        assert is_quick_win(
-            self._item(user_value=2, churn="INVISIBLE", cost="M")) is False
+        assert is_quick_win(self._item(user_value=2, churn="LEAVES", cost="M",
+                                       solution="known")) is True
+        assert is_quick_win(self._item(user_value=2, churn="INVISIBLE", cost="M",
+                                       solution="known")) is False
 
     def test_an_unrated_item_sorts_last_rather_than_defaulting_high(self):
         """A missing rating must not be silently treated as severe."""
@@ -1209,3 +1212,66 @@ class TestNoRealNamesInSourceOrFixtures:
         """The access-control design doc named Mozilla-internal hosting; it lives in
         the private repo now."""
         assert not self._scan(["qui" + "ck.mozilla" + ".cloud"])
+
+
+class TestQuickWinRequiresAViableSolution:
+    """A quick win must be something we know how to do, not just something cheap.
+
+    The marker asked only "real churn, low cost", and cost was a judgement. That
+    let two items in where the platform decoder cannot do the job at all: H.264
+    High 10 and YUV444 are refused by the Windows and macOS decoders, so the fix is
+    not a medium-cost change, it is "obtain a decoder that does not exist here".
+    Calling that a quick win sends someone at an impossible task.
+
+    So `solution` gates the marker:
+
+      known    the mechanism exists; this is wiring, enabling or an allowlist
+      partial  proven somewhere - one platform or channel - not everywhere
+      blocked  no available component can do it
+      unknown  not investigated
+
+    Only `known` qualifies. `partial` deliberately does not: a marker that means
+    "quick on Linux, impossible on Windows" is not a shortlist entry.
+    """
+
+    def _item(self, **kw):
+        base = {"id": "x", "title": "t", "churn": "LEAVES", "cost": "M",
+                "confidence": "high", "solution": "known"}
+        base.update(kw)
+        return base
+
+    def test_a_known_solution_at_low_cost_qualifies(self):
+        from reviewstats.roadmap import is_quick_win
+        assert is_quick_win(self._item()) is True
+
+    def test_a_blocked_solution_never_qualifies(self):
+        from reviewstats.roadmap import is_quick_win
+        assert is_quick_win(self._item(solution="blocked")) is False
+
+    def test_a_partial_solution_does_not_qualify(self):
+        from reviewstats.roadmap import is_quick_win
+        assert is_quick_win(self._item(solution="partial")) is False
+
+    def test_an_uninvestigated_solution_does_not_qualify(self):
+        """Absence of investigation is not evidence of ease."""
+        from reviewstats.roadmap import is_quick_win
+        assert is_quick_win(self._item(solution="unknown")) is False
+
+    def test_a_missing_solution_field_does_not_qualify(self):
+        from reviewstats.roadmap import is_quick_win
+        item = self._item()
+        del item["solution"]
+        assert is_quick_win(item) is False
+
+    def test_cost_and_churn_still_apply(self):
+        from reviewstats.roadmap import is_quick_win
+        assert is_quick_win(self._item(cost="XL")) is False
+        assert is_quick_win(self._item(churn="INVISIBLE")) is False
+
+    def test_solution_does_not_affect_the_order(self):
+        """It gates a marker, not the ranking: a blocked item can still be the most
+        important thing on the list, and hiding it would be worse."""
+        from reviewstats.roadmap import rating_key
+        a = rating_key(self._item(solution="blocked", title="a"))
+        b = rating_key(self._item(solution="known", title="a"))
+        assert a == b
