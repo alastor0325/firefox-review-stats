@@ -119,3 +119,80 @@ class TestLoaderGate:
         read it, never own or regenerate it."""
         repo = Path(analyze_git.__file__).resolve().parent
         assert repo not in analyze_git.DEFAULT_ROADMAP_YAML.parents
+
+
+class TestCiCanRenderTheRoadmapWithoutThePrivateSource:
+    """The weekly action cannot see roadmap.yaml, and that would delete the view.
+
+    The authoring file lives in a separate private repo
+    (~/firefox-bug-investigation). The workflow never checks it out and never sets
+    ROADMAP_YAML, so `_load_roadmap_view` returns None, the Media Health tab is
+    hidden, and the regenerated index.html -- which the job then commits --
+    silently loses the whole view. Verified in a browser: the tab button exists in
+    the markup but has no offsetParent, and zero roadmap rows render.
+
+    So the public projection is committed as a data file. That exposes nothing new:
+    it is byte-for-byte what was already embedded in the published index.html. The
+    YAML stays private and stays the source of truth; this is the fallback CI reads.
+    """
+
+    def test_the_generator_writes_the_public_projection(self):
+        import pathlib
+        src = pathlib.Path("analyze_git.py").read_text(encoding="utf-8")
+        assert "data_roadmap.json" in src, (
+            "nothing persists the roadmap for a run that cannot see the YAML"
+        )
+
+    def test_only_the_public_projection_is_ever_written(self):
+        """Committing the internal projection would publish every withheld field.
+
+        Scoped to the *write* site. `data_roadmap.json` appears three times -- the
+        fallback read, its log line, and the write -- and an earlier version of this
+        test matched the first, so it proved nothing about the gate.
+        """
+        import pathlib, re
+        lines = pathlib.Path("analyze_git.py").read_text(
+            encoding="utf-8").splitlines()
+        write = [n for n, ln in enumerate(lines)
+                 if "data_roadmap.json" in ln and "write_text" in "".join(
+                     lines[max(0, n - 1):n + 2])]
+        assert write, "nothing writes data_roadmap.json"
+        block = "\n".join(lines[max(0, write[0] - 8):write[0] + 3])
+        assert re.search(r'audience\s*==\s*"public"', block), (
+            "the write is not gated on the public audience: an "
+            "--roadmap-audience internal run would commit withheld fields\n"
+            + block
+        )
+
+    def test_the_fallback_is_used_when_the_yaml_is_absent(self, tmp_path,
+                                                          monkeypatch):
+        import json, sys
+        sys.path.insert(0, ".")
+        import analyze_git
+        from reviewstats.teams import TEAMS
+
+        team_dir = tmp_path / "playback"
+        team_dir.mkdir()
+        (team_dir / "data_roadmap.json").write_text(json.dumps({
+            "items": [{"id": "x", "title": "t", "churn": "LEAVES",
+                       "needs_measuring": False, "withheld": []}],
+            "counts": {"total": 1, "ranked": 1, "needs_measuring": 0},
+            "aspects": [], "metrics": [], "audience": "public",
+        }), encoding="utf-8")
+        monkeypatch.setenv("ROADMAP_YAML", str(tmp_path / "absent.yaml"))
+        view = analyze_git._load_roadmap_view(
+            TEAMS["playback"], audience="public", team_dir=team_dir)
+        assert view is not None, "the committed projection was not used"
+        assert view["counts"]["total"] == 1
+
+    def test_a_missing_yaml_and_no_fallback_still_degrades_quietly(
+            self, tmp_path, monkeypatch):
+        import sys
+        sys.path.insert(0, ".")
+        import analyze_git
+        from reviewstats.teams import TEAMS
+        monkeypatch.setenv("ROADMAP_YAML", str(tmp_path / "absent.yaml"))
+        d = tmp_path / "empty"
+        d.mkdir()
+        assert analyze_git._load_roadmap_view(
+            TEAMS["playback"], audience="public", team_dir=d) is None

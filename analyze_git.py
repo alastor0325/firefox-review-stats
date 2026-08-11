@@ -87,20 +87,45 @@ def load_probe_results(directory: Path) -> list:
     return out
 
 
-def _load_roadmap_view(team: Team, *, audience: str) -> dict | None:
+def _load_roadmap_view(team: Team, *, audience: str,
+                       team_dir: Path | None = None) -> dict | None:
     """Read the roadmap and project it for `audience`, or None.
 
-    Returns None whenever there is nothing to show — the team has no roadmap,
-    the file is absent, or PyYAML is not installed. None is the signal the page
-    uses to remove the Media Health tab, so a missing roadmap degrades to "tab
-    not there" rather than an empty view or a failed build.
+    Two sources, in order:
+
+      1. The authoring YAML, which lives in a SEPARATE PRIVATE repo. Present when
+         a human runs this; never present in CI.
+      2. `<team>/data_roadmap.json` -- the public projection, committed to this
+         repo by a local run.
+
+    The fallback exists because without it the weekly action silently deleted the
+    whole view: CI cannot see the YAML, so this returned None, the Media Health tab
+    was hidden, and the job committed the regenerated page over the good one. The
+    committed projection exposes nothing new, being exactly what was already
+    embedded in the published HTML.
+
+    Returns None only when there is genuinely nothing to show, which the page reads
+    as "remove the tab" rather than rendering an empty view.
     """
     if not team.has_roadmap:
         return None
 
     src = Path(os.environ.get("ROADMAP_YAML") or DEFAULT_ROADMAP_YAML)
     if not src.exists():
-        print(f"[{team.slug}] No roadmap at {src}; Media Health view omitted.")
+        cached = (team_dir / "data_roadmap.json") if team_dir else None
+        if cached and cached.exists():
+            try:
+                view = json.loads(cached.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError) as exc:
+                print(f"[{team.slug}] {cached.name} unreadable ({exc}); "
+                      f"Media Health view omitted.")
+                return None
+            print(f"[{team.slug}] Roadmap: no YAML at {src}, using the committed "
+                  f"public projection ({len(view.get('items') or [])} items). "
+                  f"Edit the YAML and regenerate locally to change it.")
+            return view
+        print(f"[{team.slug}] No roadmap at {src} and no committed projection; "
+              f"Media Health view omitted.")
         return None
 
     try:
@@ -112,6 +137,13 @@ def _load_roadmap_view(team: Team, *, audience: str) -> dict | None:
     with src.open(encoding="utf-8") as f:
         doc = yaml.safe_load(f)
     view = build_roadmap_view(doc, audience=audience)
+    # Committed so CI can render the view without the private source. Public
+    # projection ONLY: writing an internal run here would publish every field the
+    # withhold annotations exist to protect.
+    if team_dir is not None and audience == "public":
+        team_dir.mkdir(parents=True, exist_ok=True)
+        (team_dir / "data_roadmap.json").write_text(
+            json.dumps(view, indent=2), encoding="utf-8")
     print(
         f"[{team.slug}] Roadmap: {view['counts']['total']} items "
         f"({view['counts']['ranked']} ranked, "
@@ -319,7 +351,8 @@ def _generate_for_team(
         else None
     )
 
-    roadmap_data = _load_roadmap_view(team, audience=roadmap_audience)
+    roadmap_data = _load_roadmap_view(team, audience=roadmap_audience,
+                                      team_dir=out_dir / team.slug)
 
     # Cross-browser Raptor numbers, refreshed by fetch_perf_metrics.py rather
     # than here: Perfherder being slow or down must not fail this build. Absent

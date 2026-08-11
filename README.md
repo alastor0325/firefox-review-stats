@@ -174,9 +174,17 @@ annotation exists to protect.
 Withheld fields are **marked** in the expanded row, not silently dropped, so a
 reader can tell something was held back.
 
-> **Currently outstanding:** `roadmap.yaml` has no `internal:` blocks yet, so
-> the public build still renders everything. The mechanism works and is tested;
-> the annotation pass has not been done. Annotate before this view is published.
+`roadmap.yaml` lives in a **separate private repo**, and CI cannot see it — which
+silently deleted the whole view: `_load_roadmap_view` returned None, the Media
+Health tab was hidden, and the weekly job committed the regenerated page over the
+good one. So a local run also writes `<team>/data_roadmap.json`, the **public**
+projection, which CI reads as a fallback. That exposes nothing new — it is what was
+already embedded in the published HTML — and the write is gated on
+`audience == "public"`, so an internal run cannot commit withheld fields.
+
+The practical consequence: **editing the roadmap requires a local regeneration and
+commit.** The weekly job cannot pick up YAML changes on its own; it will faithfully
+re-publish the last committed projection.
 
 #### Codec and container support — measured, not read from source
 

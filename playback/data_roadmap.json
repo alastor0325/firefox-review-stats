@@ -1,0 +1,1858 @@
+{
+  "updated": "2026-08-07",
+  "audience": "public",
+  "summary": "Firefox plays ordinary web video well. Where it falls down is protected content, integration with the device and OS, and - most of all - our own ability to tell how we are doing. Several aspects below are rated unknown not because they are fine, but because we have no way to answer.",
+  "aspects": [
+    {
+      "name": "Playing protected content",
+      "rating": "weak",
+      "text": "The pipeline is implemented on Windows and few providers serve it to us. On Android playback is limited to software security, one platform has no CDM at all, and offline licences are Android-only.",
+      "parity": [],
+      "parity_url": "",
+      "sub": [
+        {
+          "name": "Provider enablement",
+          "rating": "weak",
+          "text": "PlayReady is implemented; providers decide whether to serve it. Until they do, the rest of the protected-content work reaches no users.",
+          "parity": [],
+          "parity_url": "",
+          "depth": 1,
+          "sub": [],
+          "has_children": false,
+          "rests_on": [
+            "playready-content-providers"
+          ],
+          "item_count": 1
+        },
+        {
+          "name": "Hardware-backed security on Android",
+          "rating": "weak",
+          "text": "Security level is fixed to software-only, so services serve SD where hardware-backed browsers get HD on the same device.",
+          "parity": [
+            "chrome"
+          ],
+          "parity_url": "https://chromium.googlesource.com/chromium/src/+/main/media/base/android/media_drm_bridge.cc#238",
+          "depth": 1,
+          "sub": [],
+          "has_children": false,
+          "rests_on": [
+            "android-hardware-drm"
+          ],
+          "item_count": 1
+        },
+        {
+          "name": "Platform coverage",
+          "rating": "weak",
+          "text": "No Widevine build for Linux arm64, so protected sites do not play there at all.",
+          "parity": [],
+          "parity_url": "",
+          "depth": 1,
+          "sub": [],
+          "has_children": false,
+          "rests_on": [
+            "widevine-linux-arm64"
+          ],
+          "item_count": 1
+        },
+        {
+          "name": "Offline playback",
+          "rating": "mixed",
+          "text": "Persistent licences are implemented on Android and not on desktop, so download-and-watch-offline is unavailable there.",
+          "parity": [
+            "chrome"
+          ],
+          "parity_url": "https://chromium.googlesource.com/chromium/src/+/main/components/cdm/renderer/widevine_key_system_info.cc#212",
+          "depth": 1,
+          "sub": [],
+          "has_children": false,
+          "rests_on": [
+            "widevine-persistent-license-desktop"
+          ],
+          "item_count": 1
+        }
+      ],
+      "subs_withheld": 0,
+      "rests_on": [
+        "playready-content-providers",
+        "android-hardware-drm",
+        "widevine-linux-arm64",
+        "widevine-persistent-license-desktop"
+      ],
+      "item_count": 4
+    },
+    {
+      "name": "OS and device integration",
+      "rating": "weak",
+      "text": "Sites cannot offer several OS-level media affordances, and sending video to an external display is not implemented.",
+      "parity": [],
+      "parity_url": "",
+      "sub": [
+        {
+          "name": "Sending video to a TV",
+          "rating": "weak",
+          "text": "No Remote Playback API, so a page cannot offer a receiver picker and a user cannot move playback to a television.",
+          "parity": [
+            "chrome",
+            "safari"
+          ],
+          "parity_url": "https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/remote",
+          "depth": 1,
+          "sub": [],
+          "has_children": false,
+          "rests_on": [
+            "remote-playback"
+          ],
+          "item_count": 1
+        },
+        {
+          "name": "MediaSession actions",
+          "rating": "weak",
+          "text": "The action set stops at \"stop\", so sites cannot expose camera or microphone muting, or Picture-in-Picture entry, through OS surfaces or hardware keys.",
+          "parity": [],
+          "parity_url": "",
+          "depth": 1,
+          "sub": [],
+          "has_children": false,
+          "rests_on": [
+            "mediasession-camera-mic",
+            "mediasession-pip-action"
+          ],
+          "item_count": 2
+        },
+        {
+          "name": "Audio output routing",
+          "rating": "weak",
+          "text": "Media elements can select an output device; AudioContext cannot, so Web Audio apps require the user to change the system default.",
+          "parity": [
+            "chrome"
+          ],
+          "parity_url": "https://developer.mozilla.org/docs/Web/API/AudioContext/setSinkId",
+          "depth": 1,
+          "sub": [],
+          "has_children": false,
+          "rests_on": [
+            "audiocontext-setsinkid"
+          ],
+          "item_count": 1
+        }
+      ],
+      "subs_withheld": 0,
+      "rests_on": [
+        "remote-playback",
+        "mediasession-camera-mic",
+        "mediasession-pip-action",
+        "audiocontext-setsinkid"
+      ],
+      "item_count": 4
+    },
+    {
+      "name": "Playing media",
+      "rating": "mixed",
+      "text": "Common codecs and containers play across platforms. What is missing is a few specific formats, a fallback when a platform decoder refuses a stream, and native support for one streaming protocol.",
+      "parity": [],
+      "parity_url": "",
+      "sub": [
+        {
+          "name": "Decoder fallback",
+          "rating": "weak",
+          "text": "What happens when the platform decoder is missing or refuses a stream. H.264 falls back to a bundled software decoder; two codecs have nothing behind them.",
+          "parity": [],
+          "parity_url": "",
+          "depth": 1,
+          "sub": [
+            {
+              "name": "AAC",
+              "rating": "weak",
+              "text": "We bundle no AAC decoder and use the platform's. Every platform path is a software decoder, so this is a dependency rather than a silence risk; it bites when the platform decoder is absent, policy-blocked, or rejects a stream another engine accepts.",
+              "parity": [],
+              "parity_url": "",
+              "depth": 2,
+              "sub": [],
+              "has_children": false,
+              "rests_on": [
+                "no-bundled-software-decoders"
+              ],
+              "item_count": 1
+            },
+            {
+              "name": "HEVC",
+              "rating": "weak",
+              "text": "No software fallback, so HEVC needs a hardware decoder that is also exposed. On Windows that means the HEVC Video Extension, absent on many SKUs, so the same build plays HEVC for one user and not another with nothing the user can act on. Firefox already models the missing extension as its own state (WMFDecoderModule.cpp:137-151).",
+              "parity": [],
+              "parity_url": "",
+              "depth": 2,
+              "sub": [],
+              "has_children": false,
+              "rests_on": [],
+              "item_count": 0
+            }
+          ],
+          "has_children": true,
+          "rests_on": [
+            "no-bundled-software-decoders"
+          ],
+          "item_count": 1
+        },
+        {
+          "name": "Format and codec coverage",
+          "rating": "mixed",
+          "text": "The common formats play everywhere. The gaps are narrow and change with browser releases, so they are not enumerated here - the Metrics view carries the measured matrix, probed in three engines across five surfaces, and that is the authority. Naming specific codecs in this text is how it went stale before: it claimed Chrome plays PCM and AC-3 in Matroska because Chromium lists them, and shipping Chrome answers no to both.",
+          "parity": [],
+          "parity_url": "",
+          "depth": 1,
+          "sub": [
+            {
+              "name": "Codec gaps",
+              "rating": "weak",
+              "text": "Codecs no container accepts, where a site cannot even feature-detect us to serve a fallback. Counts and specifics come from the measured matrix.",
+              "parity": [
+                "chrome"
+              ],
+              "parity_url": "https://chromium.googlesource.com/chromium/src/+/main/media/base/mime_util_internal.cc#73",
+              "depth": 2,
+              "sub": [],
+              "has_children": false,
+              "rests_on": [
+                "xhe-aac-unsupported"
+              ],
+              "item_count": 1
+            },
+            {
+              "name": "Container gaps",
+              "rating": "mixed",
+              "text": "Containers that refuse codecs they could carry - measured per container in the Metrics view rather than listed here, since which codecs those are moves between releases.",
+              "parity": [
+                "chrome"
+              ],
+              "parity_url": "https://chromium.googlesource.com/chromium/src/+/main/media/base/mime_util_internal.cc#318",
+              "depth": 2,
+              "sub": [],
+              "has_children": false,
+              "rests_on": [
+                "mkv-missing-formats"
+              ],
+              "item_count": 1
+            }
+          ],
+          "has_children": true,
+          "rests_on": [
+            "xhe-aac-unsupported",
+            "mkv-missing-formats"
+          ],
+          "item_count": 2
+        },
+        {
+          "name": "Streaming protocols",
+          "rating": "mixed",
+          "text": "HLS is supported on Android only. On desktop a bare playlist does not play unless the site ships its own player.",
+          "parity": [],
+          "parity_url": "",
+          "depth": 1,
+          "sub": [],
+          "has_children": false,
+          "rests_on": [
+            "native-hls"
+          ],
+          "item_count": 1
+        }
+      ],
+      "subs_withheld": 0,
+      "rests_on": [
+        "no-bundled-software-decoders",
+        "xhe-aac-unsupported",
+        "mkv-missing-formats",
+        "native-hls"
+      ],
+      "item_count": 4
+    },
+    {
+      "name": "Web platform APIs",
+      "rating": "mixed",
+      "text": "Support is not one fact: each media API keeps its own codec and container allowlist, and several are a platform or a channel short of shipping.",
+      "parity": [],
+      "parity_url": "",
+      "sub": [
+        {
+          "name": "Media recording",
+          "rating": "weak",
+          "text": "Produces Opus and VP8 in WebM or Ogg only - narrower than what we can encode through WebCodecs, so recordings cannot be handed to an arbitrary player.",
+          "parity": [
+            "chrome"
+          ],
+          "parity_url": "https://chromium.googlesource.com/chromium/src/+/main/third_party/blink/renderer/modules/mediarecorder/video_track_recorder.cc#203",
+          "depth": 1,
+          "sub": [],
+          "has_children": false,
+          "rests_on": [
+            "mediarecorder-codec-coverage"
+          ],
+          "item_count": 1
+        },
+        {
+          "name": "Speech recognition",
+          "rating": "weak",
+          "text": "Disabled on every channel, with only a hardcoded remote backend behind it. Synthesis is unaffected and ships.",
+          "parity": [
+            "chrome",
+            "safari"
+          ],
+          "parity_url": "https://developer.mozilla.org/docs/Web/API/SpeechRecognition",
+          "depth": 1,
+          "sub": [],
+          "has_children": false,
+          "rests_on": [
+            "speech-recognition"
+          ],
+          "item_count": 1
+        },
+        {
+          "name": "Media Source",
+          "rating": "mixed",
+          "text": "Three separate gaps in the streaming API.",
+          "parity": [],
+          "parity_url": "",
+          "depth": 1,
+          "sub": [
+            {
+              "name": "Managed Media Source",
+              "rating": "weak",
+              "text": "Not implemented, so sites cannot hand buffer eviction to the browser and lose the power saving the API exists for.",
+              "parity": [
+                "safari"
+              ],
+              "parity_url": "https://developer.mozilla.org/docs/Web/API/ManagedMediaSource",
+              "depth": 2,
+              "sub": [],
+              "has_children": false,
+              "rests_on": [
+                "managed-media-source"
+              ],
+              "item_count": 1
+            },
+            {
+              "name": "Use in Workers",
+              "rating": "mixed",
+              "text": "Main-thread only, so large players do buffer management where it competes with rendering.",
+              "parity": [
+                "chrome",
+                "safari"
+              ],
+              "parity_url": "https://chromium.googlesource.com/chromium/src/+/main/third_party/blink/renderer/modules/mediasource/media_source.idl#94",
+              "depth": 2,
+              "sub": [],
+              "has_children": false,
+              "rests_on": [
+                "mse-in-workers"
+              ],
+              "item_count": 1
+            },
+            {
+              "name": "Container coverage",
+              "rating": "mixed",
+              "text": "Accepts MP4 and WebM only, so a container that plays in an element can be refused by the streaming API.",
+              "parity": [
+                "chrome"
+              ],
+              "parity_url": "https://chromium.googlesource.com/chromium/src/+/main/media/filters/stream_parser_factory.cc#571",
+              "depth": 2,
+              "sub": [],
+              "has_children": false,
+              "rests_on": [
+                "mse-container-coverage"
+              ],
+              "item_count": 1
+            }
+          ],
+          "has_children": true,
+          "rests_on": [
+            "managed-media-source",
+            "mse-in-workers",
+            "mse-container-coverage"
+          ],
+          "item_count": 3
+        },
+        {
+          "name": "WebCodecs",
+          "rating": "mixed",
+          "text": "Broad on desktop. HEVC excludes Windows and is Nightly-only elsewhere; the whole API is Nightly-only on Android.",
+          "parity": [],
+          "parity_url": "",
+          "depth": 1,
+          "sub": [],
+          "has_children": false,
+          "rests_on": [
+            "webcodecs-hevc-windows",
+            "webcodecs-android"
+          ],
+          "item_count": 2
+        },
+        {
+          "name": "Audio session",
+          "rating": "mixed",
+          "text": "Implemented and enabled on Nightly only, so release users get no declarative control over focus, ducking and interruption.",
+          "parity": [
+            "safari"
+          ],
+          "parity_url": "https://developer.mozilla.org/docs/Web/API/AudioSession",
+          "depth": 1,
+          "sub": [],
+          "has_children": false,
+          "rests_on": [
+            "audio-session-nightly-only"
+          ],
+          "item_count": 1
+        }
+      ],
+      "subs_withheld": 0,
+      "rests_on": [
+        "mediarecorder-codec-coverage",
+        "speech-recognition",
+        "managed-media-source",
+        "mse-in-workers",
+        "mse-container-coverage",
+        "webcodecs-hevc-windows",
+        "webcodecs-android",
+        "audio-session-nightly-only"
+      ],
+      "item_count": 8
+    },
+    {
+      "name": "Speed and responsiveness",
+      "rating": "mixed",
+      "text": "First-frame and seek latency run nightly against other browsers. No target has been set on any of them, so there is nothing to compare a result against and no definition of a regression.",
+      "parity": [],
+      "parity_url": "",
+      "sub": [
+        {
+          "name": "No baseline or target",
+          "rating": "mixed",
+          "text": "The measurements exist and are cross-browser; what is missing is a target per metric, Windows in the matrix, and any metric at all for audio/video sync. Without those the numbers are collected and cannot be acted on.",
+          "parity": [],
+          "parity_url": "",
+          "depth": 1,
+          "sub": [],
+          "has_children": false,
+          "rests_on": [
+            "cubeb-stream-reuse",
+            "metric-windows-coverage",
+            "stutter-desync"
+          ],
+          "item_count": 3
+        }
+      ],
+      "subs_withheld": 0,
+      "rests_on": [
+        "cubeb-stream-reuse",
+        "metric-windows-coverage",
+        "stutter-desync"
+      ],
+      "item_count": 3
+    },
+    {
+      "name": "Power",
+      "rating": "mixed",
+      "text": "Power is measured and alerting on Windows and Android, cross-browser. Two desktop platforms are not covered, and no test measures a window that corresponds to playback.",
+      "parity": [],
+      "parity_url": "",
+      "sub": [
+        {
+          "name": "Playback power",
+          "rating": "mixed",
+          "text": "The sampler works and is browser-agnostic, but it is gated to Windows and every power figure in the tree covers a whole task rather than playback - so what playback costs is not yet measured anywhere.",
+          "parity": [],
+          "parity_url": "",
+          "depth": 1,
+          "sub": [],
+          "has_children": false,
+          "rests_on": [
+            "metric-desktop-energy",
+            "power-thermals"
+          ],
+          "item_count": 2
+        },
+        {
+          "name": "Hardware-decode support is not published",
+          "rating": "mixed",
+          "text": "Which codecs are hardware-decoded is reported per machine and collected per codec across the population, but no maintained view exists, so the question is answered by reading code.",
+          "parity": [],
+          "parity_url": "",
+          "depth": 1,
+          "sub": [],
+          "has_children": false,
+          "rests_on": [
+            "hw-decode-matrix"
+          ],
+          "item_count": 1
+        }
+      ],
+      "subs_withheld": 0,
+      "rests_on": [
+        "metric-desktop-energy",
+        "power-thermals",
+        "hw-decode-matrix"
+      ],
+      "item_count": 3
+    },
+    {
+      "name": "Colour and HDR",
+      "rating": "mixed",
+      "text": "HDR is enabled on two desktop platforms and not on the third, one of them still gated before release. Colour accuracy is unverified and the tests that would catch regressions are being relaxed.",
+      "parity": [],
+      "parity_url": "",
+      "sub": [
+        {
+          "name": "Regression safety net",
+          "rating": "weak",
+          "text": "Reftest colour tolerances are being widened to make failures pass, which removes the coverage that would detect colour regressions.",
+          "parity": [],
+          "parity_url": "",
+          "depth": 1,
+          "sub": [],
+          "has_children": false,
+          "rests_on": [
+            "hdr-test-coverage-erosion"
+          ],
+          "item_count": 1
+        },
+        {
+          "name": "Colour accuracy",
+          "rating": "unknown",
+          "text": "No systematic check that the wide-gamut and colour-managed paths agree across platforms.",
+          "parity": [],
+          "parity_url": "",
+          "depth": 1,
+          "sub": [],
+          "has_children": false,
+          "rests_on": [
+            "colour-management-accuracy"
+          ],
+          "item_count": 1
+        },
+        {
+          "name": "HDR playback by platform",
+          "rating": "mixed",
+          "text": "Enabled by default on macOS and Windows, off on Linux. On Windows the 10-bit decode format needed to ship it is still gated to early beta.",
+          "parity": [],
+          "parity_url": "",
+          "depth": 1,
+          "sub": [],
+          "has_children": false,
+          "rests_on": [
+            "hdr-video-not-enabled"
+          ],
+          "item_count": 1
+        }
+      ],
+      "subs_withheld": 0,
+      "rests_on": [
+        "hdr-test-coverage-erosion",
+        "colour-management-accuracy",
+        "hdr-video-not-enabled"
+      ],
+      "item_count": 3
+    }
+  ],
+  "aspects_withheld": 0,
+  "items": [
+    {
+      "needs_measuring": false,
+      "quick_win": true,
+      "withheld": [],
+      "id": "h264-high10-unsupported",
+      "scope": "compat-gaps",
+      "sub_scope": "format-protocol",
+      "type": "MISSING",
+      "title": "H.264 High 10 profile is not supported",
+      "consequence": "Sites encoding H.264 at High 10 play audio with no picture. This is a concrete web-compat report, not a theoretical profile gap.",
+      "evidence": "Bug 1992187 - kshow123.tv, video does not work and only the audio plays; diagnosed as missing High 10 profile support.",
+      "fills": "BLOCKED",
+      "user_value": "4",
+      "churn": "LEAVES",
+      "rating_note": "Audio with no picture on real sites, reported through web compatibility rather than inferred from a profile table.",
+      "confidence": "high",
+      "cost": "M",
+      "demand": "MEDIUM",
+      "tags": [
+        "PLAYS-AT-ALL",
+        "CODEC",
+        "VIDEO"
+      ],
+      "parity_url": "",
+      "parity_evidence": "",
+      "parity_bcd": "",
+      "parity": []
+    },
+    {
+      "needs_measuring": false,
+      "quick_win": true,
+      "withheld": [],
+      "id": "yuv444-windows",
+      "scope": "reliability",
+      "type": "DEFECT",
+      "title": "YUV444 video unplayable on Windows and macOS",
+      "consequence": "Affected clips do not play at all, and only on Windows.",
+      "evidence": "Reported with a long-standing bug carrying many duplicates on few votes, which suggests a discoverability problem as much as a decode one",
+      "fills": "BLOCKED",
+      "user_value": "4",
+      "churn": "LEAVES",
+      "rating_note": "Fatal decode error before any decoder is tried, on Windows and macOS both.",
+      "confidence": "med",
+      "cost": "M",
+      "demand": "MODERATE",
+      "tags": [
+        "PLAYS-AT-ALL",
+        "CODEC",
+        "WINDOWS"
+      ],
+      "parity_url": "",
+      "parity_evidence": "",
+      "parity_bcd": "",
+      "parity": []
+    },
+    {
+      "needs_measuring": false,
+      "quick_win": false,
+      "withheld": [],
+      "id": "audio-chipping-crackling",
+      "scope": "reliability",
+      "type": "MISSING",
+      "title": "Audio chipping and crackling",
+      "consequence": "Playback audibly breaks up for some users. A meta bug rather than one defect, and the kind of fault that costs trust faster than a missing format.",
+      "evidence": "Bug 1951155 - [meta] Audio chipping / crackling issues in Firefox, listed as active work.",
+      "fills": "BROKEN",
+      "user_value": "4",
+      "churn": "LEAVES",
+      "rating_note": "Audible breakup is the fault users tolerate least; a meta bug, so many reports.",
+      "confidence": "high",
+      "cost": "L",
+      "demand": "STRONG",
+      "tags": [
+        "PLAYS-RELIABLY",
+        "AUDIO"
+      ],
+      "parity_url": "",
+      "parity_evidence": "",
+      "parity_bcd": "",
+      "parity": []
+    },
+    {
+      "needs_measuring": false,
+      "quick_win": false,
+      "withheld": [],
+      "id": "bluetooth-audio-video-issues",
+      "scope": "reliability",
+      "type": "MISSING",
+      "title": "Bluetooth devices misbehave with audio and video",
+      "consequence": "Users on Bluetooth headsets and speakers hit audio and video faults that do not occur on wired output. A meta bug with a QA pass scheduled.",
+      "evidence": "Bug 2011679 - [Meta] Bluetooth device related issues with audio and video, QA pass scheduled. Cubeb Bluetooth buffer handling is listed separately as active work.",
+      "fills": "BROKEN",
+      "user_value": "4",
+      "churn": "LEAVES",
+      "rating_note": "Bluetooth is how most people listen now; failing there reads as the browser being broken.",
+      "confidence": "high",
+      "cost": "L",
+      "demand": "STRONG",
+      "tags": [
+        "PLAYS-RELIABLY",
+        "AUDIO"
+      ],
+      "parity_url": "",
+      "parity_evidence": "",
+      "parity_bcd": "",
+      "parity": []
+    },
+    {
+      "needs_measuring": false,
+      "quick_win": false,
+      "withheld": [
+        "details"
+      ],
+      "id": "playready-content-providers",
+      "scope": "reliability",
+      "type": "MISSING",
+      "title": "Enable PlayReady on more content providers",
+      "consequence": "PlayReady ships enabled on Windows and still reaches very few users, because enablement is two-sided: a provider has to serve PlayReady to Firefox, and the origin has to be admitted by Firefox's own allowlist, which blocks by default on release and beta.",
+      "owner": "alwu",
+      "fills": "BLOCKED",
+      "user_value": "4",
+      "churn": "LEAVES",
+      "rating_note": "Premium video is the clearest reason a user switches browser, and the allowlist is the part Mozilla controls.",
+      "confidence": "high",
+      "cost": "L",
+      "demand": "STRONG",
+      "tags": [
+        "PLAYS-AT-ALL",
+        "DRM",
+        "WINDOWS"
+      ],
+      "parity_url": "",
+      "parity_evidence": "",
+      "parity_bcd": "",
+      "parity": []
+    },
+    {
+      "needs_measuring": false,
+      "quick_win": false,
+      "withheld": [],
+      "id": "android-hardware-drm",
+      "scope": "compat-gaps",
+      "sub_scope": "platform-integration",
+      "initiative": "android-media-parity",
+      "type": "MISSING",
+      "title": "No hardware DRM on Android - we force security level L3",
+      "consequence": "Streaming services serve SD to Firefox and HD to Chrome on the same phone. Video plays, it just looks worse, which users read as Firefox having bad video rather than as a DRM policy outcome.",
+      "details": "Is it even possible? Yes. Android MediaDrm exposes hardware-backed security natively: securityLevel accepts L1, MediaCrypto reports whether a secure decoder component is required, and MediaCodec can instantiate a secure decoder writing to a protected surface. Chrome for Android ships Widevine L1 on this same API, so the platform is not the blocker. What we do today: the recent migration to the native NDK path (MediaDrmRemoteCDMParent, using AMediaDrm and AMediaCrypto) built the modern plumbing and wires up decryption, but then explicitly calls AMediaDrm_setPropertyString(securityLevel, \"L3\"). So the migration created the foundation for L1 without enabling it. That call is the most visible blocker, but removing it alone is not sufficient. What is missing beyond that line: (1) secure decoder selection, since L1 content needs the \".secure\" codec variant and we never query requiresSecureDecoderComponent in the decode path; (2) a protected output surface so decoded frames never land in memory the compositor can read - nothing under dom/media/platforms/android handles secure surfaces today; (3) advertising HW_SECURE_* robustness in KeySystemConfig so sites request it; (4) provisioning and per-device certification differences, which is where this kind of work usually gets expensive. Sizing caution: the hardcoded L3 makes this look like a one-line change. The secure surface path is the real cost and reaches into graphics.",
+      "evidence": "MediaDrmRemoteCDMParent hardcodes securityLevel \"L3\"; only SW_SECURE_CRYPTO and SW_SECURE_DECODE are advertised",
+      "fills": "BLOCKED",
+      "user_value": "4",
+      "churn": "LEAVES",
+      "rating_note": "Forced L3 caps quality or blocks playback outright on Android for HD content.",
+      "confidence": "high",
+      "cost": "L",
+      "demand": "unmeasured",
+      "support": {
+        "chrome": "Widevine L1",
+        "safari": "no Android build",
+        "firefox": "L3 only"
+      },
+      "tags": [
+        "OS-FIT",
+        "PLAYS-AT-ALL",
+        "DRM",
+        "ANDROID"
+      ],
+      "parity_url": "https://chromium.googlesource.com/chromium/src/+/main/media/base/android/media_drm_bridge.cc#238",
+      "parity_evidence": "Chromium's MediaDrmBridge parses and requests both L1 and L3 and has a distinct kAndroidFailedL1SecurityLevel failure code, so L1 is a supported path there. We set L3 unconditionally.",
+      "parity_bcd": "",
+      "parity": [
+        "chrome"
+      ]
+    },
+    {
+      "needs_measuring": false,
+      "quick_win": false,
+      "withheld": [],
+      "id": "stutter-desync",
+      "scope": "perennial",
+      "type": "DEFECT",
+      "title": "Playback stutter and audio/video desync",
+      "consequence": "Video hitches or drifts out of sync with audio, which is more objectionable to users than a lower resolution would be.",
+      "evidence": "Dropped frames is measured; desync is not measured at all",
+      "fills": "BROKEN",
+      "user_value": "4",
+      "churn": "LEAVES",
+      "rating_note": "Stutter and lip-sync drift are judged instantly and blamed on the browser.",
+      "confidence": "med",
+      "cost": "L",
+      "demand": "MODERATE",
+      "tags": [
+        "PLAYS-FAST"
+      ],
+      "parity_url": "",
+      "parity_evidence": "",
+      "parity_bcd": "",
+      "parity": []
+    },
+    {
+      "needs_measuring": false,
+      "quick_win": false,
+      "withheld": [],
+      "id": "widevine-linux-arm64",
+      "scope": "compat-gaps",
+      "sub_scope": "platform-integration",
+      "type": "MISSING",
+      "title": "Widevine unavailable on Linux arm64, though Windows arm64 gets it",
+      "consequence": "Every DRM-protected site is unplayable on Linux arm64 hardware.",
+      "evidence": "Reported in the pain research; not independently confirmed by me",
+      "fills": "BLOCKED",
+      "user_value": "4",
+      "churn": "LEAVES",
+      "rating_note": "No DRM at all on that platform, so premium video cannot play. Small population, total failure.",
+      "confidence": "high",
+      "cost": "L",
+      "demand": "MODERATE",
+      "support": {
+        "chrome": "available",
+        "safari": "n/a",
+        "firefox": "absent"
+      },
+      "tags": [
+        "PLAYS-AT-ALL",
+        "DRM",
+        "LINUX"
+      ],
+      "parity_url": "",
+      "parity_evidence": "",
+      "parity_bcd": "",
+      "parity": []
+    },
+    {
+      "needs_measuring": false,
+      "quick_win": false,
+      "withheld": [],
+      "id": "native-hls",
+      "scope": "compat-gaps",
+      "sub_scope": "format-protocol",
+      "type": "MISSING",
+      "title": "Native HLS playback absent on desktop",
+      "consequence": "Pages serving a bare .m3u8 show nothing unless the site ships hls.js. Affects older and embedded players and Apple-ecosystem sites.",
+      "details": "Reach is a guess, flagged 2026-08-07. This item is ranked fifth overall on reach 2, while its own evidence says essentially zero public demand signal was found and demand is recorded as none-found. Those cannot both be right. It is ranked at all only because somebody typed a reach digit; several higher-severity items with better demand evidence are unranked because nobody did. Either justify the 2 or set it to UNKNOWN and let it join the measure bucket - but do not leave an XL item in the top five on an unsupported number.",
+      "evidence": "Real gap, but essentially zero public demand signal was found",
+      "owner": "John",
+      "fills": "BLOCKED",
+      "user_value": "4",
+      "churn": "LEAVES",
+      "rating_note": "An HLS link plays in Chrome and Safari and not here; the user's only move is another browser.",
+      "confidence": "high",
+      "cost": "XL",
+      "demand": "none-found",
+      "support": {
+        "chrome": "shipped",
+        "safari": "shipped",
+        "firefox": "absent"
+      },
+      "tags": [
+        "PLAYS-AT-ALL",
+        "CODEC"
+      ],
+      "parity_url": "",
+      "parity_evidence": "",
+      "parity_bcd": "",
+      "parity": []
+    },
+    {
+      "needs_measuring": false,
+      "quick_win": true,
+      "withheld": [],
+      "id": "mkv-missing-formats",
+      "scope": "compat-gaps",
+      "sub_scope": "format-protocol",
+      "type": "MISSING",
+      "title": "MKV refuses FLAC and MP3, which Chrome plays",
+      "consequence": "Matroska plays the common codecs but refuses FLAC and MP3, which Chrome accepts. A file that works in Chrome fails in Firefox for no reason a user can see.",
+      "details": "Corrected 2026-08-11. This also listed PCM, AC-3 and Theora. Measured across three engines, no browser plays PCM or AC-3 in Matroska, so those are not gaps. Theora is out of scope by decision and is no longer tracked here.",
+      "evidence": "media.mkv.enabled is true; AVC/HEVC/VP8/VP9/AV1 and AAC/Opus/Vorbis all work. Only these formats remain.",
+      "fills": "BLOCKED",
+      "user_value": "4",
+      "churn": "SECOND-BROWSER",
+      "rating_note": "An .mkv that plays in Chrome fails here; users keep Chrome for their file library.",
+      "confidence": "high",
+      "cost": "M",
+      "demand": "MODERATE",
+      "support": {
+        "chrome": "FLAC and MP3",
+        "safari": "neither",
+        "firefox": "neither"
+      },
+      "tags": [
+        "PLAYS-AT-ALL",
+        "CODEC"
+      ],
+      "parity_url": "https://chromium.googlesource.com/chromium/src/+/main/media/base/mime_util_internal.cc#318",
+      "parity_evidence": "Measured 2026-08-11 across Firefox, Chrome and WebKit: Chrome plays FLAC and MP3 in Matroska and we refuse both. Chromium's mkv_audio_codecs also lists PCM and AC-3, which is why this entry used to claim them - but shipping Chrome answers no to both, so they are not parity gaps. Asking `codecs=\"1\"` makes Chrome answer yes, and that is a legacy numeric id resolving to a different codec, not PCM support: Chrome says no to `pcm` and `A_PCM/INT/LIT`, and no to a deliberately invalid codec, so it is not being lax.",
+      "parity_bcd": "",
+      "parity": [
+        "chrome"
+      ]
+    },
+    {
+      "needs_measuring": false,
+      "quick_win": true,
+      "withheld": [],
+      "id": "widevine-persistent-license-desktop",
+      "scope": "compat-gaps",
+      "sub_scope": "platform-integration",
+      "type": "MISSING",
+      "title": "No offline playback with Widevine on any platform",
+      "consequence": "Download-and-watch-offline does not work with Widevine on any platform. Desktop never offers the persistent-licence session type, and Android offers it but refuses it at runtime.",
+      "details": "Corrected twice: first written as a desktop-only gap that Android already had, then over-corrected to no platform supporting it at all. PlayReady on Windows does advertise and implement persistent licences, so the gap is Widevine-specific. Code references are in evidence.",
+      "evidence": "PersistentLicense session type is Android-only for Widevine",
+      "fills": "ABSENT-API",
+      "user_value": "2",
+      "churn": "SECOND-BROWSER",
+      "rating_note": "No download-and-watch-offline with Widevine anywhere; PlayReady on Windows has it.",
+      "confidence": "high",
+      "cost": "M",
+      "demand": "none-found",
+      "support": {
+        "chrome": "all platforms",
+        "safari": "FairPlay equivalent",
+        "firefox": "none"
+      },
+      "tags": [
+        "PLAYS-AT-ALL",
+        "DRM"
+      ],
+      "parity_url": "https://chromium.googlesource.com/chromium/src/+/main/components/cdm/renderer/widevine_key_system_info.cc#212",
+      "parity_evidence": "Chromium's WidevineKeySystemInfo implements GetPersistentLicenseSessionSupport() over CdmSessionType::kPersistentLicense, with a separate hardware-secure variant, and it is not Android-gated.",
+      "parity_bcd": "",
+      "parity": [
+        "chrome"
+      ]
+    },
+    {
+      "needs_measuring": false,
+      "quick_win": true,
+      "withheld": [],
+      "id": "webcodecs-android",
+      "scope": "compat-gaps",
+      "sub_scope": "web-api",
+      "type": "MISSING",
+      "title": "WebCodecs ships on desktop but is Nightly-only on Android",
+      "consequence": "Web apps doing client-side video processing break or silently degrade on Firefox Android while working on desktop Firefox and on Chrome.",
+      "evidence": "dom.media.webcodecs.enabled is @IS_NIGHTLY_BUILD@ under MOZ_WIDGET_ANDROID",
+      "fills": "ABSENT-API",
+      "user_value": "3",
+      "churn": "SECOND-BROWSER",
+      "rating_note": "Off on Android release, so a site using WebCodecs breaks in Firefox for Android.",
+      "confidence": "high",
+      "cost": "M",
+      "demand": "unmeasured",
+      "support": {
+        "chrome": "shipped",
+        "safari": "shipped",
+        "firefox": "desktop only"
+      },
+      "tags": [
+        "PLATFORM",
+        "CODEC",
+        "ANDROID"
+      ],
+      "parity_url": "",
+      "parity_evidence": "",
+      "parity_bcd": "",
+      "parity": []
+    },
+    {
+      "needs_measuring": false,
+      "quick_win": true,
+      "withheld": [],
+      "id": "getdisplaymedia-audio",
+      "scope": "reliability",
+      "type": "DEFECT",
+      "title": "getDisplayMedia silently ignores audio constraints",
+      "consequence": "Sites asking to share tab or system audio get video only, with no error, so screen sharing loses sound and the site cannot detect why.",
+      "evidence": "Reported that the audio constraint is never read; not confirmed by me",
+      "fills": "BROKEN",
+      "user_value": "3",
+      "churn": "SECOND-BROWSER",
+      "rating_note": "Screen share silently loses audio with no error, so the feature reads as unsupported.",
+      "confidence": "med",
+      "cost": "M",
+      "demand": "MODERATE",
+      "tags": [
+        "OS-FIT",
+        "CAPTURE",
+        "AUDIO"
+      ],
+      "parity_url": "",
+      "parity_evidence": "",
+      "parity_bcd": "",
+      "parity": []
+    },
+    {
+      "needs_measuring": false,
+      "quick_win": false,
+      "withheld": [],
+      "id": "mse-in-workers",
+      "scope": "compat-gaps",
+      "sub_scope": "web-api",
+      "type": "MISSING",
+      "title": "Media Source cannot be used in Workers",
+      "consequence": "Large streaming players must do buffer management on the main thread, so heavy pages jank mid-playback. Sites that optimised for worker MSE measure worse in Firefox than in other engines.",
+      "details": "Corrected 2026-08-07. This item previously claimed \"no Firefox bug tracks it\" and demand none-found. Both were wrong. Bug 1763651 \"MSE in workers\" is open, assigned to aosmond, carries both parity-chrome and parity-safari keywords, is platform-scheduled, and was scheduled for 2026-03-31 - which has passed, so this is slipped scheduled work rather than an unowned gap. It blocks two other bugs. That changes what this item is for. It should not sit in the measure-before-building bucket, because the decision to build it has already been taken elsewhere; what the roadmap needs from it is a current status and a revised date, not a reach estimate. It is still unranked here only because reach was never filled in, which is the gate problem recorded in the handoff rather than a judgement about this item.",
+      "evidence": "MediaSource is Exposed=Window only. Tracked and assigned at bug 1763651 (parity-chrome, parity-safari), platform-scheduled 2026-03-31 - a date already passed.",
+      "owner": "aosmond",
+      "fills": "ABSENT-API",
+      "user_value": "3",
+      "churn": "SECOND-BROWSER",
+      "rating_note": "Named by large streaming sites; they move main-thread work off it.",
+      "confidence": "high",
+      "cost": "L",
+      "demand": "unmeasured",
+      "support": {
+        "chrome": "108",
+        "safari": "18",
+        "firefox": "absent"
+      },
+      "tags": [
+        "PLAYS-FAST",
+        "PLATFORM",
+        "MSE"
+      ],
+      "parity_url": "https://chromium.googlesource.com/chromium/src/+/main/third_party/blink/renderer/modules/mediasource/media_source.idl#94",
+      "parity_evidence": "Both engines expose it: Chromium media_source.idl has Exposed=(Window, DedicatedWorker) and canConstructInDedicatedWorker; WebKit MediaSource.idl has the same pair behind MEDIA_SOURCE_IN_WORKERS - https ://github.com/WebKit/WebKit/blob/main/Source/WebCore/Modules/mediasource /MediaSource.idl#L71",
+      "parity_bcd": "",
+      "parity": [
+        "chrome",
+        "safari"
+      ]
+    },
+    {
+      "needs_measuring": false,
+      "quick_win": false,
+      "withheld": [],
+      "id": "mediarecorder-codec-coverage",
+      "scope": "reliability",
+      "type": "MISSING",
+      "title": "Media recording produces only Opus and VP8 in WebM or Ogg",
+      "consequence": "Sites cannot record H.264, VP9, AV1 or AAC, and cannot get an MP4 at all, so anything that needs a widely-playable recording must transcode server-side or use another browser. Chrome and Safari both offer more.",
+      "details": "Reframed 2026-08-07 from \"crashes on anything else\", and retyped DEFECT to MISSING. The crash claim was wrong. There is a MOZ_CRASH(\"Unknown codec\") in MediaEncoder::CreateEncoder, so the original reading of the code was understandable. But it is unreachable from content: the MediaRecorder constructor runs the type-support check first and throws NotSupportedError for anything it does not handle, and that check only ever admits webm or ogg containers with opus or vp8. Sites get a clean, catchable error, which is exactly what the old consequence said they did not get. The real gap is the narrowness itself, and it is a bigger deal than the crash would have been: no H.264, VP9, AV1 or AAC encoding, and no MP4 output. That is a routine requirement for anything that records and then hands the file to a player it does not control. Reach is left at 1 from the crash-era framing and is probably too low now that the item is about capability rather than a crash on a rare path. Needs the owner's call rather than a silent bump.",
+      "evidence": "MediaEncoder::CreateEncoder accepts only opus and vp8; the recorder's type-support check allows only webm and ogg containers",
+      "fills": "ABSENT-API",
+      "user_value": "3",
+      "churn": "SECOND-BROWSER",
+      "rating_note": "Opus and VP8 only. A container change has been requested by a partner; Glean is already counting what sites ask for.",
+      "confidence": "high",
+      "cost": "L",
+      "demand": "unmeasured",
+      "support": {
+        "chrome": "broader",
+        "safari": "broader",
+        "firefox": "partial"
+      },
+      "tags": [
+        "PLATFORM",
+        "CODEC",
+        "CAPTURE"
+      ],
+      "parity_url": "https://chromium.googlesource.com/chromium/src/+/main/third_party/blink/renderer/modules/mediarecorder/video_track_recorder.cc#203",
+      "parity_evidence": "Chromium's VideoTrackRecorder handles VP8, VP9, H264, AV1 and HEVC; we encode VP8 only. WebKit delegates to AVFoundation/GStreamer via isTypeSupported, which cannot be enumerated from source, so no safari claim.",
+      "parity_bcd": "",
+      "parity": [
+        "chrome"
+      ]
+    },
+    {
+      "needs_measuring": false,
+      "quick_win": false,
+      "withheld": [],
+      "id": "remote-playback",
+      "scope": "compat-gaps",
+      "sub_scope": "web-api",
+      "type": "MISSING",
+      "title": "Remote Playback API absent, so users cannot send video to a TV",
+      "consequence": "Users cannot cast to a TV, Chromecast or AirPlay target and switch browsers for living-room viewing. This is the actual spec behind the highly-voted \"casting\" request.",
+      "details": "What it actually is: the Remote Playback API is the specified mechanism behind what users call \"casting\". A page calls HTMLMediaElement.remote.prompt() and the browser presents available receivers - Chromecast, AirPlay targets, DLNA renderers - then either hands the media URL to the receiver to play directly, or mirrors it. Chrome shipped it in 121, Safari in 13.1. We have none of it. Why this ranks high despite being a feature rather than a failure: casting is one of the two highest-voted media requests we found anywhere, and unlike most requests it has no workaround. A user who wants video on the television must change browser, and having changed browser for that session they are unlikely to change back mid-evening. What the work involves, roughly in order of cost: discovering receivers on the local network, which means a discovery protocol per ecosystem (mDNS plus Cast for Chromecast, AirPlay for Apple targets) and a permission and privacy story for local network access; a receiver-picker UI, which is front-end work outside dom/media; the media-element integration and state machine defined by the spec; and the decision of whether we support remoting the media URL only, or also mirroring, which are very different amounts of work. Open questions before this could be sized: do we implement Cast, AirPlay, or a generic subset? Cast in particular has ecosystem and possibly licensing considerations rather than purely technical ones. Is there an existing Mozilla position on shipping Cast support? This was previously dismissed in an earlier draft as \"unclear demand\", which the complaint data later contradicted - so the question to answer is not whether users want it but whether we can ship it.",
+      "evidence": "MDN BCD; Connect idea still drawing replies 2026-08-03",
+      "fills": "ABSENT-API",
+      "user_value": "2",
+      "churn": "SECOND-BROWSER",
+      "rating_note": "Casting to a TV is a common phone task; absent means the user picks another browser for it.",
+      "confidence": "high",
+      "cost": "L",
+      "demand": "STRONG",
+      "support": {
+        "chrome": "121",
+        "safari": "13.1",
+        "firefox": "absent"
+      },
+      "tags": [
+        "OS-FIT",
+        "CAST",
+        "CONTROLS"
+      ],
+      "parity_url": "https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/remote",
+      "parity_evidence": "",
+      "parity_bcd": "api.HTMLMediaElement.remote",
+      "parity": [
+        "chrome",
+        "safari"
+      ]
+    },
+    {
+      "needs_measuring": false,
+      "quick_win": false,
+      "withheld": [],
+      "id": "xhe-aac-unsupported",
+      "scope": "compat-gaps",
+      "sub_scope": "format-protocol",
+      "type": "MISSING",
+      "title": "xHE-AAC decodes on macOS but is not advertised, so sites cannot detect it",
+      "consequence": "macOS can decode xHE-AAC, but Firefox still answers no when a site asks whether it is supported. Sites therefore cannot detect it, and serve a fallback stream or nothing at all.",
+      "details": "Corrected 2026-08-11. This previously read \"not recognised at all\", which was wrong on two counts: the macOS decoder handles USAC, and the work is recorded internally as done. What remains is advertising support, and the other platforms. Kept separate from the MKV item on purpose. That one is a container refusing codecs it could carry; this is a codec we do not implement in any container. Conflating them produces a \"missing formats\" bucket that cannot be sized or assigned. Browser comparison is marked unknown rather than guessed - worth confirming before this is ranked, since it is the whole demand case.",
+      "evidence": "IsAACCodecString accepts only mp4a.40.2 (AAC-LC), mp4a.40.5 (HE-AAC) and mp4a.40.29 (HE-AACv2). mp4a.40.42 (xHE-AAC / USAC) matches nothing, and there is no USAC reference anywhere under dom/media.",
+      "fills": "BLOCKED",
+      "user_value": "3",
+      "churn": "SECOND-BROWSER",
+      "rating_note": "macOS decodes it but Firefox never advertises it, so sites serve a fallback or nothing.",
+      "confidence": "high",
+      "cost": "L",
+      "demand": "unmeasured",
+      "support": {
+        "chrome": true,
+        "safari": true,
+        "firefox": "decodes on macOS",
+        "not advertised": null
+      },
+      "tags": [
+        "PLAYS-AT-ALL",
+        "CODEC",
+        "AUDIO"
+      ],
+      "parity_url": "https://chromium.googlesource.com/chromium/src/+/main/media/base/mime_util_internal.cc#73",
+      "parity_evidence": "Chromium maps mp4a.40.42 to MPEG4_XHE_AAC and carries an AudioCodecProfile::kXHE_AAC through supported_types.cc. Safari was not checked in WebKit source, so no safari claim is made.",
+      "parity_bcd": "",
+      "parity": [
+        "chrome"
+      ]
+    },
+    {
+      "needs_measuring": false,
+      "quick_win": false,
+      "withheld": [],
+      "id": "speech-recognition",
+      "scope": "compat-gaps",
+      "sub_scope": "web-api",
+      "type": "MISSING",
+      "title": "Speech recognition effectively unshipped, off on every channel",
+      "consequence": "Sites offering voice input get nothing in Firefox. Only a hardcoded remote backend exists; on-device recognition is still unstarted.",
+      "evidence": "Pref false on all channels; synthesis ships fine and is unaffected",
+      "fills": "ABSENT-API",
+      "user_value": "3",
+      "churn": "SECOND-BROWSER",
+      "rating_note": "Off on every channel, so any site using it sends the user elsewhere.",
+      "confidence": "high",
+      "cost": "XL",
+      "demand": "unmeasured",
+      "support": {
+        "chrome": "shipped",
+        "safari": "shipped",
+        "firefox": "pref-disabled"
+      },
+      "tags": [
+        "PLATFORM",
+        "SPEECH"
+      ],
+      "parity_url": "https://developer.mozilla.org/docs/Web/API/SpeechRecognition",
+      "parity_evidence": "",
+      "parity_bcd": "api.SpeechRecognition",
+      "parity": [
+        "chrome",
+        "safari"
+      ]
+    },
+    {
+      "needs_measuring": false,
+      "quick_win": false,
+      "withheld": [],
+      "id": "multi-track-selection",
+      "scope": "compat-gaps",
+      "sub_scope": "web-api",
+      "type": "MISSING",
+      "title": "Multi-track audio/video selection implemented but disabled by pref",
+      "consequence": "Sites cannot offer audio-track switching, so multi-language and described-audio streams are unusable even though the code exists.",
+      "details": "Why it might matter: without audioTracks and videoTracks, a page cannot offer audio-track switching, so multi-language soundtracks and described- audio tracks are unreachable for accessibility purposes. Why it probably matters less than it looks: Chrome does not ship this either, and the large streaming sites that actually carry multi-language audio use MSE and do their own track selection at the manifest level rather than through this API. The realistic beneficiaries are progressive playback and accessibility tooling, which is narrow. Downgraded from S3/reach-2 to S4/reach-1 on that reasoning. The code exists and the pref flip is cheap, but cheap is not the same as valuable, and shipping a track API that only Safari also implements will not change how sites are built. Worth asking why it was disabled before assuming the flip is free.",
+      "evidence": "media.track.enabled defaults to false",
+      "fills": "ABSENT-API",
+      "user_value": "2",
+      "churn": "ANNOYS",
+      "rating_note": "Code exists, pref off everywhere including Nightly, so alternate audio tracks are unreachable.",
+      "confidence": "high",
+      "cost": "S",
+      "demand": "none-found",
+      "support": {
+        "chrome": "absent",
+        "safari": "shipped",
+        "firefox": "pref-disabled"
+      },
+      "tags": [
+        "OS-FIT",
+        "PLATFORM",
+        "AUDIO",
+        "CAPTIONS"
+      ],
+      "parity_url": "https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/audioTracks",
+      "parity_evidence": "",
+      "parity_bcd": "api.HTMLMediaElement.audioTracks",
+      "parity": [
+        "safari"
+      ]
+    },
+    {
+      "needs_measuring": false,
+      "quick_win": false,
+      "withheld": [],
+      "id": "audio-session-nightly-only",
+      "scope": "compat-gaps",
+      "sub_scope": "web-api",
+      "initiative": "audio-session",
+      "type": "MISSING",
+      "title": "Audio Session API ships on Nightly only",
+      "consequence": "Sites cannot rely on declaring their audio session type, so focus, ducking and interruption behaviour stays wrong for release users - the exact problem the initiative exists to fix. Safari ships it, so sites that adopt it get correct behaviour there and not here.",
+      "details": "Added 2026-08-07. The audio-session initiative was marked in flight with an owner and a bug, but its only item was the spec work - so the roadmap tracked influencing the standard and not shipping the implementation. The implementation exists: the interface is defined and gated on a pref that defaults to Nightly. That is exactly the shape of the WebCodecs-on-Android item, which does get its own entry, so the omission was an inconsistency rather than a decision. Reach is UNKNOWN deliberately: nobody has measured how many sites would use this, and Safari being the only other implementer cuts both ways.",
+      "evidence": "AudioSession.webidl exists and is gated on a pref that defaults to nightly-build only",
+      "owner": "alwu",
+      "fills": "ABSENT-API",
+      "user_value": "2",
+      "churn": "ANNOYS",
+      "rating_note": "Nightly only, so release sites cannot declare intent and ducking stays wrong.",
+      "confidence": "high",
+      "cost": "M",
+      "demand": "unmeasured",
+      "support": {
+        "chrome": "absent",
+        "safari": "shipped",
+        "firefox": "nightly only"
+      },
+      "tags": [
+        "OS-FIT",
+        "PLATFORM",
+        "AUDIO",
+        "CONTROLS"
+      ],
+      "parity_url": "https://developer.mozilla.org/docs/Web/API/AudioSession",
+      "parity_evidence": "",
+      "parity_bcd": "api.AudioSession",
+      "parity": [
+        "safari"
+      ]
+    },
+    {
+      "needs_measuring": false,
+      "quick_win": false,
+      "withheld": [],
+      "id": "audiocontext-setsinkid",
+      "scope": "compat-gaps",
+      "sub_scope": "web-api",
+      "initiative": "web-api-conformance",
+      "type": "MISSING",
+      "title": "AudioContext output-device selection not implemented",
+      "consequence": "Web apps cannot route their audio to a chosen output device, so users must change the system default instead.",
+      "evidence": "MDN BCD",
+      "fills": "ABSENT-API",
+      "user_value": "2",
+      "churn": "ANNOYS",
+      "rating_note": "Web Audio cannot pick an output device, though element setSinkId ships on desktop.",
+      "confidence": "high",
+      "cost": "M",
+      "demand": "unmeasured",
+      "support": {
+        "chrome": "110",
+        "safari": "absent",
+        "firefox": "absent"
+      },
+      "tags": [
+        "OS-FIT",
+        "AUDIO"
+      ],
+      "parity_url": "https://developer.mozilla.org/docs/Web/API/AudioContext/setSinkId",
+      "parity_evidence": "",
+      "parity_bcd": "api.AudioContext.setSinkId",
+      "parity": [
+        "chrome"
+      ]
+    },
+    {
+      "needs_measuring": false,
+      "quick_win": false,
+      "withheld": [],
+      "id": "fullscreen-transition-black",
+      "scope": "reliability",
+      "type": "MISSING",
+      "title": "Entering fullscreen fades through black, and Chrome does not",
+      "consequence": "Entering fullscreen on a video is visibly slower and rougher than in Chrome, and on Windows the screen goes black briefly. The black frame is deliberate: Firefox runs a fade-to-black transition of 200ms in and 200ms out on every platform except Linux, with a one-second timeout on top. Chrome runs no transition at all.",
+      "details": "Raised 2026-08-11 from a user-visible comparison against Chrome, then confirmed in the tree. Worth separating two questions: whether the fade should exist at all (Linux already ships without it, which is a working precedent), and whether the transition is also slow for reasons beyond the fade - the 1s timeout suggests the code expects to wait on something. macOS additionally routes through native fullscreen (full-screen-api.macos-native-full-screen, all.js:3192), so it is a third behaviour rather than a second.",
+      "evidence": "modules/libpref/init/all.js:3195-3202 - \"transition duration of fade-to-black and fade-from-black\": full-screen-api.transition-duration.enter and .leave are \"200 200\" under #ifndef MOZ_WIDGET_GTK and \"0 0\" for GTK, so Windows and macOS pay it and Linux does not. :3204 sets full-screen-api.transition.timeout to 1000, commented \"timeout for black screen in fullscreen transition\". On Windows the transition is a real top-most black window on its own thread: widget/windows/nsWindow.cpp:3203 sets wc.hbrBackground = CreateSolidBrush(RGB(0, 0, 0)), created and animated in FullscreenTransitionThreadProc (:3196).",
+      "fills": "BROKEN",
+      "user_value": "3",
+      "churn": "ANNOYS",
+      "rating_note": "400ms of black on every fullscreen against Chrome's none; felt every single time.",
+      "confidence": "high",
+      "cost": "M",
+      "demand": "MEDIUM",
+      "tags": [
+        "FEELS-RIGHT",
+        "WINDOWS",
+        "MACOS"
+      ],
+      "parity_url": "",
+      "parity_evidence": "",
+      "parity_bcd": "",
+      "parity": []
+    },
+    {
+      "needs_measuring": false,
+      "quick_win": false,
+      "withheld": [
+        "details"
+      ],
+      "id": "enable-hw-ffvpx",
+      "scope": "bets",
+      "type": "MISSING",
+      "title": "Hardware ffvpx off on Windows release, macOS and Android",
+      "consequence": "More decoding stays on the CPU than necessary, costing power.",
+      "owner": "alwu",
+      "fills": "BROKEN",
+      "user_value": "3",
+      "churn": "ANNOYS",
+      "rating_note": "Software decode costs battery and drops frames; already on for Linux and Windows Nightly.",
+      "confidence": "med",
+      "cost": "M",
+      "demand": "unmeasured",
+      "tags": [
+        "DEVICE",
+        "HW-DECODE",
+        "POWER"
+      ],
+      "parity_url": "",
+      "parity_evidence": "",
+      "parity_bcd": "",
+      "parity": []
+    },
+    {
+      "needs_measuring": false,
+      "quick_win": false,
+      "withheld": [],
+      "id": "mse-container-coverage",
+      "scope": "compat-gaps",
+      "sub_scope": "web-api",
+      "type": "MISSING",
+      "title": "Media Source accepts only MP4 and WebM",
+      "consequence": "A container that plays fine in a video element can be refused by MediaSource, so a site cannot stream what the browser can otherwise play. MKV is the clearest case: supported for progressive playback, rejected for MSE.",
+      "details": "Found while auditing codec support per surface rather than per container. Support is not one fact: the element, MSE, WebCodecs and MediaRecorder each keep their own allowlist, and they disagree. A reader who checks canPlayType and assumes MSE will follow is wrong.",
+      "evidence": "MediaSource::IsTypeSupported allows video/mp4, audio/mp4, video/webm and audio/webm, and rejects everything else with \"Type not supported in MediaSource\".",
+      "fills": "ABSENT-API",
+      "user_value": "2",
+      "churn": "ANNOYS",
+      "rating_note": "MSE refuses types the element plays. Glean already counts the requests.",
+      "confidence": "high",
+      "cost": "M",
+      "demand": "unmeasured",
+      "support": {
+        "chrome": "broader",
+        "safari": "unknown",
+        "firefox": "partial"
+      },
+      "tags": [
+        "PLAYS-AT-ALL",
+        "PLATFORM",
+        "MSE",
+        "CODEC"
+      ],
+      "parity_url": "https://chromium.googlesource.com/chromium/src/+/main/media/filters/stream_parser_factory.cc#571",
+      "parity_evidence": "Chromium's MSE parser table registers video/webm, audio/webm, audio/mpeg (MP3), video/mp4, audio/mp4, audio/aac (ADTS) and video/mp2t. We accept MP4 and WebM only, so MP3, ADTS-AAC and MPEG-2 TS are the actual gap. Note Chrome does not accept Matroska in MSE either.",
+      "parity_bcd": "",
+      "parity": [
+        "chrome"
+      ]
+    },
+    {
+      "needs_measuring": false,
+      "quick_win": false,
+      "withheld": [],
+      "id": "mediasession-camera-mic",
+      "scope": "compat-gaps",
+      "sub_scope": "web-api",
+      "initiative": "mediasession-conformance",
+      "type": "MISSING",
+      "title": "No MediaSession actions for muting camera and microphone",
+      "consequence": "In a video call users cannot mute from the OS media widget or a headset button and must hunt for the tab. Conferencing sites build custom UI that only works while the tab is focused.",
+      "evidence": "MediaSessionAction enum ends at \"stop\"",
+      "fills": "ABSENT-API",
+      "user_value": "2",
+      "churn": "ANNOYS",
+      "rating_note": "Conferencing sites cannot put mute on OS controls; 9 of the spec's 17 actions exist.",
+      "confidence": "high",
+      "cost": "M",
+      "demand": "unmeasured",
+      "support": {
+        "chrome": "93",
+        "safari": "18.4",
+        "firefox": "absent"
+      },
+      "tags": [
+        "OS-FIT",
+        "CONTROLS",
+        "CAPTURE"
+      ],
+      "parity_url": "",
+      "parity_evidence": "",
+      "parity_bcd": "",
+      "parity": []
+    },
+    {
+      "needs_measuring": false,
+      "quick_win": false,
+      "withheld": [],
+      "id": "global-media-control",
+      "scope": "bets",
+      "type": "MISSING",
+      "title": "No global media control surface, unlike Chrome's Media Hub",
+      "consequence": "With several tabs playing there is no single place to see or control them, so users hunt for the tab making noise. Chrome ships this as Media Hub. Firefox already tracks every playing tab internally and picks one to receive media keys, so the missing piece is the surface rather than the bookkeeping.",
+      "details": "An earlier version of this feature is said to have existed and been removed, but no such change could be found in mozilla-central history - treat that as unsourced unless a bug number turns up.",
+      "fills": "POLISH",
+      "user_value": "2",
+      "churn": "ANNOYS",
+      "rating_note": "Chrome ships it as Media Hub; the backend state already exists, only the surface is missing.",
+      "confidence": "high",
+      "cost": "M",
+      "demand": "unmeasured",
+      "tags": [
+        "OS-FIT",
+        "CONTROLS"
+      ],
+      "parity_url": "",
+      "parity_evidence": "",
+      "parity_bcd": "",
+      "parity": []
+    },
+    {
+      "needs_measuring": false,
+      "quick_win": false,
+      "withheld": [],
+      "id": "webcodecs-hevc-windows",
+      "scope": "compat-gaps",
+      "sub_scope": "web-api",
+      "type": "MISSING",
+      "title": "WebCodecs HEVC is Nightly-only and skips Windows entirely",
+      "consequence": "Web apps cannot decode or encode HEVC through WebCodecs on Windows at all, and only on Nightly elsewhere - even though the platform decoder Firefox already uses for ordinary HEVC playback is available on Windows.",
+      "evidence": "IsSupportedVideoCodec gates H265 on dom.media.webcodecs.h265.enabled and media.hevc.enabled and IsOnMacOS() || IsOnLinux(), so Windows is excluded by construction.",
+      "fills": "ABSENT-API",
+      "user_value": "2",
+      "churn": "ANNOYS",
+      "rating_note": "Nightly only, and Windows excluded on every channel by construction.",
+      "confidence": "high",
+      "cost": "M",
+      "demand": "unmeasured",
+      "support": {
+        "chrome": "shipped",
+        "safari": "shipped",
+        "firefox": "Nightly, not Windows"
+      },
+      "tags": [
+        "PLATFORM",
+        "CODEC",
+        "WINDOWS"
+      ],
+      "parity_url": "",
+      "parity_evidence": "",
+      "parity_bcd": "",
+      "parity": []
+    },
+    {
+      "needs_measuring": false,
+      "quick_win": false,
+      "withheld": [],
+      "id": "cubeb-stream-reuse",
+      "scope": "perennial",
+      "initiative": "seek-and-startup",
+      "type": "MISSING",
+      "title": "Enable cubeb stream reuse for all platforms",
+      "consequence": "Reusing the audio stream instead of tearing it down and recreating it removes a large part of seek cost. It is enabled on macOS only, so users on Windows, Linux and Android see none of the benefit.",
+      "details": "The macOS work is landed and measurable: seekedColdLatency and seekedWarmLatency already run nightly in Raptor against Chrome and Safari, so the benefit of extending this is directly observable rather than argued. The remaining work is per-platform audio backend handling, which is why it did not come for free with the macOS change.",
+      "owner": "alwu (landed part)",
+      "fills": "BROKEN",
+      "user_value": "3",
+      "churn": "ANNOYS",
+      "rating_note": "Seek latency on three of four platforms, and the macOS precedent already exists.",
+      "confidence": "high",
+      "cost": "L",
+      "demand": "MODERATE",
+      "tags": [
+        "PLAYS-FAST"
+      ],
+      "parity_url": "",
+      "parity_evidence": "",
+      "parity_bcd": "",
+      "parity": []
+    },
+    {
+      "needs_measuring": false,
+      "quick_win": false,
+      "withheld": [],
+      "id": "hdr-video-not-enabled",
+      "scope": "color",
+      "type": "MISSING",
+      "title": "HDR video is still off on Linux only",
+      "consequence": "On Linux, HDR content plays as SDR and looks washed out on hardware bought for HDR. macOS and Windows both enable it by default.",
+      "details": "Corrected 2026-08-11. This previously claimed Windows as well, which shipped in release in May 2026. Linux already has a Wayland HDR path in the tree; it is off only because the preference defaults to false there. See evidence. Corrected 2026-08-07. This item previously read \"HDR video playback is not enabled by default\" with no platform qualifier, and the colour aspect said users with HDR displays get SDR. That is wrong for macOS. What the tree actually shows: the colour-management HDR pref defaults true on macOS and Windows and false on Linux. On Windows the remaining gate looks like the 10-bit decode format, which is set to early-beta-or-earlier and carries a comment to change it when shipping HDR video on Windows, pointing at a tracking bug. So the honest state is one platform apparently done, one nearly, one not started - not a blanket absence. This matters more than a wording fix, because the item is ranked near the top of the list and a quarter of a plan could be built on a premise that is already partly satisfied. Confidence is still med and should stay there until gfx confirms whether macOS HDR playback genuinely works end to end or whether the pref being on overstates it. Treated as undone rather than as a regression: if it is not on by default in release, users do not have it. Ownership is unclear outside the media team; see internal notes. Understood to be tracked elsewhere, but the tracking bugs are unowned and test coverage in this area is being relaxed rather than fixed, which is the opposite of what an actively converging project looks like. Worth one conversation with gfx before assuming it is covered.",
+      "evidence": "Colour-management HDR defaults on for macOS and Windows and off for Linux. On Windows the 10-bit decode format is still gated to early beta or earlier, with a pref comment saying to flip it when shipping HDR video on Windows.",
+      "owner": "unassigned",
+      "fills": "BROKEN",
+      "user_value": "2",
+      "churn": "ANNOYS",
+      "rating_note": "Linux only now that Windows shipped in release, so a much smaller population than written.",
+      "confidence": "med",
+      "cost": "L",
+      "demand": "STRONG",
+      "tags": [
+        "DEVICE",
+        "PLAYS-AT-ALL",
+        "HDR"
+      ],
+      "parity_url": "",
+      "parity_evidence": "",
+      "parity_bcd": "",
+      "parity": []
+    },
+    {
+      "needs_measuring": false,
+      "quick_win": false,
+      "withheld": [],
+      "id": "managed-media-source",
+      "scope": "compat-gaps",
+      "sub_scope": "web-api",
+      "initiative": "web-api-conformance",
+      "type": "MISSING",
+      "title": "Managed Media Source not implemented",
+      "consequence": "Streaming sites cannot hand buffer eviction to the browser, losing the power savings the API exists to provide, especially on mobile.",
+      "evidence": "MDN BCD",
+      "fills": "ABSENT-API",
+      "user_value": "2",
+      "churn": "ANNOYS",
+      "rating_note": "Growing fast on mobile, and Chrome has not shipped it either.",
+      "confidence": "high",
+      "cost": "L",
+      "demand": "WEAK",
+      "support": {
+        "chrome": "absent",
+        "safari": "17",
+        "firefox": "absent"
+      },
+      "tags": [
+        "DEVICE",
+        "PLATFORM",
+        "MSE",
+        "POWER"
+      ],
+      "parity_url": "https://developer.mozilla.org/docs/Web/API/ManagedMediaSource",
+      "parity_evidence": "",
+      "parity_bcd": "api.ManagedMediaSource",
+      "parity": [
+        "safari"
+      ]
+    },
+    {
+      "needs_measuring": false,
+      "quick_win": false,
+      "withheld": [],
+      "id": "no-bundled-software-decoders",
+      "scope": "compat-gaps",
+      "sub_scope": "format-protocol",
+      "initiative": "decoder-fallback-story",
+      "type": "MISSING",
+      "title": "No bundled AAC decoder, so we depend on the platform one",
+      "consequence": "Firefox ships no AAC decoder of its own and uses whatever the operating system provides. Every platform decoder in use is a software one, so audio still plays on machines without hardware AAC; the exposure is that when a platform decoder is absent, blocked by policy, or rejects a stream another browser accepts, there is nothing behind it.",
+      "details": "Corrected 2026-08-11. This previously said a refusing platform decoder means silence, and rated S1 on that basis. Every platform path Firefox uses is a software decoder, so the risk is a dependency rather than an outage. Corrected 2026-08-07. This item previously read \"no software H.264, HEVC or AAC decoder, so there is no fallback at all\". Two thirds of that was wrong or moot. H.264 does have a software fallback. The downloadable OpenH264 plugin is a software H.264 decoder, it is enabled and auto-installed by default, and it is registered last in the decoder chain for both the content and default paths - so it is exactly the last-resort fallback this item claimed did not exist. It is also not baseline-only: builds from 2.3.2 onward are tagged as supporting the advanced profiles. An absent platform H.264 decoder therefore costs performance and power, not playback. HEVC has no fallback and never will on our terms - it is patent-blocked and already recorded under out_of_scope, so it cannot be work on this roadmap. That leaves AAC, which is why the item is now scoped to AAC alone. The impact stays S1 because the failure mode is unchanged where it applies, but the surface is far narrower than the original framing implied, and anyone sizing this should size an AAC decoder, not a decoder strategy. Cost is still marked XL and probably should not be: an AAC-only answer is much smaller than the three-codec problem this used to describe. Needs a re-estimate from the owner.",
+      "evidence": "ffvpx built with CONFIG_AAC_DECODER 0 (config_components_audio_video.h:337), so nothing we ship decodes AAC. Every platform path we use instead is software: Windows uses Microsoft's AAC decoder MFT (CLSID_CMSAACDecMFT, dom/media/platforms/wmf/WMFDecoderModule.cpp:262-263) and is NOT DXVA-gated, unlike HEVC at :255 which requires sDXVAEnabled; macOS uses AudioToolbox kAudioFormatMPEG4AAC (dom/media/platforms/apple/AppleATDecoder.cpp:161); Linux uses system ffmpeg AV_CODEC_ID_AAC (dom/media/platforms/ffmpeg/FFmpegAudioDecoder.cpp:494).",
+      "fills": "BROKEN",
+      "user_value": "2",
+      "churn": "ANNOYS",
+      "rating_note": "A dependency rather than an outage: every platform AAC decoder in use is a software one.",
+      "confidence": "high",
+      "cost": "XL",
+      "demand": "STRONG",
+      "support": {
+        "chrome": "bundles its own",
+        "safari": "platform only",
+        "firefox": "platform only"
+      },
+      "tags": [
+        "PLAYS-AT-ALL",
+        "CODEC",
+        "AUDIO"
+      ],
+      "parity_url": "",
+      "parity_evidence": "",
+      "parity_bcd": "",
+      "parity": []
+    },
+    {
+      "needs_measuring": false,
+      "quick_win": false,
+      "withheld": [],
+      "id": "audiolistener-audioparams",
+      "scope": "compat-gaps",
+      "sub_scope": "web-api",
+      "initiative": "web-api-conformance",
+      "type": "MISSING",
+      "title": "AudioListener spatial parameters not implemented",
+      "consequence": "Spatial-audio sites cannot automate listener position or orientation, so 3D audio scenes behave differently or not at all.",
+      "evidence": "MDN BCD. The spec is at REC status.",
+      "fills": "ABSENT-API",
+      "user_value": "1",
+      "churn": "INVISIBLE",
+      "rating_note": "Spatial audio parameters; the legacy setters still work.",
+      "confidence": "high",
+      "cost": "M",
+      "demand": "unmeasured",
+      "support": {
+        "chrome": "52",
+        "safari": "14.1",
+        "firefox": "absent"
+      },
+      "tags": [
+        "PLATFORM",
+        "AUDIO",
+        "SPEC"
+      ],
+      "parity_url": "https://developer.mozilla.org/docs/Web/API/AudioListener/positionX",
+      "parity_evidence": "",
+      "parity_bcd": "api.AudioListener.positionX",
+      "parity": [
+        "chrome",
+        "safari"
+      ]
+    },
+    {
+      "needs_measuring": false,
+      "quick_win": false,
+      "withheld": [],
+      "id": "mediasession-pip-action",
+      "scope": "compat-gaps",
+      "sub_scope": "web-api",
+      "initiative": "mediasession-conformance",
+      "type": "MISSING",
+      "title": "No MediaSession action for Picture-in-Picture",
+      "consequence": "Sites cannot offer PiP entry through the OS media surface, so PiP is only reachable from Firefox's own affordance.",
+      "evidence": "MediaSessionAction enum ends at \"stop\". Overlaps an existing troubled PiP Web API effort with a non-media owner.",
+      "fills": "ABSENT-API",
+      "user_value": "1",
+      "churn": "INVISIBLE",
+      "rating_note": "One missing action, and a separate PiP effort overlaps it.",
+      "confidence": "high",
+      "cost": "M",
+      "demand": "unmeasured",
+      "support": {
+        "chrome": "unknown",
+        "safari": "unknown",
+        "firefox": "absent"
+      },
+      "tags": [
+        "OS-FIT",
+        "CONTROLS",
+        "PIP"
+      ],
+      "parity_url": "",
+      "parity_evidence": "",
+      "parity_bcd": "",
+      "parity": []
+    },
+    {
+      "needs_measuring": false,
+      "quick_win": false,
+      "withheld": [],
+      "id": "vulkan-decode-hang",
+      "scope": "reliability",
+      "type": "DEFECT",
+      "title": "Vulkan video decode can hang on Linux",
+      "consequence": "Where enabled, playback hangs the tab. Currently off by default, so present reach is near zero, but it gates shipping the feature.",
+      "details": "The S1 rating is a modelling artefact, flagged 2026-08-07. Nothing here reaches users: the feature is off by default on every platform, as the consequence says. Rating it \"total failure - content does not play\" scores it as though users met it, and reach 1 does not undo that because one reach step only cancels one impact step. What this actually is, is a blocker on shipping Vulkan video decode. The model has no way to say that - every item must be expressed as user impact - so ship-blockers get inflated into user-facing severities. Recorded in the handoff as a schema gap rather than fixed by fiddling with this item's numbers.",
+      "evidence": "media.hardware-video-decoding-vulkan.enabled is false on all platforms",
+      "owner": "external contributor",
+      "fills": "BROKEN",
+      "user_value": "2",
+      "churn": "INVISIBLE",
+      "rating_note": "Preference-off on every channel, so no user meets it; it blocks shipping the feature at all.",
+      "confidence": "med",
+      "cost": "M",
+      "demand": "MODERATE",
+      "tags": [
+        "PLAYS-AT-ALL",
+        "DEVICE",
+        "HW-DECODE",
+        "LINUX"
+      ],
+      "parity_url": "",
+      "parity_evidence": "",
+      "parity_bcd": "",
+      "parity": []
+    },
+    {
+      "needs_measuring": false,
+      "quick_win": false,
+      "withheld": [],
+      "id": "webvtt-time-selectors",
+      "scope": "compat-gaps",
+      "sub_scope": "presentation",
+      "type": "MISSING",
+      "title": "WebVTT time-based cue selectors absent",
+      "consequence": "Word-level caption highlighting cannot be styled, so sites either do per-frame DOM updates in JS or skip the effect entirely.",
+      "details": "Reach is a guess, flagged 2026-08-07. This is ranked - on reach 1 - while its own evidence admits we do not know whether any engine ships these, and demand is none-found. An item we cannot yet say is worth doing should not be in the ordered list at all; the open question about engine support has to be answered first. Same gate problem as native-hls, opposite direction.",
+      "evidence": "Not present in the pseudo-class list. ::cue works with the spec property allowlist. Whether any engine ships these is an open question.",
+      "fills": "ABSENT-API",
+      "user_value": "1",
+      "churn": "INVISIBLE",
+      "rating_note": "Karaoke-style caption styling. No content is blocked without it.",
+      "confidence": "high",
+      "cost": "M",
+      "demand": "none-found",
+      "support": {
+        "chrome": "unknown",
+        "safari": "unknown",
+        "firefox": "absent"
+      },
+      "tags": [
+        "PLATFORM",
+        "CAPTIONS",
+        "SPEC"
+      ],
+      "parity_url": "",
+      "parity_evidence": "",
+      "parity_bcd": "",
+      "parity": []
+    },
+    {
+      "needs_measuring": false,
+      "quick_win": false,
+      "withheld": [],
+      "id": "video-upscaling",
+      "scope": "bets",
+      "type": "MISSING",
+      "title": "Video upscaling exists only on NVIDIA and Windows",
+      "consequence": "RTX video super-resolution shipped, so NVIDIA users on Windows have upscaling. Users on Intel or AMD have none, on hardware that could support it. The underlying request is the highest-voted media idea on Mozilla Connect.",
+      "details": "Shipped half: RTX video super-resolution on NVIDIA under Windows. Missing half: Intel video processor super resolution, and nothing at all for AMD FidelityFX. Demand caveat worth weighing: the headline Connect idea carries the highest kudos of any media request, but its last reply was over a year ago, so the number reflects accumulated historical interest more than current pressure. The separate RTX idea still draws replies - for something that already shipped, which says more about our communication than our backlog.",
+      "evidence": "Highest-kudos media idea on Mozilla Connect; RTX half already shipped",
+      "fills": "POLISH",
+      "user_value": "1",
+      "churn": "INVISIBLE",
+      "rating_note": "NVIDIA on Windows on AC power only, and its absence is not visible to users.",
+      "confidence": "high",
+      "cost": "XL",
+      "demand": "STRONG",
+      "tags": [
+        "DEVICE",
+        "OS-FIT",
+        "HW-DECODE"
+      ],
+      "parity_url": "",
+      "parity_evidence": "",
+      "parity_bcd": "",
+      "parity": []
+    },
+    {
+      "needs_measuring": true,
+      "quick_win": false,
+      "withheld": [],
+      "id": "media-playback-while-not-visible",
+      "scope": "compat-gaps",
+      "type": "MISSING",
+      "title": "media-playback-while-not-visible is unimplemented",
+      "consequence": "Sites have no way to say that playback should continue while their content is not visible, so the browser has to infer it. The specification is still under discussion, which is why confidence that this is worth building is low.",
+      "evidence": "Bug 1987898 - Implement \"media-playback-while-not-visible\". Recorded internally as still in spec discussion, which is why confidence is low.",
+      "fills": "ABSENT-API",
+      "user_value": "1",
+      "churn": "INVISIBLE",
+      "rating_note": "The spec proposal is still in discussion, so building now may be wrong.",
+      "confidence": "low",
+      "cost": "M",
+      "demand": "WEAK",
+      "tags": [
+        "PLAYS-AT-ALL",
+        "API"
+      ],
+      "parity_url": "",
+      "parity_evidence": "",
+      "parity_bcd": "",
+      "parity": []
+    }
+  ],
+  "metrics": [
+    {
+      "id": "vpl.estimatedFirstFrameLatency",
+      "kind": "scalar",
+      "title": "Time to first frame",
+      "source": "browsertime-video-playback-latency (Raptor)",
+      "exists": true,
+      "note": "Runs nightly in CI for h264/vp9/av1. Owner is aosmond + Media Team.",
+      "target": "TBD",
+      "cross_browser": [
+        "firefox",
+        "chrome"
+      ]
+    },
+    {
+      "id": "vpl.estimatedAnyFrameLatency",
+      "kind": "scalar",
+      "title": "Time to any frame",
+      "source": "browsertime-video-playback-latency (Raptor)",
+      "exists": true,
+      "note": "",
+      "target": "TBD",
+      "cross_browser": [
+        "firefox",
+        "chrome"
+      ]
+    },
+    {
+      "id": "media-seek.seekedColdLatency",
+      "kind": "scalar",
+      "title": "Seek latency, decoder cold",
+      "source": "browsertime-media-seek (Raptor)",
+      "exists": true,
+      "note": "Measures keyframe-to-target GOP re-decode. Owner is Media Team.",
+      "target": "TBD",
+      "cross_browser": [
+        "firefox"
+      ]
+    },
+    {
+      "id": "media-seek.seekedWarmLatency",
+      "kind": "scalar",
+      "title": "Seek latency, decoder warm",
+      "source": "browsertime-media-seek (Raptor)",
+      "exists": true,
+      "note": "",
+      "target": "TBD",
+      "cross_browser": [
+        "firefox"
+      ]
+    },
+    {
+      "id": "youtube-playback.droppedFrames",
+      "kind": "scalar",
+      "title": "Dropped-frame score",
+      "source": "youtube-playback benchmark (Raptor)",
+      "exists": true,
+      "note": "Uses live sites, so expect noise as a target metric.",
+      "target": "TBD",
+      "cross_browser": [
+        "firefox",
+        "fenix"
+      ]
+    },
+    {
+      "id": "youtube-playback.cpuTime",
+      "kind": "scalar",
+      "title": "CPU time during playback",
+      "source": "youtube-playback, gather_cpuTime",
+      "exists": true,
+      "note": "Proxy for power on desktop, not a true energy measurement.",
+      "target": "TBD",
+      "cross_browser": [
+        "firefox"
+      ]
+    },
+    {
+      "id": "desync",
+      "kind": "scalar",
+      "title": "Audio/video desync rate",
+      "source": "none",
+      "exists": false,
+      "note": "Not measured anywhere. Dropped frames is only a partial proxy.",
+      "target": "TBD",
+      "cross_browser": []
+    },
+    {
+      "id": "desktop-energy",
+      "kind": "scalar",
+      "title": "Desktop energy per hour of playback",
+      "source": "browsertime power channels via utils/profiling.js (Raptor)",
+      "exists": true,
+      "note": "Live and alerting on Windows only, in microwatt-hours, with separate CPU package, CPU cores and GPU channels. Missing on macOS and Linux, and no media suite yet measures a playback-scoped window - so this metric exists as plumbing without a playback workload behind it.",
+      "target": "TBD",
+      "cross_browser": [
+        "firefox",
+        "chrome",
+        "custom-car"
+      ]
+    }
+  ],
+  "metrics_without_target": 8,
+  "counts": {
+    "total": 37,
+    "ranked": 36,
+    "needs_measuring": 1
+  }
+}
