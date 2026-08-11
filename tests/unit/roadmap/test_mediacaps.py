@@ -902,3 +902,106 @@ class TestEverySpellingIsAsked:
         """The abandoned fix. It could not be right: the spelling varies by
         surface, and a container-level override cannot express that."""
         assert "codecStrings" not in self._page()
+
+
+class TestTwoSectionsDecodingAndEncoding:
+    """A card expands to two sections, browser-major, surface nested.
+
+    Five separate per-surface tables meant the same codec appeared five times and
+    a question like "can we encode AV1 at all" needed cross-referencing between
+    two of them. Decoding and encoding are the two questions actually asked, so
+    they are the two sections, and each browser carries its surfaces beneath it.
+    """
+
+    def _sections(self):
+        from reviewstats.mediacaps import build_container_view
+        spec = [
+            # kind, codec, per-surface (ff, cr, wk)
+            ("video", "AV1", {"decodeFile": ("yes", "yes", "no"),
+                              "decodeMse": ("yes", "yes", "no"),
+                              "recorder": ("no", "yes", "yes"),
+                              "wcDecode": ("yes", "yes", "yes"),
+                              "wcEncode": ("yes", "yes", "yes")}),
+            # Nobody plays VP8 in MP4, but every engine encodes it via WebCodecs:
+            # the row has to survive on the strength of one surface.
+            ("video", "VP8", {"decodeFile": ("no", "no", "no"),
+                              "decodeMse": ("no", "no", "no"),
+                              "recorder": ("no", "no", "no"),
+                              "wcDecode": ("yes", "yes", "yes"),
+                              "wcEncode": ("yes", "yes", "yes")}),
+        ]
+        targets = ["firefox-playwright", "chrome", "webkit"]
+        results = []
+        for i, t in enumerate(targets):
+            combos = []
+            for kind, codec, fields in spec:
+                c = {"container": "MP4", "kind": kind, "codec": codec,
+                     "codecString": codec.lower(), "canPlayType": "no",
+                     "mse": "no", "recorder": "no"}
+                for f, vals in fields.items():
+                    c[f] = vals[i]
+                c["canPlayType"] = ("probably" if fields["decodeFile"][i] == "yes"
+                                    else "no")
+                c["mse"] = fields["decodeMse"][i]
+                combos.append(c)
+            results.append({"target": t, "label": t.split("-")[0].title(),
+                            "browser_version": "1", "combos": combos, "bare": {}})
+        v = build_container_view(results)
+        return v["containers"][0]["sections"]
+
+    def test_there_are_exactly_two_sections(self):
+        assert [s["key"] for s in self._sections()] == ["decoding", "encoding"]
+
+    def test_decoding_holds_three_surfaces_in_reading_order(self):
+        dec = self._sections()[0]
+        assert [x["key"] for x in dec["surfaces"]] == [
+            "playback", "streaming", "wcdecode"]
+
+    def test_encoding_holds_two_surfaces(self):
+        enc = self._sections()[1]
+        assert [x["key"] for x in enc["surfaces"]] == ["recording", "wcencode"]
+
+    def test_surfaces_are_labelled_with_api_vocabulary(self):
+        """`File` and `MSE` are MediaCapabilities' own terms (`type: 'file'`,
+        `type: 'media-source'`); "url" is not an API concept."""
+        dec, enc = self._sections()
+        assert [x["label"] for x in dec["surfaces"]] == ["File", "MSE", "WC"]
+        assert [x["label"] for x in enc["surfaces"]] == ["Rec", "WC"]
+        for x in dec["surfaces"] + enc["surfaces"]:
+            assert x["full"], "each short label needs a full name for the tooltip"
+
+    def test_a_row_carries_one_cell_per_browser_per_surface(self):
+        dec = self._sections()[0]
+        row = [r for g in dec["groups"] for r in g["rows"]
+               if r["codec"] == "AV1"][0]
+        assert row["cells"]["webkit"]["playback"] == "no"
+        assert row["cells"]["webkit"]["wcdecode"] == "yes"
+        assert row["cells"]["firefox-playwright"]["playback"] == "yes"
+
+    def test_a_surface_no_engine_supports_reads_as_a_dash_not_a_no(self):
+        """VP8-in-MP4 File: all three say no. That is "nobody does this", which is
+        not a Firefox gap, so it must not look like three failures."""
+        dec = self._sections()[0]
+        row = [r for g in dec["groups"] for r in g["rows"]
+               if r["codec"] == "VP8"][0]
+        assert row["cells"]["firefox-playwright"]["playback"] == "none"
+        assert row["cells"]["firefox-playwright"]["wcdecode"] == "yes"
+
+    def test_a_row_survives_on_the_strength_of_one_surface(self):
+        """VP8 would vanish if the old per-surface rule were applied to the whole
+        row -- yet WebCodecs encodes it in every engine."""
+        enc = self._sections()[1]
+        assert any(r["codec"] == "VP8" for g in enc["groups"] for r in g["rows"])
+
+    def test_video_and_audio_remain_separate_groups_inside_a_section(self):
+        for s in self._sections():
+            for g in s["groups"]:
+                assert {r["kind"] for r in g["rows"]} == {g["kind"]}
+
+    def test_the_row_verdict_is_the_worst_across_the_section(self):
+        """AV1 encoding is a gap on MediaRecorder and parity on WebCodecs; the row
+        must sort and colour as the gap, or a real gap hides behind a win."""
+        enc = self._sections()[1]
+        row = [r for g in enc["groups"] for r in g["rows"]
+               if r["codec"] == "AV1"][0]
+        assert row["verdict"] == "gap"

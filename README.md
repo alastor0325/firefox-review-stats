@@ -244,10 +244,36 @@ answer: WebKit raises a `TypeError` from `decodingInfo` for every Matroska
 configuration while answering `canPlayType` for the same input, and reporting
 that as unknown would hide a real measured `no` behind an API quirk.
 
-Each container table is grouped into **Video codecs** and **Audio codecs** (plus
-a **Container itself** group for the bare type), worst-first within each group and
-between them. Interleaving the two by verdict alone meant reading past six audio
-codecs to reach AV1.
+An expanded card holds **two sections, Decoding and Encoding**, each browser-major
+with its surfaces nested beneath it:
+
+```
+DECODING                          Firefox            Chrome             WebKit
+Codec            String           File  MSE   WC     File  MSE   WC     File  MSE   WC
+AV1              av01.0.04M.08    yes   yes   yes    yes   yes   yes    no    no    yes
+VP8              vp8              –     –     yes    –     –     yes    –     –     yes
+
+ENCODING                          Firefox        Chrome         WebKit
+Codec            String           Rec   WC       Rec   WC       Rec   WC
+AV1              av01.0.04M.08    no    yes      yes   yes      yes   yes
+```
+
+Five separate per-surface tables put the same codec on the page five times, and
+answering "can we encode AV1 at all" meant cross-referencing two of them — which
+is the comparison that matters, since Firefox's MediaRecorder refuses VP9 and AV1
+while its WebCodecs encoder accepts both. Decoding and encoding are the two
+questions actually asked, so they are the two sections.
+
+A row lives or dies on the whole section, not per surface: VP8 in MP4 is played by
+no engine yet encoded by all three through WebCodecs, so a per-surface rule would
+have dropped a real answer. Where a surface has no engine support the cell reads
+`–` — "nobody does this" must not look like three separate failures. The row's
+verdict is the worst across its section, so a gap cannot hide behind parity beside
+it.
+
+Inside each section, rows are grouped into **Video codecs** and **Audio codecs**,
+worst-first within each group and between them. Interleaving the two by verdict
+alone meant reading past six audio codecs to reach AV1.
 
 Combinations **no engine supports** are left out. They are not a gap, not an
 overclaim and not a win, and the probe asks every codec a container could

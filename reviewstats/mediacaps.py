@@ -204,6 +204,97 @@ KIND_LABELS = {"video": "Video codecs", "audio": "Audio codecs"}
 _VERDICT_RANK = {GAP: 0, OVERCLAIM: 1, AHEAD: 2, PARITY: 3, NONE: 4}
 
 
+# The two questions a card is actually asked, and which surfaces answer each.
+# Short labels because they head a nested column group; `full` is the tooltip.
+#
+# "File" and "MSE" are MediaCapabilities' own vocabulary (`type: 'file'` and
+# `type: 'media-source'`), which is why they are not called "url" and "stream".
+SECTIONS = (
+    {
+        "key": "decoding", "label": "Decoding",
+        "surfaces": (
+            ("playback", "File", "A plain <video> or <audio> element "
+                                 "(decodingInfo, type: file)"),
+            ("streaming", "MSE", "Adaptive streaming via Media Source "
+                                 "Extensions (decodingInfo, type: media-source)"),
+            ("wcdecode", "WC", "WebCodecs VideoDecoder / AudioDecoder "
+                               "(isConfigSupported) — raw codec access, no "
+                               "container"),
+        ),
+    },
+    {
+        "key": "encoding", "label": "Encoding",
+        "surfaces": (
+            ("recording", "Rec", "MediaRecorder.isTypeSupported"),
+            ("wcencode", "WC", "WebCodecs VideoEncoder / AudioEncoder "
+                               "(isConfigSupported) — a different registry from "
+                               "MediaRecorder's, and often a different answer"),
+        ),
+    },
+)
+
+
+def build_sections(surfaces: dict, browsers: list) -> list:
+    """Regroup the per-surface tables into Decoding and Encoding.
+
+    Five separate tables repeated every codec five times, and answering "can we
+    encode AV1 at all" meant cross-referencing two of them -- which is exactly
+    the comparison that matters, since Firefox's MediaRecorder refuses VP9 and AV1
+    while its WebCodecs encoder accepts both.
+
+    So the two questions become the two sections, browser-major with the surfaces
+    nested beneath each browser. A row lives or dies on the whole section rather
+    than per surface: VP8 in MP4 is played by nobody, yet every engine encodes it
+    through WebCodecs, so dropping it per-surface would have lost a real answer.
+    Where a surface genuinely has no engine support, the cell reads `none` -- that
+    is "nobody does this", which must not look like three separate failures.
+
+    The row's verdict is the worst across the section, so a gap on one surface
+    cannot hide behind parity on another.
+    """
+    targets = [b["target"] for b in browsers]
+    out = []
+    for spec in SECTIONS:
+        keys = [k for k, _, _ in spec["surfaces"] if k in surfaces]
+        # Every codec named by any surface in this section, and the strongest
+        # (kind, codec) identity for it.
+        rows_by_id, verdicts = {}, {}
+        for key in keys:
+            for r in surfaces[key]["rows"]:
+                ident = (r["kind"], r["codec"])
+                entry = rows_by_id.setdefault(ident, {
+                    "kind": r["kind"], "codec": r["codec"],
+                    "codec_string": r.get("codec_string", ""),
+                    "cells": {t: {} for t in targets},
+                })
+                if not entry["codec_string"]:
+                    entry["codec_string"] = r.get("codec_string", "")
+                for t in targets:
+                    entry["cells"][t][key] = (
+                        "none" if r["verdict"] == NONE
+                        else r["support"].get(t, "unknown"))
+                verdicts.setdefault(ident, []).append(r["verdict"])
+        rows = []
+        for ident, entry in rows_by_id.items():
+            seen = verdicts[ident]
+            # Nothing anywhere in the section -> the row says nothing.
+            if all(v == NONE for v in seen):
+                continue
+            entry["verdict"] = min(
+                (v for v in seen if v != NONE),
+                key=lambda v: _VERDICT_RANK[v], default=NONE)
+            rows.append(entry)
+        rows.sort(key=lambda r: (_VERDICT_RANK[r["verdict"]], r["kind"],
+                                 r["codec"]))
+        out.append({
+            "key": spec["key"], "label": spec["label"],
+            "surfaces": [{"key": k, "label": lbl, "full": full}
+                         for k, lbl, full in spec["surfaces"] if k in surfaces],
+            "groups": group_by_kind(rows),
+        })
+    return out
+
+
 def group_by_kind(rows: list) -> list:
     """Split rows into video and audio groups, worst first.
 
@@ -518,6 +609,7 @@ def build_container_view(results: list) -> dict:
         )
         containers.append({
             "name": name,
+            "sections": build_sections(surfaces, browsers),
             "level": level,
             "ours": ours_total,
             "achievable": universe_total,

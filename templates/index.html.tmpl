@@ -961,6 +961,13 @@
     background: var(--rule); color: var(--ink-soft); cursor: help;
     vertical-align: 1px;
   }
+  /* Second header row: the surfaces under each browser. Quieter than the browser
+     names above them so the grouping reads top-down. */
+  th.pm-sub {
+    font-size: 8.5px; font-weight: 600; letter-spacing: .03em;
+    color: var(--ink-soft); text-transform: none;
+  }
+  td.pm-w.none { color: var(--muted) }
   .pm-kind {
     margin: 10px 0 2px; font-size: 10px; font-family: var(--mono);
     text-transform: uppercase; letter-spacing: .06em; color: var(--ink-soft);
@@ -2484,20 +2491,10 @@ function renderMetrics() {
     const SURF = {playback: 'Playback', streaming: 'Streaming',
                   recording: 'Recording', wcdecode: 'WC decode',
                   wcencode: 'WC encode'};
-    // Name the API each column was actually measured with. They are not all the
-    // same generation: playback and streaming use MediaCapabilities, which gives
-    // a definite answer plus hardware-acceleration info, while recording falls
-    // back to MediaRecorder because encodingInfo throws on Chrome for every
-    // configuration -- driving that column with it would report Chrome as
-    // recording nothing.
-    const SURF_FULL = {
-      playback: 'Playback \u2014 a plain <video> or <audio> element '
-        + '(decodingInfo, type: file)',
-      streaming: 'Streaming \u2014 adaptive streaming via Media Source '
-        + 'Extensions (decodingInfo, type: media-source)',
-      recording: 'Recording \u2014 capturing to a file '
-        + '(MediaRecorder.isTypeSupported)',
-    };
+    // The per-surface descriptions used to live here. They now travel with the
+    // sections (`sec.surfaces[].full`), where each is attached to the column
+    // header it describes rather than to a standing list.
+    //
     // Words, not glyphs. A filled/half/empty circle set needed a legend to
     // decode and still read as a severity ramp, which "maybe" is not: for a bare
     // MIME type with no codecs parameter, `maybe` is the spec-correct answer --
@@ -2550,44 +2547,55 @@ function renderMetrics() {
       }).join('');
     }
 
-    function surfaceTable(c, surf) {
-      const st = c.surfaces[surf];
-      if (!st || !st.rows.length) return '';
-      // Grouped video / audio, worst-first, with the rows no engine supports
-      // already left out by the builder. Not shown at all: nobody
-      // supporting a combination is not a finding about Firefox, and the probe
-      // asks every codec a container could plausibly carry, so there are many.
-      const groups = st.groups || [];
-      const head = '<tr><th>Codec</th><th>Codec string</th>'
-        + cv.browsers.map(b => '<th style="text-align:center">'
-            + esc(b.target.split('-')[0]) + '</th>').join('') + '</tr>';
+    function sectionTable(c, sec) {
+      // Browser-major with the surfaces nested beneath each browser, so a codec
+      // appears once per section instead of once per surface. Answering "can we
+      // encode AV1 at all" used to mean cross-referencing two separate tables --
+      // which is the comparison that matters, since Firefox's MediaRecorder
+      // refuses VP9 and AV1 while its WebCodecs encoder accepts both.
+      const groups = sec.groups || [];
+      if (!groups.length) return '';
+      const cols = sec.surfaces;
+      const head =
+        // Row 1: the browsers, each spanning its surfaces.
+        '<tr><th rowspan="2">Codec</th><th rowspan="2">Codec string</th>'
+        + cv.browsers.map(b => '<th colspan="' + cols.length + '" '
+            + 'style="text-align:center;border-left:1px solid var(--rule)">'
+            + esc(b.name || b.label) + '</th>').join('')
+        + '</tr>'
+        // Row 2: the surfaces, repeated under each browser.
+        + '<tr>' + cv.browsers.map(() => cols.map((sf, i) =>
+            '<th class="pm-sub" title="' + escA(sf.full) + '"'
+            + (i === 0 ? ' style="border-left:1px solid var(--rule)"' : '')
+            + '>' + esc(sf.label) + '</th>').join('')).join('') + '</tr>';
       const body = r => '<tr class="pm-v-' + esc(r.verdict) + '">'
         + '<td>' + esc(r.codec) + '</td>'
         + '<td class="rm-mono" style="font-size:9.5px;color:var(--ink-soft)">'
         + esc(r.codec_string) + '</td>'
-        + cv.browsers.map(b => {
-            const [g, cls, tip] = CELL[r.support[b.target]] || CELL.unknown;
-            // No powerEfficient / smooth chip here on purpose: both are
-            // per-device, so they describe the machine that ran the probe rather
-            // than the browser, which is not what a general table can say.
+        + cv.browsers.map(b => cols.map((sf, i) => {
+            const v = (r.cells[b.target] || {})[sf.key];
+            // `none` is "no engine supports this surface for this codec" --
+            // nobody's failing, so it must not look like three separate noes.
+            const [g, cls, tip] = v === 'none'
+              ? ['\u2013', 'pm-w none', 'no engine supports this']
+              : (CELL[v] || CELL.unknown);
             return '<td class="' + cls + '" title="'
-              + escA(b.label + ': ' + tip) + '">' + g + '</td>';
-          }).join('')
+              + escA(b.label + ' \u2014 ' + sf.label + ': ' + tip) + '"'
+              + (i === 0 ? ' style="border-left:1px solid var(--rule)"' : '')
+              + '>' + g + '</td>';
+          }).join('')).join('')
         + '</tr>';
-      return '<h4 style="margin:12px 0 3px;font-size:11.5px;'
+      return '<h4 style="margin:14px 0 3px;font-size:11.5px;'
         + 'font-family:var(--mono);text-transform:uppercase;'
-        + 'letter-spacing:.07em;color:var(--ink-soft)">' + esc(SURF[surf])
+        + 'letter-spacing:.07em;color:var(--ink-soft)">' + esc(sec.label)
         + '</h4>'
-        + (groups.length
-            ? groups.map(gr =>
-                // Video and audio are different questions; interleaving them by
-                // verdict meant reading past six audio codecs to find AV1.
-                '<p class="pm-kind">' + esc(gr.label) + '</p>'
-                + '<div class="table-wrap"><table><thead>' + head
-                + '</thead><tbody>' + gr.rows.map(body).join('')
-                + '</tbody></table></div>').join('')
-            : '<p class="footer-note">No engine supports any codec here.</p>')
-        ;
+        + groups.map(gr =>
+            // Video and audio stay separate: interleaving them by verdict meant
+            // reading past six audio codecs to find AV1.
+            '<p class="pm-kind">' + esc(gr.label) + '</p>'
+            + '<div class="table-wrap"><table><thead>' + head
+            + '</thead><tbody>' + gr.rows.map(body).join('')
+            + '</tbody></table></div>').join('');
     }
 
     document.getElementById('pm-caps').innerHTML =
@@ -2639,7 +2647,7 @@ function renderMetrics() {
             + '</span></div></summary>'
             + '<div class="pm-card-body">'
             + (c.probed
-                ? Object.keys(SURF).map(sf => surfaceTable(c, sf)).join('')
+                ? (c.sections || []).map(sec => sectionTable(c, sec)).join('')
                 : '<p class="footer-note">No codec combinations were probed for '
                   + 'this container \u2014 only whether the container itself is '
                   + 'accepted.</p>')

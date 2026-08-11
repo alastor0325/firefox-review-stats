@@ -1070,3 +1070,34 @@ class TestMetricsComesBeforeRoadmap:
             "the deep-link default still points at Roadmap, so #health opens a "
             "different tab than the one highlighted"
         )
+
+
+class TestSectionsRenderAsNestedColumns:
+    """Two sections, browser-major, surfaces nested -- rendered, not just built."""
+
+    def _html(self):
+        caps = dict(_ROADMAP, caps=TestMeasuredCaps._caps_payload())
+        return _joined(render_html(_MINIMAL_DATA, roadmap_data=caps))
+
+    def test_the_card_body_renders_sections_not_per_surface_tables(self):
+        html = self._html()
+        assert "sectionTable" in html
+        assert "surfaceTable" not in html, "the old per-surface renderer is back"
+
+    def test_the_browser_header_spans_its_surfaces(self):
+        """A two-level header is the whole point: without colspan the browser
+        names would sit above one column each and mislabel the rest."""
+        assert 'colspan="' in self._html()
+
+    def test_a_surface_with_no_engine_support_renders_a_dash(self):
+        html = self._html()
+        assert "no engine supports this" in html
+
+    def test_the_surface_description_is_attached_to_its_column(self):
+        html = self._html()
+        assert "escA(sf.full)" in html
+
+    def test_no_orphaned_surface_description_table_remains(self):
+        """SURF_FULL described three surfaces and was left defined-but-unused when
+        the sections took over; five surfaces meant it was also incomplete."""
+        assert "SURF_FULL" not in self._html()
