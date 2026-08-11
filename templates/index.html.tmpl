@@ -2517,7 +2517,13 @@ function renderMetrics() {
                 'the browser says it may be able to play this. For a bare type '
                 + 'with no codecs parameter that is the normal, correct answer'],
       no: ['no', 'pm-w no', 'not supported'],
-      unknown: ['?', 'pm-w unk', 'the probe could not answer'],
+      // A dash, not a question mark: the answer set is yes / no / dash and
+      // nothing else. The tooltip still distinguishes "nobody supports this"
+      // from "the probe could not answer", and build_matrix.py prints an
+      // unanswered count per surface, so a regression is visible in tooling
+      // rather than as punctuation on the page. Currently zero across all five
+      // surfaces.
+      unknown: ['\u2013', 'pm-w unk', 'the probe could not answer'],
     };
     // Three levels of coverage, plus the case where there is nothing to cover.
     // The previous pair behaved like a boolean: 13 of 14 read as "behind", the

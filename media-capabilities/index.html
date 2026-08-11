@@ -240,6 +240,29 @@ async function encoding(type, isVideo, res) {
 // only about decoding hid the more interesting fact: Firefox's VideoEncoder does
 // VP9 and AV1, while its MediaRecorder accepts vp8 alone. "Cannot record VP9" and
 // "cannot encode VP9" are different claims, and only the first is true.
+// A 34-byte FLAC STREAMINFO: 4096 block size, 48 kHz, 2ch, 16-bit, length
+// unknown. Audio decoder configs carry it because some codecs are not answerable
+// without one, and the absence produced two different wrong cells:
+//
+//   flac    Chrome: throws "description is required"   ->  a question mark
+//   flac    WebKit: answers `no`                       ->  a false negative
+//   vorbis  same, both engines
+//
+// With it, all three engines answer `yes` to both. It does not manufacture
+// support: `ac-3` and a deliberately invalid `notacodec` still answer `no` with
+// the description present. Note the same STREAMINFO satisfies the Vorbis query,
+// which tells you the browsers check that setup data is *present* for this call
+// rather than parsing it -- so what this measures is codec recognition, not
+// stream validity, which is the right question for a support matrix.
+const AUDIO_DESCRIPTION = new Uint8Array([
+  0x10, 0x00,                                      // min blocksize 4096
+  0x10, 0x00,                                      // max blocksize 4096
+  0x00, 0x00, 0x00,                                // min framesize unknown
+  0x00, 0x00, 0x00,                                // max framesize unknown
+  0x0B, 0xB8, 0x02, 0xF0, 0x00, 0x00, 0x00, 0x00,  // 48kHz, 2ch, 16-bit, len 0
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // md5, unused here
+]);
+
 async function webcodecs(codec, isVideo, direction) {
   return await safeAsync(async () => {
     const C = direction === 'encode'
@@ -257,7 +280,11 @@ async function webcodecs(codec, isVideo, direction) {
       }
     } else {
       cfg = { codec, sampleRate: 48000, numberOfChannels: 2 };
-      if (direction === 'encode') cfg.bitrate = 128000;
+      if (direction === 'encode') {
+        cfg.bitrate = 128000;
+      } else {
+        cfg.description = AUDIO_DESCRIPTION;
+      }
     }
     const r = await C.isConfigSupported(cfg);
     return r && r.supported ? 'yes' : 'no';
@@ -267,16 +294,27 @@ async function webcodecs(codec, isVideo, direction) {
 // Codec strings WebCodecs uses differ from the container codecs strings: the
 // registry requires vp09.*/av01.* forms, and Theora/PCM/ALAC are not registered
 // at all. Probing with a container string would report a false "no".
+// Every codec label a container can carry needs an entry here, or the config goes
+// out with `codec: undefined` and the browser answers "Missing required 'codec'"
+// -- which the matrix rendered as a question mark about the codec rather than
+// about the probe. Theora and PCM were missing for exactly that reason.
+//
+// `theora` is not in the WebCodecs codec registry, so every engine is expected to
+// answer no; that is a real measured answer and renders as "no engine supports
+// this", not as an unknown.
 const WC_VIDEO = {
   'H.264 baseline': 'avc1.42E01E', 'H.264 high': 'avc1.640028',
   'HEVC main': 'hvc1.1.6.L93.B0', 'VP8': 'vp8',
   'VP9': 'vp09.00.10.08', 'AV1': 'av01.0.04M.08',
+  'Theora': 'theora',
 };
 const WC_AUDIO = {
   'AAC-LC': 'mp4a.40.2', 'HE-AAC': 'mp4a.40.5', 'xHE-AAC': 'mp4a.40.42',
   'MP3': 'mp3', 'Opus': 'opus', 'Vorbis': 'vorbis', 'FLAC': 'flac',
   'AC-3': 'ac-3', 'E-AC-3': 'ec-3', 'ALAC': 'alac',
   'PCM u8': 'pcm-u8', 'PCM s16': 'pcm-s16',
+  // Containers label this just "PCM"; WAV format tag 1 is 16-bit linear PCM.
+  'PCM': 'pcm-s16',
 };
 
 // Deliberately invalid pairs, to catch an engine that ignores the codecs
@@ -473,6 +511,8 @@ function render(r) {
        + '<th>decodingInfo<br><small>media-source</small></th>'
        + '<th>encodingInfo<br><small>record</small></th>'
        + '<th>4K<br><small>file</small></th>'
+       + '<th>WebCodecs<br><small>decode</small></th>'
+       + '<th>WebCodecs<br><small>encode</small></th>'
        + '<th><small>legacy</small><br>canPlayType</th>'
        + '<th><small>legacy</small><br>MSE</th>'
        + '<th><small>legacy</small><br>Recorder</th></tr>';
@@ -480,6 +520,8 @@ function render(r) {
       h += `<tr><td><i>${mt}</i> (container only)</td>`
          + `<td colspan="4" style="color:#888">n/a &mdash; MediaCapabilities `
          + `requires a codecs parameter</td>`
+         + `<td colspan="2" style="color:#888">n/a &mdash; WebCodecs takes a `
+         + `codec, never a container</td>`
          + `<td>${cell(v.canPlayType)}</td><td>${cell(v.mse)}</td>`
          + `<td>${cell(v.recorder)}</td></tr>`;
     }
@@ -489,15 +531,18 @@ function render(r) {
          + `<td>${cell(c.decodeFile)}</td><td>${cell(c.decodeMse)}</td>`
          + `<td>${cell(c.encodeRecord)}</td>`
          + `<td>${c.decodeFile4k ? cell(c.decodeFile4k) : '&mdash;'}</td>`
+         + `<td>${cell(c.wcDecode)}</td><td>${cell(c.wcEncode)}</td>`
          + `<td>${cell(c.canPlayType)}</td><td>${cell(c.mse)}</td>`
          + `<td>${cell(c.recorder)}</td></tr>`;
     }
     h += '</table>';
   }
   h += '<p><b>MediaCapabilities</b> columns are authoritative: a definite yes/no, '
-     + 'plus <code>+smooth</code> when playback is expected to be smooth and '
-     + '<code>+hw</code> when it is <i>powerEfficient</i>, i.e. hardware '
-     + 'accelerated &mdash; the only web-exposed way to ask that. The '
+     + 'plus <code>+smooth</code> and <code>+hw</code> when the browser reports '
+     + '<i>smooth</i> and <i>powerEfficient</i>. Note <code>+hw</code> is NOT a '
+     + 'hardware-decode flag: Firefox and Chrome both report powerEfficient for '
+     + 'MP3 and FLAC, which neither decodes in hardware. Both flags also describe '
+     + '<b>this machine</b>, which is why the dashboard does not publish them. The '
      + '<b>legacy</b> columns are canPlayType (P = probably, M = maybe, N = no) '
      + 'and the older boolean APIs; they are kept because a disagreement between '
      + 'the two generations is itself worth knowing. The <i>container only</i> '

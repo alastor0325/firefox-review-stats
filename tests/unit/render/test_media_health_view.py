@@ -1101,3 +1101,40 @@ class TestSectionsRenderAsNestedColumns:
         """SURF_FULL described three surfaces and was left defined-but-unused when
         the sections took over; five surfaces meant it was also incomplete."""
         assert "SURF_FULL" not in self._html()
+
+
+class TestOnlyThreeAnswersAreEverShown:
+    """Cells read `yes`, `no`, or an em-dash. Never a question mark.
+
+    A `?` appeared for FLAC and Vorbis under Chrome's WebCodecs, and it was not a
+    fact about the codec: `AudioDecoder.isConfigSupported` throws
+    "description is required" for those, so the probe recorded an error. The root
+    cause is fixed by supplying a description -- with which all three engines
+    answer yes, while `ac-3` and an invalid codec still answer no -- and this is
+    the belt: even an unanswerable cell renders as a dash.
+    """
+
+    def _html(self):
+        caps = dict(_ROADMAP, caps=TestMeasuredCaps._caps_payload())
+        return _joined(render_html(_MINIMAL_DATA, roadmap_data=caps))
+
+    def test_no_question_mark_is_used_as_an_answer(self):
+        html = self._html()
+        assert "['?'," not in html and '"?",' not in html, (
+            "a question mark is still a renderable answer"
+        )
+
+    def test_an_unanswerable_cell_renders_a_dash(self):
+        """The template writes the dash as a JS escape, so match either form
+        rather than only the literal glyph."""
+        html = self._html()
+        i = html.index("unknown: [")
+        window = html[i:i + 60]
+        assert ("\\u2013" in window or "–" in window), window
+
+    def test_the_two_dash_cases_stay_distinguishable_in_the_tooltip(self):
+        """Same glyph, different reasons: nobody supports it, versus we could not
+        find out. Collapsing the words too would lose a real distinction."""
+        html = self._html()
+        assert "the probe could not answer" in html
+        assert "no engine supports this" in html

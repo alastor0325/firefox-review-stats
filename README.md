@@ -238,6 +238,19 @@ a no. Two measured false negatives came from exactly that:
   it has is an AV1 decoder with a ceiling. A 480p tier was added and the surfaces
   take the best tier; `decodeFile4k` still asks 4K specifically, since "what is the
   ceiling" is a different question.
+- Audio decoder configs carry a synthesised 34-byte FLAC STREAMINFO as
+  `description`. Without one, Chrome's `AudioDecoder.isConfigSupported` *throws*
+  for FLAC and Vorbis ("description is required") and WebKit answers a flat `no` —
+  a question mark and a false negative for the same missing field. With it all
+  three answer `yes`, while `ac-3` and a deliberately invalid codec still answer
+  `no`, so it does not manufacture support. The same STREAMINFO satisfies the
+  Vorbis query, which shows browsers check that setup data is *present* for this
+  call rather than parsing it — so this measures codec recognition, not stream
+  validity, which is the right question here.
+- Every codec label a container can carry needs a WebCodecs codec string. `Theora`
+  and `PCM` had none, so those configs went out with `codec: undefined` and the
+  browsers answered "Missing required 'codec'" — rendered as a question mark about
+  the codec rather than about the probe.
 - Codec-string spellings are **not** interchangeable, and the correct one depends on
   the surface. Measured in WebM: `codecs="vp9"` gets `no` from Chrome's
 `decodingInfo` and `yes` from its `MediaRecorder`; `codecs="vp09.00.10.08"` gets
@@ -285,6 +298,12 @@ a fixed order, not sorted by verdict. Sorting the groups worst-first moved the
 blocks around between cards (audio led MP4, video led WebM), so the eye had to
 re-find the video block on each card. Worst-first still governs the rows *inside* a
 group.
+
+Cells read **`yes`, `no`, or `–`** and nothing else. A dash covers two cases,
+separated in the tooltip: no engine supports the combination, or the probe could
+not answer. `build_matrix.py` prints an unanswered count per surface so the second
+case is visible in tooling rather than as punctuation on the page — currently zero
+across all five surfaces.
 
 Answers are coloured green for `yes` and red (`--rate-weak`) for `no`, chosen by
 running the dataviz skill's validator rather than by eye: against the palette's

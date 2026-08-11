@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run probe.html across every browser present and dump one JSON per target.
+"""Drive the published probe page in every browser present, one JSON per target.
 
     .venv/bin/python tools/media-caps/run_probe.py
 
