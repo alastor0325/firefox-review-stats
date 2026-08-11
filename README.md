@@ -126,6 +126,12 @@ python3 -m http.server 8765 --bind 127.0.0.1
 
 ### The Media Health view (playback only)
 
+> **Updating it: [docs/media-health-runbook.md](docs/media-health-runbook.md).** The
+> operational sequence for all three data sources, and the traps. Start there rather
+> than assembling it from the sections below — in particular, the roadmap source lives
+> outside this repo and CI cannot see it, so **editing it requires a local
+> regeneration and commit**.
+
 The Roadmap subview is generated from a hand-curated YAML file that lives
 **outside this repo**, in the investigation repo:
 

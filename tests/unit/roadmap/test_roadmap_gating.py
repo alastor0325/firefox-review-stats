@@ -196,3 +196,74 @@ class TestCiCanRenderTheRoadmapWithoutThePrivateSource:
         d.mkdir()
         assert analyze_git._load_roadmap_view(
             TEAMS["playback"], audience="public", team_dir=d) is None
+
+
+class TestTheRunbookStaysTrue:
+    """The update runbook is checked against the code it documents.
+
+    A runbook that drifts is worse than none: it tells the next session to run a
+    flag that no longer exists, or omits the step whose absence deletes the view.
+    These assertions are cheap and catch exactly that.
+    """
+
+    def _doc(self):
+        import pathlib
+        p = pathlib.Path("docs/media-health-runbook.md")
+        assert p.exists(), "the Media Health runbook is missing"
+        return p.read_text(encoding="utf-8")
+
+    def test_every_script_it_tells_you_to_run_exists(self):
+        import pathlib, re
+        doc = self._doc()
+        # Only things the reader is told to RUN: a `python x.py` line, or a
+        # backticked path with a directory in it. A bare `build_matrix.py` in prose
+        # is a name, not an instruction.
+        scripts = set(re.findall(r"python ((?:[\w./-]+/)?\w+\.py)", doc))
+        scripts |= set(re.findall(r"`([\w./-]+/\w+\.py)`", doc))
+        missing = [s for s in scripts if not pathlib.Path(s).exists()]
+        assert not missing, f"runbook names scripts that do not exist: {missing}"
+
+    def test_every_flag_it_documents_is_real(self):
+        import re, subprocess, sys
+        doc = self._doc()
+        pairs = {
+            "analyze_git.py": ["--roadmap-audience", "--out"],
+            "fetch_perf_metrics.py": ["--days", "--allow-shrink"],
+            "tools/media-caps/run_probe.py": [],
+            "tools/media-caps/build_matrix.py": [],
+        }
+        for script, flags in pairs.items():
+            help_text = subprocess.run(
+                [sys.executable, script, "--help"],
+                capture_output=True, text=True).stdout
+            for f in flags:
+                if f in doc:
+                    assert f in help_text, f"{script} has no {f}, but the runbook uses it"
+
+    def test_it_states_the_gotcha_that_silently_deleted_the_view(self):
+        """The roadmap source is outside the repo and CI cannot see it. A session
+        that does not know this will edit the YAML, push nothing, and wonder why
+        the site did not change -- or worse, trust the weekly job to pick it up."""
+        doc = self._doc()
+        assert "CI cannot see it" in doc
+        assert "requires a local regeneration" in doc
+
+    def test_it_documents_the_rating_vocabulary_actually_in_use(self):
+        from reviewstats.roadmap import CHURN, FILLS
+        doc = self._doc()
+        for v in CHURN:
+            assert v in doc, f"churn level {v} is undocumented"
+        for v in FILLS:
+            assert v in doc, f"fills value {v} is undocumented"
+
+    def test_it_warns_that_real_chrome_is_required(self):
+        """Chromium lacks H.264, AAC and HEVC, so probing it describes a browser
+        that does not exist."""
+        doc = self._doc()
+        assert "Real Chrome" in doc
+        assert "CHROME_PATH" in doc
+
+    def test_it_says_where_the_withheld_categories_are(self):
+        doc = self._doc()
+        assert "withhold" in doc
+        assert "GitHub Pages" in doc
