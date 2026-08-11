@@ -12,17 +12,21 @@ the next action on it is to find out, not to build. `SPEC` and `UPKEEP` never
 rank at all: they have no meaningful reach and are budgeted as a share of time.
 
 **The internal/public split.** This dashboard is published to a public GitHub
-Pages site, and the roadmap carries candid internal assessment — contested
-ownership, partner names, individual owners. An item may declare an `internal:`
+Pages site, and the roadmap carries candid internal assessment: cross-team ownership
+questions, partner and provider names, individual owners. An item may declare an `internal:`
 block naming the fields to withhold:
 
-    - id: playready-content-providers
+    - id: example-item
       consequence: >          # public, neutral phrasing
-        PlayReady works, but few providers have enabled it.
+        A capability ships, but few providers have enabled it.
       internal:
         withhold: [details]
         notes: >              # never rendered publicly
-          Netflix is the significant holdout.
+          <partner name> is the holdout.
+
+Illustrative placeholders on purpose. An earlier version of this docstring used a
+real partner name and a real ownership dispute as its example, which published --
+in source, in a public repo -- precisely what the mechanism exists to withhold.
 
 `audience="public"` drops the `internal:` block entirely and removes every
 field it names, recording them in `withheld` so the page can show that

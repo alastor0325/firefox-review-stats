@@ -178,7 +178,7 @@ class TestSortItems:
 
 class TestStripInternal:
     def test_internal_block_removed_for_public(self):
-        it = item(internal={"notes": "Netflix is the holdout"})
+        it = item(internal={"notes": "<partner> is the holdout"})
         out = strip_internal(it, audience="public")
         assert "internal" not in out
 
@@ -188,15 +188,15 @@ class TestStripInternal:
         assert out["internal"] == {"notes": "secret"}
 
     def test_named_fields_are_withheld_for_public(self):
-        it = item(owner="gfx - contested", internal={"withhold": ["owner"]})
+        it = item(owner="another-team - unresolved", internal={"withhold": ["owner"]})
         out = strip_internal(it, audience="public")
         assert "owner" not in out
         assert out["withheld"] == ["owner"]
 
     def test_withheld_fields_are_kept_for_internal(self):
-        it = item(owner="gfx - contested", internal={"withhold": ["owner"]})
+        it = item(owner="another-team - unresolved", internal={"withhold": ["owner"]})
         out = strip_internal(it, audience="internal")
-        assert out["owner"] == "gfx - contested"
+        assert out["owner"] == "another-team - unresolved"
         assert out["withheld"] == []
 
     def test_multiple_fields_withheld(self):
@@ -280,7 +280,7 @@ class TestBuildRoadmapView:
         assert the secret string is nowhere in it."""
         import json
 
-        secret = "NETFLIX-IS-THE-HOLDOUT-SENTINEL"
+        secret = "WITHHELD-FIELD-SENTINEL"
         v = build_roadmap_view(
             doc(items=[item(id="a", details=secret,
                             internal={"withhold": ["details"],
@@ -292,7 +292,7 @@ class TestBuildRoadmapView:
     def test_internal_payload_does_include_it(self):
         import json
 
-        secret = "NETFLIX-IS-THE-HOLDOUT-SENTINEL"
+        secret = "WITHHELD-FIELD-SENTINEL"
         v = build_roadmap_view(
             doc(items=[item(id="a", details=secret,
                             internal={"withhold": ["details"]})]),
@@ -1149,3 +1149,53 @@ class TestOurOwnRating:
         v = build_roadmap_view({"items": [self._item()], "condition": []},
                                audience="internal")
         assert "impact" not in v["items"][0]
+
+
+class TestNoRealNamesInSourceOrFixtures:
+    """Source and fixtures must not carry the material the redaction protects.
+
+    The module docstring illustrated the withhold mechanism with a real partner
+    named as a commercial holdout, and the tests used the same sentence plus a real
+    cross-team ownership dispute as fixture values. Code is public, so both
+    published -- in a public repo -- exactly what the mechanism exists to withhold.
+    Placeholders now, and this guards the regression.
+    """
+
+    def _sources(self):
+        import pathlib
+        roots = [pathlib.Path("reviewstats"), pathlib.Path("tests"),
+                 pathlib.Path("templates"), pathlib.Path("tools")]
+        for r in roots:
+            for f in r.rglob("*"):
+                if f.suffix in (".py", ".tmpl", ".html", ".md") and f.is_file():
+                    yield f
+
+    # Needles are assembled from fragments so the literals never appear in tracked
+    # source. Spelling them out made this file match itself -- the fourth time an
+    # absence check has matched the very text that documents the absence.
+    _NEEDLES = [
+        "Net" + "flix", "Can" + "al+", "Ado" + "be", "Twi" + "tch",
+        "Hu" + "lu", "Dis" + "ney",
+    ]
+
+    def _scan(self, needles):
+        found = []
+        for f in self._sources():
+            text = f.read_text(encoding="utf-8", errors="ignore")
+            hits = [n for n in needles if n in text]
+            if hits:
+                found.append((str(f), hits))
+        return found
+
+    def test_no_partner_or_provider_names(self):
+        assert not self._scan(self._NEEDLES), (
+            "real partner names in tracked source: " + str(self._scan(self._NEEDLES))
+        )
+
+    def test_no_cross_team_ownership_dispute_as_sample_data(self):
+        assert not self._scan(["gfx" + " - contested"])
+
+    def test_no_internal_hosting_details(self):
+        """The access-control design doc named Mozilla-internal hosting; it lives in
+        the private repo now."""
+        assert not self._scan(["quick." + "mozilla.cloud"])
