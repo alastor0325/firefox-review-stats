@@ -900,10 +900,26 @@ class TestEverySpellingIsAsked:
         page = self._page()
         assert "if (s.startsWith('error')) return 1" in page
 
-    def test_no_per_container_spelling_override_remains(self):
-        """The abandoned fix. It could not be right: the spelling varies by
-        surface, and a container-level override cannot express that."""
-        assert "codecStrings" not in self._page()
+    def test_a_container_override_exists_only_for_a_collision(self):
+        """Aliases handle spellings; an override handles a *collision*, which
+        aliases cannot.
+
+        `1` is the WAV format tag for linear PCM. Chrome also accepts `1` in
+        Matroska -- but as a legacy numeric id meaning something else, since it
+        answers `no` to both `pcm` and `A_PCM/INT/LIT` there while answering
+        `probably` to `1` and to `mp3`. Best-of-aliases read that as "Chrome
+        supports PCM in Matroska", which is false, and it put a gap in the roadmap
+        that does not exist. So Matroska asks for PCM by its Matroska name only.
+
+        Chrome answers `no` to a deliberately invalid codec, so this is not it
+        being lax -- it is resolving a real, different codec.
+        """
+        page = self._page()
+        mkv = page[page.index("name: 'Matroska'"):page.index("name: 'Ogg'")]
+        assert "codecStrings: { 'PCM': 'A_PCM/INT/LIT' }" in mkv
+        wav_start = page.index("name: 'WAV'")
+        wav = page[wav_start:page.index("];", wav_start)]
+        assert "codecStrings" not in wav, "WAV must keep the format tag 1"
 
 
 class TestTwoSectionsDecodingAndEncoding:

@@ -115,6 +115,14 @@ const CONTAINERS = [
     audioCodecs: ['Opus', 'Vorbis'] },
   { name: 'Matroska', video: 'video/x-matroska', audio: 'audio/x-matroska',
     bare: ['video/x-matroska', 'audio/x-matroska'],
+    // A per-container codec string, for a COLLISION rather than a spelling.
+    // ALIASES cannot express this: `1` is the WAV format tag for linear PCM, and
+    // Chrome also accepts `1` in Matroska -- but as a legacy numeric ID meaning
+    // something else, since it answers `no` to both `pcm` and `A_PCM/INT/LIT`
+    // there while answering `probably` to `1` and to `mp3`. Best-of-aliases would
+    // read that as "Chrome supports PCM in Matroska", which is false, and it put a
+    // gap in the roadmap that does not exist.
+    codecStrings: { 'PCM': 'A_PCM/INT/LIT' },
     videoCodecs: ['H.264 baseline', 'H.264 high', 'HEVC main', 'VP8', 'VP9',
                   'AV1', 'Theora'],
     audioCodecs: ['AAC-LC', 'MP3', 'Opus', 'Vorbis', 'FLAC', 'AC-3', 'PCM'] },
@@ -384,7 +392,9 @@ async function run() {
         // the probe asks both and keeps the strongest answer. A browser that
         // accepts any valid spelling supports the codec; the string it insists on
         // is its business.
-        const spellings = ALIASES[label] || [CODEC_STRINGS[label]];
+        const override = c.codecStrings && c.codecStrings[label];
+        const spellings = override ? [override]
+          : (ALIASES[label] || [CODEC_STRINGS[label]]);
         const types = spellings.map(cs => `${major}; codecs="${cs}"`);
         const best = async fn => {
           let out = 'absent';
