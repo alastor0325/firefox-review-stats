@@ -74,7 +74,7 @@ class TestLoaderGate:
         )
         assert view is not None
         assert view["counts"] == {
-            "total": 1, "ranked": 1, "measure": 0, "continuous": 0
+            "total": 1, "ranked": 1, "needs_measuring": 0
         }
 
     def test_env_var_overrides_the_default_path(self, monkeypatch, tmp_path):

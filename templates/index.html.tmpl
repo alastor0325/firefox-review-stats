@@ -452,8 +452,14 @@
   .rm-S2 { color: var(--red-deep); }
   .rm-S3 { color: var(--ink-soft); }
   .rm-S4 { color: var(--muted); }
-  .rm-reach { font-family: var(--mono); font-size: 10.5px; color: var(--ink-soft); }
-  .rm-reach.unk { color: var(--muted); }
+  /* Marks a row whose position is not evidence-backed. Quiet: it qualifies the
+     order, it is not a severity. */
+  .rm-flag {
+    display: inline-block; margin-left: 6px; padding: 0 4px;
+    font-family: var(--mono); font-size: 8.5px; text-transform: uppercase;
+    letter-spacing: .05em; color: var(--ink-soft);
+    border: 1px dashed var(--rule); border-radius: 3px; vertical-align: 1px;
+  }
   tr.rm-row { cursor: pointer; }
   tr.rm-row:hover td { background: var(--paper); }
   .rm-title { font-weight: 500; line-height: 1.45; }
@@ -1500,35 +1506,13 @@ __GH_CORNER__
     </div>
 
     <h2>Ordered</h2>
-    <p class="footer-note">Most to least important. Impact against how many users meet
-      the problem, cost breaking ties. Reach is shown because it is an input we
-      argue about; the score it feeds is not. Click a row for the full
-      consequence, evidence and details.</p>
+    <p class="footer-note">Most to least important: impact first, cost breaking
+      ties. Rows we cannot yet order on evidence sit at the end, marked — whether
+      we can rank something is a fact about our evidence, not about the work, so it
+      does not decide whether you see it. Click a row for the full consequence,
+      evidence and details.</p>
     <div class="table-wrap">
       <table id="roadmap-ranked">
-        <thead></thead>
-        <tbody></tbody>
-      </table>
-    </div>
-  </section>
-
-  <section>
-    <h2>Need measuring first</h2>
-    <p class="footer-note" id="roadmap-measure-note"></p>
-    <div class="table-wrap">
-      <table id="roadmap-measure">
-        <thead></thead>
-        <tbody></tbody>
-      </table>
-    </div>
-  </section>
-
-  <section>
-    <h2>Continuous</h2>
-    <p class="footer-note">Spec and upkeep work has no meaningful reach, so it is
-      budgeted as a share of time rather than ranked against features.</p>
-    <div class="table-wrap">
-      <table id="roadmap-continuous">
         <thead></thead>
         <tbody></tbody>
       </table>
@@ -2155,13 +2139,6 @@ function renderRoadmap() {
     }).join('');
 
   const m = ROADMAP.counts;
-  const lowConf = ROADMAP.items.filter(
-    i => i.bucket === 'measure' && i.confidence === 'low').length;
-  document.getElementById('roadmap-measure-note').textContent =
-    'Unranked, ' + m.measure + ' items. ' + lowConf + ' are low-confidence '
-    + 'guesses; ' + (m.measure - lowConf) + ' are claims we are confident about '
-    + 'that simply have no reach figure. Those are two different problems with '
-    + 'two different next actions.';
 
   // The scalar metric table used to live in the Metrics subview and
   // contradicted the measured coverage matrix on the same page (claiming Safari
@@ -2211,31 +2188,38 @@ function renderRoadmap() {
     return h;
   }
 
-  // One column definition for all three bucket tables, so adding or resizing
-  // a column is a single edit and the expansion colspan cannot drift.
+  // One column definition, so adding or resizing a column is a single edit and
+  // the expansion colspan cannot drift. Reach is gone: it was a guess shown beside
+  // measured numbers, and it was also what forced the three-bucket split, since an
+  // unknown reach made an item unrankable.
   const RM_COLS = [
-    ['Impact', '58px'], ['Reach', '62px'], ['Item', null],
+    ['Impact', '58px'], ['Item', null],
     ['Owner', '110px'], ['Cost', '58px'], ['Conf', '60px'],
   ];
   const RM_HEAD = '<tr>' + RM_COLS.map(
     ([label, w]) => '<th' + (w ? ' style="width: ' + w + '"' : '') + '>'
       + label + '</th>').join('') + '</tr>';
 
-  function fill(tableId, bucket) {
+  function fill(tableId) {
     const table = document.getElementById(tableId);
     table.querySelector('thead').innerHTML = RM_HEAD;
-    const rows = ROADMAP.items.filter(i => i.bucket === bucket);
+    // Every item, in the one order the builder produced. No bucket filter: the
+    // rows we cannot order on evidence are marked rather than moved.
     table.querySelector('tbody').innerHTML =
-      rows.map(it => {
-        const unknownReach = !it.reach || it.reach === 'UNKNOWN';
+      ROADMAP.items.map(it => {
         const search = [it.title, it.consequence, it.owner || '',
                         (it.tags || []).join(' ')].join(' ').toLowerCase();
-        return '<tr class="rm-row" data-search="' + escA(search) + '">'
+        return '<tr class="rm-row'
+          + (it.needs_measuring ? ' rm-unmeasured' : '')
+          + '" data-search="' + escA(search) + '">'
           + '<td><span class="rm-imp rm-' + esc(it.impact) + '">'
           + esc(it.impact) + '</span></td>'
-          + '<td><span class="rm-reach' + (unknownReach ? ' unk' : '') + '">'
-          + (unknownReach ? '—' : 'r' + esc(it.reach)) + '</span></td>'
           + '<td><span class="rm-title">' + esc(it.title) + '</span>'
+          + (it.needs_measuring
+              ? '<span class="rm-flag" data-tip="Not ordered on evidence yet: '
+                + 'confidence is low, so its position here is a placeholder.">'
+                + 'needs measuring</span>'
+              : '')
           + '<span class="rm-cons">' + esc(it.consequence) + '</span></td>'
           + '<td>' + ownerCell(it) + '</td>'
           + '<td class="rm-mono">' + esc(it.cost) + '</td>'
@@ -2244,9 +2228,7 @@ function renderRoadmap() {
           + expansion(it) + '</td></tr>';
       }).join('');
   }
-  fill('roadmap-ranked', 'ranked');
-  fill('roadmap-measure', 'measure');
-  fill('roadmap-continuous', 'continuous');
+  fill('roadmap-ranked');
 
   // fill() emits each row immediately followed by its expansion row, so the
   // pair is nextElementSibling. Resolved once here: the previous form ran a

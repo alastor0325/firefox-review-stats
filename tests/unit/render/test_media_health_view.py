@@ -249,10 +249,9 @@ class TestSubviewContentSplit:
         panel = self._panel(_render(_ROADMAP), "roadmap")
         assert 'id="roadmap-metrics"' not in panel
 
-    def test_item_tables_are_in_the_roadmap_panel(self):
+    def test_the_item_table_is_in_the_roadmap_panel(self):
         panel = self._panel(_render(_ROADMAP), "roadmap")
-        for t in ("roadmap-ranked", "roadmap-measure", "roadmap-continuous"):
-            assert f'id="{t}"' in panel, t
+        assert 'id="roadmap-ranked"' in panel
 
     def test_item_tables_are_not_in_the_metrics_panel(self):
         panel = self._panel(_render(_ROADMAP), "metrics")
@@ -271,30 +270,43 @@ class TestHashRouting:
 
 
 class TestRoadmapRendering:
-    def test_renders_the_three_buckets(self):
-        html = _render(_ROADMAP)
-        for label in ("Ordered", "Need measuring", "Continuous"):
-            assert label in html, f"missing bucket heading {label!r}"
+    def test_renders_one_section_not_three(self):
+        """`Continuous` is gone and `Need measuring first` is merged in. Three
+        buckets asked a reader to hold three orderings at once, and the split
+        leaked "can we rank this?" -- a fact about our evidence -- into a product
+        view."""
+        html = _visible(_render(_ROADMAP))
+        assert "Ordered" in html
+        for gone in ("Need measuring first", "<h2>Continuous</h2>"):
+            assert gone not in html, f"{gone!r} is back"
 
     def _columns(self, html) -> list[str]:
-        """The three bucket tables share one column definition in JS, so the
-        header is generated rather than written three times in the markup."""
+        """The header is generated from one column definition in JS rather than
+        written into the markup."""
         m = re.search(r"const RM_COLS = \[(.*?)\];", html, re.DOTALL)
         assert m is not None, "RM_COLS column definition missing"
         return re.findall(r"\['([^']+)'", m.group(1))
 
-    def test_all_three_tables_exist_with_a_generated_head(self):
+    def test_the_one_table_has_a_generated_head(self):
         html = _render(_ROADMAP)
-        for t in ("roadmap-ranked", "roadmap-measure", "roadmap-continuous"):
-            assert re.search(rf'<table id="{t}">\s*<thead></thead>', html), (
-                f"{t} should have its head generated from RM_COLS"
-            )
+        assert re.search(r'<table id="roadmap-ranked">\s*<thead></thead>', html)
+        # The other two tables went with their sections. A table nobody fills is
+        # the orphaned-container bug the runtime test exists to catch.
+        for gone in ("roadmap-measure", "roadmap-continuous"):
+            assert gone not in html, f"{gone} markup is back but nothing fills it"
 
-    def test_reach_is_shown(self):
-        """Reach is an input, not arithmetic. Score stays hidden; reach does
-        not, because it is the most contested field and hiding it conceals
-        which rows were ranked on a guess."""
-        assert "Reach" in self._columns(_render(_ROADMAP))
+    def test_reach_is_not_a_column(self):
+        """Removed. It was a guess presented beside measured numbers, and it was
+        what forced the bucket split: an unknown reach made an item unrankable.
+        Every metric it fed is still TBD, so it was paying no rent."""
+        assert "Reach" not in self._columns(_render(_ROADMAP))
+
+    def test_an_unrankable_row_is_flagged_in_place(self):
+        """The reader still needs to know where the order stops being
+        evidence-backed."""
+        html = _joined(_render(_ROADMAP))
+        assert "needs measuring" in html
+        assert "it.needs_measuring" in html
 
     def test_score_is_not_shown(self):
         cols = self._columns(_render(_ROADMAP))

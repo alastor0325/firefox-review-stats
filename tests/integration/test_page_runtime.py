@@ -39,9 +39,10 @@ CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 # these stay empty and the page looks like a set of blank headings.
 FILLED_BY_JS = [
     "roadmap-aspects",
+    # One table now: `roadmap-measure` and `roadmap-continuous` went with their
+    # sections. Leaving them here is how this test earns its keep -- it failed the
+    # moment they stopped being written, which is the orphaned-container bug.
     "roadmap-ranked",
-    "roadmap-measure",
-    "roadmap-continuous",
     "pm-lede",
     "pm-cards",
 ]

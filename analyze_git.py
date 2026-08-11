@@ -114,8 +114,8 @@ def _load_roadmap_view(team: Team, *, audience: str) -> dict | None:
     view = build_roadmap_view(doc, audience=audience)
     print(
         f"[{team.slug}] Roadmap: {view['counts']['total']} items "
-        f"({view['counts']['ranked']} ranked, {view['counts']['measure']} to "
-        f"measure, {view['counts']['continuous']} continuous), "
+        f"({view['counts']['ranked']} ranked, "
+        f"{view['counts']['needs_measuring']} still to measure), "
         f"audience={audience}"
     )
     return view

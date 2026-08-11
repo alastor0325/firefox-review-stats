@@ -70,13 +70,18 @@ class TestRankable:
     def test_low_confidence_is_not_rankable(self):
         assert rankable(item(confidence="low", reach=3)) is False
 
-    def test_unknown_reach_is_not_rankable(self):
-        assert rankable(item(reach="UNKNOWN")) is False
+    def test_unknown_reach_no_longer_blocks_ranking(self):
+        """Reach is gone, so it cannot disqualify anything. Confidence is the only
+        gate left."""
+        from reviewstats.roadmap import rankable
+        assert rankable({"confidence": "high", "reach": "UNKNOWN"}) is True
 
-    def test_continuous_is_never_rankable(self):
-        """SPEC/UPKEEP have no meaningful reach, so they bypass the gate
-        entirely rather than being ranked against features."""
-        assert rankable(item(type="SPEC", confidence="high", reach=4)) is False
+    def test_continuous_is_rankable_now(self):
+        """It used to be excluded so it could be budgeted as a share of time in its
+        own bucket. With one list there is no bucket to hold it out of."""
+        from reviewstats.roadmap import rankable
+        assert rankable({"confidence": "high", "type": "perennial"}) is True
+
 
 
 # --------------------------------------------------------------------------
@@ -84,80 +89,87 @@ class TestRankable:
 # --------------------------------------------------------------------------
 
 class TestPriority:
-    @pytest.mark.parametrize(
-        "impact,reach,expected",
-        [("S1", 4, 16), ("S1", 1, 4), ("S2", 3, 9), ("S3", 2, 4), ("S4", 4, 4)],
-    )
-    def test_impact_times_reach(self, impact, reach, expected):
-        assert priority(item(impact=impact, reach=reach)) == expected
+    """Priority is impact weight alone. It was impact x reach.
 
-    def test_s4_wide_reach_collides_with_s1_narrow(self):
-        """Documents a known weakness rather than endorsing it: with impact
-        weighted 4/3/2/1 against reach 1-4, 'polish for everyone' scores the
-        same as 'total failure for a niche'. Pinned so a future weighting
-        change is a deliberate act with a failing test, not a silent drift."""
-        assert priority(item(impact="S4", reach=4)) == priority(
-            item(impact="S1", reach=1)
-        )
+    Reach was a guess sitting beside measured numbers, and it was also what forced
+    the three-bucket split -- an unknown reach made an item unrankable. Dropping it
+    loses the S4-wide-vs-S1-narrow collision the old score had, which is a
+    simplification rather than a loss: the collision needed a tiebreak to stop an
+    S3 outranking an S1 alphabetically.
+    """
 
+    @pytest.mark.parametrize("impact,expected", [
+        ("S1", 4), ("S2", 3), ("S3", 2), ("S4", 1)])
+    def test_priority_is_the_impact_weight(self, impact, expected):
+        from reviewstats.roadmap import priority
+        assert priority({"impact": impact}) == expected
 
-# --------------------------------------------------------------------------
-# sort_items — bucketing and order
-# --------------------------------------------------------------------------
+    def test_severity_always_orders_ahead_of_breadth(self):
+        """An S1 can no longer be outscored by a wide-reaching S4."""
+        from reviewstats.roadmap import priority
+        assert priority({"impact": "S1"}) > priority({"impact": "S4"})
+
+    def test_reach_is_ignored_if_present_in_the_data(self):
+        """Old rows still carry it; it must not affect the order."""
+        from reviewstats.roadmap import priority
+        assert priority({"impact": "S2", "reach": 4}) == priority(
+            {"impact": "S2", "reach": 1})
+
 
 class TestSortItems:
-    def test_splits_into_three_buckets(self):
-        items = [
-            item(id="ranked", confidence="high", reach=2),
-            item(id="lowconf", confidence="low", reach=2),
-            item(id="noreach", reach="UNKNOWN"),
-            item(id="spec", type="SPEC"),
-            item(id="upkeep", type="UPKEEP"),
-        ]
-        ranked, measure, cont = sort_items(items)
-        assert [i["id"] for i in ranked] == ["ranked"]
-        assert sorted(i["id"] for i in measure) == ["lowconf", "noreach"]
-        assert sorted(i["id"] for i in cont) == ["spec", "upkeep"]
+    """One ordered list, not three buckets."""
 
-    def test_ranked_is_ordered_by_descending_priority(self):
-        items = [
-            item(id="low", impact="S4", reach=1),
-            item(id="high", impact="S1", reach=4),
-            item(id="mid", impact="S2", reach=2),
+    def _items(self):
+        return [
+            {"id": "s3", "title": "cheap s3", "impact": "S3",
+             "confidence": "high", "cost": "S"},
+            {"id": "s1", "title": "big s1", "impact": "S1",
+             "confidence": "high", "cost": "L"},
+            {"id": "low", "title": "unsure", "impact": "S1",
+             "confidence": "low", "cost": "S"},
+            {"id": "cont", "title": "upkeep", "impact": "S2",
+             "confidence": "high", "cost": "S", "type": "perennial"},
         ]
-        ranked, _, _ = sort_items(items)
-        assert [i["id"] for i in ranked] == ["high", "mid", "low"]
 
-    def test_cost_breaks_priority_ties_cheapest_first(self):
-        items = [
-            item(id="expensive", impact="S2", reach=2, cost="XL"),
-            item(id="cheap", impact="S2", reach=2, cost="S"),
-        ]
-        ranked, _, _ = sort_items(items)
-        assert [i["id"] for i in ranked] == ["cheap", "expensive"]
+    def test_returns_a_single_list_containing_everything(self):
+        from reviewstats.roadmap import sort_items
+        out = sort_items(self._items())
+        assert isinstance(out, list)
+        assert len(out) == 4
 
-    def test_impact_breaks_ties_before_cost(self):
-        """Review finding: with cost-then-title tie-breaking, an S3 could
-        outrank an S1 on the letter of its title inside a 7-way score tie.
-        Severity must win before cost so row order stays meaningful."""
+    def test_higher_impact_comes_first(self):
+        from reviewstats.roadmap import sort_items
+        ids = [i["id"] for i in sort_items(self._items())]
+        assert ids.index("s1") < ids.index("s3")
+
+    def test_items_we_cannot_rank_sit_at_the_end(self):
+        """Marked, not hidden: an S1 we are unsure about still has to be read."""
+        from reviewstats.roadmap import sort_items
+        ids = [i["id"] for i in sort_items(self._items())]
+        assert ids[-1] == "low"
+
+    def test_continuous_work_is_ordered_like_everything_else(self):
+        """It used to be a third bucket budgeted rather than ranked."""
+        from reviewstats.roadmap import sort_items
+        ids = [i["id"] for i in sort_items(self._items())]
+        assert ids.index("cont") < ids.index("low")
+
+    def test_cost_breaks_a_tie_cheapest_first(self):
+        from reviewstats.roadmap import sort_items
         items = [
-            # Both score 4. S1 must come first despite the later title
-            # and the more expensive cost.
-            item(id="a-minor", impact="S3", reach=2, cost="S", title="aaa"),
-            item(id="z-severe", impact="S1", reach=1, cost="L", title="zzz"),
+            {"id": "big", "title": "a", "impact": "S2", "confidence": "high",
+             "cost": "L"},
+            {"id": "small", "title": "b", "impact": "S2", "confidence": "high",
+             "cost": "S"},
         ]
-        ranked, _, _ = sort_items(items)
-        assert [i["id"] for i in ranked] == ["z-severe", "a-minor"]
+        assert [i["id"] for i in sort_items(items)] == ["small", "big"]
 
     def test_is_stable_across_calls(self):
-        items = [item(id=f"i{n}", impact="S2", reach=2) for n in range(5)]
-        first = [i["id"] for i in sort_items(items)[0]]
-        assert first == [i["id"] for i in sort_items(items)[0]]
+        from reviewstats.roadmap import sort_items
+        a = [i["id"] for i in sort_items(self._items())]
+        b = [i["id"] for i in sort_items(self._items())]
+        assert a == b
 
-
-# --------------------------------------------------------------------------
-# strip_internal — the public/internal split
-# --------------------------------------------------------------------------
 
 class TestStripInternal:
     def test_internal_block_removed_for_public(self):
@@ -237,30 +249,21 @@ def doc(**kw):
 
 
 class TestBuildRoadmapView:
-    def test_counts_match_buckets(self):
-        v = build_roadmap_view(
-            doc(items=[
-                item(id="a", confidence="high", reach=2),
-                item(id="b", confidence="low", reach=2),
-                item(id="c", type="SPEC"),
-            ]),
-            audience="internal",
-        )
-        assert v["counts"] == {
-            "total": 3, "ranked": 1, "measure": 1, "continuous": 1
-        }
+    def test_counts_describe_one_list(self):
+        """`measure` and `continuous` counts are gone with their buckets."""
+        v = build_roadmap_view(doc(), audience="internal")
+        assert set(v["counts"]) == {"total", "ranked", "needs_measuring"}
+        assert v["counts"]["total"] == len(v["items"])
+        assert (v["counts"]["ranked"] + v["counts"]["needs_measuring"]
+                == v["counts"]["total"])
 
-    def test_items_carry_their_bucket(self):
-        v = build_roadmap_view(
-            doc(items=[
-                item(id="a", confidence="high", reach=2),
-                item(id="b", type="UPKEEP"),
-            ]),
-            audience="internal",
-        )
-        by_id = {i["id"]: i for i in v["items"]}
-        assert by_id["a"]["bucket"] == "ranked"
-        assert by_id["b"]["bucket"] == "continuous"
+    def test_items_carry_a_measuring_flag_not_a_bucket(self):
+        """The reader still needs to know where the order stops being
+        evidence-backed; it marks the row instead of moving it."""
+        v = build_roadmap_view(doc(), audience="internal")
+        for i in v["items"]:
+            assert "bucket" not in i
+            assert isinstance(i["needs_measuring"], bool)
 
     def test_audience_is_recorded_in_the_payload(self):
         v = build_roadmap_view(doc(), audience="public")
@@ -968,3 +971,76 @@ class TestSourceAnchoredParity:
             audience="internal",
         )
         assert v["items"][0]["parity"] == []
+
+
+class TestOneListNotThreeBuckets:
+    """One ordered list. `Continuous` is gone; `Need measuring first` is merged in.
+
+    Three buckets asked a reader to hold three different orderings at once, and the
+    split leaked a methodology decision into the product view: whether an item is
+    rankable is a property of our evidence, not of the work. An item we cannot yet
+    rank still has to be looked at, so it belongs in the same list, marked.
+
+    `reach` goes with them. It was shown so it could be argued about, but it was
+    also the thing forcing the buckets -- an unknown reach made an item unrankable
+    -- and every metric it fed is TBD.
+    """
+
+    def _doc(self):
+        return {
+            "condition": [],
+            "items": [
+                {"id": "a", "title": "Ranked one", "impact": "S1",
+                 "confidence": "high", "cost": "M", "consequence": "x"},
+                {"id": "b", "title": "Unrankable one", "impact": "S2",
+                 "confidence": "low", "cost": "S", "consequence": "y"},
+                {"id": "c", "title": "Upkeep", "impact": "S3",
+                 "confidence": "high", "cost": "S", "consequence": "z",
+                 "continuous": True},
+            ],
+        }
+
+    def test_every_item_lands_in_one_list(self):
+        from reviewstats.roadmap import build_roadmap_view
+        v = build_roadmap_view(self._doc(), audience="internal")
+        assert len(v["items"]) == 3
+        assert {i["id"] for i in v["items"]} == {"a", "b", "c"}
+
+    def test_there_are_no_bucket_names_left(self):
+        from reviewstats.roadmap import build_roadmap_view
+        v = build_roadmap_view(self._doc(), audience="internal")
+        assert {i.get("bucket") for i in v["items"]} == {None} or all(
+            i.get("bucket") in (None, "ranked") for i in v["items"])
+        assert "continuous" not in v["counts"]
+        assert "measure" not in v["counts"]
+
+    def test_an_unrankable_item_is_marked_rather_than_separated(self):
+        """The reader still needs to know the order is not evidence-backed here."""
+        from reviewstats.roadmap import build_roadmap_view
+        v = build_roadmap_view(self._doc(), audience="internal")
+        b = [i for i in v["items"] if i["id"] == "b"][0]
+        assert b["needs_measuring"] is True
+        a = [i for i in v["items"] if i["id"] == "a"][0]
+        assert a["needs_measuring"] is False
+
+    def test_ranked_items_come_before_unrankable_ones(self):
+        from reviewstats.roadmap import build_roadmap_view
+        v = build_roadmap_view(self._doc(), audience="internal")
+        ids = [i["id"] for i in v["items"]]
+        assert ids.index("a") < ids.index("b")
+
+    def test_reach_is_not_rendered(self):
+        from reviewstats.roadmap import build_roadmap_view
+        doc = self._doc()
+        doc["items"][0]["reach"] = 4
+        v = build_roadmap_view(doc, audience="internal")
+        a = [i for i in v["items"] if i["id"] == "a"][0]
+        assert "reach" not in a
+        assert all("reach" not in (f.get("label", "").lower())
+                   for f in a.get("fields") or [])
+
+    def test_an_unknown_reach_no_longer_makes_an_item_unrankable(self):
+        """Reach is gone, so it cannot gate anything. Only low confidence does."""
+        from reviewstats.roadmap import rankable
+        assert rankable({"confidence": "high", "reach": "UNKNOWN"}) is True
+        assert rankable({"confidence": "low"}) is False

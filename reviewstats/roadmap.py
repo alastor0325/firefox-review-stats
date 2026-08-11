@@ -74,7 +74,7 @@ def _worst_first(nodes: list[dict]) -> list[dict]:
 # payload, so adding a field to the YAML cannot silently publish it.
 _ITEM_FIELDS = (
     "id", "scope", "sub_scope", "initiative", "type", "title", "consequence",
-    "details", "evidence", "owner", "impact", "reach", "confidence", "cost",
+    "details", "evidence", "owner", "impact", "confidence", "cost",
     "demand", "support",
 )
 
@@ -138,54 +138,47 @@ def is_continuous(item: dict) -> bool:
 def rankable(item: dict) -> bool:
     """Whether we can honestly place this item in a priority order.
 
-    Low confidence means we are not sure the problem is real; unknown reach
-    means we cannot say how many users meet it. Either way, ordering it against
-    items we do understand would be guessing.
+    Low confidence means we are not sure the problem is real, so ordering it
+    against items we do understand would be guessing. That is now the only gate:
+    `reach` used to disqualify an item too, and removing reach removes that.
+
+    Unrankable items are no longer separated out -- they sit at the end of the one
+    list, marked. Whether we can rank something is a fact about our evidence, not
+    about the work, and it should not decide whether a reader sees it.
     """
-    if is_continuous(item):
-        return False
-    return item.get("confidence") != "low" and str(item.get("reach")) != "UNKNOWN"
+    return item.get("confidence") != "low"
 
 
 def priority(item: dict) -> int:
-    """Impact weight x reach. Only meaningful for `rankable` items.
+    """Impact weight. Only meaningful for `rankable` items.
 
-    Note the deliberate collision this creates: S4 x reach 4 equals
-    S1 x reach 1, so "polish for nearly everyone" scores the same as "total
-    failure for a niche". `sort_items` compensates by breaking ties on impact
-    before cost, so severity still wins inside a tied score.
+    This was impact x reach. Reach is gone -- it was a guess presented beside
+    measured numbers, and it was also what forced the three-bucket split, since an
+    unknown reach made an item unrankable. Impact alone is coarser and honest.
     """
-    return IMPACT_WEIGHT[item["impact"]] * int(item["reach"])
+    return IMPACT_WEIGHT[item["impact"]]
 
 
-def sort_items(items: list[dict]) -> tuple[list[dict], list[dict], list[dict]]:
-    """Split into (ranked, measure, continuous) and order each.
+def sort_items(items: list[dict]) -> list[dict]:
+    """One list: rankable items by priority, then the ones we cannot rank yet.
 
-    Ranked order is priority, then impact, then cost, then title. Impact sits
-    ahead of cost on purpose: scores collide heavily (a dozen distinct values
-    across sixteen impact/reach combinations), and without an impact tiebreak an
-    S3 can outrank an S1 on the first letter of its title. Since the page
-    publishes row order as the signal and hides the arithmetic, an alphabetical
-    tiebreak would read as a judgement it is not.
+    Order within the rankable set is impact, then cost, then title. Continuous
+    work is not a separate bucket any more either; it sorts by the same key as
+    everything else.
+
+    Returns a single list rather than a tuple of three. Three buckets asked a
+    reader to hold three orderings at once, and the split leaked a methodology
+    decision -- "can we rank this?" -- into a product view.
     """
-    def rank_key(i: dict) -> tuple:
+    def key(i: dict) -> tuple:
         return (
+            0 if rankable(i) else 1,      # unrankable last, still present
             -priority(i),
-            -IMPACT_WEIGHT[i["impact"]],
             COST_ORDER[i["cost"]],
             i["title"],
         )
 
-    def by_impact(i: dict) -> tuple:
-        return (-IMPACT_WEIGHT[i["impact"]], i["title"])
-
-    ranked = sorted((i for i in items if rankable(i)), key=rank_key)
-    measure = sorted(
-        (i for i in items if not rankable(i) and not is_continuous(i)),
-        key=by_impact,
-    )
-    continuous = sorted((i for i in items if is_continuous(i)), key=by_impact)
-    return ranked, measure, continuous
+    return sorted(items, key=key)
 
 
 def strip_internal(item: dict, *, audience: str) -> dict:
@@ -211,16 +204,20 @@ def strip_internal(item: dict, *, audience: str) -> dict:
     return out
 
 
-def _render_item(item: dict, bucket: str, *, audience: str) -> dict:
+def _render_item(item: dict, *, audience: str) -> dict:
     """Project one item onto the payload shape, after audience filtering.
 
-    `bucket` already encodes both predicates — ranked means `rankable`,
-    continuous means `is_continuous` — so neither is repeated as its own field.
+    There is no `bucket` any more: one list, with `needs_measuring` marking the
+    items whose order is not evidence-backed. Whether we can rank something is a
+    fact about our evidence rather than about the work, so it marks a row instead
+    of moving it out of sight.
+
     The raw `internal:` block is never copied through: nothing renders it, so
     carrying it would only create a way for it to escape.
     """
     filtered = strip_internal(item, audience=audience)
-    out = {"bucket": bucket, "withheld": filtered["withheld"]}
+    out = {"needs_measuring": not rankable(item),
+           "withheld": filtered["withheld"]}
 
     for field in _ITEM_FIELDS:
         if field not in filtered:
@@ -229,8 +226,6 @@ def _render_item(item: dict, bucket: str, *, audience: str) -> dict:
         # Prose fields are flattened; structured ones pass through.
         if field == "support":
             out[field] = dict(value or {})
-        elif field == "reach":
-            out[field] = str(value)
         else:
             out[field] = flatten(value)
 
@@ -422,12 +417,8 @@ def build_roadmap_view(doc: dict, audience: str = "internal") -> dict:
     """
     _check_audience(audience)
 
-    ranked, measure, continuous = sort_items(doc.get("items") or [])
-    items = (
-        [_render_item(i, "ranked", audience=audience) for i in ranked]
-        + [_render_item(i, "measure", audience=audience) for i in measure]
-        + [_render_item(i, "continuous", audience=audience) for i in continuous]
-    )
+    ordered = sort_items(doc.get("items") or [])
+    items = [_render_item(i, audience=audience) for i in ordered]
 
     condition = doc.get("condition") or {}
     # An aspect marked `internal: true` is dropped wholesale from the public
@@ -477,8 +468,10 @@ def build_roadmap_view(doc: dict, audience: str = "internal") -> dict:
         # that actually renders them.
         "counts": {
             "total": len(items),
-            "ranked": len(ranked),
-            "measure": len(measure),
-            "continuous": len(continuous),
+            # How many are ordered on evidence rather than sitting at the end
+            # waiting to be measured. One list, so this is a property of it
+            # rather than the size of a separate bucket.
+            "ranked": sum(1 for i in items if not i["needs_measuring"]),
+            "needs_measuring": sum(1 for i in items if i["needs_measuring"]),
         },
     }
