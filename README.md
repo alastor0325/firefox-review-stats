@@ -441,10 +441,19 @@ different machines:
 | Job | Cadence | Runner | What it refreshes |
 |---|---|---|---|
 | `refresh.yml` | weekly (Mon 09:00 UTC) | `ubuntu-latest` | review data, and the Perfherder **metrics** |
-| `media-caps.yml` | quarterly + manual | `macos-latest` | the measured **codec/container matrix** |
+| `media-caps.yml` | quarterly + manual | `macos-14` (pinned) | the measured **codec/container matrix** |
 
 The weekly job needs no browsers for the metrics: Perfherder is plain HTTP. It
 installs Playwright's Chromium only for the Phabricator scraping it already did.
+
+The probe runner is **pinned**, not `macos-latest`. That label drifts between
+images and architectures, and the architecture is load-bearing: the committed
+results are `Darwin arm64`, and if the label ever resolved to x86_64 the probe
+would overwrite all three result files with the new platform. They would then
+*agree*, so `check_run` raises nothing, and the matrix would silently change
+meaning. The job also has a `concurrency` group (a manual dispatch during the
+scheduled run means two jobs pushing the same file) and rebases before pushing,
+since the weekly job commits to the same branch every Monday.
 
 The probe job is separate for reasons that are not preferences — it needs **real
 Chrome** (Chromium ships without H.264/AAC/HEVC) and its answers are

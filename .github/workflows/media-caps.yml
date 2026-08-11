@@ -37,9 +37,26 @@ on:
 permissions:
   contents: write
 
+# One probe at a time. A manual dispatch during the scheduled run would give two
+# jobs writing the same result files and pushing the same branch. Not cancelling
+# the in-flight one: a half-finished probe leaves results mixing two runs, which
+# check_run would then report as a warning on the page.
+concurrency:
+  group: media-caps-probe
+  cancel-in-progress: false
+
 jobs:
   probe:
-    runs-on: macos-latest
+    # Pinned, not macos-latest. That label drifts between images and
+    # architectures, and the arch matters here: the committed results are
+    # Darwin arm64, and if the label ever resolved to x86_64 the probe would
+    # overwrite all three files with the new platform. They would then AGREE, so
+    # check_run raises nothing, and the matrix would silently change meaning.
+    #
+    # If this image is retired, replace it with another Apple-silicon runner. The
+    # page states the platform, so a switch is visible -- but pinning means it is
+    # a deliberate change rather than a surprise.
+    runs-on: macos-14
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -98,4 +115,9 @@ jobs:
             d=json.loads(pathlib.Path('tools/media-caps/results/summary.json').read_text()); \
             p=d.get('platform') or {}; print(p.get('system','?'), p.get('machine','?'))")
           git commit -m "caps: refresh probe results ($PLATFORM)"
-          git push
+          # The weekly refresh commits to this branch every Monday and this job
+          # runs on the 1st, so the branch can move between checkout and push.
+          # Rebasing keeps a quarter's probe from being thrown away by a race;
+          # only results/ is touched here, so there is nothing to conflict with.
+          git pull --rebase --autostash origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"

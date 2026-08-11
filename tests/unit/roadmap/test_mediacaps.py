@@ -1166,7 +1166,7 @@ class TestTheProbeIsRunnableInCi:
         wf = pathlib.Path(".github/workflows/media-caps.yml")
         assert wf.exists(), "no workflow refreshes the probe data"
         text = wf.read_text(encoding="utf-8")
-        assert "macos-latest" in text
+        assert "runs-on: macos" in text, "must be macOS to match the results"
         assert "google-chrome" in text
         assert "playwright install firefox webkit" in text
         assert "chromium" not in text.split("# Chromium deliberately")[1][:200]
@@ -1178,3 +1178,39 @@ class TestTheProbeIsRunnableInCi:
         assert text.index("build_matrix.py") < text.index("git commit"), (
             "results would be committed before the run is validated"
         )
+
+    def test_the_runner_is_pinned_to_an_architecture(self):
+        """`macos-latest` drifts between images and architectures, and the arch is
+        load-bearing: the committed results are Darwin arm64, and if the label
+        resolved to x86_64 the probe would overwrite all three files with the new
+        platform. They would then agree, so `check_run` raises nothing, and the
+        matrix changes meaning with no warning anywhere."""
+        import pathlib
+        wf = pathlib.Path(".github/workflows/media-caps.yml").read_text(
+            encoding="utf-8")
+        import re
+        runner = re.search(r"^\s*runs-on:\s*(\S+)", wf, re.M)
+        assert runner, "no runs-on directive"
+        assert runner.group(1) == "macos-14", (
+            f"runner is {runner.group(1)}: an unpinned or non-arm64 image can "
+            "change the platform without any warning firing"
+        )
+
+    def test_only_one_probe_runs_at_a_time(self):
+        """A manual dispatch during the scheduled run would have two jobs writing
+        the same files and pushing the same branch."""
+        import pathlib
+        wf = pathlib.Path(".github/workflows/media-caps.yml").read_text(
+            encoding="utf-8")
+        assert "concurrency:" in wf
+        assert "cancel-in-progress: false" in wf, (
+            "cancelling mid-probe leaves results that mix two runs"
+        )
+
+    def test_the_push_can_survive_a_moved_branch(self):
+        """The weekly refresh commits every Monday and this runs on the 1st, so a
+        plain push can be rejected and lose a quarter's probe."""
+        import pathlib
+        wf = pathlib.Path(".github/workflows/media-caps.yml").read_text(
+            encoding="utf-8")
+        assert "pull --rebase" in wf
