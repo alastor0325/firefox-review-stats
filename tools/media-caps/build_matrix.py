@@ -51,7 +51,8 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     print(f"Probed {payload['probed_at'][:10]} across "
-          f"{len(payload['browsers'])} engines")
+          f"{len(payload['browsers'])} engines on "
+          f"{payload.get('platform') or 'an unrecorded platform'}")
     for s, m in payload["surfaces"].items():
         c = m["counts"]
         print(f"  {s:12s} {c['total']:3d} combos: {c['differing']:3d} differ "
@@ -62,6 +63,8 @@ def main(argv: list[str] | None = None) -> int:
                  for st in cont["surfaces"].values())
     print(f"  {hidden} rows no engine supports (counted, not listed)")
     print(f"  apis         {len(payload['apis'])} tracked")
+    for w in payload.get("warnings") or []:
+        print(f"  WARNING      {w}")
 
     # Reported here rather than on the dashboard, where the section was removed.
     # Still worth running: it is how the FlacDecoder::IsSupportedType bug turned
@@ -76,7 +79,9 @@ def main(argv: list[str] | None = None) -> int:
             print(f"                 {target}: {ty}")
     else:
         print("  conformance  all impossible types correctly rejected")
-    return 0
+    # A split or mixed-platform run is not a matrix, so this is an error for any
+    # caller that checks -- CI must not commit results assembled from two runs.
+    return 1 if payload.get("warnings") else 0
 
 
 if __name__ == "__main__":

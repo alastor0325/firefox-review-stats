@@ -197,6 +197,35 @@ media-capabilities/index.html            # the probe page (public)
 .venv/bin/python tools/media-caps/build_matrix.py   # summarise what they said
 ```
 
+### Refreshing it, and why that is a separate job
+
+```
+.github/workflows/media-caps.yml     # monthly, or run it by hand
+```
+
+The probe does **not** run in the weekly refresh, and cannot: that job is
+`ubuntu-latest` with Playwright's Chromium, and both parts are wrong here.
+
+- **Real Chrome is required.** Chromium ships without the proprietary codecs — no
+  H.264, AAC or HEVC — so probing it would describe a Chrome that does not exist.
+  The runner installs Chrome from Homebrew (skipping it when the image already has
+  it) and `run_probe.py` treats a missing binary as an error, not a skip.
+- **The platform is part of the result.** HEVC decoding comes from VideoToolbox on
+  macOS, and a Linux Chrome build may ship without H.264. Every result records its
+  platform, the page states it, and `check_run` **rejects** a matrix assembled from
+  two platforms. The committed data is macOS, so the job runs `macos-latest`.
+
+Three failure modes that used to pass silently, and what now catches them:
+
+| Was | Now |
+|---|---|
+| macOS-only Chrome path → skipped on Linux, matrix quietly two engines wide | per-OS lookup plus `CHROME_PATH`; Chrome is `required`, so absence is an error |
+| exit 0 if *any* engine answered → CI would commit a partial run | exit 1 unless every requested engine produced a fresh result |
+| a skipped engine kept its previous JSON, hidden behind `max()` of the timestamps | `probed_at` is the **oldest** stamp, and a spread over 2 days is reported as a warning on the page and a nonzero exit from `build_matrix.py` |
+
+The workflow validates before it commits: `build_matrix.py` exits nonzero on any
+warning, so a split or mixed-platform run fails the job instead of publishing.
+
 `run_probe.py` writes one raw JSON per engine into `tools/media-caps/results/`,
 and those files are tracked. The support table is **derived from them at render
 time** — `analyze_git.py` rebuilds it every run — so there is no second file to

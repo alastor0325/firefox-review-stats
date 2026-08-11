@@ -213,22 +213,20 @@ SECTIONS = (
     {
         "key": "decoding", "label": "Decoding",
         "surfaces": (
-            ("playback", "File", "A plain <video> or <audio> element "
-                                 "(decodingInfo, type: file)"),
-            ("streaming", "MSE", "Adaptive streaming via Media Source "
-                                 "Extensions (decodingInfo, type: media-source)"),
-            ("wcdecode", "WC", "WebCodecs VideoDecoder / AudioDecoder "
-                               "(isConfigSupported) — raw codec access, no "
-                               "container"),
+            ("playback", "File", "Plain <video>/<audio> playback — "
+                                 "decodingInfo, type: file"),
+            ("streaming", "MSE", "Adaptive streaming — decodingInfo, "
+                                 "type: media-source"),
+            ("wcdecode", "WC", "WebCodecs decoder — raw codec, no container"),
         ),
     },
     {
         "key": "encoding", "label": "Encoding",
         "surfaces": (
-            ("recording", "Rec", "MediaRecorder.isTypeSupported"),
-            ("wcencode", "WC", "WebCodecs VideoEncoder / AudioEncoder "
-                               "(isConfigSupported) — a different registry from "
-                               "MediaRecorder's, and often a different answer"),
+            ("recording", "Rec", "Capture to a file — "
+                                  "MediaRecorder.isTypeSupported"),
+            ("wcencode", "WC", "WebCodecs encoder — not MediaRecorder's "
+                               "registry, often a different answer"),
         ),
     },
 )
@@ -653,6 +651,62 @@ def build_container_view(results: list) -> dict:
             "codec_gaps": codec_gaps, "surface_labels": SURFACE_LABELS}
 
 
+# A probe run is only a matrix if every engine was asked at once, on one machine.
+# Beyond this many days between the oldest and newest answer, they are separate
+# runs wearing one date.
+_SAME_RUN_DAYS = 2
+
+
+def check_run(results: list) -> tuple[str, str, list]:
+    """(oldest probe timestamp, platform label, warnings).
+
+    Three ways a run silently is not a run, all of them observed:
+
+      * A target whose browser is missing is *skipped*, and its JSON from the
+        previous run stays on disk. `probed_at` used to take `max()` of the
+        timestamps, so a month-old engine hid behind two fresh ones while the page
+        showed a current date. The oldest is the honest headline.
+      * Codec support is platform-specific -- HEVC comes from VideoToolbox on
+        macOS, and a Linux Chrome build may ship without H.264 at all -- so
+        answers from two operating systems do not form one matrix.
+      * Nothing recorded the platform, so neither of the above was detectable.
+
+    Returns warnings rather than raising: a stale matrix is still worth showing
+    with a caveat, and the caller (or CI) decides how loud to be.
+    """
+    warnings = []
+    stamps = sorted(str(r.get("probedAt") or "") for r in results if r.get("probedAt"))
+    oldest = stamps[0] if stamps else ""
+    if len(stamps) >= 2 and oldest[:10] and stamps[-1][:10]:
+        from datetime import date
+        try:
+            first = date.fromisoformat(oldest[:10])
+            last = date.fromisoformat(stamps[-1][:10])
+            if (last - first).days > _SAME_RUN_DAYS:
+                warnings.append(
+                    f"engines were not probed together: {first} to {last}. "
+                    "A target whose browser was missing keeps its previous "
+                    "result, so re-run the probe for all of them.")
+        except ValueError:
+            warnings.append("a probe timestamp could not be parsed")
+
+    plats = set()
+    for r in results:
+        pl = r.get("platform") or {}
+        if not pl.get("system"):
+            warnings.append(
+                f"{r.get('target')} recorded no platform, so it cannot be "
+                "checked against the others; re-run the probe")
+            continue
+        plats.add(f"{pl.get('system')} {pl.get('machine')}".strip())
+    if len(plats) > 1:
+        warnings.append(
+            "results come from different platforms (" + ", ".join(sorted(plats))
+            + "), which is not one matrix: codec support is platform-specific")
+    label = plats.pop() if len(plats) == 1 else ", ".join(sorted(plats))
+    return oldest, label, warnings
+
+
 def build_payload(results: list) -> dict | None:
     """Assemble everything the dashboard reads, from raw probe results.
 
@@ -669,8 +723,12 @@ def build_payload(results: list) -> dict | None:
     """
     if not results:
         return None
+    probed_at, plat, warnings = check_run(results)
     return {
-        "probed_at": max((r.get("probedAt") or "") for r in results),
+        # Oldest, not newest -- see check_run.
+        "probed_at": probed_at,
+        "platform": plat,
+        "warnings": warnings,
         "browsers": [{
             "target": r.get("target"), "label": r.get("label"),
             "name": short_name(r.get("label"), r.get("target")),

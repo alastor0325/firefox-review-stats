@@ -1049,3 +1049,132 @@ class TestSupportIsNotDecidedByOneResolution:
         must not be folded into the best-of."""
         page = self._page()
         assert "RES_BY_LABEL['4K']" in page
+
+
+def _res(target, *, probed_at="2026-08-11T00:00:00Z", system="Darwin",
+         machine="arm64", **kw):
+    r = {
+        "target": target, "label": target.title(), "browser_version": "1",
+        "probedAt": probed_at,
+        "platform": {"system": system, "machine": machine, "release": "25.5"},
+        "combos": [combo("MP4", "AAC-LC", kind="audio", canPlayType="probably")],
+        "bare": {}, "conformance": [], "apis": {},
+    }
+    r.update(kw)
+    return r
+
+
+class TestThePayloadRefusesToHideAStaleRun:
+    """The matrix is only meaningful if every engine was asked at the same time,
+    on the same machine. Three ways it silently was not:
+
+      * A target whose browser is missing is skipped, and its JSON from the
+        previous run stays on disk. `probed_at` took `max()` of the timestamps, so
+        one month-old file hid behind two fresh ones and the page still claimed a
+        current date.
+      * Codec support is platform-specific -- HEVC comes from VideoToolbox on
+        macOS -- so results from two operating systems do not form a matrix.
+      * Nothing said how old the data was.
+    """
+
+    def test_probed_at_is_the_oldest_not_the_newest(self):
+        from reviewstats.mediacaps import build_payload
+        p = build_payload([
+            _res("chrome", probed_at="2026-06-01T00:00:00Z"),
+            _res("firefox", probed_at="2026-08-11T00:00:00Z"),
+        ])
+        assert p["probed_at"].startswith("2026-06-01"), (
+            "the newest timestamp lets a stale engine hide behind a fresh one"
+        )
+
+    def test_a_split_run_is_flagged(self):
+        from reviewstats.mediacaps import build_payload
+        p = build_payload([
+            _res("chrome", probed_at="2026-06-01T00:00:00Z"),
+            _res("firefox", probed_at="2026-08-11T00:00:00Z"),
+        ])
+        assert any("not probed together" in w for w in p["warnings"]), p["warnings"]
+
+    def test_one_run_on_one_machine_produces_no_warnings(self):
+        from reviewstats.mediacaps import build_payload
+        p = build_payload([_res("chrome"), _res("firefox"), _res("webkit")])
+        assert p["warnings"] == []
+
+    def test_mixed_platforms_are_flagged(self):
+        from reviewstats.mediacaps import build_payload
+        p = build_payload([_res("chrome", system="Linux"),
+                           _res("firefox", system="Darwin")])
+        assert any("platform" in w.lower() for w in p["warnings"]), p["warnings"]
+
+    def test_the_platform_is_reported_so_the_page_can_say_it(self):
+        from reviewstats.mediacaps import build_payload
+        p = build_payload([_res("chrome"), _res("firefox")])
+        assert p["platform"] == "Darwin arm64"
+
+    def test_a_result_with_no_platform_is_flagged_not_assumed(self):
+        """Older result files predate the field; guessing macOS would be a lie."""
+        from reviewstats.mediacaps import build_payload
+        r = _res("chrome")
+        del r["platform"]
+        p = build_payload([r])
+        assert any("platform" in w.lower() for w in p["warnings"])
+
+
+class TestTheProbeIsRunnableInCi:
+    """The gathering process has to be reproducible by a machine, not just by me.
+
+    Four things blocked that, all of them real: the Chrome path was macOS-only so
+    a Linux runner silently skipped it; the exit code was 0 if *any* engine
+    answered, so a partial run looked successful; nothing recorded the platform;
+    and a skipped engine kept its previous result, letting stale answers ride under
+    a fresh date.
+    """
+
+    def _runner(self):
+        import pathlib
+        return pathlib.Path("tools/media-caps/run_probe.py").read_text(
+            encoding="utf-8")
+
+    def test_chrome_is_looked_up_per_platform(self):
+        src = self._runner()
+        assert "CHROME_CANDIDATES" in src
+        for osname in ("Darwin", "Linux", "Windows"):
+            assert f'"{osname}"' in src, osname
+
+    def test_chrome_path_can_be_overridden_by_env(self):
+        assert 'os.environ.get("CHROME_PATH")' in self._runner()
+
+    def test_chrome_is_required_not_optional(self):
+        """Playwright's Chromium is not a substitute: it ships without H.264, AAC
+        and HEVC, so probing it would describe a Chrome that does not exist."""
+        assert '"required": True' in self._runner()
+
+    def test_a_partial_run_exits_nonzero(self):
+        src = self._runner()
+        assert "no fresh result for" in src
+        assert 'if any("error" not in s for s in summary)' not in src, (
+            "the old any() rule is back: a run that lost an engine exits 0"
+        )
+
+    def test_the_platform_is_recorded_with_every_result(self):
+        assert '"platform": platform_summary()' in self._runner()
+
+    def test_a_workflow_exists_and_runs_on_macos(self):
+        """It must match the committed results' platform, or check_run rejects the
+        mix -- and it needs Homebrew Chrome, which Linux runners cannot give."""
+        import pathlib
+        wf = pathlib.Path(".github/workflows/media-caps.yml")
+        assert wf.exists(), "no workflow refreshes the probe data"
+        text = wf.read_text(encoding="utf-8")
+        assert "macos-latest" in text
+        assert "google-chrome" in text
+        assert "playwright install firefox webkit" in text
+        assert "chromium" not in text.split("# Chromium deliberately")[1][:200]
+
+    def test_the_workflow_validates_before_committing(self):
+        import pathlib
+        text = pathlib.Path(".github/workflows/media-caps.yml").read_text(
+            encoding="utf-8")
+        assert text.index("build_matrix.py") < text.index("git commit"), (
+            "results would be committed before the run is validated"
+        )

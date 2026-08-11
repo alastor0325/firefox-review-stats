@@ -349,7 +349,11 @@ def _generate_for_team(
             if diff:
                 print(f"[{team.slug}] Media caps: {diff['differing']} of "
                       f"{diff['total']} codec/container combos differ across "
-                      f"engines, {diff['we_lack']} where Firefox lacks support")
+                      f"engines, {diff['we_lack']} where Firefox lacks support "
+                      f"({caps.get('platform') or 'platform unrecorded'}, "
+                      f"probed {(caps.get('probed_at') or '')[:10]})")
+            for w in caps.get("warnings") or []:
+                print(f"[{team.slug}] Media caps WARNING: {w}")
 
     html_path = team_dir / "index.html"
     html_path.write_text(

@@ -823,11 +823,13 @@ class TestMeasuredCaps:
             not in html
 
     def test_surface_names_are_spelled_out(self):
-        """"Play" and "Stream" were too terse to guess."""
+        """"Play" and "Stream" were too terse to guess. The explanations are now
+        one short line each on the column headers, so they name the API without
+        spelling out "Media Source Extensions" in full."""
         html = _joined(self._render_caps())
-        assert "Media Source Extensions" in html
         assert "MediaRecorder.isTypeSupported" in html
         assert "decodingInfo" in html
+        assert "media-source" in html
 
     def test_rows_nobody_supports_are_not_listed_at_all(self):
         """Replaces an earlier rule that kept them in a collapsed table.
@@ -1138,3 +1140,64 @@ class TestOnlyThreeAnswersAreEverShown:
         html = self._html()
         assert "the probe could not answer" in html
         assert "no engine supports this" in html
+
+
+class TestColumnHeadersExplainThemselves:
+    """File / MSE / WC / Rec carry a hover explanation, on the page's own tooltip.
+
+    They previously used a native `title`, which has a roughly one-second delay
+    and no affordance -- easy to miss that an explanation exists at all. The
+    dashboard already has a floating tooltip bound to `[data-tip]`; it was scoped
+    to `.info` badges only, and a column header cannot become a badge because it
+    has to keep its own text. So the binding is generalised rather than the header
+    special-cased.
+    """
+
+    def _html(self):
+        caps = dict(_ROADMAP, caps=TestMeasuredCaps._caps_payload())
+        return _joined(render_html(_MINIMAL_DATA, roadmap_data=caps))
+
+    def test_the_tooltip_binding_is_not_limited_to_info_badges(self):
+        assert "querySelectorAll('[data-tip]')" in self._html(), (
+            "only .info elements get tooltips, so a header explanation never shows"
+        )
+
+    def test_sub_headers_use_the_page_tooltip_not_a_native_title(self):
+        html = self._html()
+        assert 'class="pm-sub" data-tip=' in html
+
+    def test_a_hoverable_non_badge_shows_it_is_hoverable(self):
+        assert "cursor: help" in self._html()
+
+    def test_each_surface_explanation_is_one_short_line(self):
+        from reviewstats.mediacaps import SECTIONS
+        for spec in SECTIONS:
+            for _key, label, full in spec["surfaces"]:
+                assert full and len(full) <= 80, f"{label}: {len(full)} chars"
+                assert "\\n" not in full
+
+
+class TestProvenanceIsOnThePage:
+    """The platform and any run warnings are visible, not just in the build log.
+
+    Codec answers are platform-specific -- HEVC comes from VideoToolbox on macOS --
+    so a matrix without its platform is unfalsifiable. And a matrix assembled from
+    two runs or two machines is not a matrix; if that ever ships, the page has to
+    say so rather than leaving it in a generator log nobody reads.
+    """
+
+    def _html(self):
+        caps = dict(_ROADMAP, caps=TestMeasuredCaps._caps_payload())
+        return _joined(render_html(_MINIMAL_DATA, roadmap_data=caps))
+
+    def test_the_platform_is_shown_next_to_the_date(self):
+        assert "caps.platform" in self._html()
+
+    def test_warnings_are_rendered_when_present(self):
+        assert "caps.warnings" in self._html()
+
+    def test_warnings_are_not_styled_as_ordinary_prose(self):
+        """They mean the numbers are suspect; recessive grey would undersell it."""
+        html = self._html()
+        i = html.index("caps.warnings")
+        assert "--rate-weak" in html[max(0, i - 300):i + 300]

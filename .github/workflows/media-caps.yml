@@ -1,0 +1,95 @@
+# Refreshes the measured codec/container matrix by driving the published probe
+# page in three engines.
+#
+# Separate from the weekly refresh, and on macOS, for two reasons that are not
+# preferences:
+#
+#   * Codec support is platform-specific. HEVC decoding comes from VideoToolbox on
+#     macOS; a Linux Chrome build may ship without H.264 at all. The committed
+#     results are macOS, and `check_run` rejects a matrix assembled from two
+#     platforms, so this job has to match them.
+#   * It needs REAL Chrome, not Playwright's Chromium. Chromium ships without the
+#     proprietary codecs, so probing it would describe a Chrome that does not
+#     exist. The weekly refresh runs on ubuntu with Chromium only, which is fine
+#     for its own scraping but wrong for this.
+#
+# Monthly rather than weekly: browser codec support moves in release cycles, and
+# macOS runner minutes cost ten times Linux.
+name: Media capability probe
+
+on:
+  schedule:
+    # 07:00 UTC on the 1st of each month.
+    - cron: '0 7 1 * *'
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: 'Commit refreshed results'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install playwright
+
+      - name: Install Playwright's Firefox and WebKit
+        # Chromium deliberately not installed: this job must use real Chrome.
+        run: python -m playwright install firefox webkit
+
+      - name: Install real Chrome
+        # Some macOS runner images ship Chrome already, and an unconditional
+        # `brew install --cask` fails on those. Verify presence either way: the
+        # probe needs the real binary, and a missing one must fail here with a
+        # clear message rather than inside Playwright.
+        run: |
+          set -euo pipefail
+          if [ ! -d "/Applications/Google Chrome.app" ]; then
+            brew install --cask google-chrome
+          else
+            echo "Chrome already present on the runner image."
+          fi
+          "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --version
+
+      - name: Probe every engine
+        # Exits nonzero unless all three answered, so a missing browser fails the
+        # job instead of quietly publishing a two-browser matrix.
+        run: python tools/media-caps/run_probe.py
+
+      - name: Validate the run is one run on one machine
+        # Nonzero if the results span platforms or separate runs.
+        run: python tools/media-caps/build_matrix.py
+
+      - name: Show what changed
+        run: git --no-pager diff --stat -- tools/media-caps/results/
+
+      - name: Commit refreshed results
+        if: github.event_name == 'schedule' || inputs.commit
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- tools/media-caps/results/; then
+            echo "No change in probe results."
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add tools/media-caps/results/
+          PLATFORM=$(python -c "import json,pathlib; \
+            d=json.loads(pathlib.Path('tools/media-caps/results/summary.json').read_text()); \
+            p=d.get('platform') or {}; print(p.get('system','?'), p.get('machine','?'))")
+          git commit -m "caps: refresh probe results ($PLATFORM)"
+          git push

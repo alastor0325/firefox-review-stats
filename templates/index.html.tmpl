@@ -1044,6 +1044,9 @@
     vertical-align: 1px;
   }
   .info::before { content: "i"; }
+  /* Signals a hoverable explanation on something that is not an "i" badge. */
+  [data-tip]:not(.info) { cursor: help; text-decoration: underline dotted 1px;
+    text-underline-offset: 2px; text-decoration-color: var(--rule); }
   .info:hover { background: var(--red); color: var(--paper); }
   section h2 .info { vertical-align: middle; }
 
@@ -1562,7 +1565,7 @@ tipEl.className = 'tip-floating';
 document.body.appendChild(tipEl);
 
 function attachTooltips(root) {
-  root.querySelectorAll('.info').forEach(icon => {
+  root.querySelectorAll('[data-tip]').forEach(icon => {
     if (icon.dataset.tipBound) return;
     icon.dataset.tipBound = '1';
     icon.addEventListener('mouseenter', () => {
@@ -2582,7 +2585,7 @@ function renderMetrics() {
         + '</tr>'
         // Row 2: the surfaces, repeated under each browser.
         + '<tr>' + cv.browsers.map(() => cols.map((sf, i) =>
-            '<th class="pm-sub" title="' + escA(sf.full) + '"'
+            '<th class="pm-sub" data-tip="' + escA(sf.full) + '"'
             + (i === 0 ? ' style="border-left:1px solid var(--rule)"' : '')
             + '>' + esc(sf.label) + '</th>').join('')).join('') + '</tr>';
       const body = r => '<tr class="pm-v-' + esc(r.verdict) + '">'
@@ -2619,10 +2622,20 @@ function renderMetrics() {
       '<h2>Codec and container support, measured</h2>'
       // Date only. The engines and their versions are listed immediately below,
       // so naming them here said it twice.
+      // The platform belongs on the page: HEVC decoding comes from VideoToolbox
+      // on macOS, and a Linux Chrome may ship without H.264, so these answers are
+      // specific to where the probe ran.
       + '<p class="footer-note">Measured on '
-      + esc((caps.probed_at || '').slice(0, 10)) + '. '
+      + esc((caps.probed_at || '').slice(0, 10))
+      + (caps.platform ? ' on ' + esc(caps.platform) : '') + '. '
       + '<a href="../media-capabilities/index.html" target="_blank" '
-      + 'rel="noopener">Run the probe yourself \u2197</a></p>' 
+      + 'rel="noopener">Run the probe yourself \u2197</a></p>'
+      // Anything that makes the matrix less than one run on one machine is said
+      // out loud rather than left to the generator log.
+      + ((caps.warnings || []).length
+          ? '<p class="footer-note" style="color:var(--rate-weak)">'
+            + caps.warnings.map(esc).join(' ') + '</p>'
+          : '') 
       + '<ul class="pm-facts">'
       + cv.browsers.map(b => {
           const caveat = b.is_proxy_for_safari
