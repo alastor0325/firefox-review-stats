@@ -157,13 +157,13 @@ individual owners. An item — or a condition aspect — can declare what to hol
 back:
 
 ```yaml
-- id: playready-content-providers
+- id: example-item
   consequence: >          # public, neutral phrasing
-    PlayReady works, but few providers have enabled it.
+    A capability ships, but few providers have enabled it.
   internal:
     withhold: [details]
     notes: >              # never rendered at any audience
-      Canal+ is enabled. Netflix is the significant holdout.
+      <provider> is enabled. <provider> is the holdout.
 ```
 
 ```bash

@@ -1163,12 +1163,22 @@ class TestNoRealNamesInSourceOrFixtures:
 
     def _sources(self):
         import pathlib
+        # Directories AND the top-level docs. Scanning only code let the same
+        # partner claim survive in README.md, where it illustrated the withhold
+        # mechanism using the very material the mechanism protects.
         roots = [pathlib.Path("reviewstats"), pathlib.Path("tests"),
-                 pathlib.Path("templates"), pathlib.Path("tools")]
+                 pathlib.Path("templates"), pathlib.Path("tools"),
+                 pathlib.Path("docs")]
         for r in roots:
+            if not r.exists():
+                continue
             for f in r.rglob("*"):
                 if f.suffix in (".py", ".tmpl", ".html", ".md") and f.is_file():
                     yield f
+        for name in ("README.md", "TODO.md", "CLAUDE.md"):
+            f = pathlib.Path(name)
+            if f.exists():
+                yield f
 
     # Needles are assembled from fragments so the literals never appear in tracked
     # source. Spelling them out made this file match itself -- the fourth time an
@@ -1198,4 +1208,4 @@ class TestNoRealNamesInSourceOrFixtures:
     def test_no_internal_hosting_details(self):
         """The access-control design doc named Mozilla-internal hosting; it lives in
         the private repo now."""
-        assert not self._scan(["quick." + "mozilla.cloud"])
+        assert not self._scan(["qui" + "ck.mozilla" + ".cloud"])

@@ -2051,11 +2051,13 @@ function renderRoadmap() {
 
   const audienceEl = document.getElementById('roadmap-audience');
   const isPublic = ROADMAP.audience === 'public';
-  const withheldCount = ROADMAP.items.filter(i => (i.withheld || []).length).length;
+  // The public build says nothing about what is held back. Announcing a count of
+  // withheld fields tells a reader there is something to look for without telling
+  // them anything useful; the expanded row still marks the individual gap, so
+  // nothing is silently omitted. The internal banner stays, because there it is a
+  // warning: this build must not be published.
   audienceEl.innerHTML = isPublic
-    ? '<b>Public subset.</b> ' + withheldCount + ' item(s) have fields held back '
-      + 'as internal. Withheld fields are marked in the expanded rows rather '
-      + 'than silently omitted.'
+    ? ''
     : '<b>Internal view.</b> Everything renders, including fields marked '
       + 'internal. This build is not for the public site.';
 
