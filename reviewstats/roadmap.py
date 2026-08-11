@@ -190,30 +190,31 @@ _QUICK_COSTS = ("S", "M")
 
 
 def is_quick_win(item: dict) -> bool:
-    """High value or real churn, at a cost we can absorb.
+    """We are losing users over it, and it is cheap.
 
-    Deliberately not "cheapest first" alone: a cheap fix nobody notices is not a
-    win. Either the user gets something substantial (value 3 or 4) or we are
-    losing users over it, and it is S or M.
+    Churn alone, deliberately. `user_value` used to count here too, but it is no
+    longer displayed, and a marker driven by a field nobody can see is the same
+    hidden-arithmetic problem the score had.
     """
     if str(item.get("cost")) not in _QUICK_COSTS:
         return False
-    if int(item.get("user_value") or 0) >= 3:
-        return True
     return str(item.get("churn")) in ("LEAVES", "SECOND-BROWSER")
 
 
 def rating_key(item: dict) -> tuple:
-    """Sort key: churn, then user value, then cheapest.
+    """Sort key: churn, then cheapest.
+
+    `user_value` deliberately does NOT order here. It is no longer a column, and a
+    field that moves rows without being visible is the hidden-score problem again:
+    a reader cannot tell why row 9 sits above row 10. It is still authored and
+    still shown in the expansion, where it informs without steering.
 
     An unrated item sorts last rather than defaulting to severe -- a missing
     judgement must not read as an urgent one.
     """
-    rated = 0 if item.get("churn") and item.get("user_value") else 1
     return (
-        rated,
+        0 if item.get("churn") else 1,
         CHURN_RANK.get(str(item.get("churn")), len(CHURN)),
-        -int(item.get("user_value") or 0),
         COST_ORDER.get(str(item.get("cost")), 9),
         str(item.get("title", "")),
     )

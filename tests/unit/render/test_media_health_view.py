@@ -1228,12 +1228,16 @@ class TestTheRatingIsShownWithItsReasoning:
     def _html(self):
         return _joined(render_html(_MINIMAL_DATA, roadmap_data=_ROADMAP))
 
-    def test_columns_are_churn_value_item_cost(self):
+    def test_columns_are_churn_item_cost(self):
         import re
         html = render_html(_MINIMAL_DATA, roadmap_data=_ROADMAP)
         m = re.search(r"const RM_COLS = \[(.*?)\];", html, re.DOTALL)
         cols = re.findall(r"\['([^']+)'", m.group(1))
-        assert cols == ["Churn", "Value", "Item", "Cost"], cols
+        assert cols == ["Churn", "Item", "Cost"], cols
+
+    def test_value_is_in_the_expansion_not_a_column(self):
+        html = self._html()
+        assert "value ' + esc(it.user_value)" in html
 
     def test_owner_and_conf_are_not_columns_any_more(self):
         import re

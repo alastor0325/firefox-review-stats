@@ -1086,25 +1086,38 @@ class TestOurOwnRating:
                  self._item(id="leaves", churn="LEAVES", user_value=4, cost="XL")]
         assert [i["id"] for i in sort_items(items)] == ["leaves", "polish"]
 
-    def test_value_breaks_a_churn_tie(self):
+    def test_value_does_not_order_the_list(self):
+        """It is no longer a column, so it must not move rows. A field that
+        reorders invisibly is the hidden-score problem again: a reader cannot tell
+        why one row sits above another. It still shows in the expansion."""
         from reviewstats.roadmap import sort_items
-        items = [self._item(id="low", churn="ANNOYS", user_value=1),
-                 self._item(id="high", churn="ANNOYS", user_value=3)]
-        assert [i["id"] for i in sort_items(items)] == ["high", "low"]
+        items = [self._item(id="a", churn="ANNOYS", user_value=1, cost="M"),
+                 self._item(id="b", churn="ANNOYS", user_value=4, cost="M")]
+        # Tie broken by title, not by value.
+        assert [i["id"] for i in sort_items(items)] == ["a", "b"]
+
+    def test_cost_breaks_a_churn_tie(self):
+        from reviewstats.roadmap import sort_items
+        items = [self._item(id="big", churn="ANNOYS", cost="XL"),
+                 self._item(id="cheap", churn="ANNOYS", cost="S")]
+        assert [i["id"] for i in sort_items(items)] == ["cheap", "big"]
 
     def test_cheapest_first_when_value_and_churn_tie(self):
         from reviewstats.roadmap import sort_items
         items = [self._item(id="big", cost="XL"), self._item(id="small", cost="S")]
         assert [i["id"] for i in sort_items(items)] == ["small", "big"]
 
-    def test_a_quick_win_is_high_value_and_cheap(self):
+    def test_a_quick_win_is_real_churn_at_low_cost(self):
         from reviewstats.roadmap import is_quick_win
-        assert is_quick_win(self._item(user_value=4, cost="M")) is True
-        assert is_quick_win(self._item(user_value=4, cost="XL")) is False
-        # churn must be neutral here, or the churn branch catches it -- which is
-        # the intended behaviour, asserted separately below.
+        assert is_quick_win(self._item(churn="LEAVES", cost="M")) is True
+        assert is_quick_win(self._item(churn="LEAVES", cost="XL")) is False
+        assert is_quick_win(self._item(churn="INVISIBLE", cost="S")) is False
+
+    def test_value_no_longer_makes_a_quick_win(self):
+        """It is invisible in the table, so it must not drive a visible marker."""
+        from reviewstats.roadmap import is_quick_win
         assert is_quick_win(
-            self._item(user_value=1, cost="S", churn="INVISIBLE")) is False
+            self._item(user_value=4, churn="INVISIBLE", cost="S")) is False
 
     def test_churn_alone_can_make_a_quick_win(self):
         """Users leaving is worth doing even at middling user value."""

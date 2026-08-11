@@ -1525,11 +1525,11 @@ __GH_CORNER__
 
     <h2>Ordered</h2>
     <p class="footer-note">Ordered by whether not doing it costs us the user, then
-      by what the user gets, then cheapest first. <b>Churn</b> and <b>Value</b> are
-      our own judgement, deliberately not Bugzilla's severity — that is one
-      reporter's triage of one bug and most of these have none. Hover either for
-      what the levels mean. <b>quick win</b> marks high value or real churn at a
-      cost we can absorb. Click a row for the reasoning, evidence and details.</p>
+      cheapest first. <b>Churn</b> is our own judgement, deliberately not Bugzilla's
+      severity — that is one reporter's triage of one bug, and most of these have no
+      bug at all. Hover it for what the levels mean. <b>quick win</b> marks real
+      churn at a cost we can absorb. Click a row for the reasoning, the value
+      rating and the evidence.</p>
     <div class="table-wrap">
       <table id="roadmap-ranked">
         <thead></thead>
@@ -2207,6 +2207,12 @@ function renderRoadmap() {
        // rows. In a tag list a blank simply does not appear.
        + '<span class="rm-tag">owner ' + ownerCell(it) + '</span>'
        + (it.fills ? '<span class="rm-tag">' + esc(it.fills) + '</span>' : '')
+       // Value informs here rather than ordering the table: it is not a column,
+       // so it must not move rows either.
+       + (it.user_value
+           ? '<span class="rm-tag" data-tip="' + escA(VALUE_TIP[it.user_value])
+             + '">value ' + esc(it.user_value) + '</span>'
+           : '')
        + '<span class="rm-tag">cost ' + esc(it.cost) + '</span>'
        + '<span class="rm-tag">conf ' + esc(it.confidence) + '</span>'
        + (it.demand ? '<span class="rm-tag">demand ' + esc(it.demand) + '</span>' : '')
@@ -2226,7 +2232,7 @@ function renderRoadmap() {
   // What replaces them is the rating: does not doing this cost us the user, what
   // does the user get, and how big is it.
   const RM_COLS = [
-    ['Churn', '104px'], ['Value', '62px'], ['Item', null], ['Cost', '58px'],
+    ['Churn', '104px'], ['Item', null], ['Cost', '58px'],
   ];
   const RM_HEAD = '<tr>' + RM_COLS.map(
     ([label, w]) => '<th' + (w ? ' style="width: ' + w + '"' : '') + '>'
@@ -2268,9 +2274,6 @@ function renderRoadmap() {
           + '<td><span class="rm-churn rm-c-' + esc(churn.toLowerCase())
           + '" data-tip="' + escA(CHURN_TIP[churn] || '') + '">'
           + esc(CHURN_SHORT[churn] || churn) + '</span></td>'
-          + '<td><span class="rm-val" data-tip="'
-          + escA(VALUE_TIP[it.user_value] || '') + '">'
-          + esc(it.user_value || '-') + '</span></td>'
           + '<td>'
           + (it.quick_win ? '<span class="rm-qw" data-tip="High value or real '
               + 'churn, at a cost we can absorb - the shortlist worth picking up '
