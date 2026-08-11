@@ -12,16 +12,17 @@ Per-team dashboards for Mozilla — review-load distribution plus a digest of wh
 
 ## What the dashboard shows
 
-Each per-team page has four views, toggled at the top:
+Each per-team page has four views, toggled at the top — plus a fifth, **Media Health**, on the playback page only:
 
 - **Team View** — Headline summary (in-scope patch count, group-tagged %, listed-members reviewing, "landed without team review" with a foldable drill-down pie + patch list). Within-group reviewer distribution, concentration metrics (Gini, bus factor), sole-reviewer-risk, total reviews per member, top patch authors, author→reviewer mapping. Four periods: **1-Month** / **3-Month** / **6-Month** rollups (same content, narrower commit slices) and **Per-Week** (most-recent-week slice for wait-time data).
 - **Member View** — Per-member profile: weekly activity (reviews + patches submitted), authors whose patches they reviewed, wait-time tiles when they're the author.
 - **Wait Queue** — Per-revision table of in-scope, member-authored patches sorted by longest wait first. Links straight into Phabricator.
 - **Recent Changes** — A "what changed in this component" digest, defaulting to **This Week** (toggle to **This Month**). Landed **patches** (one per revision; re-lands counted once) are grouped into **feature areas** — the subdirectory each patch changed the most, mapped to a friendly label — **ordered by number of patches**, with a `count/total · %` badge per area. Each area shows a short, plain-language LLM **overview** (what changed and why it matters; a key highlight may be bolded in red) with its full patch list tucked behind a **"Show N patches"** toggle, collapsed by default. Covers all landings, not just team-reviewed ones. Overviews are generated at refresh time by the Claude API (see [Recent-change summaries](#recent-change-summaries)); without an API key the tab still renders the patch lists, just without overviews.
+- **Media Health** *(playback only)* — The media roadmap and, later, the Raptor performance metrics. Two subviews: **Roadmap** and **Performance**. Roadmap renders the curated item list in three groups — **Ordered** (impact against how many users meet the problem, cost breaking ties), **Need measuring first** (unranked: low confidence, or no reach figure — the next action is to find out, not to build), and **Continuous** (spec and upkeep, budgeted as a share of time rather than ranked). Each row expands to its authored consequence, evidence and details. **Reach is shown; the score it feeds is not** — reach is a contested input worth arguing about, the arithmetic isn't. The metrics table at the bottom is the seam with Performance: every target is currently unset, which is what blocks the perennial-quality scope. Unlike the other four views, this one is about the product rather than the review process, which is why it exists for one team only. It removes itself automatically on teams with no roadmap.
 
-**Keyboard navigation:** on a team page, **←/→** cycle the view (Team → Member → Wait Queue → Recent Changes) and **Shift+←/→** cycle the period (6-Month → 3-Month → 1-Month → Per-Week, Team View only). Arrows are ignored while typing in a field, and Cmd/Alt/Ctrl+arrow are left to the OS/browser (Ctrl+← / → is the macOS Spaces switch, which is why Shift — not Ctrl — drives the period).
+**Keyboard navigation:** on a team page, **←/→** cycle the view (Team → Member → Wait Queue → Recent Changes → Media Health) and **Shift+←/→** cycle the current view's secondary axis — the period in Team View (6-Month → 3-Month → 1-Month → Per-Week), the window in Recent Changes, the section in Media Health. Arrows are ignored while typing in a field, and Cmd/Alt/Ctrl+arrow are left to the OS/browser (Ctrl+← / → is the macOS Spaces switch, which is why Shift — not Ctrl — drives the period).
 
-**Deep links:** the view and its period/window are encoded in the URL hash, so you can link straight to a state — `#team/6m`, `#team/3m`, `#team/1m`, `#team/weekly`, `#member`, `#queue`, `#recent/1w`, `#recent/1m`. The hash updates as you toggle and is restored on load and on back/forward.
+**Deep links:** the view and its period/window are encoded in the URL hash, so you can link straight to a state — `#team/6m`, `#team/3m`, `#team/1m`, `#team/weekly`, `#member`, `#queue`, `#recent/1w`, `#recent/1m`, `#health/roadmap`. The hash updates as you toggle and is restored on load and on back/forward.
 
 The landing page is a static picker that lists every registered team and links into its subfolder. **↑/↓** move a focus highlight through the teams; **Enter** opens the highlighted one.
 
@@ -102,7 +103,7 @@ python -m playwright install chromium
 Run the test suite:
 
 ```bash
-python -m pytest tests/             # 349 tests (unit + integration)
+python -m pytest tests/             # 653 tests (unit + integration)
 python -m pytest tests/unit/        # unit only
 python -m pytest tests/integration/ # value-side end-to-end checks
 ```
@@ -111,6 +112,7 @@ Generate the site:
 
 ```bash
 python analyze_git.py               # cheap (GitHub API, paginated commits)
+python analyze_git.py --roadmap-audience internal   # local only, never commit the result
 python analyze_phab.py              # slow first time per new team (Playwright + Phab)
 python dump_author_patches.py       # cheap (re-uses analyze_git's API)
 ```
@@ -120,6 +122,284 @@ Serve locally:
 ```bash
 python3 -m http.server 8765 --bind 127.0.0.1
 # Then open http://127.0.0.1:8765/
+```
+
+### The Media Health view (playback only)
+
+> **Updating it: [docs/media-health-runbook.md](docs/media-health-runbook.md).** The
+> operational sequence for all three data sources, and the traps. Start there rather
+> than assembling it from the sections below — in particular, the roadmap source lives
+> outside this repo and CI cannot see it, so **editing it requires a local
+> regeneration and commit**.
+
+The Roadmap subview is generated from a hand-curated YAML file that lives
+**outside this repo**, in the investigation repo:
+
+```
+~/firefox-bug-investigation/roadmap/roadmap.yaml     # override with $ROADMAP_YAML
+```
+
+`analyze_git.py` only ever **reads** it. The roadmap is slow-moving and
+human-authored, so the weekly refresh must never regenerate or overwrite it. If
+the file is absent — a fresh checkout, or CI without the investigation repo —
+the view degrades to "tab not there" rather than failing the build.
+
+Which teams get the view is set by `has_roadmap` on the `Team` dataclass
+(playback only). The template itself never learns a team name: it hides the tab
+when no roadmap payload was injected, the same way Recent Changes hides itself
+when there is no digest.
+
+#### Internal vs public — read this before publishing
+
+**This repo is public and the site is served from GitHub Pages.** The roadmap
+carries candid internal assessment: contested ownership, partner names,
+individual owners. An item — or a condition aspect — can declare what to hold
+back:
+
+```yaml
+- id: example-item
+  consequence: >          # public, neutral phrasing
+    A capability ships, but few providers have enabled it.
+  internal:
+    withhold: [details]
+    notes: >              # never rendered at any audience
+      <provider> is enabled. <provider> is the holdout.
+```
+
+```bash
+python analyze_git.py                                # public subset (default)
+python analyze_git.py --roadmap-audience internal    # everything — DO NOT COMMIT
+```
+
+`--roadmap-audience` defaults to **public**, and it has to. `internal` output is
+a strict superset of `public`, `<slug>/index.html` is git-tracked, and the
+weekly workflow runs `analyze_git.py` with no flags and then `git add -A
+playback/`. So an internal default would publish precisely the fields the
+annotation exists to protect.
+
+Withheld fields are **marked** in the expanded row, not silently dropped, so a
+reader can tell something was held back.
+
+`roadmap.yaml` lives in a **separate private repo**, and CI cannot see it — which
+silently deleted the whole view: `_load_roadmap_view` returned None, the Media
+Health tab was hidden, and the weekly job committed the regenerated page over the
+good one. So a local run also writes `<team>/data_roadmap.json`, the **public**
+projection, which CI reads as a fallback. That exposes nothing new — it is what was
+already embedded in the published HTML — and the write is gated on
+`audience == "public"`, so an internal run cannot commit withheld fields.
+
+The practical consequence: **editing the roadmap requires a local regeneration and
+commit.** The weekly job cannot pick up YAML changes on its own; it will faithfully
+re-publish the last committed projection.
+
+#### Codec and container support — measured, not read from source
+
+The support matrix used to be written by reading Firefox and Chromium source, and
+that produced wrong claims: Chromium's `mkv_audio_codecs` lists PCM and AC-3, so
+the table said Chrome plays both in Matroska. Shipping Chrome answers `no` to
+both — the codec list says what the code mentions, not what a build ships.
+
+So support is **measured** by asking browsers directly. There is a probe page in
+the repo, published alongside the dashboard so anyone can re-run it by hand:
+
+```
+media-capabilities/index.html            # the probe page (public)
+```
+
+```bash
+.venv/bin/python tools/media-caps/run_probe.py      # drive it across engines
+.venv/bin/python tools/media-caps/build_matrix.py   # summarise what they said
+```
+
+### Refreshing it, and why that is a separate job
+
+```
+.github/workflows/media-caps.yml     # monthly, or run it by hand
+```
+
+The probe does **not** run in the weekly refresh, and cannot: that job is
+`ubuntu-latest` with Playwright's Chromium, and both parts are wrong here.
+
+- **Real Chrome is required.** Chromium ships without the proprietary codecs — no
+  H.264, AAC or HEVC — so probing it would describe a Chrome that does not exist.
+  The runner installs Chrome from Homebrew (skipping it when the image already has
+  it) and `run_probe.py` treats a missing binary as an error, not a skip.
+- **The platform is part of the result.** HEVC decoding comes from VideoToolbox on
+  macOS, and a Linux Chrome build may ship without H.264. Every result records its
+  platform, the page states it, and `check_run` **rejects** a matrix assembled from
+  two platforms. The committed data is macOS, so the job runs `macos-latest`.
+
+Three failure modes that used to pass silently, and what now catches them:
+
+| Was | Now |
+|---|---|
+| macOS-only Chrome path → skipped on Linux, matrix quietly two engines wide | per-OS lookup plus `CHROME_PATH`; Chrome is `required`, so absence is an error |
+| exit 0 if *any* engine answered → CI would commit a partial run | exit 1 unless every requested engine produced a fresh result |
+| a skipped engine kept its previous JSON, hidden behind `max()` of the timestamps | `probed_at` is the **oldest** stamp, and a spread over 2 days is reported as a warning on the page and a nonzero exit from `build_matrix.py` |
+
+The workflow validates before it commits: `build_matrix.py` exits nonzero on any
+warning, so a split or mixed-platform run fails the job instead of publishing.
+
+`run_probe.py` writes one raw JSON per engine into `tools/media-caps/results/`,
+and those files are tracked. The support table is **derived from them at render
+time** — `analyze_git.py` rebuilds it every run — so there is no second file to
+keep in step. An earlier version committed the derived table, which went stale the
+moment the transform changed: regenerating the site rendered the *previous* shape
+with every test green, because no test reads on-disk JSON. `build_matrix.py` is
+now a read-only summary of the last probe.
+
+`run_probe.py` drives Playwright's Gecko, real Chrome, and Playwright's WebKit.
+Two caveats are recorded in the output and shown on the page: Playwright's WebKit
+is **not Safari** — it lacks the platform codec integration Safari gets from the
+OS — and Playwright's Gecko is not a shipping Firefox configuration. Neither
+refresh is part of the weekly run; re-run them when you want fresh answers.
+
+Each of the three surfaces names the API that answered it, because they are not
+all the same generation:
+
+| Surface | Measured with | Why |
+|---|---|---|
+| Playback | `decodingInfo({type:'file'})` | definite answer |
+| Streaming | `decodingInfo({type:'media-source'})` | same |
+| Recording | `MediaRecorder.isTypeSupported` | `encodingInfo({type:'record'})` **throws on Chrome** for every configuration tried; driving the column with it reported Chrome as recording nothing |
+| WC decode | `VideoDecoder`/`AudioDecoder.isConfigSupported` | separate API, separate registry |
+| WC encode | `VideoEncoder`/`AudioEncoder.isConfigSupported` | the only place encode support is visible — see below |
+
+> **WebCodecs is a separate category because its answers differ.** In WebM,
+> Firefox's `MediaRecorder` accepts `vp8` alone, so the Recording column shows VP9
+> and AV1 as gaps — but `VideoEncoder.isConfigSupported` reports **yes** for both,
+> at parity with Chrome and WebKit. Reporting MediaRecorder alone made "we cannot
+> record VP9" read as "we cannot encode VP9", and only the first is true. The gap
+> is the wiring between the two, not the encoder.
+
+Support is the **best answer across every accepted codec spelling and every
+resolution tier**, because a single arbitrary parameter otherwise turns a yes into
+a no. Two measured false negatives came from exactly that:
+
+- WebKit answers `no` to `video/mp4; codecs="av01.0.04M.08"` at 1920×1080 and
+  `yes+hw` at 854×480. Probing 1080p alone recorded "WebKit has no AV1", when what
+  it has is an AV1 decoder with a ceiling. A 480p tier was added and the surfaces
+  take the best tier; `decodeFile4k` still asks 4K specifically, since "what is the
+  ceiling" is a different question.
+- Audio decoder configs carry a synthesised 34-byte FLAC STREAMINFO as
+  `description`. Without one, Chrome's `AudioDecoder.isConfigSupported` *throws*
+  for FLAC and Vorbis ("description is required") and WebKit answers a flat `no` —
+  a question mark and a false negative for the same missing field. With it all
+  three answer `yes`, while `ac-3` and a deliberately invalid codec still answer
+  `no`, so it does not manufacture support. The same STREAMINFO satisfies the
+  Vorbis query, which shows browsers check that setup data is *present* for this
+  call rather than parsing it — so this measures codec recognition, not stream
+  validity, which is the right question here.
+- Every codec label a container can carry needs a WebCodecs codec string. `Theora`
+  and `PCM` had none, so those configs went out with `codec: undefined` and the
+  browsers answered "Missing required 'codec'" — rendered as a question mark about
+  the codec rather than about the probe.
+- Codec-string spellings are **not** interchangeable, and the correct one depends on
+  the surface. Measured in WebM: `codecs="vp9"` gets `no` from Chrome's
+`decodingInfo` and `yes` from its `MediaRecorder`; `codecs="vp09.00.10.08"` gets
+the reverse. Picking either alone writes a false `no` into the table, so the probe
+asks every accepted spelling and keeps the strongest answer per surface. `maybe`
+outranks `no`, and errors rank below any real answer.
+
+MediaCapabilities requires a codecs parameter, so it cannot answer a bare
+container type at all — it errors. Bare rows therefore read `canPlayType` /
+`MediaSource.isTypeSupported`. Those rows are how HLS support is visible, so
+losing them loses HLS. A precise call that *throws* also falls back to the legacy
+answer: WebKit raises a `TypeError` from `decodingInfo` for every Matroska
+configuration while answering `canPlayType` for the same input, and reporting
+that as unknown would hide a real measured `no` behind an API quirk.
+
+An expanded card holds **two sections, Decoding and Encoding**, each browser-major
+with its surfaces nested beneath it:
+
+```
+DECODING                          Firefox            Chrome             WebKit
+Codec            String           File  MSE   WC     File  MSE   WC     File  MSE   WC
+AV1              av01.0.04M.08    yes   yes   yes    yes   yes   yes    no    no    yes
+VP8              vp8              –     –     yes    –     –     yes    –     –     yes
+
+ENCODING                          Firefox        Chrome         WebKit
+Codec            String           Rec   WC       Rec   WC       Rec   WC
+AV1              av01.0.04M.08    no    yes      yes   yes      yes   yes
+```
+
+Five separate per-surface tables put the same codec on the page five times, and
+answering "can we encode AV1 at all" meant cross-referencing two of them — which
+is the comparison that matters, since Firefox's MediaRecorder refuses VP9 and AV1
+while its WebCodecs encoder accepts both. Decoding and encoding are the two
+questions actually asked, so they are the two sections.
+
+A row lives or dies on the whole section, not per surface: VP8 in MP4 is played by
+no engine yet encoded by all three through WebCodecs, so a per-surface rule would
+have dropped a real answer. Where a surface has no engine support the cell reads
+`–` — "nobody does this" must not look like three separate failures. The row's
+verdict is the worst across its section, so a gap cannot hide behind parity beside
+it.
+
+Inside each section, rows are grouped into **Video codecs** then **Audio codecs** —
+a fixed order, not sorted by verdict. Sorting the groups worst-first moved the
+blocks around between cards (audio led MP4, video led WebM), so the eye had to
+re-find the video block on each card. Worst-first still governs the rows *inside* a
+group.
+
+Cells read **`yes`, `no`, or `–`** and nothing else. A dash covers two cases,
+separated in the tooltip: no engine supports the combination, or the probe could
+not answer. `build_matrix.py` prints an unanswered count per surface so the second
+case is visible in tooling rather than as punctuation on the page — currently zero
+across all five surfaces.
+
+Answers are coloured green for `yes` and red (`--rate-weak`) for `no`, chosen by
+running the dataviz skill's validator rather than by eye: against the palette's
+other red step it gives 7.12 text contrast on white instead of 4.80, and sits 3×
+further from the `yes` green under simulated colour-vision deficiency (deutan
+ΔE 5.1 vs protan 1.7). ΔE 5.1 is still low for red-against-green, which is why
+every cell carries the **word** — colour never has to carry the meaning alone.
+
+Combinations **no engine supports** are left out. They are not a gap, not an
+overclaim and not a win, and the probe asks every codec a container could
+plausibly carry, so there are a fair few — VP8 in MP4 is one, refused by all three
+engines. `build_matrix.py` prints how many were dropped, since the page no longer
+does.
+
+Each container card carries a **coverage level** — `no support`, `partial`, or
+`full support` — computed as how many of the combinations *any* engine supports we
+support too, aggregated over the three surfaces. The per-surface chips show the
+same ratio (`10/14` = 14 work somewhere, we have 10). An earlier version showed the
+gap count and a behind/parity pair, which behaved like a boolean: 13 of 14 read the
+same as 0 of 14, and the figure rose as things got worse. Containers sort by level,
+then by how much is missing.
+
+Each row carries a coloured bar on the left saying whether **we** are covered:
+green where Firefox supports it, amber where another engine does and we do not,
+slate where we accept something no other engine will. `ahead` and `parity` share
+green on purpose — for a team reading this, both mean covered.
+
+That took two tries to get right. Parity first rendered with no bar, which read as
+a styling miss; then with a neutral grey one, which was worse — grey said "nothing
+to report" on a row showing three `yes` answers. Encoding Firefox's position rather
+than the shape of the agreement is what fixed it.
+
+> **`powerEfficient` and `smooth` are collected but not shown.** Two reasons,
+> either sufficient. `powerEfficient` is not a hardware-decode flag — Firefox and
+> Chrome both report it for MP3, FLAC, Vorbis and AAC, and neither ships a
+> hardware decoder for any of them. And both are **per device**: the answer
+> describes whichever machine ran the probe, so a general cross-browser table
+> would invite reading "Firefox has hardware AV1 decode" off one laptop's GPU.
+> The probe page still reports them, which is where a per-device fact belongs.
+> `hw-decode-matrix` therefore still needs a real per-configuration answer.
+
+The probe also asks about type strings that **cannot exist** (`audio/flac;
+codecs="ac-3"`). That found a Firefox conformance bug: `FlacDecoder::
+IsSupportedType` never reads the codecs parameter
+(`dom/media/flac/FlacDecoder.cpp:16-21`), so Firefox alone accepts three invalid
+pairs that Chrome and WebKit both reject. This check is **not on the dashboard** —
+it is reported by `build_matrix.py`:
+
+```
+conformance  3 impossible type(s) wrongly accepted:
+               firefox-playwright: audio/flac; codecs="ac-3"
+               firefox-playwright: audio/flac; codecs="alac"
+               firefox-playwright: audio/flac; codecs="opus"
 ```
 
 ### Recent-change summaries
@@ -166,6 +446,46 @@ tests/integration/
 ```
 
 The workflow runs `pytest tests/` so both layers gate every weekly refresh.
+
+## Refresh cadences — what runs when, and why
+
+Two schedules, because the two data sources move at different speeds and need
+different machines:
+
+| Job | Cadence | Runner | What it refreshes |
+|---|---|---|---|
+| `refresh.yml` | weekly (Mon 09:00 UTC) | `ubuntu-latest` | review data, and the Perfherder **metrics** |
+| `media-caps.yml` | quarterly + manual | `macos-14` (pinned) | the measured **codec/container matrix** |
+
+The weekly job needs no browsers for the metrics: Perfherder is plain HTTP. It
+installs Playwright's Chromium only for the Phabricator scraping it already did.
+
+The probe runner is **pinned**, not `macos-latest`. That label drifts between
+images and architectures, and the architecture is load-bearing: the committed
+results are `Darwin arm64`, and if the label ever resolved to x86_64 the probe
+would overwrite all three result files with the new platform. They would then
+*agree*, so `check_run` raises nothing, and the matrix would silently change
+meaning. The job also has a `concurrency` group (a manual dispatch during the
+scheduled run means two jobs pushing the same file) and rebases before pushing,
+since the weekly job commits to the same branch every Monday.
+
+The probe job is separate for reasons that are not preferences — it needs **real
+Chrome** (Chromium ships without H.264/AAC/HEVC) and its answers are
+platform-specific, so it must run on macOS to match the committed results. Codec
+support moves in browser release cycles, so quarterly is the cadence; use
+`workflow_dispatch` after a release you expect to move it.
+
+`fetch_perf_metrics.py` was in **no** workflow until this was wired up, so the
+metrics only moved when someone ran it locally — and the page showed its date,
+which reads as provenance rather than as a warning. Two safeguards now:
+
+- The weekly step is `continue-on-error`. Perfherder being down costs the Metrics
+  subview one week of freshness, not the whole build; the fetcher leaves the
+  previous file in place and exits nonzero.
+- A *successful* fetch that returns nothing, or less than half the previous metric
+  count, is **refused** (`is_safe_to_write`). That path was unguarded: a suite
+  rename on the Perfherder side would have written an empty file over a good one
+  and silently emptied the subview.
 
 ## CI / weekly refresh
 

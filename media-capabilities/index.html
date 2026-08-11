@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Media capability probe</title>
+<style>
+  body { font: 13px ui-monospace, monospace; margin: 20px; }
+  table { border-collapse: collapse; font-size: 11px; }
+  th, td { border: 1px solid #ccc; padding: 2px 5px; text-align: center; }
+  th:first-child, td:first-child { text-align: left; white-space: nowrap; }
+  .y { color: #060; font-weight: 700; }
+  .m { color: #a60; }
+  .n { color: #ccc; }
+  h2 { font-size: 14px; margin: 18px 0 6px; }
+</style>
+</head>
+<body>
+<h1>Media capability probe</h1>
+<p style="max-width:74ch;line-height:1.6;font-family:-apple-system,sans-serif;font-size:13px">
+  Asks <b>this browser</b> what it supports, across five surfaces:
+  <code>canPlayType</code>, <code>MediaSource.isTypeSupported</code>,
+  <code>MediaRecorder.isTypeSupported</code>, <code>MediaCapabilities</code> and
+  <code>WebCodecs</code>. Nothing is baked in &mdash; the answers below are
+  whatever the browser you loaded this in actually reports, so opening it in
+  Safari gives real Safari answers and opening it in your own Firefox build gives
+  that build's answers.
+  <a href="../playback/index.html#health/metrics">Back to the dashboard</a>.
+</p>
+<p id="ua"></p>
+<p><button id="copy" style="font:inherit;padding:5px 10px;cursor:pointer">
+  Copy results as JSON</button>
+  <span id="copied" style="color:#060"></span></p>
+<div id="out">running…</div>
+
+<script>
+// Probes what this browser actually claims to support, rather than what its
+// source suggests. Five independent surfaces, because they disagree:
+//
+//   canPlayType              element playback
+//   MediaSource              streaming (MSE)
+//   MediaRecorder            recording
+//   MediaCapabilities        the modern query, with smooth/powerEfficient
+//   WebCodecs                raw codec access
+//
+// Every probe is individually wrapped: a missing API must record "absent"
+// rather than abort the run, or one unsupported surface loses the whole matrix.
+
+// Codec strings, per codec. Kept separate from the container map because the
+// same codec has one canonical string everywhere except WAV, which uses a
+// numeric format tag.
+const CODEC_STRINGS = {
+  'H.264 baseline': 'avc1.42E01E',
+  'H.264 high':     'avc1.640028',
+  'HEVC main':      'hvc1.1.6.L93.B0',
+  'VP8':            'vp8',
+  'VP9':            'vp09.00.10.08',
+  'AV1':            'av01.0.04M.08',
+  'Theora':         'theora',
+  'AAC-LC':         'mp4a.40.2',
+  'HE-AAC':         'mp4a.40.5',
+  'xHE-AAC':        'mp4a.40.42',
+  'MP3':            'mp3',
+  'Opus':           'opus',
+  'Vorbis':         'vorbis',
+  'FLAC':           'flac',
+  'AC-3':           'ac-3',
+  'E-AC-3':         'ec-3',
+  'ALAC':           'alac',
+  'PCM':            '1',      // WAV format tag 1 = linear PCM, not "pcm"
+};
+
+// Accepted spellings per codec, strongest-typed first. Only the codecs with more
+// than one live spelling need an entry; everything else falls back to
+// CODEC_STRINGS.
+const ALIASES = {
+  'VP9': ['vp09.00.10.08', 'vp9'],
+  'AV1': ['av01.0.04M.08', 'av1'],
+  'VP8': ['vp8', 'vp8.0'],
+};
+
+// Orders probe answers so "the best of several spellings" is well defined.
+// `maybe` outranks `no` because it is a real, if hedged, yes; errors and absent
+// rank below everything, since they are the absence of an answer.
+function rank(v) {
+  const s = String(v == null ? '' : v);
+  if (s.startsWith('yes') || s === 'probably') return 4;
+  if (s === 'maybe') return 3;
+  if (s === 'no') return 2;
+  if (s.startsWith('error')) return 1;
+  return 0;                                  // '' | 'absent'
+}
+
+// Only combinations that are actually meaningful. An earlier version of this
+// page cross-produced all 18 codecs into all 9 containers, which asked things
+// like `audio/flac; codecs="ac-3"`. Every engine answers no to those, so the
+// eleven nonsense rows buried the one real answer and made FLAC and WAV look
+// unsupported when all three engines support them.
+//
+// `bare` is probed for every container too: the container-level answer is the
+// headline, and for HLS it is the only thing there is to ask.
+const CONTAINERS = [
+  { name: 'MP4', video: 'video/mp4', audio: 'audio/mp4',
+    bare: ['video/mp4', 'audio/mp4'],
+    // VP8 is asked here even though VP9 and AV1 are the ones with ISO-BMFF
+    // sample-entry registrations, so the table answers "why VP9 and not VP8?"
+    // with a measurement instead of an assumption. If no engine takes it, the
+    // row is counted and not listed, which is the answer.
+    videoCodecs: ['H.264 baseline', 'H.264 high', 'HEVC main', 'VP8', 'VP9',
+                  'AV1'],
+    audioCodecs: ['AAC-LC', 'HE-AAC', 'xHE-AAC', 'MP3', 'Opus', 'FLAC',
+                  'AC-3', 'E-AC-3', 'ALAC'] },
+  { name: 'WebM', video: 'video/webm', audio: 'audio/webm',
+    bare: ['video/webm', 'audio/webm'],
+    videoCodecs: ['VP8', 'VP9', 'AV1'],
+    audioCodecs: ['Opus', 'Vorbis'] },
+  { name: 'Matroska', video: 'video/x-matroska', audio: 'audio/x-matroska',
+    bare: ['video/x-matroska', 'audio/x-matroska'],
+    // A per-container codec string, for a COLLISION rather than a spelling.
+    // ALIASES cannot express this: `1` is the WAV format tag for linear PCM, and
+    // Chrome also accepts `1` in Matroska -- but as a legacy numeric ID meaning
+    // something else, since it answers `no` to both `pcm` and `A_PCM/INT/LIT`
+    // there while answering `probably` to `1` and to `mp3`. Best-of-aliases would
+    // read that as "Chrome supports PCM in Matroska", which is false, and it put a
+    // gap in the roadmap that does not exist.
+    codecStrings: { 'PCM': 'A_PCM/INT/LIT' },
+    videoCodecs: ['H.264 baseline', 'H.264 high', 'HEVC main', 'VP8', 'VP9',
+                  'AV1', 'Theora'],
+    audioCodecs: ['AAC-LC', 'MP3', 'Opus', 'Vorbis', 'FLAC', 'AC-3', 'PCM'] },
+  { name: 'Ogg', video: 'video/ogg', audio: 'audio/ogg',
+    bare: ['video/ogg', 'audio/ogg'],
+    videoCodecs: ['Theora', 'VP8'],
+    audioCodecs: ['Vorbis', 'Opus', 'FLAC'] },
+  { name: 'MPEG-2 TS', video: 'video/mp2t', audio: null,
+    bare: ['video/mp2t'],
+    videoCodecs: ['H.264 baseline', 'H.264 high', 'HEVC main'],
+    audioCodecs: ['AAC-LC', 'MP3', 'AC-3'] },
+  { name: 'HLS', video: 'application/vnd.apple.mpegurl', audio: null,
+    bare: ['application/vnd.apple.mpegurl', 'application/x-mpegurl'],
+    videoCodecs: ['H.264 baseline', 'HEVC main'],
+    audioCodecs: ['AAC-LC'] },
+  // Single-codec containers. One meaningful codec each, plus the bare type --
+  // which is how these are used in practice and what engines actually answer.
+  { name: 'ADTS/AAC', video: null, audio: 'audio/aac', bare: ['audio/aac'],
+    videoCodecs: [], audioCodecs: ['AAC-LC', 'HE-AAC', 'xHE-AAC'] },
+  // No FLAC container entry: `audio/flac` carries exactly one codec, so its card
+  // was a single row that the FLAC codec checks in MP4, Matroska and Ogg already
+  // answer. The CONFORMANCE list below still asks about `audio/flac` type
+  // strings, so the Firefox bug found there is still detected.
+  { name: 'MP3', video: null, audio: 'audio/mpeg', bare: ['audio/mpeg'],
+    videoCodecs: [], audioCodecs: ['MP3'] },
+  { name: 'WAV', video: null, audio: 'audio/wav', bare: ['audio/wav'],
+    videoCodecs: [], audioCodecs: ['PCM'] },
+];
+
+// Two wrappers, because the async one is a different problem: a rejected
+// promise is NOT caught by a try/catch around the *call*, so wrapping an async
+// function in the sync helper let one rejection abort the entire run. That is
+// exactly what happened on Chrome -- AudioDecoder.isConfigSupported demands a
+// `description` for AAC and throws without it.
+function safe(fn) {
+  try { return fn(); } catch (e) { return 'error: ' + String(e && e.message || e); }
+}
+async function safeAsync(fn) {
+  try { return await fn(); } catch (e) { return 'error: ' + String(e && e.message || e); }
+}
+
+function canPlay(type) {
+  return safe(() => {
+    const el = document.createElement('video');
+    const r = el.canPlayType(type);
+    return r === '' ? 'no' : r;           // 'probably' | 'maybe' | 'no'
+  });
+}
+
+function mseSupported(type) {
+  return safe(() => {
+    if (typeof MediaSource === 'undefined') return 'absent';
+    return MediaSource.isTypeSupported(type) ? 'yes' : 'no';
+  });
+}
+
+function recorderSupported(type) {
+  return safe(() => {
+    if (typeof MediaRecorder === 'undefined') return 'absent';
+    if (typeof MediaRecorder.isTypeSupported !== 'function') return 'absent';
+    return MediaRecorder.isTypeSupported(type) ? 'yes' : 'no';
+  });
+}
+
+// MediaCapabilities is the precise API and should be read first. canPlayType is
+// legacy and deliberately vague -- its "maybe" is why that column is confusing.
+// decodingInfo() answers a definite boolean AND reports `smooth` and
+// `powerEfficient`, which is the only web-exposed way to ask "is this hardware
+// accelerated". It also takes a `type`, so MSE and WebRTC get precise answers
+// instead of a separate boolean API.
+// Three tiers, and the support question takes the best of them. Asking at one
+// resolution conflates two different facts: this WebKit answers `no` to AV1 at
+// 1080p and `yes+hw` at 480p, so probing 1080p alone recorded "WebKit has no
+// AV1" when what it has is an AV1 decoder with a ceiling. Same shape as the
+// codec-spelling bug -- one arbitrary parameter turning a yes into a no.
+const RESOLUTIONS = [
+  { label: '480p',  width: 854,  height: 480,  bitrate: 1200000, framerate: 30 },
+  { label: '1080p', width: 1920, height: 1080, bitrate: 4000000, framerate: 30 },
+  { label: '4K',    width: 3840, height: 2160, bitrate: 20000000, framerate: 30 },
+];
+const RES_BY_LABEL = Object.fromEntries(RESOLUTIONS.map(r => [r.label, r]));
+
+function videoConfig(type, res) {
+  return { contentType: type, width: res.width, height: res.height,
+           bitrate: res.bitrate, framerate: res.framerate };
+}
+function audioConfig(type) {
+  return { contentType: type, channels: '2', bitrate: 128000,
+           samplerate: 48000 };
+}
+
+function flatten(r) {
+  if (!r || typeof r !== 'object') return String(r);
+  if (!r.supported) return 'no';
+  // smooth and powerEfficient only mean something once supported is true.
+  return 'yes' + (r.smooth ? '+smooth' : '') + (r.powerEfficient ? '+hw' : '');
+}
+
+async function decoding(type, isVideo, kind, res) {
+  return await safeAsync(async () => {
+    if (!navigator.mediaCapabilities) return 'absent';
+    const cfg = { type: kind };
+    if (isVideo) cfg.video = videoConfig(type, res);
+    else cfg.audio = audioConfig(type);
+    return flatten(await navigator.mediaCapabilities.decodingInfo(cfg));
+  });
+}
+
+async function encoding(type, isVideo, res) {
+  return await safeAsync(async () => {
+    if (!navigator.mediaCapabilities
+        || typeof navigator.mediaCapabilities.encodingInfo !== 'function') {
+      return 'absent';
+    }
+    const cfg = { type: 'record' };
+    if (isVideo) cfg.video = videoConfig(type, res);
+    else cfg.audio = audioConfig(type);
+    return flatten(await navigator.mediaCapabilities.encodingInfo(cfg));
+  });
+}
+
+// Decode and encode are separate registries and separate answers, and asking
+// only about decoding hid the more interesting fact: Firefox's VideoEncoder does
+// VP9 and AV1, while its MediaRecorder accepts vp8 alone. "Cannot record VP9" and
+// "cannot encode VP9" are different claims, and only the first is true.
+// A 34-byte FLAC STREAMINFO: 4096 block size, 48 kHz, 2ch, 16-bit, length
+// unknown. Audio decoder configs carry it because some codecs are not answerable
+// without one, and the absence produced two different wrong cells:
+//
+//   flac    Chrome: throws "description is required"   ->  a question mark
+//   flac    WebKit: answers `no`                       ->  a false negative
+//   vorbis  same, both engines
+//
+// With it, all three engines answer `yes` to both. It does not manufacture
+// support: `ac-3` and a deliberately invalid `notacodec` still answer `no` with
+// the description present. Note the same STREAMINFO satisfies the Vorbis query,
+// which tells you the browsers check that setup data is *present* for this call
+// rather than parsing it -- so what this measures is codec recognition, not
+// stream validity, which is the right question for a support matrix.
+const AUDIO_DESCRIPTION = new Uint8Array([
+  0x10, 0x00,                                      // min blocksize 4096
+  0x10, 0x00,                                      // max blocksize 4096
+  0x00, 0x00, 0x00,                                // min framesize unknown
+  0x00, 0x00, 0x00,                                // max framesize unknown
+  0x0B, 0xB8, 0x02, 0xF0, 0x00, 0x00, 0x00, 0x00,  // 48kHz, 2ch, 16-bit, len 0
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // md5, unused here
+]);
+
+async function webcodecs(codec, isVideo, direction) {
+  return await safeAsync(async () => {
+    const C = direction === 'encode'
+      ? (isVideo ? window.VideoEncoder : window.AudioEncoder)
+      : (isVideo ? window.VideoDecoder : window.AudioDecoder);
+    if (!C || typeof C.isConfigSupported !== 'function') return 'absent';
+    let cfg;
+    if (isVideo) {
+      cfg = { codec, width: 1280, height: 720 };
+      // An encoder config is invalid without a bitrate, so a shared config
+      // reports "no" for codecs the encoder in fact supports.
+      if (direction === 'encode') {
+        cfg.bitrate = 2000000;
+        cfg.framerate = 30;
+      }
+    } else {
+      cfg = { codec, sampleRate: 48000, numberOfChannels: 2 };
+      if (direction === 'encode') {
+        cfg.bitrate = 128000;
+      } else {
+        cfg.description = AUDIO_DESCRIPTION;
+      }
+    }
+    const r = await C.isConfigSupported(cfg);
+    return r && r.supported ? 'yes' : 'no';
+  });
+}
+
+// Codec strings WebCodecs uses differ from the container codecs strings: the
+// registry requires vp09.*/av01.* forms, and Theora/PCM/ALAC are not registered
+// at all. Probing with a container string would report a false "no".
+// Every codec label a container can carry needs an entry here, or the config goes
+// out with `codec: undefined` and the browser answers "Missing required 'codec'"
+// -- which the matrix rendered as a question mark about the codec rather than
+// about the probe. Theora and PCM were missing for exactly that reason.
+//
+// `theora` is not in the WebCodecs codec registry, so every engine is expected to
+// answer no; that is a real measured answer and renders as "no engine supports
+// this", not as an unknown.
+const WC_VIDEO = {
+  'H.264 baseline': 'avc1.42E01E', 'H.264 high': 'avc1.640028',
+  'HEVC main': 'hvc1.1.6.L93.B0', 'VP8': 'vp8',
+  'VP9': 'vp09.00.10.08', 'AV1': 'av01.0.04M.08',
+  'Theora': 'theora',
+};
+const WC_AUDIO = {
+  'AAC-LC': 'mp4a.40.2', 'HE-AAC': 'mp4a.40.5', 'xHE-AAC': 'mp4a.40.42',
+  'MP3': 'mp3', 'Opus': 'opus', 'Vorbis': 'vorbis', 'FLAC': 'flac',
+  'AC-3': 'ac-3', 'E-AC-3': 'ec-3', 'ALAC': 'alac',
+  'PCM u8': 'pcm-u8', 'PCM s16': 'pcm-s16',
+  // Containers label this just "PCM"; WAV format tag 1 is 16-bit linear PCM.
+  'PCM': 'pcm-s16',
+};
+
+// Deliberately invalid pairs, to catch an engine that ignores the codecs
+// parameter. Removing the accidental nonsense combinations also removed the
+// ability to see this: Firefox answers `probably` to audio/flac with ANY codecs
+// parameter, because FlacDecoder::IsSupportedType checks only the container MIME
+// and never reads ExtendedType().Codecs(). The correct answer to every row here
+// is "no" from every engine.
+const CONFORMANCE = [
+  { type: 'audio/flac; codecs="ac-3"',  why: 'AC-3 cannot appear in a FLAC stream' },
+  { type: 'audio/flac; codecs="alac"',  why: 'ALAC cannot appear in a FLAC stream' },
+  { type: 'audio/flac; codecs="opus"',  why: 'Opus cannot appear in a FLAC stream' },
+  { type: 'audio/mpeg; codecs="opus"',  why: 'Opus cannot appear in an MP3 stream' },
+  { type: 'audio/wav; codecs="vorbis"', why: 'Vorbis is not a WAV format tag' },
+  { type: 'video/webm; codecs="avc1.42E01E"',
+    why: 'H.264 is not a WebM codec' },
+];
+
+async function run() {
+  const results = {
+    userAgent: navigator.userAgent,
+    probedAt: new Date().toISOString(),
+    apis: {
+      MediaSource: typeof MediaSource !== 'undefined',
+      MediaRecorder: typeof MediaRecorder !== 'undefined',
+      MediaCapabilities: !!navigator.mediaCapabilities,
+      VideoDecoder: typeof window.VideoDecoder !== 'undefined',
+      AudioDecoder: typeof window.AudioDecoder !== 'undefined',
+      ManagedMediaSource: typeof window.ManagedMediaSource !== 'undefined',
+      canConstructInDedicatedWorker:
+        typeof MediaSource !== 'undefined'
+          ? ('canConstructInDedicatedWorker' in MediaSource) : false,
+    },
+    bare: {},
+    combos: [],
+    conformance: [],
+    webcodecs: { video: {}, audio: {} },
+  };
+
+  for (const c of CONTAINERS) {
+    for (const mt of c.bare) {
+      results.bare[mt] = {
+        container: c.name,
+        canPlayType: canPlay(mt),
+        mse: mseSupported(mt),
+        recorder: recorderSupported(mt),
+        // A bare type has no codecs parameter, so MediaCapabilities rejects it
+        // by spec -- recorded for completeness, not as a support signal.
+        decodeFile: await decoding(mt, mt.startsWith('video/'), 'file',
+                                   RESOLUTIONS[0]),
+      };
+    }
+    for (const [kind, list] of [['video', c.videoCodecs], ['audio', c.audioCodecs]]) {
+      const major = kind === 'video' ? c.video : c.audio;
+      if (!major) continue;
+      for (const label of list) {
+        const isVideo = kind === 'video';
+        const uhd = RES_BY_LABEL['4K'];
+        // Every accepted spelling of the codec, best answer wins per surface.
+        //
+        // One spelling is not enough, and the reason is measured rather than
+        // assumed. In WebM, Chrome answers `no` to
+        // `decodingInfo({codecs:"vp9"})` but `yes` to `vp09.00.10.08`; its
+        // MediaRecorder does the exact opposite, accepting `vp9` and rejecting
+        // `vp09.*`. Picking either one alone puts a false `no` in the table --
+        // first "Chrome cannot record VP9", then "Chrome cannot play VP9" -- so
+        // the probe asks both and keeps the strongest answer. A browser that
+        // accepts any valid spelling supports the codec; the string it insists on
+        // is its business.
+        const override = c.codecStrings && c.codecStrings[label];
+        const spellings = override ? [override]
+          : (ALIASES[label] || [CODEC_STRINGS[label]]);
+        const types = spellings.map(cs => `${major}; codecs="${cs}"`);
+        const best = async fn => {
+          let out = 'absent';
+          for (const t of types) {
+            const v = await fn(t);
+            if (rank(v) > rank(out)) out = v;
+          }
+          return out;
+        };
+        // Same, over the resolution tiers as well.
+        const bestRes = async make => {
+          let out = 'absent';
+          for (const t of types) {
+            for (const res of RESOLUTIONS) {
+              const v = await make(t)(res);
+              if (rank(v) > rank(out)) out = v;
+            }
+          }
+          return out;
+        };
+        results.combos.push({
+          container: c.name, kind, codec: label,
+          codecString: spellings[0], type: types[0],
+          spellings,
+          // Legacy, kept so the two APIs can be compared -- where they
+          // disagree, that is itself a finding.
+          canPlayType: await best(async t => canPlay(t)),
+          mse: await best(async t => mseSupported(t)),
+          recorder: await best(async t => recorderSupported(t)),
+          // Precise answers. `+hw` means powerEfficient: hardware accelerated.
+          // Best across every spelling and every resolution tier: the question
+          // is whether the codec is supported at all, and a 4K refusal is not an
+          // answer about the codec.
+          decodeFile: await bestRes(t => r => decoding(t, isVideo, 'file', r)),
+          decodeMse: await bestRes(
+            t => r => decoding(t, isVideo, 'media-source', r)),
+          encodeRecord: await bestRes(t => r => encoding(t, isVideo, r)),
+          decodeFile4k: isVideo
+            ? await best(t => decoding(t, true, 'file', uhd)) : '',
+          // WebCodecs is its own API with its own registries, and it answers a
+          // different question than the three surfaces above: raw codec access
+          // with no container at all. It is also where the encode story lives --
+          // Firefox's VideoEncoder does VP9 and AV1 that its MediaRecorder will
+          // not accept, so reporting only MediaRecorder made "we cannot record
+          // VP9" read as "we cannot encode VP9", which is false. Keyed by codec
+          // label because WebCodecs uses its own codec strings.
+          wcDecode: await webcodecs(
+            (isVideo ? WC_VIDEO : WC_AUDIO)[label], isVideo, 'decode'),
+          wcEncode: await webcodecs(
+            (isVideo ? WC_VIDEO : WC_AUDIO)[label], isVideo, 'encode'),
+        });
+      }
+    }
+  }
+
+  for (const c of CONFORMANCE) {
+    results.conformance.push({
+      type: c.type, why: c.why, expected: 'no',
+      canPlayType: canPlay(c.type),
+    });
+  }
+
+  for (const [label, codec] of Object.entries(WC_VIDEO)) {
+    results.webcodecs.video[label] = {
+      decode: await webcodecs(codec, true, 'decode'),
+      encode: await webcodecs(codec, true, 'encode'),
+    };
+  }
+  for (const [label, codec] of Object.entries(WC_AUDIO)) {
+    results.webcodecs.audio[label] = {
+      decode: await webcodecs(codec, false, 'decode'),
+      encode: await webcodecs(codec, false, 'encode'),
+    };
+  }
+
+  window.__MEDIA_CAPS__ = results;
+  render(results);
+  document.title = 'probe-done';
+  // Manual capture path: a browser opened by hand cannot be driven by the
+  // automated runner, and Safari and a local Firefox build are exactly the two
+  // engines the runner cannot reach.
+  const btn = document.getElementById('copy');
+  if (btn) {
+    btn.addEventListener('click', async () => {
+      const text = JSON.stringify(results, null, 2);
+      try {
+        await navigator.clipboard.writeText(text);
+        document.getElementById('copied').textContent =
+          ' copied \u2014 save as tools/media-caps/results/<name>.json';
+      } catch (e) {
+        document.getElementById('copied').textContent =
+          ' clipboard blocked; see window.__MEDIA_CAPS__ in the console';
+      }
+    });
+  }
+}
+
+function cls(v) {
+  const s = String(v);
+  if (s === 'probably' || s.startsWith('yes')) return 'y';
+  if (s === 'maybe') return 'm';
+  return 'n';
+}
+
+function render(r) {
+  document.getElementById('ua').textContent = r.userAgent;
+  const byContainer = {};
+  for (const c of r.combos) (byContainer[c.container] ||= []).push(c);
+  const bareBy = {};
+  for (const [mt, v] of Object.entries(r.bare || {})) {
+    (bareBy[v.container] ||= []).push([mt, v]);
+  }
+  const cell = v => {
+    const s = String(v);
+    if (s.startsWith('error:')) return '<span class="n" title="' + s + '">err</span>';
+    if (s === 'absent') return '<span class="n">n/a</span>';
+    // Words, not initials: "maybe" as "M" was unreadable without a legend.
+    return `<span class="${cls(v)}">${s}</span>`;
+  };
+  let h = '<h2>Per container</h2>';
+  for (const name of Object.keys(bareBy)) {
+    h += `<h3 style="font-size:13px;margin:14px 0 4px">${name}</h3>`;
+    h += '<table><tr><th>type</th><th>decodingInfo<br><small>file</small></th>'
+       + '<th>decodingInfo<br><small>media-source</small></th>'
+       + '<th>encodingInfo<br><small>record</small></th>'
+       + '<th>4K<br><small>file</small></th>'
+       + '<th>WebCodecs<br><small>decode</small></th>'
+       + '<th>WebCodecs<br><small>encode</small></th>'
+       + '<th><small>legacy</small><br>canPlayType</th>'
+       + '<th><small>legacy</small><br>MSE</th>'
+       + '<th><small>legacy</small><br>Recorder</th></tr>';
+    for (const [mt, v] of bareBy[name] || []) {
+      h += `<tr><td><i>${mt}</i> (container only)</td>`
+         + `<td colspan="4" style="color:#888">n/a &mdash; MediaCapabilities `
+         + `requires a codecs parameter</td>`
+         + `<td colspan="2" style="color:#888">n/a &mdash; WebCodecs takes a `
+         + `codec, never a container</td>`
+         + `<td>${cell(v.canPlayType)}</td><td>${cell(v.mse)}</td>`
+         + `<td>${cell(v.recorder)}</td></tr>`;
+    }
+    for (const c of byContainer[name] || []) {
+      h += `<tr><td>${c.kind} &middot; ${c.codec}`
+         + ` <small>codecs="${c.codecString}"</small></td>`
+         + `<td>${cell(c.decodeFile)}</td><td>${cell(c.decodeMse)}</td>`
+         + `<td>${cell(c.encodeRecord)}</td>`
+         + `<td>${c.decodeFile4k ? cell(c.decodeFile4k) : '&mdash;'}</td>`
+         + `<td>${cell(c.wcDecode)}</td><td>${cell(c.wcEncode)}</td>`
+         + `<td>${cell(c.canPlayType)}</td><td>${cell(c.mse)}</td>`
+         + `<td>${cell(c.recorder)}</td></tr>`;
+    }
+    h += '</table>';
+  }
+  h += '<p><b>MediaCapabilities</b> columns are authoritative: a definite yes/no, '
+     + 'plus <code>+smooth</code> and <code>+hw</code> when the browser reports '
+     + '<i>smooth</i> and <i>powerEfficient</i>. Note <code>+hw</code> is NOT a '
+     + 'hardware-decode flag: Firefox and Chrome both report powerEfficient for '
+     + 'MP3 and FLAC, which neither decodes in hardware. Both flags also describe '
+     + '<b>this machine</b>, which is why the dashboard does not publish them. The '
+     + '<b>legacy</b> columns are canPlayType (P = probably, M = maybe, N = no) '
+     + 'and the older boolean APIs; they are kept because a disagreement between '
+     + 'the two generations is itself worth knowing. The <i>container only</i> '
+     + 'row is the bare MIME type &mdash; for HLS and single-codec containers '
+     + 'that is how sites actually ask, and MediaCapabilities cannot answer it '
+     + 'because it requires a codecs parameter.</p>';
+  h += '<h2>Conformance: invalid pairs, every answer should be "no"</h2><table>'
+     + '<tr><th>type</th><th>answer</th><th>why it is invalid</th></tr>'
+     + (r.conformance || []).map(c =>
+         `<tr><td><i>${c.type}</i></td><td>${cell(c.canPlayType)}</td>`
+         + `<td>${c.why}</td></tr>`).join('')
+     + '</table>';
+  h += '<h2>WebCodecs</h2><pre>' + JSON.stringify(r.webcodecs, null, 1) + '</pre>';
+  h += '<h2>APIs present</h2><pre>' + JSON.stringify(r.apis, null, 1) + '</pre>';
+  document.getElementById('out').innerHTML = h;
+}
+
+run().catch(e => {
+  window.__MEDIA_CAPS__ = { fatal: String(e && e.message || e) };
+  document.title = 'probe-done';
+});
+</script>
+</body>
+</html>
