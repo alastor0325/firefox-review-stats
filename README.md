@@ -229,8 +229,17 @@ all the same generation:
 > record VP9" read as "we cannot encode VP9", and only the first is true. The gap
 > is the wiring between the two, not the encoder.
 
-Codec-string spellings are **not** interchangeable, and the correct one depends on
-the surface. Measured in WebM: `codecs="vp9"` gets `no` from Chrome's
+Support is the **best answer across every accepted codec spelling and every
+resolution tier**, because a single arbitrary parameter otherwise turns a yes into
+a no. Two measured false negatives came from exactly that:
+
+- WebKit answers `no` to `video/mp4; codecs="av01.0.04M.08"` at 1920×1080 and
+  `yes+hw` at 854×480. Probing 1080p alone recorded "WebKit has no AV1", when what
+  it has is an AV1 decoder with a ceiling. A 480p tier was added and the surfaces
+  take the best tier; `decodeFile4k` still asks 4K specifically, since "what is the
+  ceiling" is a different question.
+- Codec-string spellings are **not** interchangeable, and the correct one depends on
+  the surface. Measured in WebM: `codecs="vp9"` gets `no` from Chrome's
 `decodingInfo` and `yes` from its `MediaRecorder`; `codecs="vp09.00.10.08"` gets
 the reverse. Picking either alone writes a false `no` into the table, so the probe
 asks every accepted spelling and keeps the strongest answer per surface. `maybe`
@@ -271,9 +280,18 @@ have dropped a real answer. Where a surface has no engine support the cell reads
 verdict is the worst across its section, so a gap cannot hide behind parity beside
 it.
 
-Inside each section, rows are grouped into **Video codecs** and **Audio codecs**,
-worst-first within each group and between them. Interleaving the two by verdict
-alone meant reading past six audio codecs to reach AV1.
+Inside each section, rows are grouped into **Video codecs** then **Audio codecs** —
+a fixed order, not sorted by verdict. Sorting the groups worst-first moved the
+blocks around between cards (audio led MP4, video led WebM), so the eye had to
+re-find the video block on each card. Worst-first still governs the rows *inside* a
+group.
+
+Answers are coloured green for `yes` and red (`--rate-weak`) for `no`, chosen by
+running the dataviz skill's validator rather than by eye: against the palette's
+other red step it gives 7.12 text contrast on white instead of 4.80, and sits 3×
+further from the `yes` green under simulated colour-vision deficiency (deutan
+ΔE 5.1 vs protan 1.7). ΔE 5.1 is still low for red-against-green, which is why
+every cell carries the **word** — colour never has to carry the meaning alone.
 
 Combinations **no engine supports** are left out. They are not a gap, not an
 overclaim and not a win, and the probe asks every codec a container could

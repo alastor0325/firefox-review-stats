@@ -436,10 +436,12 @@ class TestAudioAndVideoAreSeparateGroups:
         assert labels["video"] == "Video codecs"
         assert labels["audio"] == "Audio codecs"
 
-    def test_the_group_holding_the_gap_comes_first(self):
-        """Worst-first, the same rule the cards and sub-cards follow. The AV1 gap
-        is in video, so video leads even though audio sorts first by name."""
-        assert self._groups()[0]["kind"] == "video"
+    def test_video_always_comes_before_audio(self):
+        """A fixed order, not a computed one. Ordering groups worst-first moved
+        the sections around between cards -- audio led MP4, video led WebM -- so
+        the eye had to re-find the video block on every card. Worst-first still
+        governs the rows inside a group, where it costs nothing."""
+        assert [g["kind"] for g in self._groups()] == ["video", "audio"]
 
     def test_rows_stay_worst_first_inside_a_group(self):
         video = [g for g in self._groups() if g["kind"] == "video"][0]
@@ -1005,3 +1007,45 @@ class TestTwoSectionsDecodingAndEncoding:
         row = [r for g in enc["groups"] for r in g["rows"]
                if r["codec"] == "AV1"][0]
         assert row["verdict"] == "gap"
+
+
+class TestSupportIsNotDecidedByOneResolution:
+    """A codec's support cell takes the best answer across resolution tiers.
+
+    Probing a single resolution conflates "this codec is unsupported" with "this
+    resolution is unsupported". Measured: this WebKit answers `no` to
+    `video/mp4; codecs="av01.0.04M.08"` at 1920x1080 and `yes+hw` at 854x480, and
+    says `probably` / `yes` / `yes` through canPlayType, MSE and WebCodecs. Asking
+    1080p alone therefore recorded "WebKit has no AV1", when what it has is an AV1
+    decoder with a ceiling -- the same shape as the codec-spelling false negative.
+    """
+
+    def _page(self):
+        import pathlib
+        return pathlib.Path("media-capabilities/index.html").read_text(
+            encoding="utf-8")
+
+    def test_a_low_tier_is_probed_not_just_1080p_and_4k(self):
+        page = self._page()
+        assert "'480p'" in page, (
+            "without a tier below 1080p, a decoder with a 1080p ceiling reads as "
+            "no support at all"
+        )
+
+    def test_the_decode_surfaces_take_the_best_tier(self):
+        page = self._page()
+        assert "bestRes(t => r => decoding(t, isVideo, 'file', r))" in page
+
+    def test_the_best_of_helper_spans_spellings_and_resolutions(self):
+        """Both axes, or the fix only half applies."""
+        page = self._page()
+        i = page.index("const bestRes")
+        body = page[i:i + 400]
+        assert "for (const t of types)" in body
+        assert "for (const res of RESOLUTIONS)" in body
+
+    def test_the_4k_column_still_asks_4k_specifically(self):
+        """`decodeFile4k` is a different question -- what the ceiling is -- so it
+        must not be folded into the best-of."""
+        page = self._page()
+        assert "RES_BY_LABEL['4K']" in page

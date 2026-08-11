@@ -966,6 +966,10 @@
   th.pm-sub {
     font-size: 8.5px; font-weight: 600; letter-spacing: .03em;
     color: var(--ink-soft); text-transform: none;
+    /* Centred to sit over the values. `th` is left-aligned by default here while
+       the value cells are centred, so File / MSE / WC hung to the left of the
+       column they label. */
+    text-align: center;
   }
   td.pm-w.none { color: var(--muted) }
   .pm-kind {
@@ -974,7 +978,14 @@
   }
 
   td.pm-w.maybe { color: var(--rate-mixed) }
-  td.pm-w.no { color: var(--muted) }
+  /* Red, chosen by measurement rather than eye. Against this palette's other
+     status step (#d03b3b) --rate-weak gives 7.12 text contrast on white where the
+     alternative gives 4.80, and it stays 3x further from the `yes` green under
+     simulated colour-vision deficiency (deutan dE 5.1 vs protan 1.7). That dE is
+     still low for red-vs-green, which is why the cell always carries the word:
+     colour never has to do the work alone. It is also the step the "no support"
+     badge already uses, so one meaning keeps one colour. */
+  td.pm-w.no { color: var(--rate-weak) }
   td.pm-w.unk { color: var(--muted); font-style: italic }
   td.pm-cell { text-align: center; font-size: 13px; line-height: 1 }
   td.pm-cell.yes { color: var(--pm-ahead) }

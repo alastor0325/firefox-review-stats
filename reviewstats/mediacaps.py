@@ -307,8 +307,11 @@ def group_by_kind(rows: list) -> list:
     many of them because it asks every codec a container could plausibly carry.
     They remain in `counts`.
 
-    Groups are ordered by their own worst verdict, so the group holding a gap
-    leads, and an emptied group is omitted rather than left as a bare heading.
+    Group order is fixed: **video first, then audio**, never sorted by verdict.
+    Ordering the groups worst-first made the sections move around between cards --
+    audio led MP4 and video led WebM -- so the eye had to re-find the video block
+    on every card. Worst-first still applies to the rows *inside* a group, where
+    it costs nothing. An emptied group is omitted rather than left as a heading.
     """
     groups = []
     for kind in ("video", "audio"):
@@ -322,7 +325,7 @@ def group_by_kind(rows: list) -> list:
             "rows": shown,
             "worst": min(_VERDICT_RANK[r["verdict"]] for r in shown),
         })
-    groups.sort(key=lambda g: g["worst"])
+    # No sort: the ("video", "audio") loop above already fixes the order.
     return groups
 
 

@@ -185,10 +185,17 @@ function recorderSupported(type) {
 // `powerEfficient`, which is the only web-exposed way to ask "is this hardware
 // accelerated". It also takes a `type`, so MSE and WebRTC get precise answers
 // instead of a separate boolean API.
+// Three tiers, and the support question takes the best of them. Asking at one
+// resolution conflates two different facts: this WebKit answers `no` to AV1 at
+// 1080p and `yes+hw` at 480p, so probing 1080p alone recorded "WebKit has no
+// AV1" when what it has is an AV1 decoder with a ceiling. Same shape as the
+// codec-spelling bug -- one arbitrary parameter turning a yes into a no.
 const RESOLUTIONS = [
+  { label: '480p',  width: 854,  height: 480,  bitrate: 1200000, framerate: 30 },
   { label: '1080p', width: 1920, height: 1080, bitrate: 4000000, framerate: 30 },
   { label: '4K',    width: 3840, height: 2160, bitrate: 20000000, framerate: 30 },
 ];
+const RES_BY_LABEL = Object.fromEntries(RESOLUTIONS.map(r => [r.label, r]));
 
 function videoConfig(type, res) {
   return { contentType: type, width: res.width, height: res.height,
@@ -327,7 +334,7 @@ async function run() {
       if (!major) continue;
       for (const label of list) {
         const isVideo = kind === 'video';
-        const hd = RESOLUTIONS[0], uhd = RESOLUTIONS[1];
+        const uhd = RES_BY_LABEL['4K'];
         // Every accepted spelling of the codec, best answer wins per surface.
         //
         // One spelling is not enough, and the reason is measured rather than
@@ -349,6 +356,17 @@ async function run() {
           }
           return out;
         };
+        // Same, over the resolution tiers as well.
+        const bestRes = async make => {
+          let out = 'absent';
+          for (const t of types) {
+            for (const res of RESOLUTIONS) {
+              const v = await make(t)(res);
+              if (rank(v) > rank(out)) out = v;
+            }
+          }
+          return out;
+        };
         results.combos.push({
           container: c.name, kind, codec: label,
           codecString: spellings[0], type: types[0],
@@ -359,9 +377,13 @@ async function run() {
           mse: await best(async t => mseSupported(t)),
           recorder: await best(async t => recorderSupported(t)),
           // Precise answers. `+hw` means powerEfficient: hardware accelerated.
-          decodeFile: await best(t => decoding(t, isVideo, 'file', hd)),
-          decodeMse: await best(t => decoding(t, isVideo, 'media-source', hd)),
-          encodeRecord: await best(t => encoding(t, isVideo, hd)),
+          // Best across every spelling and every resolution tier: the question
+          // is whether the codec is supported at all, and a 4K refusal is not an
+          // answer about the codec.
+          decodeFile: await bestRes(t => r => decoding(t, isVideo, 'file', r)),
+          decodeMse: await bestRes(
+            t => r => decoding(t, isVideo, 'media-source', r)),
+          encodeRecord: await bestRes(t => r => encoding(t, isVideo, r)),
           decodeFile4k: isVideo
             ? await best(t => decoding(t, true, 'file', uhd)) : '',
           // WebCodecs is its own API with its own registries, and it answers a
