@@ -1296,3 +1296,47 @@ class TestThePublicBuildHasNoAudienceBanner:
         html = self._html()
         assert "This build is not for the public site" in html
         assert "audienceEl.hidden = false" in html
+
+
+class TestTheContainerHeaderNeverOverflows:
+    """The header must not push its last column outside the card.
+
+    Fixed tracks made the columns align between cards, but they also set a minimum
+    width the card cannot always offer: 96 + 560 + 104 plus three 12px gaps is 796px
+    before the name column gets anything. Between the stacking breakpoint and about
+    960px the card is narrower than that, so "15 combinations" rendered outside the
+    card background. Measured at a 900px viewport: card 778px, count edge 22px past
+    the card edge.
+
+    Two changes, either of which alone would leave a gap: the chip track may shrink
+    rather than force overflow, and the layout stacks before the row gets that
+    cramped.
+    """
+
+    def _css(self, selector):
+        import pathlib, re
+        t = pathlib.Path("templates/index.html.tmpl").read_text(encoding="utf-8")
+        m = re.search(re.escape(selector) + r"\s*\{([^}]*)\}", t)
+        assert m, f"no rule for {selector}"
+        return m.group(1)
+
+    def test_the_chip_track_can_shrink(self):
+        cols = [l for l in self._css(".pm-cont-h").split(";")
+                if "grid-template-columns" in l][0]
+        assert "minmax(0," in cols.replace(" ", "").replace("minmax(0,", "minmax(0,"), cols
+        assert "minmax(0, 560px)" in cols or "minmax(0,560px)" in cols, (
+            "the chip track is a fixed 560px, so it cannot yield and the last "
+            "column is pushed out: " + cols
+        )
+
+    def test_it_stacks_before_the_row_gets_cramped(self):
+        """The single-row layout needs ~796px of fixed track plus a readable name
+        column, so stacking at 820px was far too late."""
+        import pathlib, re
+        t = pathlib.Path("templates/index.html.tmpl").read_text(encoding="utf-8")
+        bps = [int(m) for m in re.findall(
+            r"@media \(max-width:\s*(\d+)px\)[^{]*\{[^@]*?\.pm-cont-h", t, re.DOTALL)]
+        assert bps, "no breakpoint stacks .pm-cont-h"
+        assert max(bps) >= 1000, (
+            f"stacks only at {max(bps)}px; the row needs about 1080px to fit"
+        )

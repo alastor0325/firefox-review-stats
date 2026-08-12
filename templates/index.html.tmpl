@@ -906,7 +906,10 @@
      different column widths and the badges and chips came out ragged. */
   .pm-cont-h {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 96px 560px 104px;
+    /* The chip track may shrink: as a fixed 560px it set a floor of 796px with the
+       badge, count and gaps, and a card narrower than that pushed the count column
+       outside the card background. */
+    grid-template-columns: minmax(0, 1fr) 96px minmax(0, 560px) 104px;
     align-items: center; gap: 12px; padding: 9px 4px;
   }
   /* The pill varies in width ("partial" vs "full support"); pinning its right
@@ -963,7 +966,9 @@
   }
   details.pm-none > summary::before { content: "\25B8 " }
   details.pm-none[open] > summary::before { content: "\25BE " }
-  @media (max-width: 820px) {
+  /* 1080px, not 820px: the single row needs ~796px of fixed track plus a readable
+     name column, so it was still cramped well above the old breakpoint. */
+  @media (max-width: 1080px) {
     .pm-cont-h { grid-template-columns: minmax(0, 1fr); gap: 4px }
     .pm-cont-n2 { text-align: left }
     .pm-badge-cell { justify-self: start }
