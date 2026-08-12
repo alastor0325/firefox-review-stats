@@ -29,6 +29,13 @@ import statistics as _st
 # so the page says so rather than plotting it as though it were solid.
 NOISY_CV_PERCENT = 15.0
 
+# Below this many runs, a median is thin evidence and the card says so. Roughly a
+# month of daily runs, chosen so a newly landed suite warns until it has a month of
+# history and then stops warning by itself -- no flag anyone has to remember to
+# clear. Added because the warning rule looked at staleness and spread but not at
+# sample count, so a metric with 15 runs sat beside one with 75 and read the same.
+MIN_SAMPLES = 30
+
 # Perfherder's own graph view, so a reader can go from a card straight to the
 # series it was computed from. Several `series` params put every browser on one
 # graph. `timerange` only accepts a fixed set of values; 30 days is one of them.
@@ -209,6 +216,13 @@ def _render_metric(metric: dict) -> dict | None:
         "compared": comparison["factor"] is not None,
         "axis_max": axis_max,
         "noisy": any(s["cv"] >= NOISY_CV_PERCENT for s in series.values()),
+        # Firefox's own count decides, not the smallest across browsers. Rival
+        # suites legitimately run far less often -- Chrome lands 13 runs where
+        # Firefox lands 75 -- so a minimum-across-browsers rule fired on every card,
+        # and a marker that is always on says nothing. The per-browser counts are in
+        # the expansion for anyone weighing the comparison itself.
+        "low_samples": _own_samples(series) < MIN_SAMPLES,
+        "min_samples": _own_samples(series),
         "graph_url": graph_url(
             series,
             days=int(metric.get("window_days") or 30),
@@ -227,6 +241,14 @@ def _summary_key(m: dict) -> tuple:
     if c["factor"] is None:
         return (2, 0.0)
     return (0, -c["factor"]) if not c["ahead"] else (1, c["factor"])
+
+
+def _own_samples(series: dict) -> int:
+    """Firefox's run count, or the largest available if Firefox is absent."""
+    ff = series.get("firefox")
+    if ff:
+        return int(ff.get("n") or 0)
+    return max((int(s.get("n") or 0) for s in series.values()), default=0)
 
 
 def build_metrics_view(raw: dict) -> dict:

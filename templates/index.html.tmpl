@@ -2426,9 +2426,19 @@ function renderMetrics() {
   // Compact warning. The detail it stands for lives in the expansion, so the
   // collapsed row stays scannable.
   function warnIcon(m) {
+    // The marker means: do not lean on this as a cross-browser result. Two things
+    // earn it - nothing else measures it, or the suite has stopped producing.
+    // Spread and thin samples ride along as extra lines but never earn it alone,
+    // so the marker stays meaningful instead of appearing on every card.
     const why = [];
-    if (m.stale) why.push('data is ' + m.days_behind + ' days old');
+    if (!m.compared) why.push('no other browser measures this');
+    if (m.stale) why.push('suite stopped producing ' + m.days_behind + ' days ago');
     if (m.noisy) why.push('run-to-run spread is wide');
+    if (m.low_samples) why.push('only ' + m.min_samples + ' runs in the window');
+    if (!m.compared || m.stale) {
+      return '<span class="pm-warn-icon" title="' + escA(why.join('; ')
+        + ' \u2014 expand for detail') + '">!</span>';
+    }
     if (!why.length) return '';
     return '<span class="pm-warn-icon" title="' + escA(why.join('; ')
       + ' \u2014 expand for detail') + '">!</span>';
@@ -2484,6 +2494,10 @@ function renderMetrics() {
     const facts = [];
     facts.push(m.window_days + '-day window'
       + (m.window_end ? ' ending ' + esc(m.window_end) : ''));
+    if (!m.compared) {
+      facts.push('<b>no other browser measures this</b>, so the figure is a trend '
+        + 'line for us rather than a comparison');
+    }
     if (m.stale) {
       facts.push('<b>this suite has stopped producing \u2014 the window is the '
         + 'same length, so the medians stay comparable, but it ends about '
@@ -2492,6 +2506,11 @@ function renderMetrics() {
     if (m.noisy) {
       facts.push('run-to-run spread here is wider than most differences worth '
         + 'detecting, so read small gaps with care');
+    }
+    if (m.low_samples) {
+      facts.push('<b>only ' + m.min_samples + ' runs in this window</b>, so the '
+        + 'median is thin evidence - usually a suite that landed recently, and it '
+        + 'settles as history accumulates');
     }
     if (m.note) facts.push(esc(m.note));
     facts.push('platform ' + esc(plat(m.platform)));

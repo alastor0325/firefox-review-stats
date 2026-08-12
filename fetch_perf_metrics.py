@@ -98,6 +98,51 @@ METRICS = [
     {"id": "media-seek.warm", "group": "Seek latency", "title": "Decoder warm",
      "suite": "media-seek", "test": "seekedWarmLatency",
      "platform": MAC_INTEL, "unit": "ms", "lower_is_better": True, "note": ""},
+
+    # How long a capability query takes, as opposed to what it answers -- the
+    # companion to the support matrix lower down the same page. Firefox-only, like
+    # media-seek. The suite started producing data on 2026-08-06, which is why it
+    # was absent from this table rather than deliberately excluded.
+    {"id": "mc.first", "group": "Capability query latency",
+     "title": "First query of the session",
+     "suite": "media-capabilities", "test": "first-query-cold",
+     "platform": MAC_INTEL, "unit": "ms", "lower_is_better": True,
+     "note": "The very first decodingInfo() call a page makes. Firefox only."},
+    {"id": "mc.avc.cold", "group": "Capability query latency",
+     "title": "H.264, first query",
+     "suite": "media-capabilities", "test": "decode-file-video-avc-cold",
+     "platform": MAC_INTEL, "unit": "ms", "lower_is_better": True,
+     "note": "Measures well above the other codecs. Whether that is H.264 itself or "
+             "one-time initialisation charged to whichever codec is queried first "
+             "has not been established - read it as an upper bound, not a codec "
+             "verdict."},
+    {"id": "mc.avc.hot", "group": "Capability query latency",
+     "title": "H.264, repeat query",
+     "suite": "media-capabilities", "test": "decode-file-video-avc-hot",
+     "platform": MAC_INTEL, "unit": "ms", "lower_is_better": True,
+     "note": "The same query once warm. The gap against the first query is the "
+             "cost a site pays at startup."},
+    {"id": "mc.vp9.cold", "group": "Capability query latency",
+     "title": "VP9, first query",
+     "suite": "media-capabilities", "test": "decode-file-video-vp9-cold",
+     "platform": MAC_INTEL, "unit": "ms", "lower_is_better": True, "note": ""},
+    {"id": "mc.av1.cold", "group": "Capability query latency",
+     "title": "AV1, first query",
+     "suite": "media-capabilities", "test": "decode-file-video-av1-cold",
+     "platform": MAC_INTEL, "unit": "ms", "lower_is_better": True, "note": ""},
+    {"id": "mc.mse.avc.cold", "group": "Capability query latency",
+     "title": "H.264 via Media Source",
+     "suite": "media-capabilities",
+     "test": "decode-media-source-video-avc-cold",
+     "platform": MAC_INTEL, "unit": "ms", "lower_is_better": True,
+     "note": "Same codec asked with type: media-source instead of file, so the "
+             "difference is the surface rather than the codec."},
+    {"id": "mc.worker.avc.cold", "group": "Capability query latency",
+     "title": "H.264 in a Worker",
+     "suite": "media-capabilities",
+     "test": "worker-decode-file-video-avc-cold",
+     "platform": MAC_INTEL, "unit": "ms", "lower_is_better": True,
+     "note": "The same query off the main thread."},
 ]
 
 # Which suites run on which browsers, so the page can show what cannot be
@@ -156,10 +201,32 @@ def fetch_samples(signature_id: int, days: int) -> list:
     ]
 
 
-def build_coverage(signatures: dict) -> dict:
-    """Which browsers each suite family actually runs on."""
-    seen = defaultdict(set)
-    for v in signatures.values():
+# How many signatures to sample per (suite, browser) before concluding a suite
+# produces nothing. More than one because the first pick is often a subtest that
+# never reported; small because each is a request.
+_COVERAGE_PROBES = 5
+
+
+def build_coverage(signatures: dict, *, has_data=None) -> dict:
+    """Which browsers each suite family actually produces numbers for.
+
+    `has_data(signature_id) -> bool` decides whether a signature counts. Without it
+    this falls back to signature existence, which is what it used to do and what was
+    wrong: Perfherder registers a signature when a test is *defined*, and keeps it
+    long after the test stops running. So `media-capabilities` was reported as
+    measured by Firefox for months before it emitted a point, and a retired suite
+    would be reported forever. The ve-* graph links had the same fault from the same
+    cause -- they pointed at empty charts.
+
+    The probe is optional so tests and ad-hoc callers need no network, but `collect`
+    must pass one, and a test asserts that it does.
+    """
+    # Candidates first, probe second. A suite can have hundreds of signatures and
+    # the first one picked is often a subtest that never reported, so answering
+    # "does this browser produce numbers for this suite" needs a few tries, not one
+    # -- and not all of them, which would be hundreds of requests.
+    candidates = defaultdict(list)
+    for sid, v in signatures.items():
         if not isinstance(v, dict):
             continue
         suite, app = str(v.get("suite") or ""), v.get("application")
@@ -167,7 +234,17 @@ def build_coverage(signatures: dict) -> dict:
             continue
         for key, prefix, _ in COVERAGE_SUITES:
             if suite == prefix or suite.startswith(prefix):
+                candidates[(key, app)].append(sid)
+
+    seen = defaultdict(set)
+    for (key, app), sids in candidates.items():
+        if has_data is None:
+            seen[key].add(app)
+            continue
+        for sid in sids[:_COVERAGE_PROBES]:
+            if has_data(sid):
                 seen[key].add(app)
+                break
     return {
         "browsers": COVERAGE_BROWSERS,
         "rows": [
@@ -176,6 +253,28 @@ def build_coverage(signatures: dict) -> dict:
             for key, _, label in COVERAGE_SUITES
         ],
     }
+
+
+def _make_data_probe(days: int):
+    """`has_data(signature_id)` for build_coverage, memoised.
+
+    Uses the same search horizon as the metrics themselves, so a suite that stopped
+    months ago still counts as measured with a stale window -- which is what the
+    per-metric staleness marker is for. Failures answer False rather than raising:
+    coverage is a caption, and it must not fail the fetch.
+    """
+    cache: dict = {}
+
+    def has_data(signature_id) -> bool:
+        if signature_id not in cache:
+            try:
+                cache[signature_id] = bool(
+                    fetch_samples(signature_id, SEARCH_DAYS))
+            except Exception:
+                cache[signature_id] = False
+        return cache[signature_id]
+
+    return has_data
 
 
 def collect(days: int) -> dict:
@@ -265,7 +364,9 @@ def collect(days: int) -> dict:
         "window_days": days,
         "source": f"{BASE}/data/ (framework {BROWSERTIME_FRAMEWORK})",
         "metrics": out_metrics,
-        "coverage": build_coverage(sigs),
+        # Probe memoised: several suites share signatures across platforms, and a
+        # repeated question should not be a repeated request.
+        "coverage": build_coverage(sigs, has_data=_make_data_probe(days)),
     }
 
 
