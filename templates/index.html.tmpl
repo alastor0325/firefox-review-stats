@@ -993,6 +993,14 @@
   }
   /* Second header row: the surfaces under each browser. Quieter than the browser
      names above them so the grouping reads top-down. */
+  /* Fixed layout makes a table fit its container by compressing declared column
+     widths, so narrow windows squeezed the 96px codec-string column to 52px while
+     the mono strings kept their size and spilled over the next column. A min-width
+     gives .table-wrap something to scroll instead. */
+  .pm-cont table { min-width: 940px }
+  /* Belt: if a future column list outgrows even that, break the string rather than
+     overlap a neighbour. */
+  td.pm-codec-string { overflow-wrap: anywhere }
   th.pm-sub {
     font-size: 8.5px; font-weight: 600; letter-spacing: .03em;
     color: var(--ink-soft); text-transform: none;
@@ -2669,7 +2677,8 @@ function renderMetrics() {
             + '>' + esc(sf.label) + '</th>').join('')).join('') + '</tr>';
       const body = r => '<tr class="pm-v-' + esc(r.verdict) + '">'
         + '<td>' + esc(r.codec) + '</td>'
-        + '<td class="rm-mono" style="font-size:9.5px;color:var(--ink-soft)">'
+        + '<td class="rm-mono pm-codec-string" '
+        + 'style="font-size:9.5px;color:var(--ink-soft)">'
         + esc(r.codec_string) + '</td>'
         + cv.browsers.map(b => cols.map((sf, i) => {
             const v = (r.cells[b.target] || {})[sf.key];

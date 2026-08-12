@@ -1340,3 +1340,50 @@ class TestTheContainerHeaderNeverOverflows:
         assert max(bps) >= 1000, (
             f"stacks only at {max(bps)}px; the row needs about 1080px to fit"
         )
+
+
+class TestTheCapsTableScrollsRatherThanSpilling:
+    """Codec strings must not overlap the first data column.
+
+    `table-layout: fixed` makes the table fit its container by compressing the
+    declared column widths, so below about 1100px the 96px codec-string column
+    shrank - 78px, then 69, down to 52 - while the mono strings did not. Measured at
+    a 900px viewport: five cells overflowing, `hvc1.1.6.L93.B0` spilling 27px over
+    the neighbouring YES. And `.table-wrap` never scrolled, because a fixed table
+    always "fits": it is the cell content that overflowed, not the table.
+
+    A min-width gives the wrapper something to scroll, and breaking long strings is
+    the belt in case a future column list outgrows it again.
+    """
+
+    def _css(self, selector):
+        import pathlib, re
+        t = pathlib.Path("templates/index.html.tmpl").read_text(encoding="utf-8")
+        m = re.search(re.escape(selector) + r"\s*\{([^}]*)\}", t)
+        assert m, f"no rule for {selector}"
+        return m.group(1)
+
+    def test_the_caps_table_has_a_min_width(self):
+        assert "min-width" in self._css(".pm-cont table"), (
+            "without a min-width the table compresses its columns instead of "
+            "letting the wrapper scroll"
+        )
+
+    def test_the_wrapper_can_scroll(self):
+        assert "overflow-x: auto" in self._css(".table-wrap")
+
+    def test_long_codec_strings_can_break(self):
+        rule = self._css("td.pm-codec-string")
+        assert "anywhere" in rule or "break-all" in rule, rule
+
+    def test_the_rule_actually_reaches_the_cell(self):
+        """A CSS rule for a class nothing carries styles nothing. The first attempt
+        at this fix added the rule and silently failed to tag the cell, and the
+        earlier version of this test passed anyway because it only checked the
+        rule."""
+        import pathlib
+        t = pathlib.Path("templates/index.html.tmpl").read_text(encoding="utf-8")
+        assert 'pm-codec-string"' in t.replace("'", '"'), (
+            "no element carries the class the rule targets"
+        )
+        assert t.count("pm-codec-string") >= 2
