@@ -24,6 +24,7 @@ would hide that the gap exists.
 """
 
 import statistics as _st
+from collections import defaultdict
 
 # A run-to-run spread this wide is louder than most differences worth detecting,
 # so the page says so rather than plotting it as though it were solid.
@@ -35,6 +36,10 @@ NOISY_CV_PERCENT = 15.0
 # clear. Added because the warning rule looked at staleness and spread but not at
 # sample count, so a metric with 15 runs sat beside one with 75 and read the same.
 MIN_SAMPLES = 30
+
+# How far behind "now" a window may end before it is called stale. A few days is
+# ordinary scheduling jitter; a suite that stopped weeks ago is a different claim.
+STALE_AFTER_DAYS = 7
 
 # Perfherder's own graph view, so a reader can go from a card straight to the
 # series it was computed from. Several `series` params put every browser on one
@@ -165,6 +170,74 @@ def select_recent_window(points: list, *, days: int, now_ts: float) -> dict:
     }
 
 
+def matches_test(spec: dict, test_name) -> bool:
+    """Does a Perfherder signature's subtest name belong to this metric?
+
+    Three modes, in precedence order:
+
+      * `test` -- an exact subtest name (`seekedColdLatency`).
+      * `test_suffix` -- an anchored **suffix**, for suites that prefix every
+        subtest with a per-codec string (`avc1.42001E (annexb) ...`). The suffix
+        carries the whole measure *including* its input-source variant.
+      * neither -- the suite-level score, which means a row with no subtest.
+
+    Suffix rather than substring, because substring matching silently outlived a
+    rename. When the WebCodecs encode subtests were split by frame source, the old
+    bare name became a prefix of all three successors, so `contains` went on
+    selecting a series that had stopped reporting.
+
+    Anchoring the tail is a real improvement but not a guarantee: the bare name is
+    itself a suffix of its successors, so a *vague* suffix still matches several
+    variants. Precision comes from configuring the whole measure including its
+    variant; `ambiguous_matches` is what notices when that stops being enough.
+    """
+    if spec.get("test") is not None:
+        return test_name == spec["test"]
+    suffix = spec.get("test_suffix")
+    if suffix is not None:
+        return bool(test_name) and str(test_name).endswith(suffix)
+    return not test_name
+
+
+def unresolved_metrics(metrics: list) -> list:
+    """Ids of configured metrics that produced no Firefox series.
+
+    A new metric whose `suite`, `platform` or subtest does not match anything is
+    otherwise invisible: it is collected with an empty `series`, dropped by
+    `_render_metric` for having no Firefox data, and the page simply renders one card
+    fewer. `is_safe_to_write` does not help -- it guards against losing half the
+    table, not against never gaining a row.
+
+    Config order is preserved so the report reads like the METRICS list.
+    """
+    return [str(m.get("id", ""))
+            for m in metrics or []
+            if not ((m.get("series") or {}).get("firefox"))]
+
+
+def ambiguous_matches(rows: list) -> dict:
+    """Browsers for which a metric's match covers more than one distinct subtest.
+
+    Returns `{browser: [subtest, ...]}`, sorted, empty when every browser resolved
+    to exactly one subtest. Several signature *ids* for the same subtest is normal
+    (build options) and not reported -- `pick_signature` handles that.
+
+    Two different subtests under one card is never intended: it means the upstream
+    test was re-cut and the config still describes the old shape. That is how the
+    WebCodecs encode cards went stale. When their subtests split by frame source,
+    the configured match widened from one row to four, and `pick_signature` resolved
+    the tie on sample count -- so it chose the longest history, which was precisely
+    the series that had just stopped.
+    """
+    by_app: dict[str, set] = defaultdict(set)
+    for r in rows or []:
+        app = (r or {}).get("application")
+        if app:
+            by_app[app].add(r.get("test"))
+    return {a: sorted(t for t in names if t)
+            for a, names in sorted(by_app.items()) if len(names) > 1}
+
+
 def pick_signature(candidates: list) -> dict | None:
     """Choose one signature where several share a (browser, suite, test).
 
@@ -185,11 +258,35 @@ def _render_metric(metric: dict) -> dict | None:
         # The whole view is "where Firefox stands"; a row without us says nothing.
         return None
 
+    # Each series' window is measured from its own newest point, so a browser that
+    # stopped reporting still yields a full window -- just an old one. Mark it per
+    # series: the card-level `stale` takes the freshest series and so reads false
+    # while a weeks-old rival bar sits next to a current one.
+    for b, s in series.items():
+        db = s.get("days_behind")
+        s["stale"] = db is not None and db > STALE_AFTER_DAYS
+    stale_browsers = sorted(b for b, s in series.items()
+                            if b != "firefox" and s["stale"])
+
+    lower_better = bool(metric.get("lower_is_better", True))
+
+    # A stale rival must not be the headline comparator: on VP8 a 45-day-old
+    # custom-car beat current Chrome by a rounding error and took the verdict. So
+    # prefer current rivals -- but if every rival is stale, compare against them
+    # anyway, because "nobody measures this" would be a bigger lie than an old
+    # number, and the card carries the marker either way.
     rivals = {b: s["median"] for b, s in series.items() if b != "firefox"}
+    fresh_rivals = {b: v for b, v in rivals.items() if not series[b]["stale"]}
     comparison = compare_to_firefox(
-        firefox["median"], rivals,
-        lower_is_better=bool(metric.get("lower_is_better", True)),
+        firefox["median"], fresh_rivals or rivals, lower_is_better=lower_better,
     )
+
+    # Who is actually ahead, decided here rather than in the template so freshness
+    # is applied once. Same rule: a stale series cannot hold the "best" label while
+    # a current one is on the card.
+    ranked = [b for b in series if not series[b]["stale"]] or list(series)
+    leader = min(ranked, key=lambda b: (
+        series[b]["median"] if lower_better else -series[b]["median"]))
 
     # One shared scale per metric so the marks are comparable; it has to reach
     # the slowest browser's p75 or that bar runs off the end.
@@ -216,6 +313,12 @@ def _render_metric(metric: dict) -> dict | None:
         "compared": comparison["factor"] is not None,
         "axis_max": axis_max,
         "noisy": any(s["cv"] >= NOISY_CV_PERCENT for s in series.values()),
+        # A comparison drawn across timeframes. Distinct from `stale`, which is about
+        # the card as a whole being old; here our number is current and the rival's
+        # is not, which flatters or damns us by accident.
+        "mixed_windows": bool(stale_browsers),
+        "stale_browsers": stale_browsers,
+        "leader": leader,
         # Firefox's own count decides, not the smallest across browsers. Rival
         # suites legitimately run far less often -- Chrome lands 13 runs where
         # Firefox lands 75 -- so a minimum-across-browsers rule fired on every card,

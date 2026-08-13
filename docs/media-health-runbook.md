@@ -144,6 +144,35 @@ python fetch_perf_metrics.py --days 30
   `--allow-shrink` overrides, deliberately.
 - Writes `playback/data_metrics.json`, which the weekly job already commits.
 
+### Two ways a card lies without going blank
+
+Both of these were live on the page, and neither showed up as an error.
+
+**A renamed subtest.** The four WebCodecs encode cards read 102 days stale because
+their subtests were re-cut upstream on 2026-05-02 — one measure per suite became
+three, prefixed `RGBX canvas` / `I420 canvas` / `camera`. The config matched on a
+`contains` substring plus a hardcoded "exclude anything with RGBX or I420", which was
+written to keep the then-current bare variant; once that died the exclusion blocked
+the only rows still reporting, and `pick_signature` resolved the widened match by
+sample count — choosing the longest history, which was the corpse.
+
+So subtests now match by **anchored suffix** (`test_suffix`), and `ambiguous_matches`
+prints a warning if one card resolves to more than one distinct subtest. That warning
+is the tripwire: it means the upstream test changed shape. Suffix anchoring alone is
+not enough, because the old bare name is itself a suffix of its successors.
+
+**A rival that stopped.** Each series' window ends at *its own* newest run, so a
+browser that stopped reporting still produces a full 30-day window — just an old one.
+`custom-car` stopped on 2026-06-28 and kept drawing bars beside current Firefox and
+Chrome ones, and on VP8 its 45-day-old number beat current Chrome by 0.1 ms and took
+both the `best` label and the headline verdict. Now: freshness is per series, a stale
+rival is marked and made recessive but still plotted, and it cannot be the comparator
+or the leader while a current rival exists. If *every* rival is stale the comparison
+still runs against them — an old comparison, marked, beats claiming nobody measures it.
+
+Neither problem is detectable from the numbers alone. When a cross-browser card looks
+surprising, check `days_behind` per series before believing the gap.
+
 ---
 
 ## 3. Codec and container support (browser probe)

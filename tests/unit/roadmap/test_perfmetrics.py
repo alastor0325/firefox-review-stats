@@ -19,6 +19,7 @@ from reviewstats.perfmetrics import (
     build_metrics_view,
     compare_to_firefox,
     graph_url,
+    matches_test,
     pick_signature,
     select_recent_window,
     summarize,
@@ -773,3 +774,475 @@ class TestTheWarningRuleIsUncomparableOrDead:
         assert m["stale"] is False
         assert m["noisy"] is False
         assert m["low_samples"] is False
+
+
+class TestSubtestMatchingIsAnchoredNotSubstring:
+    """A subtest name must be matched by suffix, not by "contains".
+
+    The WebCodecs encode suites were re-cut by frame source on 2026-05-02: one
+    subtest per suite became three, distinguished by an input-source prefix
+    (`RGBX canvas`, `I420 canvas`, `camera`). The old bare name
+    `avc1.42001E (annexb) realtime encode - frame-to-frame mean (non key)` stopped
+    that day and its replacements started the next push, with no gap in the data.
+
+    Because the old name is a *substring* of all three new ones, a `contains` match
+    keeps matching -- so the config went on selecting the dead series while the live
+    one sat right next to it. The old code compounded this by explicitly excluding
+    any name containing `RGBX` or `I420`, which is precisely the successor set: the
+    exclusion was written to keep the bare variant and, once that died, it blocked
+    the only rows still reporting.
+
+    Anchoring on the suffix makes the variant part of the identity, so a rename
+    fails loudly (no match, metric absent) instead of silently reading a corpse.
+    """
+
+    BARE = "avc1.42001E (annexb) realtime encode - frame-to-frame mean (non key)"
+    RGBX = ("avc1.42001E (annexb) RGBX canvas realtime encode"
+            " - frame-to-frame mean (non key)")
+    I420 = ("avc1.42001E (annexb) I420 canvas realtime encode"
+            " - frame-to-frame mean (non key)")
+    CAM = "avc1.42001E (annexb) camera realtime encode - frame-to-frame mean (non key)"
+
+    def _spec(self, suffix):
+        return {"test": None, "test_suffix": suffix}
+
+    def test_a_suffix_selects_only_its_own_variant(self):
+        spec = self._spec("RGBX canvas realtime encode - frame-to-frame mean (non key)")
+        assert matches_test(spec, self.RGBX) is True
+        assert matches_test(spec, self.I420) is False
+        assert matches_test(spec, self.CAM) is False
+        assert matches_test(spec, self.BARE) is False
+
+    def test_the_dead_bare_variant_does_not_match_a_variant_suffix(self):
+        """The regression this guards: the whole point is that the corpse is
+        excluded, not preferred."""
+        spec = self._spec("RGBX canvas realtime encode - frame-to-frame mean (non key)")
+        assert matches_test(spec, self.BARE) is False
+
+    def test_a_bare_suffix_still_sweeps_up_the_variants(self):
+        """The limit of suffix matching, asserted so nobody mistakes it for a
+        guarantee it does not give.
+
+        The old bare name is a genuine *suffix* of all three successors, not just a
+        substring, so anchoring the tail cannot separate them. Anchoring buys
+        precision in the direction we need (a full variant suffix excludes the other
+        variants and the corpse) but it does not make a vague suffix safe. That is
+        what `ambiguous_matches` is for.
+        """
+        spec = self._spec("realtime encode - frame-to-frame mean (non key)")
+        assert matches_test(spec, self.BARE) is True
+        assert matches_test(spec, self.RGBX) is True
+        assert matches_test(spec, self.I420) is True
+
+    def test_exact_test_names_still_match_exactly(self):
+        spec = {"test": "seekedColdLatency"}
+        assert matches_test(spec, "seekedColdLatency") is True
+        assert matches_test(spec, "seekedWarmLatency") is False
+        assert matches_test(spec, None) is False
+
+    def test_a_suite_level_score_wants_no_subtest(self):
+        """webaudio charts the suite score, so a row carrying a subtest name is the
+        wrong row."""
+        spec = {"test": None}
+        assert matches_test(spec, None) is True
+        assert matches_test(spec, "") is True
+        assert matches_test(spec, "some-subtest") is False
+
+
+class TestWebCodecsChartsTheLiveVariant:
+    """The four WebCodecs encode cards must point at subtests that still report.
+
+    They read 102 days stale because they were configured for the pre-2026-05-02
+    bare variant. This asserts the config moved to the live cross-browser variant
+    and records why that particular one: `RGBX canvas` is the only input source all
+    three browsers run.
+    """
+
+    def _entries(self):
+        import importlib.util, pathlib, sys
+        spec = importlib.util.spec_from_file_location(
+            "fpm", pathlib.Path("fetch_perf_metrics.py"))
+        m = importlib.util.module_from_spec(spec)
+        sys.modules["fpm"] = m
+        spec.loader.exec_module(m)
+        return [e for e in m.METRICS if e["group"] == "WebCodecs encode"]
+
+    def test_all_four_codecs_are_still_charted(self):
+        assert {e["id"] for e in self._entries()} == {
+            "ve.h264", "ve.vp8", "ve.vp9", "ve.av1"}
+
+    def test_every_card_anchors_on_the_rgbx_canvas_variant(self):
+        for e in self._entries():
+            assert e.get("test_suffix") == (
+                "RGBX canvas realtime encode - frame-to-frame mean (non key)"), e["id"]
+
+    def test_no_card_still_uses_the_dead_bare_variant(self):
+        """`test_contains` is gone as a field name too, so a stale config cannot be
+        reintroduced by copy-paste from an old revision."""
+        for e in self._entries():
+            assert "test_contains" not in e, e["id"]
+
+    def test_the_h264_card_says_it_is_480p(self):
+        """`ve-h264-rt-sd` is 640x480 while every other codec here is 1920x1080,
+        because Chrome refuses WebCodecs H.264 encode above SD. A reader comparing
+        H.264's number to VP9's without knowing that is reading a resolution
+        difference as a codec difference."""
+        h264 = [e for e in self._entries() if e["id"] == "ve.h264"][0]
+        label = (h264["title"] + " " + h264.get("note", "")).lower()
+        assert "480" in label, label
+
+    def test_the_1080p_cards_say_so(self):
+        for e in self._entries():
+            if e["id"] == "ve.h264":
+                continue
+            label = (e["title"] + " " + e.get("note", "")).lower()
+            assert "1080" in label, e["id"]
+
+    def test_the_note_no_longer_claims_canvas_variants_are_excluded(self):
+        """That comment described the pre-rename world. Canvas is now the only input
+        path, so the claim inverted from true to false without anyone editing it."""
+        import importlib.util, pathlib, sys
+        spec = importlib.util.spec_from_file_location(
+            "fpm", pathlib.Path("fetch_perf_metrics.py"))
+        m = importlib.util.module_from_spec(spec)
+        sys.modules["fpm"] = m
+        spec.loader.exec_module(m)
+        src = pathlib.Path("fetch_perf_metrics.py").read_text()
+        needle = "canvas-source variants are " + "excluded"
+        assert needle not in src, "stale pre-rename comment still present"
+
+
+class TestAVagueSubtestMatchIsReported:
+    """If a metric's match covers more than one subtest, say so.
+
+    This is the guard that would have caught the WebCodecs staleness at the moment
+    it happened. Suffix anchoring alone cannot: the old bare name is a suffix of all
+    three of its successors, so on 2026-05-02 the config's match went from selecting
+    one row to selecting four, and `pick_signature` quietly resolved that by sample
+    count -- picking the one with the longest history, which was the one that had
+    just died.
+
+    Selecting several distinct subtests for one card is never intended. It means the
+    upstream test was re-cut and the config has not caught up.
+    """
+
+    def test_one_subtest_per_browser_is_fine(self):
+        from reviewstats.perfmetrics import ambiguous_matches
+        rows = [{"application": "firefox", "test": "a"},
+                {"application": "chrome", "test": "a"}]
+        assert ambiguous_matches(rows) == {}
+
+    def test_duplicate_signatures_of_the_same_subtest_are_fine(self):
+        """Several ids sharing a (browser, suite, test) is normal -- they differ by
+        build options, and `pick_signature` exists to choose between them."""
+        from reviewstats.perfmetrics import ambiguous_matches
+        rows = [{"application": "firefox", "test": "a", "id": 1},
+                {"application": "firefox", "test": "a", "id": 2}]
+        assert ambiguous_matches(rows) == {}
+
+    def test_two_different_subtests_for_one_browser_is_reported(self):
+        from reviewstats.perfmetrics import ambiguous_matches
+        rows = [
+            {"application": "firefox", "test": "bare realtime encode - mean"},
+            {"application": "firefox", "test": "RGBX canvas realtime encode - mean"},
+        ]
+        got = ambiguous_matches(rows)
+        assert set(got) == {"firefox"}
+        assert got["firefox"] == ["RGBX canvas realtime encode - mean",
+                                  "bare realtime encode - mean"], "sorted for stability"
+
+    def test_reports_every_affected_browser(self):
+        from reviewstats.perfmetrics import ambiguous_matches
+        rows = [
+            {"application": "firefox", "test": "x - mean"},
+            {"application": "firefox", "test": "y - mean"},
+            {"application": "chrome", "test": "x - mean"},
+            {"application": "chrome", "test": "y - mean"},
+            {"application": "custom-car", "test": "x - mean"},
+        ]
+        got = ambiguous_matches(rows)
+        assert set(got) == {"firefox", "chrome"}
+
+    def test_rows_without_a_browser_are_ignored(self):
+        from reviewstats.perfmetrics import ambiguous_matches
+        assert ambiguous_matches([{"test": "a"}, {"test": "b"}]) == {}
+
+    def test_empty_input_is_not_ambiguous(self):
+        from reviewstats.perfmetrics import ambiguous_matches
+        assert ambiguous_matches([]) == {}
+
+
+class TestAStaleRivalSeriesIsMarkedNotBlended:
+    """A rival browser that stopped reporting must not be drawn as current.
+
+    `stale` / `days_behind` were per *metric* and took the freshest series, so a card
+    whose Firefox data is current reads `stale: false` even when a rival's bar is
+    weeks old. custom-car is the live example: it stopped producing WebCodecs encode
+    numbers on 2026-06-28, yet its bar still appears beside current Firefox and
+    Chrome bars because each series' window is measured from its own newest point.
+
+    That is the same defect that made the cards stale in the first place, one layer
+    down: a dead series that looks identical to a healthy one.
+    """
+
+    def _metric(self, **series):
+        return {"generated_at": "2026-08-13T00:00:00Z", "window_days": 30,
+                "metrics": [{
+                    "id": "ve.av1", "group": "WebCodecs encode", "title": "AV1 1080p",
+                    "unit": "ms", "lower_is_better": True, "note": "",
+                    "platform": "macosx1470-64-shippable",
+                    "stale": False, "days_behind": 0, "window_end": "2026-08-13",
+                    "series": series}]}
+
+    def _s(self, median, n, days_behind):
+        return {"n": n, "median": median, "p25": median, "p75": median,
+                "cv": 1.0, "signature_id": 1, "days_behind": days_behind}
+
+    def test_a_current_rival_is_not_marked(self):
+        raw = self._metric(firefox=self._s(25.0, 76, 0), chrome=self._s(5.7, 13, 1))
+        m = build_metrics_view(raw)["metrics"][0]
+        assert m["series"]["chrome"]["stale"] is False
+
+    def test_a_rival_weeks_behind_is_marked(self):
+        raw = self._metric(firefox=self._s(25.0, 76, 0),
+                           **{"custom-car": self._s(5.7, 23, 46)})
+        m = build_metrics_view(raw)["metrics"][0]
+        assert m["series"]["custom-car"]["stale"] is True
+        assert m["series"]["custom-car"]["days_behind"] == 46
+
+    def test_the_metric_reports_that_some_series_is_stale(self):
+        """The card-level flag the `!` marker reads. The metric is not stale itself --
+        Firefox is current -- but it is mixing timeframes, and that is worth a mark."""
+        raw = self._metric(firefox=self._s(25.0, 76, 0),
+                           **{"custom-car": self._s(5.7, 23, 46)})
+        m = build_metrics_view(raw)["metrics"][0]
+        assert m["stale"] is False, "Firefox is current, so the card is not stale"
+        assert m["mixed_windows"] is True
+        assert m["stale_browsers"] == ["custom-car"]
+
+    def test_no_mixing_when_every_series_is_current(self):
+        raw = self._metric(firefox=self._s(25.0, 76, 0), chrome=self._s(5.7, 13, 2))
+        m = build_metrics_view(raw)["metrics"][0]
+        assert m["mixed_windows"] is False
+        assert m["stale_browsers"] == []
+
+    def test_a_series_without_freshness_data_is_not_guessed_stale(self):
+        """Older data_metrics.json files predate the per-series field. Absent must
+        read as unknown-but-not-flagged, not as stale."""
+        s = self._s(5.7, 13, 0)
+        del s["days_behind"]
+        raw = self._metric(firefox=self._s(25.0, 76, 0), chrome=s)
+        m = build_metrics_view(raw)["metrics"][0]
+        assert m["series"]["chrome"]["stale"] is False
+        assert m["mixed_windows"] is False
+
+    def test_firefox_being_behind_still_makes_the_whole_card_stale(self):
+        """Unchanged existing behaviour: this is about rivals, not a new rule for us."""
+        raw = self._metric(firefox=self._s(25.0, 76, 40))
+        raw["metrics"][0]["stale"] = True
+        raw["metrics"][0]["days_behind"] = 40
+        m = build_metrics_view(raw)["metrics"][0]
+        assert m["stale"] is True
+
+
+class TestAStaleRivalDoesNotWinTheComparison:
+    """A series that stopped reporting must not be the headline comparator.
+
+    Marking it was not enough. On VP8 1080p, custom-car's 45-day-old 6.7 ms beat
+    Chrome's current 6.8 ms by a rounding error, so it took both the "best" label and
+    the `versus` slot -- the card's headline number was measured against data from
+    other weeks while a current rival sat next to it.
+
+    When any rival is current, the comparison uses current rivals only. When every
+    rival is stale the comparison still runs against them, because "no comparison at
+    all" would be a bigger lie than an old one -- and the card already carries the
+    marker saying so.
+    """
+
+    def _metric(self, **series):
+        return {"generated_at": "2026-08-13T00:00:00Z", "window_days": 30,
+                "metrics": [{
+                    "id": "ve.vp8", "group": "WebCodecs encode", "title": "VP8 1080p",
+                    "unit": "ms", "lower_is_better": True, "note": "",
+                    "platform": "macosx1470-64-shippable",
+                    "stale": False, "days_behind": 0, "window_end": "2026-08-13",
+                    "series": series}]}
+
+    def _s(self, median, n, days_behind):
+        return {"n": n, "median": median, "p25": median, "p75": median,
+                "cv": 1.0, "signature_id": 1, "days_behind": days_behind}
+
+    def test_a_current_rival_is_preferred_even_when_the_stale_one_looks_better(self):
+        m = build_metrics_view(self._metric(
+            firefox=self._s(16.3, 75, 0),
+            chrome=self._s(6.8, 12, 1),
+            **{"custom-car": self._s(6.7, 23, 45)},
+        ))["metrics"][0]
+        assert m["comparison"]["versus"] == "chrome"
+
+    def test_the_stale_rival_is_still_shown(self):
+        """Excluded from the verdict, not from the plot -- it is real data."""
+        m = build_metrics_view(self._metric(
+            firefox=self._s(16.3, 75, 0),
+            chrome=self._s(6.8, 12, 1),
+            **{"custom-car": self._s(6.7, 23, 45)},
+        ))["metrics"][0]
+        assert "custom-car" in m["series"]
+        assert m["series"]["custom-car"]["stale"] is True
+
+    def test_the_stale_rival_is_not_the_leader(self):
+        """The `best` label is computed from this flag rather than from the medians,
+        so the template does not need its own opinion about freshness."""
+        m = build_metrics_view(self._metric(
+            firefox=self._s(16.3, 75, 0),
+            chrome=self._s(6.8, 12, 1),
+            **{"custom-car": self._s(6.7, 23, 45)},
+        ))["metrics"][0]
+        assert m["leader"] == "chrome"
+
+    def test_firefox_can_be_the_leader(self):
+        m = build_metrics_view(self._metric(
+            firefox=self._s(3.0, 75, 0), chrome=self._s(6.8, 12, 1),
+        ))["metrics"][0]
+        assert m["leader"] == "firefox"
+
+    def test_higher_is_better_picks_the_highest_current(self):
+        raw = self._metric(firefox=self._s(100.0, 75, 0),
+                           chrome=self._s(90.0, 12, 1),
+                           **{"custom-car": self._s(300.0, 23, 45)})
+        raw["metrics"][0]["lower_is_better"] = False
+        m = build_metrics_view(raw)["metrics"][0]
+        assert m["leader"] == "firefox"
+        assert m["comparison"]["versus"] == "chrome"
+
+    def test_when_every_rival_is_stale_the_comparison_still_happens(self):
+        """Better an old comparison, marked, than pretending nobody measures it."""
+        m = build_metrics_view(self._metric(
+            firefox=self._s(16.3, 75, 0),
+            **{"custom-car": self._s(6.7, 23, 45)},
+        ))["metrics"][0]
+        assert m["comparison"]["versus"] == "custom-car"
+        assert m["compared"] is True
+        assert m["mixed_windows"] is True
+
+    def test_a_firefox_only_metric_is_unaffected(self):
+        m = build_metrics_view(self._metric(
+            firefox=self._s(16.3, 75, 0)))["metrics"][0]
+        assert m["compared"] is False
+        assert m["leader"] == "firefox"
+
+
+class TestAConfiguredMetricThatResolvedToNothingIsReported:
+    """Adding a metric that matches no signature must not be a silent no-op.
+
+    The failure is quiet by construction: `collect` appends the spec with an empty
+    `series`, `_render_metric` drops it for having no Firefox data, and the page
+    renders one card short. `is_safe_to_write` does not catch it either -- it guards
+    against losing half the table, not against never gaining one row.
+
+    So a typo in `suite`, a platform that does not run the suite, or a subtest that
+    was renamed all look identical to "I never added it".
+    """
+
+    def test_a_metric_with_no_series_is_named(self):
+        from reviewstats.perfmetrics import unresolved_metrics
+        got = unresolved_metrics([
+            {"id": "vpl.h264", "series": {"firefox": {"n": 5}}},
+            {"id": "ve.new", "series": {}},
+        ])
+        assert got == ["ve.new"]
+
+    def test_a_metric_with_only_rivals_is_named(self):
+        """The view is "where Firefox stands", so rival-only data still renders
+        nothing -- and the reason is worth distinguishing from no data at all."""
+        from reviewstats.perfmetrics import unresolved_metrics
+        got = unresolved_metrics([{"id": "x", "series": {"chrome": {"n": 5}}}])
+        assert got == ["x"]
+
+    def test_everything_resolved_is_empty(self):
+        from reviewstats.perfmetrics import unresolved_metrics
+        assert unresolved_metrics([
+            {"id": "a", "series": {"firefox": {"n": 1}}}]) == []
+
+    def test_order_is_stable(self):
+        from reviewstats.perfmetrics import unresolved_metrics
+        got = unresolved_metrics([
+            {"id": "b", "series": {}}, {"id": "a", "series": {}}])
+        assert got == ["b", "a"], "config order, so it reads like the METRICS list"
+
+    def test_empty_input(self):
+        from reviewstats.perfmetrics import unresolved_metrics
+        assert unresolved_metrics([]) == []
+
+    def test_the_fetcher_reports_them(self):
+        """Wired up, not merely available."""
+        import pathlib
+        src = pathlib.Path("fetch_perf_metrics.py").read_text()
+        assert "unresolved_metrics" in src, "the guard is never called"
+
+
+class TestEveryMetricDeclaresWhatTheRendererNeeds:
+    """A config-shape check over the whole METRICS table, not one suite.
+
+    The renderer reads `unit`, `lower_is_better`, `group`, `title` and `platform`
+    off every entry, and `collect` copies exactly those keys -- so a missing one is a
+    KeyError at fetch time, and a wrong `lower_is_better` silently inverts a chart
+    (Perfherder reports `None` for it on most signatures, so nothing upstream
+    corrects us). This was previously asserted only for `media-capabilities`.
+    """
+
+    def _metrics(self):
+        import importlib.util, pathlib, sys
+        spec = importlib.util.spec_from_file_location(
+            "fpm_all", pathlib.Path("fetch_perf_metrics.py"))
+        m = importlib.util.module_from_spec(spec)
+        sys.modules["fpm_all"] = m
+        spec.loader.exec_module(m)
+        return m.METRICS
+
+    def test_required_keys_are_present_on_every_entry(self):
+        need = ("id", "group", "title", "suite", "platform", "unit",
+                "lower_is_better", "note")
+        for e in self._metrics():
+            missing = [k for k in need if k not in e]
+            assert not missing, f"{e.get('id')} missing {missing}"
+
+    def test_direction_is_an_explicit_bool(self):
+        """Not truthy-by-accident: `None` would read as 'lower is better' and
+        invert the verdict on a score metric."""
+        for e in self._metrics():
+            assert isinstance(e["lower_is_better"], bool), e["id"]
+
+    def test_ids_are_unique(self):
+        ids = [e["id"] for e in self._metrics()]
+        assert len(ids) == len(set(ids)), "duplicate metric id"
+
+    def test_units_are_non_empty(self):
+        for e in self._metrics():
+            assert str(e["unit"]).strip(), e["id"]
+
+    def test_a_group_is_internally_consistent(self):
+        """Cards in one group share an axis and a direction, so mixed units or
+        directions inside a group would draw incomparable bars on one scale."""
+        from collections import defaultdict
+        by_group = defaultdict(list)
+        for e in self._metrics():
+            by_group[e["group"]].append(e)
+        for g, entries in by_group.items():
+            assert len({e["unit"] for e in entries}) == 1, f"{g}: mixed units"
+            assert len({e["lower_is_better"] for e in entries}) == 1, \
+                f"{g}: mixed directions"
+            assert len({e["platform"] for e in entries}) == 1, \
+                f"{g}: mixed platforms"
+
+    def test_subtest_selection_is_declared_exactly_one_way(self):
+        """`test` and `test_suffix` are alternatives; declaring both would make the
+        precedence rule load-bearing for no reason."""
+        for e in self._metrics():
+            assert not (e.get("test") is not None and e.get("test_suffix")), e["id"]
+
+    def test_no_entry_uses_the_removed_test_contains_field(self):
+        """It was replaced by anchored-suffix matching. An entry still carrying it
+        would be matched as a suite-level score and silently pick the wrong row."""
+        for e in self._metrics():
+            assert "test_contains" not in e, e["id"]

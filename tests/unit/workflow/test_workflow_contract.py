@@ -150,3 +150,58 @@ def test_git_add_line_does_not_stage_root_author_patches(workflow_text):
             "git add still references root author_patches.txt — "
             "per-team files are picked up by `<slug>/`."
         )
+
+
+class TestTheAddMetricSkillStaysWiredToReality:
+    """A skill that documents things that no longer exist is worse than none.
+
+    These pin only the load-bearing references — the guard names it tells you to read
+    the output of, and the warning strings it tells you to look for. If a guard is
+    renamed or a warning reworded, the skill goes stale silently and the next person
+    follows instructions that cannot be followed.
+    """
+
+    _ROOT = Path(__file__).resolve().parents[3]
+
+    @property
+    def _skill(self) -> str:
+        p = self._ROOT / ".claude" / "skills" / "add-media-metric" / "skill.md"
+        assert p.is_file(), f"skill missing at {p}"
+        return p.read_text(encoding="utf-8")
+
+    def test_the_project_rules_point_at_it(self):
+        """Otherwise nothing routes a METRICS change through it."""
+        rules = (self._ROOT / "CLAUDE.md").read_text(encoding="utf-8")
+        assert "add-media-metric" in rules
+
+    def test_the_guards_it_names_exist(self):
+        src = (self._ROOT / "reviewstats" / "perfmetrics.py").read_text(
+            encoding="utf-8")
+        for fn in ("ambiguous_matches", "unresolved_metrics", "is_safe_to_write",
+                   "pick_signature", "matches_test"):
+            assert f"def {fn}" in src, f"{fn} is documented but does not exist"
+            assert fn in self._skill, f"{fn} exists but the skill does not mention it"
+
+    def test_the_warning_text_it_tells_you_to_look_for_is_the_text_emitted(self):
+        """The skill quotes both stderr warnings. If the wording drifts, a reader
+        greps for a string that is never printed and concludes all is well."""
+        fetcher = (self._ROOT / "fetch_perf_metrics.py").read_text(encoding="utf-8")
+        for phrase in ("expected 1", "produced no Firefox data"):
+            assert phrase in fetcher, f"{phrase!r} is not what the fetcher prints"
+            assert phrase in self._skill, f"{phrase!r} missing from the skill"
+
+    def test_the_config_keys_it_documents_are_the_keys_read(self):
+        fetcher = (self._ROOT / "fetch_perf_metrics.py").read_text(encoding="utf-8")
+        for key in ("test_suffix", "lower_is_better", "platform"):
+            assert key in fetcher, key
+            assert key in self._skill, key
+        assert "test_contains" not in fetcher, (
+            "removed field is back; the skill says there is no substring match")
+
+    def test_it_documents_that_a_new_group_needs_no_template_work(self):
+        """The claim is only safe while the template derives groups from data, which
+        a render test pins. Asserted together so the pair cannot drift apart."""
+        tmpl = (self._ROOT / "templates" / "index.html.tmpl").read_text(
+            encoding="utf-8")
+        assert "METRICS.groups" in tmpl
+        assert "METRICS.groups" in self._skill

@@ -39,10 +39,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from reviewstats.perfmetrics import (
+    STALE_AFTER_DAYS,
+    ambiguous_matches,
     is_safe_to_write,
+    matches_test,
     pick_signature,
     select_recent_window,
     summarize,
+    unresolved_metrics,
 )
 
 PROJECT = "mozilla-central"
@@ -72,24 +76,38 @@ METRICS = [
              "suite that runs on Safari."},
     # WebCodecs encode: the only media suite family running on three browsers.
     # `frame-to-frame mean (non key)` is per-frame encode time, which is the
-    # throughput question. The canvas-source variants are excluded so all three
-    # browsers are measured on the same input path.
-    {"id": "ve.h264", "group": "WebCodecs encode", "title": "H.264 realtime",
+    # throughput question.
+    #
+    # These subtests were re-cut by frame source on 2026-05-02: the single measure
+    # per suite became three, prefixed `RGBX canvas` / `I420 canvas` / `camera`.
+    # `RGBX canvas` is charted because it is the only input source all three
+    # browsers run -- `camera` needs Firefox's fake camera device, which Chrome and
+    # custom-car have no equivalent for (bug 2044846). It is also the ordinary web
+    # path: draw to a canvas, hand the frame to VideoEncoder.
+    #
+    # H.264 is 640x480 while the rest are 1920x1080, and that is not an oversight:
+    # Chrome refuses to encode H.264 above SD via WebCodecs, so the SD suite is the
+    # only cross-browser H.264 one. The resolution is in each title because
+    # otherwise the page invites reading a resolution difference as a codec one.
+    {"id": "ve.h264", "group": "WebCodecs encode", "title": "H.264 480p",
      "suite": "ve-h264-rt-sd", "test": None,
-     "test_contains": "realtime encode - frame-to-frame mean (non key)",
+     "test_suffix": "RGBX canvas realtime encode - frame-to-frame mean (non key)",
      "platform": MAC_INTEL, "unit": "ms", "lower_is_better": True,
-     "note": "Per-frame encode time, VideoEncoder realtime mode."},
-    {"id": "ve.vp8", "group": "WebCodecs encode", "title": "VP8 realtime",
+     "note": "Per-frame encode time, VideoEncoder realtime mode, canvas input. "
+             "640x480 rather than 1080p like the others: Chrome refuses H.264 "
+             "above SD, so this is the only H.264 size all three browsers run. "
+             "Not comparable with the 1080p cards."},
+    {"id": "ve.vp8", "group": "WebCodecs encode", "title": "VP8 1080p",
      "suite": "ve-vp8-rt", "test": None,
-     "test_contains": "realtime encode - frame-to-frame mean (non key)",
+     "test_suffix": "RGBX canvas realtime encode - frame-to-frame mean (non key)",
      "platform": MAC_INTEL, "unit": "ms", "lower_is_better": True, "note": ""},
-    {"id": "ve.vp9", "group": "WebCodecs encode", "title": "VP9 realtime",
+    {"id": "ve.vp9", "group": "WebCodecs encode", "title": "VP9 1080p",
      "suite": "ve-vp9-rt", "test": None,
-     "test_contains": "realtime encode - frame-to-frame mean (non key)",
+     "test_suffix": "RGBX canvas realtime encode - frame-to-frame mean (non key)",
      "platform": MAC_INTEL, "unit": "ms", "lower_is_better": True, "note": ""},
-    {"id": "ve.av1", "group": "WebCodecs encode", "title": "AV1 realtime",
+    {"id": "ve.av1", "group": "WebCodecs encode", "title": "AV1 1080p",
      "suite": "ve-av1-rt", "test": None,
-     "test_contains": "realtime encode - frame-to-frame mean (non key)",
+     "test_suffix": "RGBX canvas realtime encode - frame-to-frame mean (non key)",
      "platform": MAC_INTEL, "unit": "ms", "lower_is_better": True, "note": ""},
     {"id": "media-seek.cold", "group": "Seek latency", "title": "Decoder cold",
      "suite": "media-seek", "test": "seekedColdLatency",
@@ -295,23 +313,19 @@ def collect(days: int) -> dict:
                 continue
             if v.get("machine_platform") != spec["platform"]:
                 continue
-            want, contains = spec["test"], spec.get("test_contains")
-            got = v.get("test")
-            if contains is not None:
-                # ve-* prefixes every measure with its own codec string, so match
-                # on the measure name and exclude the canvas-source variants.
-                if not got or contains not in got:
-                    continue
-                if any(x in got for x in ("RGBX", "I420")):
-                    continue
-            elif want is not None:
-                if got != want:
-                    continue
-            elif got:
-                continue  # want the suite-level score, not a subtest
+            if not matches_test(spec, v.get("test")):
+                continue
             app = v.get("application")
             if app:
                 candidates[app].append(v)
+
+        # A card that matched two different subtests means the upstream test was
+        # re-cut. Say so loudly: the silent version of this is what left the
+        # WebCodecs cards reading a dead series for 102 days.
+        for app, names in ambiguous_matches(
+                [v for rows in candidates.values() for v in rows]).items():
+            print(f"  WARNING {spec['id']}: {app} matched {len(names)} subtests, "
+                  f"expected 1 -- {names}", file=sys.stderr)
 
         series = {}
         window_end, days_behind = None, None
@@ -334,8 +348,12 @@ def collect(days: int) -> dict:
             sm = summarize(chosen["samples"])
             if sm:
                 sm["signature_id"] = chosen["id"]
-                series[app] = sm
                 w = chosen["window"]
+                # Per series, because each window is measured from that series'
+                # own newest point: a browser that stopped still yields a full
+                # window, just an old one.
+                sm["days_behind"] = w["days_behind"]
+                series[app] = sm
                 if window_end is None or (w["window_end"] or 0) > window_end:
                     window_end = w["window_end"]
                 days_behind = (w["days_behind"] if days_behind is None
@@ -343,7 +361,7 @@ def collect(days: int) -> dict:
 
         # "Stale" means the 30-day window ended a while ago, not that the window
         # is a different length. A few days behind is normal scheduling jitter.
-        stale = bool(series) and (days_behind or 0) > 7
+        stale = bool(series) and (days_behind or 0) > STALE_AFTER_DAYS
         if stale:
             print(f"       ^ STALE: newest data is {days_behind}d old; "
                   f"showing the {days}d window ending then")
@@ -358,6 +376,25 @@ def collect(days: int) -> dict:
             "window_end": (datetime.fromtimestamp(window_end, timezone.utc)
                            .date().isoformat()) if window_end else None,
         })
+
+    # A configured metric that matched nothing is the quiet failure mode of adding
+    # one: it renders as one card fewer, and no existing guard notices. Name it.
+    missing = unresolved_metrics(out_metrics)
+    if missing:
+        # Kept as one unbroken literal so it is greppable: the skill tells readers to
+        # look for this exact phrase, and a line-split f-string prints contiguously
+        # while matching nothing in the source.
+        print(f"\n  WARNING {len(missing)} configured metric(s)"
+              " produced no Firefox data and will NOT appear on the page:",
+              file=sys.stderr)
+        for mid in missing:
+            spec = next((s for s in METRICS if s["id"] == mid), {})
+            print(f"    - {mid}: suite={spec.get('suite')!r} "
+                  f"platform={spec.get('platform')!r} "
+                  f"test={spec.get('test') or spec.get('test_suffix')!r}",
+                  file=sys.stderr)
+        print("  Check the suite name, the platform, and whether the subtest was "
+              "renamed upstream.\n", file=sys.stderr)
 
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),

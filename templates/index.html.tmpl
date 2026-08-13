@@ -891,6 +891,18 @@
     text-transform: uppercase; letter-spacing: 0.06em;
   }
   .pm-axis-dir.strong { color: var(--ink); font-weight: 700; font-size: 9.5px }
+  /* A browser that stopped reporting. Muted rather than alarming: the number is
+     real, it is just from other weeks. The label carries the age so the reader
+     does not have to open the expansion to find out. */
+  .pm-plot-row.is-stale .pm-dot,
+  .pm-plot-row.is-stale .pm-range { opacity: 0.45 }
+  .pm-plot-row.is-stale .pm-value { color: var(--ink-soft) }
+  em.pm-old {
+    font-family: var(--mono); font-style: normal; font-size: 8.5px;
+    color: var(--ink-soft); border: 1px solid var(--rule);
+    border-radius: 2px; padding: 0 3px; margin-left: 5px; white-space: nowrap;
+    cursor: help;
+  }
   .pm-warn {
     background: var(--paper-warm); border-left: 2px solid var(--rate-mixed);
     padding: 7px 11px; margin: 6px 0 0; font-size: 11.5px; line-height: 1.5;
@@ -909,7 +921,7 @@
     /* The chip track may shrink: as a fixed 560px it set a floor of 796px with the
        badge, count and gaps, and a card narrower than that pushed the count column
        outside the card background. */
-    grid-template-columns: minmax(0, 1fr) 96px minmax(0, 560px) 104px;
+    grid-template-columns: minmax(0, 1fr) 96px minmax(0, 560px);
     align-items: center; gap: 12px; padding: 9px 4px;
   }
   /* The pill varies in width ("partial" vs "full support"); pinning its right
@@ -919,10 +931,6 @@
   .pm-cont-n small {
     display: block; font-family: var(--mono); font-size: 9px;
     color: var(--ink-soft); font-weight: 400;
-  }
-  .pm-cont-n2 {
-    font-family: var(--mono); font-size: 9px; color: var(--ink-soft);
-    text-align: right; white-space: nowrap;
   }
   .pm-badge {
     font-family: var(--mono); font-size: 8.5px; font-weight: 700;
@@ -970,7 +978,6 @@
      name column, so it was still cramped well above the old breakpoint. */
   @media (max-width: 1080px) {
     .pm-cont-h { grid-template-columns: minmax(0, 1fr); gap: 4px }
-    .pm-cont-n2 { text-align: left }
     .pm-badge-cell { justify-self: start }
   }
   /* Support answers as words. Colour carries emphasis, the word carries the
@@ -2446,9 +2453,15 @@ function renderMetrics() {
     const why = [];
     if (!m.compared) why.push('no other browser measures this');
     if (m.stale) why.push('suite stopped producing ' + m.days_behind + ' days ago');
+    if (m.mixed_windows) {
+      why.push(m.stale_browsers.join(' and ') + ' stopped reporting, so that '
+        + 'comparison is against older data');
+    }
     if (m.noisy) why.push('run-to-run spread is wide');
     if (m.low_samples) why.push('only ' + m.min_samples + ' runs in the window');
-    if (!m.compared || m.stale) {
+    // A comparison drawn across two timeframes is as untrustworthy as one drawn
+    // against nothing, so it earns the marker on the same footing.
+    if (!m.compared || m.stale || m.mixed_windows) {
       return '<span class="pm-warn-icon" title="' + escA(why.join('; ')
         + ' \u2014 expand for detail') + '">!</span>';
     }
@@ -2462,18 +2475,22 @@ function renderMetrics() {
     const fmt = v => max < 10 ? v.toFixed(1) : String(Math.round(v));
     const browsers = Object.keys(m.series).sort(
       (a, b) => (a === 'firefox' ? -1 : b === 'firefox' ? 1 : a.localeCompare(b)));
-    const leader = browsers.reduce((best, b) =>
-      best === null ? b
-        : (m.lower_is_better
-            ? (m.series[b].median < m.series[best].median ? b : best)
-            : (m.series[b].median > m.series[best].median ? b : best)), null);
+    // Decided in the data layer, which knows which series are stale. A series that
+    // stopped reporting cannot hold "best" while a current one is on the card.
+    const leader = m.leader;
     const rows = browsers.map(b => {
       const s = m.series[b], us = b === 'firefox';
       const l = pct(s.p25, max), r = pct(s.p75, max);
       const flat = s.p75 <= s.p25;
-      return '<div class="pm-plot-row' + (us ? ' us' : '') + '">'
+      return '<div class="pm-plot-row' + (us ? ' us' : '')
+        + (s.stale ? ' is-stale' : '') + '">'
         + '<div class="pm-browser' + (us ? ' us' : '')
-        + '"><span class="pm-swatch"></span>' + esc(b) + '</div>'
+        + '"><span class="pm-swatch"></span>' + esc(b)
+        + (s.stale ? '<em class="pm-old" data-tip="Last reported about '
+            + s.days_behind + ' days ago. This bar is that browser’s own '
+            + m.window_days + '-day window ending then, not the same weeks as '
+            + 'ours.">' + s.days_behind + 'd old</em>' : '')
+        + '</div>'
         + '<div class="pm-track ' + (m.lower_is_better ? 'better-left' : 'better-right')
         + '" title="' + escA(b + ': median ' + s.median + ' ' + m.unit
             + ', p25-p75 ' + s.p25 + '-' + s.p75 + ', ' + s.n
@@ -2515,6 +2532,12 @@ function renderMetrics() {
       facts.push('<b>this suite has stopped producing \u2014 the window is the '
         + 'same length, so the medians stay comparable, but it ends about '
         + m.days_behind + ' days ago</b>');
+    }
+    if (m.mixed_windows) {
+      facts.push('<b>' + esc(m.stale_browsers.join(' and '))
+        + ' stopped reporting</b> — each browser’s window ends at its own '
+        + 'last run, so those bars are older than ours and the gap is measured '
+        + 'across different weeks');
     }
     if (m.noisy) {
       facts.push('run-to-run spread here is wider than most differences worth '
@@ -2758,11 +2781,7 @@ function renderMetrics() {
             + '<span class="pm-badge-cell"><span class="pm-badge ' + cls
             + '">' + word + '</span></span>'
             + '<span class="pm-chips">' + chips(c) + '</span>'
-            + '<span class="pm-cont-n2">'
-            + (c.probed
-                ? c.combos + ' combination' + (c.combos === 1 ? '' : 's')
-                : 'container-level probe only')
-            + '</span></div></summary>'
+            + '</div></summary>'
             + '<div class="pm-card-body">'
             + (c.probed
                 ? (c.sections || []).map(sec => sectionTable(c, sec)).join('')

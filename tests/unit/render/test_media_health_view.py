@@ -776,8 +776,11 @@ class TestMeasuredCaps:
         assert "full support" in html
 
     def test_a_container_level_only_probe_says_so(self):
-        """HLS has no codec combinations. Invisible is worse than labelled."""
-        assert "container-level probe only" in self._render_caps()
+        """HLS once had no codec combinations, and invisible is worse than labelled.
+        The header badge that said so is gone with the combination count, but the
+        card body still explains it -- which is where a reader who opened the card
+        is looking."""
+        assert "No codec combinations were probed" in self._render_caps()
 
     def test_three_surfaces_are_chips_not_separate_pages(self):
         html = self._render_caps()
@@ -1030,20 +1033,12 @@ class TestContainerHeaderAlignment:
 
 
 class TestCombinationCountReadsCorrectly:
-    def test_a_single_combination_is_not_plural(self):
-        """MP3 and WAV each have one, and both read "1 combinations".
-
-        Asserted against the raw HTML, not `_joined`: that helper collapses string
-        concatenation, which made an earlier version of this test pass against the
-        unconditional `' combinations'` it was meant to catch.
-        """
+    def test_the_combination_count_is_gone(self):
+        """Removed as not decision-useful. It also carried a plural bug once ("1
+        combinations"), so this guards against the whole thing returning."""
         html = render_html(_MINIMAL_DATA, roadmap_data=_ROADMAP)
-        assert "c.combos === 1" in html, (
-            "the combination count is pluralised unconditionally"
-        )
-        assert "' combinations'" not in html, (
-            "an unconditional plural is still in the template"
-        )
+        assert "c.combos" not in html
+        assert "pm-cont-n2" not in html
 
 
 class TestMetricsComesBeforeRoadmap:
@@ -1387,3 +1382,127 @@ class TestTheCapsTableScrollsRatherThanSpilling:
             "no element carries the class the rule targets"
         )
         assert t.count("pm-codec-string") >= 2
+
+
+class TestAStaleRivalIsVisibleOnTheCard:
+    """The page must show that a rival browser's bar is from other weeks.
+
+    Otherwise a 46-day-old custom-car number is drawn beside a current Firefox one
+    and reads as a like-for-like result. The data layer flags it (`mixed_windows`,
+    per-series `stale`); these assert the page consumes the flags rather than
+    computing its own opinion or ignoring them.
+    """
+
+    def _html(self):
+        return _joined(render_html(_MINIMAL_DATA, roadmap_data=_ROADMAP))
+
+    def test_the_card_reads_the_mixed_window_flag(self):
+        assert "m.mixed_windows" in self._html()
+
+    def test_the_marker_is_earned_by_a_mixed_window(self):
+        """Consistent with the rule that uncompared-or-dead earns `!`: a comparison
+        against a series that stopped is not a working comparison."""
+        html = self._html()
+        # Anchor on the function, not the class name -- the CSS rule mentions the
+        # class first and would satisfy a naive search of the whole document.
+        i = html.index("function warnIcon")
+        body = html[i:i + 1400]
+        assert "m.mixed_windows" in body, "mixed_windows does not gate the marker"
+        assert "!m.compared || m.stale || m.mixed_windows" in body
+
+    def test_the_stale_browser_is_named(self):
+        assert "m.stale_browsers" in self._html()
+
+    def test_the_per_browser_row_shows_its_age(self):
+        html = self._html()
+        assert "s.stale" in html
+        assert "pm-old" in html
+
+    def test_the_age_badge_is_styled(self):
+        """Declared and applied are different things -- a class only in the CSS
+        block would look fine in review and render nothing."""
+        html = self._html()
+        assert "em.pm-old" in html, "no style rule"
+        assert "class=\"pm-old\"" in html or "'pm-old'" in html or "pm-old\"" in html
+
+    def test_a_stale_row_is_visually_recessive(self):
+        html = self._html()
+        assert ".pm-plot-row.is-stale" in html
+
+
+class TestTheBestLabelComesFromTheDataLayer:
+    """The template must not recompute the leader from medians.
+
+    It used to, which meant it had no idea a series was stale and happily awarded
+    `best` to a 45-day-old bar. Freshness is applied once, where it is known.
+    """
+
+    def _html(self):
+        return _joined(render_html(_MINIMAL_DATA, roadmap_data=_ROADMAP))
+
+    def test_the_leader_is_read_not_derived(self):
+        assert "m.leader" in self._html()
+
+    def test_the_template_no_longer_scans_medians_for_the_leader(self):
+        html = self._html()
+        i = html.index("function dotRows")
+        body = html[i:i + 900]
+        assert "median < m.series" not in body
+        assert "median > m.series" not in body
+
+
+class TestANewMetricGroupPaintsWithoutTemplateWork:
+    """Adding a metric with an unseen `group` must render, unconfigured.
+
+    This is the "will the refresh action paint it" question, answered structurally
+    rather than by remembering to check: the page builds its categories from
+    `METRICS.groups`, which `build_metrics_view` derives from the data. So a new
+    group needs no template change. Pinned here because the alternative -- a
+    hardcoded group list or per-group CSS -- is an easy and invisible regression, and
+    the symptom would be a metric that fetches fine and never appears.
+    """
+
+    def _view(self, group, unit="ms", lower=True):
+        from reviewstats.perfmetrics import build_metrics_view
+        return build_metrics_view({
+            "generated_at": "2026-08-13T00:00:00Z", "window_days": 30,
+            "metrics": [{
+                "id": "brand.new", "group": group, "title": "Something new",
+                "unit": unit, "lower_is_better": lower, "note": "",
+                "platform": "macosx1470-64-shippable",
+                "stale": False, "days_behind": 0, "window_end": "2026-08-13",
+                "series": {"firefox": {"n": 40, "median": 12.0, "p25": 11.0,
+                                       "p75": 13.0, "cv": 4.0,
+                                       "signature_id": 99, "days_behind": 0}},
+            }]})
+
+    def test_the_group_appears_in_the_payload(self):
+        v = self._view("Totally New Family")
+        assert [g["title"] for g in v["groups"]] == ["Totally New Family"]
+
+    def test_the_metric_is_inside_its_group(self):
+        v = self._view("Totally New Family")
+        assert [m["id"] for m in v["groups"][0]["metrics"]] == ["brand.new"]
+
+    def test_the_group_carries_the_axis_the_cards_need(self):
+        """Cards share one scale per group; a group without an axis draws bars
+        against nothing."""
+        g = self._view("Totally New Family")["groups"][0]
+        assert g["axis_max"] >= 13.0
+        assert g["unit"] == "ms"
+        assert g["lower_is_better"] is True
+
+    def test_a_higher_is_better_group_keeps_its_direction(self):
+        g = self._view("Scores", unit="score", lower=False)["groups"][0]
+        assert g["lower_is_better"] is False
+
+    def test_the_template_does_not_hardcode_group_names(self):
+        """If it did, a new group would need a template edit that nothing reminds
+        you about. The categories come from the data."""
+        html = _joined(render_html(_MINIMAL_DATA, roadmap_data=_ROADMAP))
+        i = html.index("METRICS.groups")
+        assert i > 0, "the page must build categories from the data"
+        for hardcoded in ("'First frame latency'", '"First frame latency"',
+                          "'WebCodecs encode'", '"WebCodecs encode"'):
+            assert hardcoded not in html, (
+                f"group name {hardcoded} is hardcoded in the template")
