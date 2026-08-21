@@ -9,8 +9,8 @@
     "excludes": [],
     "window_start": "2026-01-16",
     "window_end": "2026-08-21",
-    "generated_at": "2026-08-21T21:59:56.070716+00:00",
-    "generated_at_display": "Aug 21, 2026, 2:59 PM PDT"
+    "generated_at": "2026-08-21T22:03:15.627033+00:00",
+    "generated_at_display": "Aug 21, 2026, 3:03 PM PDT"
   },
   "summary": {
     "total_patches": 427,
@@ -1161,7 +1161,8 @@
       "ng"
     ],
     "all_members": {
-      "pehrsons": [
+      "mjf": [
+        0,
         0,
         0,
         0,
@@ -1172,28 +1173,27 @@
         0,
         0,
         2,
-        2,
         0,
         0,
-        0,
-        0,
-        1,
-        0,
-        1,
         0,
         1,
         3,
         1,
-        1,
-        2,
-        1,
-        2,
         0,
         0,
         0,
-        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
         1,
-        2
+        0,
+        0,
+        0,
+        0
       ],
       "bwc": [
         0,
@@ -1229,7 +1229,7 @@
         1,
         14
       ],
-      "jib": [
+      "ng": [
         0,
         0,
         0,
@@ -1245,6 +1245,8 @@
         0,
         0,
         0,
+        2,
+        0,
         0,
         0,
         0,
@@ -1255,11 +1257,9 @@
         0,
         1,
         0,
+        1,
         0,
-        0,
-        0,
-        0,
-        0,
+        2,
         0,
         0
       ],
@@ -1297,8 +1297,7 @@
         0,
         4
       ],
-      "mjf": [
-        0,
+      "pehrsons": [
         0,
         0,
         0,
@@ -1309,29 +1308,30 @@
         0,
         0,
         2,
+        2,
         0,
         0,
+        0,
+        0,
+        1,
+        0,
+        1,
         0,
         1,
         3,
         1,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
         1,
+        2,
+        1,
+        2,
         0,
         0,
         0,
-        0
+        2,
+        1,
+        2
       ],
-      "ng": [
+      "jib": [
         0,
         0,
         0,
@@ -1347,8 +1347,6 @@
         0,
         0,
         0,
-        2,
-        0,
         0,
         0,
         0,
@@ -1359,9 +1357,11 @@
         0,
         1,
         0,
-        1,
         0,
-        2,
+        0,
+        0,
+        0,
+        0,
         0,
         0
       ]
@@ -4238,7 +4238,8 @@
               "differential_revision": "D309693",
               "primary_subdir": "dom/media/webrtc/jsapi"
             }
-          ]
+          ],
+          "summary": "Firefox's WebRTC code underwent internal refactoring to handle audio codecs and RTP header extensions more safely, switching to Mozilla's optimized container types (nsCString and nsTArray) and cleaning up how these features are accessed. The changes also restored telemetry tracking for H.264 codec usage to better understand how WebRTC video calls use video formats."
         },
         {
           "feature": "dom/media/webrtc/libwebrtcglue",
@@ -4275,7 +4276,8 @@
               "differential_revision": "D318439",
               "primary_subdir": "dom/media/webrtc/libwebrtcglue"
             }
-          ]
+          ],
+          "summary": "Firefox now **supports AV1 hardware acceleration in WebRTC video calls** when available on your device, speeding up calls that use this modern, efficient video format. The update also improves how internal scheduling works by introducing an atomicity policy for task dispatch."
         },
         {
           "feature": "dom/media/systemservices",
@@ -4302,7 +4304,8 @@
               "differential_revision": "D316602",
               "primary_subdir": "dom/media/systemservices"
             }
-          ]
+          ],
+          "summary": "Firefox refactored how camera and microphone capture shuts down properly and how internal communication between processes works, with no visible change to users."
         },
         {
           "feature": "dom/media/webrtc/transport",
@@ -4319,7 +4322,8 @@
               "differential_revision": "D315043",
               "primary_subdir": "dom/media/webrtc/transport"
             }
-          ]
+          ],
+          "summary": "Firefox improved how it connects to WebRTC peers that support ICE-Lite (a simpler version of connection negotiation), now using more efficient regular nomination instead of an alternate strategy."
         },
         {
           "feature": "dom/media/webrtc/jsep",
@@ -4336,7 +4340,8 @@
               "differential_revision": "D294732",
               "primary_subdir": "dom/media/webrtc/jsep"
             }
-          ]
+          ],
+          "summary": "Firefox now supports the RTCConfiguration.alwaysNegotiateDataChannels option, allowing applications to always negotiate data channels even when they might not be needed, giving developers more control over connection setup."
         },
         {
           "feature": "dom/media/webrtc/sdp",
@@ -4353,7 +4358,8 @@
               "differential_revision": "D319910",
               "primary_subdir": "dom/media/webrtc/sdp"
             }
-          ]
+          ],
+          "summary": "Firefox updated its SDP (Session Description Protocol) parsing library to version 0.3.14, improving how WebRTC connections negotiate and describe their capabilities."
         }
       ]
     },
@@ -4507,7 +4513,8 @@
               "differential_revision": "D312836",
               "primary_subdir": "dom/media/webrtc/jsapi"
             }
-          ]
+          ],
+          "summary": "Firefox made multiple improvements to WebRTC reliability and correctness: preventing data channels from being garbage-collected until their peer connection is ready, improving how connection statistics are reported, properly surfacing SCTP (data channel protocol) errors to applications, and ensuring data channel limits are correctly set. The changes also fix memory issues in connection transport handling and ensure connection state indicators start correctly."
         },
         {
           "feature": "dom/media/webrtc/third_party_build",
@@ -4722,7 +4729,8 @@
               "differential_revision": "D314329",
               "primary_subdir": "dom/media/webrtc/libwebrtcglue"
             }
-          ]
+          ],
+          "summary": "Firefox **now supports AV1 hardware acceleration in WebRTC** when your platform provides it, alongside improved codec handling through asynchronous support and plugin availability checks. The update also modernizes internal code and fixes compiler warnings with recent versions of clang."
         },
         {
           "feature": "dom/media/webrtc/transport",
@@ -4799,7 +4807,8 @@
               "differential_revision": "D313577",
               "primary_subdir": "dom/media/webrtc/transport"
             }
-          ]
+          ],
+          "summary": "Firefox strengthened WebRTC security by enforcing port restrictions on ICE (Interactive Connectivity Establishment) connections\u2014both for ICE-TCP in the main process and UDP in sandboxed content processes\u2014preventing unauthorized outbound connections. Bug fixes also improve mDNS address handling and eliminate resource leaks in the socket process."
         },
         {
           "feature": "dom/media/systemservices",
@@ -4836,7 +4845,8 @@
               "differential_revision": "D311050",
               "primary_subdir": "dom/media/systemservices"
             }
-          ]
+          ],
+          "summary": "Firefox refactored internal camera and audio capture shutdown and static analysis handling with no visible change to users."
         },
         {
           "feature": "dom/media/webrtc/common",
@@ -4911,7 +4921,8 @@
               "differential_revision": "D313696",
               "primary_subdir": "dom/media/webrtc/sdp"
             }
-          ]
+          ],
+          "summary": "Firefox fixed subtle bugs in how SDP session descriptions are parsed and formatted, including an off-by-one error and formatting issues in image attribute serialization."
         },
         {
           "feature": "dom/media/webrtc/jsep",
@@ -4938,7 +4949,8 @@
               "differential_revision": "D295656",
               "primary_subdir": "dom/media/webrtc/jsep"
             }
-          ]
+          ],
+          "summary": "Firefox added better error reporting for WebRTC connection negotiation by providing distinct error types for SDP parsing failures, making debugging easier. It also supports the RTCConfiguration.alwaysNegotiateDataChannels option for more predictable connection setup."
         },
         {
           "feature": "dom/media/webrtc/tests",
