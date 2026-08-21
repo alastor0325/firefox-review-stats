@@ -41,6 +41,13 @@ MIN_SAMPLES = 30
 # ordinary scheduling jitter; a suite that stopped weeks ago is a different claim.
 STALE_AFTER_DAYS = 7
 
+# The browsers this view compares against, and the only ones it shows. `custom-car`
+# is a Chromium build that tracks Chrome, so its bar restated Chrome's to within a
+# rounding error while carrying its own staleness caveat -- two lines of caveat for no
+# extra information. Excluded here rather than in the template so the verdict, the
+# plot and the warnings all agree about who is in the comparison.
+DISPLAY_BROWSERS = ("firefox", "chrome", "safari")
+
 # Perfherder's own graph view, so a reader can go from a card straight to the
 # series it was computed from. Several `series` params put every browser on one
 # graph. `timerange` only accepts a fixed set of values; 30 days is one of them.
@@ -138,6 +145,48 @@ def compare_to_firefox(
     # strongest rival silently hides that another browser was also measured.
     return {"ahead": ahead, "factor": round(factor, 2), "versus": versus,
             "rival_count": len(measured)}
+
+
+def rival_breakdown(firefox: float, series: dict, *, lower_is_better: bool) -> list:
+    """One entry per rival browser: its factor, its direction, and its caveats.
+
+    `compare_to_firefox` answers "how do we stand against the strongest rival", which
+    is the headline. It cannot say who else was measured -- the card read
+    `1.80x ahead / chrome / (of 2)` while Safari, which we beat by more, went
+    unnamed. This gives the page a line per rival instead of a count.
+
+    Order is load-bearing: the first entry must be the browser the headline is
+    computed from, or the big number and the list disagree. So entries sort current
+    before stale, and only then by strength.
+
+    Sample size does not gate a factor. A rival with a handful of runs still gets one;
+    its `n` rides along and is shown in the expansion, so a thin comparison is
+    labelled rather than withheld.
+    """
+    out = []
+    for b, s in (series or {}).items():
+        if b == "firefox" or not s:
+            continue
+        factor = ahead = None
+        if firefox and s.get("median"):
+            rival = float(s["median"])
+            advantage = (rival / firefox) if lower_is_better else (firefox / rival)
+            ahead = advantage >= 1.0
+            factor = round(advantage if ahead else (1.0 / advantage), 2)
+        out.append({
+            "browser": b,
+            "factor": factor,
+            "ahead": ahead,
+            "stale": bool(s.get("stale")),
+            "n": int(s.get("n") or 0),
+            "median": s.get("median"),
+        })
+
+    def key(r):
+        med = float(r["median"] or 0)
+        return (r["stale"], med if lower_is_better else -med)
+
+    return sorted(out, key=key)
 
 
 def select_recent_window(points: list, *, days: int, now_ts: float) -> dict:
@@ -252,7 +301,8 @@ def pick_signature(candidates: list) -> dict | None:
 
 
 def _render_metric(metric: dict) -> dict | None:
-    series = {b: s for b, s in (metric.get("series") or {}).items() if s}
+    series = {b: s for b, s in (metric.get("series") or {}).items()
+              if s and b in DISPLAY_BROWSERS}
     firefox = series.get("firefox")
     if not firefox:
         # The whole view is "where Firefox stands"; a row without us says nothing.
@@ -265,6 +315,9 @@ def _render_metric(metric: dict) -> dict | None:
     for b, s in series.items():
         db = s.get("days_behind")
         s["stale"] = db is not None and db > STALE_AFTER_DAYS
+        # A lone sample has no spread. `summarize` yields cv 0.0 for it, which renders
+        # as "CV 0%" and reads as rock-steady -- the opposite of what one run supports.
+        s["cv_known"] = int(s.get("n") or 0) >= 2
     stale_browsers = sorted(b for b, s in series.items()
                             if b != "firefox" and s["stale"])
 
@@ -275,6 +328,10 @@ def _render_metric(metric: dict) -> dict | None:
     # prefer current rivals -- but if every rival is stale, compare against them
     # anyway, because "nobody measures this" would be a bigger lie than an old
     # number, and the card carries the marker either way.
+    # Every rival counts, whatever its sample size. A thin series is reported through
+    # its `n` in the expansion rather than by withholding the comparison: a rough
+    # comparison, labelled, is more use than none. (Earlier this excluded rivals under
+    # five runs, which suppressed Safari and Chrome entirely on their first week.)
     rivals = {b: s["median"] for b, s in series.items() if b != "firefox"}
     fresh_rivals = {b: v for b, v in rivals.items() if not series[b]["stale"]}
     comparison = compare_to_firefox(
@@ -284,7 +341,7 @@ def _render_metric(metric: dict) -> dict | None:
     # Who is actually ahead, decided here rather than in the template so freshness
     # is applied once. Same rule: a stale series cannot hold the "best" label while
     # a current one is on the card.
-    ranked = [b for b in series if not series[b]["stale"]] or list(series)
+    ranked = [b for b in series if not series[b]["stale"]] or ["firefox"]
     leader = min(ranked, key=lambda b: (
         series[b]["median"] if lower_better else -series[b]["median"]))
 
@@ -301,6 +358,11 @@ def _render_metric(metric: dict) -> dict | None:
         "lower_is_better": bool(metric.get("lower_is_better", True)),
         "platform": metric.get("platform", ""),
         "note": metric.get("note", ""),
+        # Which sibling metric this card is measured against, if any. Resolved in a
+        # second pass once every card exists.
+        "baseline": metric.get("baseline"),
+        "baseline_label": metric.get("baseline_label"),
+        "self_label": metric.get("self_label"),
         # A metric can be measured on a wider window than the page's default when
         # its suite has stopped producing. Carried per metric so the row can say
         # so rather than silently mixing a 30-day median with a 180-day one.
@@ -316,6 +378,9 @@ def _render_metric(metric: dict) -> dict | None:
         # A comparison drawn across timeframes. Distinct from `stale`, which is about
         # the card as a whole being old; here our number is current and the rival's
         # is not, which flatters or damns us by accident.
+        # One entry per rival so the verdict can name each instead of "best of N".
+        "rivals": rival_breakdown(firefox["median"], series,
+                                  lower_is_better=lower_better),
         "mixed_windows": bool(stale_browsers),
         "stale_browsers": stale_browsers,
         "leader": leader,
@@ -354,6 +419,74 @@ def _own_samples(series: dict) -> int:
     return max((int(s.get("n") or 0) for s in series.values()), default=0)
 
 
+def baseline_comparison(metric: dict, by_id: dict) -> dict | None:
+    """Ratio of a card against a sibling measurement of our own, or None.
+
+    For a card no other browser reports, this is the only comparison available -- and
+    often a useful one. `Decoder cold` has no rival and never will, but its ratio
+    against `Decoder warm` is the cost of re-initialising the decoder, which is a real
+    finding about our own code and says more than "no other browser measured yet".
+
+    Declared per card (`baseline`, `baseline_label`) rather than inferred from the
+    group: "the other metric here" is not a rule, and the capability-query group has
+    seven cards with no such pairing.
+
+    `worse` follows the metric's own direction, not the arithmetic, so it stays right
+    on a higher-is-better measure. Deliberately NOT called `ahead`/`behind`: this is
+    not a verdict against another browser and must not be coloured like one.
+    """
+    ref_id = metric.get("baseline")
+    if not ref_id:
+        return None
+    sibling = (by_id or {}).get(ref_id)
+    if not sibling:
+        # The sibling can vanish -- a renamed suite, or a metric that resolved to
+        # nothing. Leave the card plain rather than raising.
+        return None
+    ours = (metric.get("series") or {}).get("firefox") or {}
+    theirs = (sibling.get("series") or {}).get("firefox") or {}
+    a, b = ours.get("median"), theirs.get("median")
+    if not a or not b:
+        return None
+    lower_better = bool(metric.get("lower_is_better", True))
+    worse = (a > b) if lower_better else (a < b)
+    factor = (a / b) if a >= b else (b / a)
+    return {
+        "against": sibling.get("id", ref_id),
+        "label": str(metric.get("baseline_label") or sibling.get("title", "")),
+        # Our own half of the pair, so the plot can label two rows rather than one
+        # anonymous `firefox`.
+        "self_label": str(metric.get("self_label") or "this"),
+        "factor": round(factor, 2),
+        "worse": worse,
+        # The sibling's figures, so the expansion can draw it beside ours.
+        "series": dict(theirs),
+    }
+
+
+def _split_groups(groups: list, *, compared: bool) -> list:
+    """The same groups, holding only their compared or only their uncompared cards.
+
+    Split per CARD, not per group. `Seek latency` holds a cold card no browser else
+    reports and a warm card Chrome does, and they belong in different halves of the
+    page: warm is a comparison, cold is a trend line. An earlier version split whole
+    groups to keep the family together, which left the compared half showing a
+    hatched card that could never be filled in.
+
+    A group appears in both halves when it has both kinds, under the same title, and
+    `axis_max` is recomputed per half so the bars scale to what is actually drawn.
+    """
+    out = []
+    for g in groups:
+        picked = [m for m in g["metrics"]
+                  if bool(m["compared"] or m.get("charted")) is compared]
+        if not picked:
+            continue
+        out.append({**g, "metrics": picked,
+                    "axis_max": max(m["axis_max"] for m in picked)})
+    return out
+
+
 def build_metrics_view(raw: dict) -> dict:
     """Build the JSON payload for the Metrics subview."""
     rendered = [
@@ -375,12 +508,43 @@ def build_metrics_view(raw: dict) -> dict:
         g["metrics"].append(m)
         g["axis_max"] = max(g["axis_max"], m["axis_max"])
 
+    for g in groups:
+        g["compared"] = any(m["compared"] for m in g["metrics"])
+
+    # Second pass: a sibling ratio needs every card rendered first.
+    by_id = {m["id"]: m for m in rendered}
+    for m in rendered:
+        b = baseline_comparison(m, by_id)
+        m["baseline_comparison"] = b
+        if b:
+            # The plot draws two rows now, so the axis has to reach the further of
+            # them or one bar runs off the end.
+            m["axis_max"] = max(m["axis_max"],
+                                b["series"].get("p75") or 0,
+                                b["series"].get("median") or 0)
+            # A card with a chart does not belong under "no other browser measures
+            # these" -- that section is for cards with nothing to show. `compared`
+            # stays False: this is a comparison, but not a cross-browser one.
+            m["charted"] = True
+            # "open these exact series" has to open BOTH rows the card draws. Built
+            # from the same two series the plot uses, so the link cannot describe a
+            # different chart than the one above it.
+            m["graph_url"] = graph_url(
+                {**m["series"], "_baseline": b["series"]},
+                days=int(m.get("window_days") or 30),
+                days_behind=int(m.get("days_behind") or 0),
+            )
+
     compared = sum(1 for m in rendered if m["compared"])
     return {
         "generated_at": str(raw.get("generated_at", "")),
         "window_days": int(raw.get("window_days", 30)),
         "metrics": rendered,
+        # The undivided list stays published so the split is a presentation concern
+        # rather than a change to the data itself.
         "groups": groups,
+        "groups_compared": _split_groups(groups, compared=True),
+        "groups_firefox_only": _split_groups(groups, compared=False),
         "summary": sorted(rendered, key=_summary_key),
         "coverage": raw.get("coverage") or {"browsers": [], "rows": []},
         "counts": {

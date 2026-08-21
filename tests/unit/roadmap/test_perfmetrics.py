@@ -733,7 +733,7 @@ class TestTheWarningRuleIsUncomparableOrDead:
     def _icon_src(self):
         import pathlib, re
         t = pathlib.Path("templates/index.html.tmpl").read_text(encoding="utf-8")
-        m = re.search(r"function warnIcon\(m\) \{(.*?)\n  \}", t, re.DOTALL)
+        m = re.search(r"function warnIcon\(m[^)]*\) \{(.*?)\n  \}", t, re.DOTALL)
         assert m, "warnIcon not found"
         return m.group(1)
 
@@ -1005,20 +1005,20 @@ class TestAStaleRivalSeriesIsMarkedNotBlended:
 
     def test_a_rival_weeks_behind_is_marked(self):
         raw = self._metric(firefox=self._s(25.0, 76, 0),
-                           **{"custom-car": self._s(5.7, 23, 46)})
+                           safari=self._s(5.7, 23, 46))
         m = build_metrics_view(raw)["metrics"][0]
-        assert m["series"]["custom-car"]["stale"] is True
-        assert m["series"]["custom-car"]["days_behind"] == 46
+        assert m["series"]["safari"]["stale"] is True
+        assert m["series"]["safari"]["days_behind"] == 46
 
     def test_the_metric_reports_that_some_series_is_stale(self):
         """The card-level flag the `!` marker reads. The metric is not stale itself --
         Firefox is current -- but it is mixing timeframes, and that is worth a mark."""
         raw = self._metric(firefox=self._s(25.0, 76, 0),
-                           **{"custom-car": self._s(5.7, 23, 46)})
+                           safari=self._s(5.7, 23, 46))
         m = build_metrics_view(raw)["metrics"][0]
         assert m["stale"] is False, "Firefox is current, so the card is not stale"
         assert m["mixed_windows"] is True
-        assert m["stale_browsers"] == ["custom-car"]
+        assert m["stale_browsers"] == ["safari"]
 
     def test_no_mixing_when_every_series_is_current(self):
         raw = self._metric(firefox=self._s(25.0, 76, 0), chrome=self._s(5.7, 13, 2))
@@ -1085,10 +1085,10 @@ class TestAStaleRivalDoesNotWinTheComparison:
         m = build_metrics_view(self._metric(
             firefox=self._s(16.3, 75, 0),
             chrome=self._s(6.8, 12, 1),
-            **{"custom-car": self._s(6.7, 23, 45)},
+            safari=self._s(6.7, 23, 45),
         ))["metrics"][0]
-        assert "custom-car" in m["series"]
-        assert m["series"]["custom-car"]["stale"] is True
+        assert "safari" in m["series"]
+        assert m["series"]["safari"]["stale"] is True
 
     def test_the_stale_rival_is_not_the_leader(self):
         """The `best` label is computed from this flag rather than from the medians,
@@ -1119,9 +1119,9 @@ class TestAStaleRivalDoesNotWinTheComparison:
         """Better an old comparison, marked, than pretending nobody measures it."""
         m = build_metrics_view(self._metric(
             firefox=self._s(16.3, 75, 0),
-            **{"custom-car": self._s(6.7, 23, 45)},
+            safari=self._s(6.7, 23, 45),
         ))["metrics"][0]
-        assert m["comparison"]["versus"] == "custom-car"
+        assert m["comparison"]["versus"] == "safari"
         assert m["compared"] is True
         assert m["mixed_windows"] is True
 
@@ -1246,3 +1246,634 @@ class TestEveryMetricDeclaresWhatTheRendererNeeds:
         would be matched as a suite-level score and silently pick the wrong row."""
         for e in self._metrics():
             assert "test_contains" not in e, e["id"]
+
+
+class TestAThinlySampledRivalStillCompares:
+    """A rival with very few runs is compared anyway, and its `n` carries the caveat.
+
+    This reverses an earlier rule. When Safari arrived on `vpl-h264` and Chrome on
+    `media-seek` with one run each, both were withheld from the verdict on the grounds
+    that one run is not a median -- which meant a brand-new cross-browser number, the
+    thing this view exists to surface, showed as "not compared" for its first week.
+
+    The call is that a rough comparison, labelled, beats none: sample size is reported
+    per browser in the expansion (`n=1`), so the reader can weigh it. Nothing here
+    hides how thin the evidence is; it just stops suppressing the number.
+    """
+
+    def _metric(self, **series):
+        return {"generated_at": "2026-08-21T00:00:00Z", "window_days": 30,
+                "metrics": [{
+                    "id": "media-seek.warm", "group": "Seek latency",
+                    "title": "Decoder warm", "unit": "ms",
+                    "lower_is_better": True, "note": "",
+                    "platform": "macosx1470-64-shippable",
+                    "stale": False, "days_behind": 0, "window_end": "2026-08-21",
+                    "series": series}]}
+
+    def _s(self, median, n, days_behind=0, cv=1.0):
+        return {"n": n, "median": median, "p25": median, "p75": median,
+                "cv": cv, "signature_id": 1, "days_behind": days_behind}
+
+    def test_a_single_run_rival_sets_the_verdict(self):
+        m = build_metrics_view(self._metric(
+            firefox=self._s(14.1, 76), chrome=self._s(6.9, 1)))["metrics"][0]
+        assert m["compared"] is True
+        assert m["comparison"]["versus"] == "chrome"
+        assert m["comparison"]["ahead"] is False
+
+    def test_a_single_run_rival_can_take_the_best_label(self):
+        m = build_metrics_view(self._metric(
+            firefox=self._s(14.1, 76), chrome=self._s(6.9, 1)))["metrics"][0]
+        assert m["leader"] == "chrome"
+
+    def test_its_sample_count_survives_for_the_expansion(self):
+        """The only place the thinness is recorded, so it must not be dropped."""
+        m = build_metrics_view(self._metric(
+            firefox=self._s(14.1, 76), chrome=self._s(6.9, 1)))["metrics"][0]
+        assert m["series"]["chrome"]["n"] == 1
+
+    def test_a_single_sample_still_reports_no_spread_rather_than_zero(self):
+        """Unchanged: cv 0.0 from one run renders as "CV 0%" and reads as rock-steady,
+        which is the one thing about n=1 that is actively misleading."""
+        m = build_metrics_view(self._metric(
+            firefox=self._s(14.1, 76), chrome=self._s(6.9, 1, cv=0.0)))["metrics"][0]
+        assert m["series"]["chrome"]["cv_known"] is False
+        assert m["series"]["firefox"]["cv_known"] is True
+
+    def test_a_stale_rival_is_still_held_back_from_the_verdict(self):
+        """Staleness and thin sampling are different faults, and only one was
+        reversed: an old number is still deprioritised behind a current one."""
+        m = build_metrics_view(self._metric(
+            firefox=self._s(16.3, 75),
+            chrome=self._s(6.8, 12),
+            safari=self._s(6.7, 23, days_behind=45)))["metrics"][0]
+        assert m["comparison"]["versus"] == "chrome"
+        assert m["stale_browsers"] == ["safari"]
+
+    def test_no_metric_carries_a_provisional_field_any_more(self):
+        """Guards the removal: a leftover flag that nothing reads is worse than none,
+        because the next reader assumes it still gates something."""
+        m = build_metrics_view(self._metric(
+            firefox=self._s(14.1, 76), chrome=self._s(6.9, 1)))["metrics"][0]
+        assert "provisional_browsers" not in m
+        assert "provisional" not in m["series"]["chrome"]
+
+
+class TestOnlyChromeAndSafariAreCompared:
+    """`custom-car` is excluded from the view entirely.
+
+    It is a Chromium build tracking Chrome, so its bar restated Chrome's to within a
+    rounding error -- 6.7 ms against 6.8 ms on VP8 -- while dragging in its own
+    staleness caveat, which then earned the card a warning marker and two extra lines
+    of text. Two lines of caveat for no extra information.
+
+    Filtered in the data layer so the verdict, the plot and the warnings cannot
+    disagree about who is in the comparison.
+    """
+
+    def _view(self, **series):
+        return build_metrics_view({
+            "generated_at": "2026-08-21T00:00:00Z", "window_days": 30,
+            "metrics": [{
+                "id": "ve.vp8", "group": "WebCodecs encode", "title": "VP8 1080p",
+                "unit": "ms", "lower_is_better": True, "note": "",
+                "platform": "macosx1470-64-shippable",
+                "stale": False, "days_behind": 0, "window_end": "2026-08-21",
+                "series": {b: {"n": n, "median": v, "p25": v, "p75": v, "cv": 1.0,
+                               "signature_id": 1, "days_behind": d}
+                           for b, (v, n, d) in series.items()}}]})["metrics"][0]
+
+    def test_custom_car_is_dropped_from_the_series(self):
+        m = self._view(firefox=(16.3, 75, 0), chrome=(6.8, 12, 0),
+                       **{"custom-car": (6.7, 23, 45)})
+        assert set(m["series"]) == {"firefox", "chrome"}
+
+    def test_it_cannot_be_the_verdict(self):
+        """It used to win: 6.7 beat 6.8, so a 45-day-old Chromium build set the
+        headline for a card whose point is the gap to Chrome."""
+        m = self._view(firefox=(16.3, 75, 0), chrome=(6.8, 12, 0),
+                       **{"custom-car": (6.7, 23, 45)})
+        assert m["comparison"]["versus"] == "chrome"
+        assert m["leader"] == "chrome"
+
+    def test_it_is_not_listed_as_a_rival(self):
+        m = self._view(firefox=(16.3, 75, 0), chrome=(6.8, 12, 0),
+                       **{"custom-car": (6.7, 23, 45)})
+        assert [r["browser"] for r in m["rivals"]] == ["chrome"]
+
+    def test_its_staleness_no_longer_warns(self):
+        """The mixed-window marker was firing on all four WebCodecs cards purely
+        because of custom-car."""
+        m = self._view(firefox=(16.3, 75, 0), chrome=(6.8, 12, 0),
+                       **{"custom-car": (6.7, 23, 45)})
+        assert m["mixed_windows"] is False
+        assert m["stale_browsers"] == []
+
+    def test_safari_is_kept(self):
+        m = self._view(firefox=(160.0, 77, 0), chrome=(287.8, 14, 0),
+                       safari=(367.9, 1, 0))
+        assert set(m["series"]) == {"firefox", "chrome", "safari"}
+
+    def test_a_firefox_only_metric_is_unaffected(self):
+        m = self._view(firefox=(15.0, 76, 0))
+        assert set(m["series"]) == {"firefox"}
+        assert m["compared"] is False
+
+
+class TestEveryRivalIsNamedWithItsOwnFactor:
+    """The verdict names each rival and its factor instead of saying "best of 2".
+
+    Picking only the strongest rival hid that another browser was measured at all:
+    with Safari on vpl-h264 the card read `1.80x ahead / chrome / (of 2)` and never
+    mentioned Safari, even though we beat it by more. `rival_breakdown` gives the
+    page one line per rival so it can say so.
+
+    Order is load-bearing: the first comparable entry must be the one the headline
+    verdict is computed from, or the big number and the list would disagree.
+    """
+
+    def _series(self, **kw):
+        out = {}
+        for b, (median, n, stale, prov) in kw.items():
+            out[b] = {"n": n, "median": median, "p25": median, "p75": median,
+                      "cv": 1.0, "signature_id": 1, "stale": stale,
+                      "provisional": prov}
+        return out
+
+    def test_one_line_per_rival_firefox_excluded(self):
+        from reviewstats.perfmetrics import rival_breakdown
+        got = rival_breakdown(160.0, self._series(
+            firefox=(160.0, 77, False, False),
+            chrome=(287.8, 14, False, False),
+            safari=(367.9, 20, False, False)), lower_is_better=True)
+        assert [r["browser"] for r in got] == ["chrome", "safari"]
+
+    def test_each_carries_its_own_factor_and_direction(self):
+        from reviewstats.perfmetrics import rival_breakdown
+        got = {r["browser"]: r for r in rival_breakdown(160.0, self._series(
+            firefox=(160.0, 77, False, False),
+            chrome=(287.8, 14, False, False),
+            safari=(367.9, 20, False, False)), lower_is_better=True)}
+        assert got["chrome"]["factor"] == pytest.approx(1.80, abs=0.01)
+        assert got["chrome"]["ahead"] is True
+        assert got["safari"]["factor"] == pytest.approx(2.30, abs=0.01)
+        assert got["safari"]["ahead"] is True
+
+    def test_strongest_comparable_rival_is_first(self):
+        """Must agree with the headline, which compares against the strongest."""
+        from reviewstats.perfmetrics import rival_breakdown
+        got = rival_breakdown(160.0, self._series(
+            firefox=(160.0, 77, False, False),
+            safari=(367.9, 20, False, False),
+            chrome=(287.8, 14, False, False)), lower_is_better=True)
+        assert got[0]["browser"] == "chrome", "lowest median is strongest here"
+
+    def test_direction_is_per_rival_not_shared(self):
+        """We can be behind one browser and ahead of another on one metric; a single
+        shared ahead/behind word would be wrong for one of them."""
+        from reviewstats.perfmetrics import rival_breakdown
+        got = {r["browser"]: r for r in rival_breakdown(160.0, self._series(
+            firefox=(160.0, 77, False, False),
+            chrome=(80.0, 14, False, False),
+            safari=(320.0, 20, False, False)), lower_is_better=True)}
+        assert got["chrome"]["ahead"] is False
+        assert got["safari"]["ahead"] is True
+
+    def test_higher_is_better_inverts_strength(self):
+        from reviewstats.perfmetrics import rival_breakdown
+        got = rival_breakdown(96.0, self._series(
+            firefox=(96.0, 77, False, False),
+            chrome=(316.0, 14, False, False),
+            safari=(112.0, 20, False, False)), lower_is_better=False)
+        assert got[0]["browser"] == "chrome", "highest wins when higher is better"
+        assert got[0]["ahead"] is False
+
+    def test_a_thinly_sampled_rival_still_gets_a_factor(self):
+        """Reversed deliberately: withholding it meant a brand-new cross-browser
+        number read as "not compared" for its first week. `n` travels with it."""
+        from reviewstats.perfmetrics import rival_breakdown
+        got = {r["browser"]: r for r in rival_breakdown(160.0, self._series(
+            firefox=(160.0, 77, False, False),
+            chrome=(287.8, 14, False, False),
+            safari=(367.9, 1, False, False)), lower_is_better=True)}
+        assert got["safari"]["factor"] == pytest.approx(2.30, abs=0.01)
+        assert got["safari"]["ahead"] is True
+        assert got["safari"]["n"] == 1
+
+    def test_sorting_is_by_strength_once_sample_size_stops_mattering(self):
+        from reviewstats.perfmetrics import rival_breakdown
+        got = rival_breakdown(160.0, self._series(
+            firefox=(160.0, 77, False, False),
+            safari=(100.0, 1, False, False),
+            chrome=(287.8, 14, False, False)), lower_is_better=True)
+        assert [r["browser"] for r in got] == ["safari", "chrome"], (
+            "lowest median is strongest, whatever its n")
+
+    def test_a_stale_rival_keeps_its_factor_but_is_marked(self):
+        """Real data, just from other weeks -- so the number stands and the label
+        says when."""
+        from reviewstats.perfmetrics import rival_breakdown
+        got = {r["browser"]: r for r in rival_breakdown(16.3, self._series(
+            firefox=(16.3, 75, False, False),
+            chrome=(6.8, 12, False, False),
+            **{"custom-car": (6.7, 23, True, False)}), lower_is_better=True)}
+        assert got["custom-car"]["stale"] is True
+        assert got["custom-car"]["factor"] == pytest.approx(2.43, abs=0.01)
+        assert got["chrome"]["stale"] is False
+
+    def test_stale_rivals_sort_after_current_ones(self):
+        from reviewstats.perfmetrics import rival_breakdown
+        got = rival_breakdown(16.3, self._series(
+            firefox=(16.3, 75, False, False),
+            **{"custom-car": (6.7, 23, True, False)},
+            chrome=(6.8, 12, False, False)), lower_is_better=True)
+        assert [r["browser"] for r in got] == ["chrome", "custom-car"]
+
+    def test_no_rivals_is_an_empty_list(self):
+        from reviewstats.perfmetrics import rival_breakdown
+        assert rival_breakdown(15.0, self._series(
+            firefox=(15.0, 76, False, False)), lower_is_better=True) == []
+
+    def test_it_is_attached_to_the_metric(self):
+        m = build_metrics_view({
+            "generated_at": "2026-08-21T00:00:00Z", "window_days": 30,
+            "metrics": [{
+                "id": "vpl.h264", "group": "First frame latency", "title": "H.264",
+                "unit": "ms", "lower_is_better": True, "note": "",
+                "platform": "macosx1470-64-shippable",
+                "stale": False, "days_behind": 0, "window_end": "2026-08-21",
+                "series": {
+                    "firefox": {"n": 77, "median": 160.0, "p25": 158.0,
+                                "p75": 162.0, "cv": 2.0, "signature_id": 1,
+                                "days_behind": 0},
+                    "chrome": {"n": 14, "median": 287.8, "p25": 280.0,
+                               "p75": 295.0, "cv": 4.0, "signature_id": 2,
+                               "days_behind": 0},
+                    "safari": {"n": 1, "median": 367.9, "p25": 367.9,
+                               "p75": 367.9, "cv": 0.0, "signature_id": 3,
+                               "days_behind": 0}}}]})["metrics"][0]
+        assert [r["browser"] for r in m["rivals"]] == ["chrome", "safari"]
+        assert m["rivals"][0]["browser"] == m["comparison"]["versus"], (
+            "the list and the headline must agree")
+        assert m["rivals"][1]["factor"] == pytest.approx(2.30, abs=0.01)
+
+
+class TestFirefoxOnlyGroupsAreSeparated:
+    """Groups with no rival are split out so they stop reading as failed comparisons.
+
+    Eight cards can never be compared -- seek cold, and all seven capability-query
+    cards, whose suite is Firefox-only by design. Rendered inline among compared
+    cards they all show the same hatched "no other browser measured yet" bar, which
+    makes a deliberate Firefox-only measurement look like a broken one.
+
+    The split is at GROUP level and derived from the data: a group is Firefox-only
+    when none of its metrics has a rival. Splitting per card instead would tear
+    `Seek latency` in half to isolate one card, which costs the reader the cold/warm
+    pairing to gain very little.
+    """
+
+    def _raw(self, *specs):
+        metrics = []
+        for mid, group, series in specs:
+            metrics.append({
+                "id": mid, "group": group, "title": mid, "unit": "ms",
+                "lower_is_better": True, "note": "",
+                "platform": "macosx1470-64-shippable",
+                "stale": False, "days_behind": 0, "window_end": "2026-08-21",
+                "series": {b: {"n": n, "median": v, "p25": v, "p75": v, "cv": 1.0,
+                               "signature_id": 1, "days_behind": 0}
+                           for b, (v, n) in series.items()}})
+        return {"generated_at": "2026-08-21T00:00:00Z", "window_days": 30,
+                "metrics": metrics}
+
+    def test_a_group_with_a_rival_is_compared(self):
+        v = build_metrics_view(self._raw(
+            ("vpl.h264", "First frame latency",
+             {"firefox": (160.0, 77), "chrome": (287.8, 14)})))
+        assert [g["title"] for g in v["groups_compared"]] == ["First frame latency"]
+        assert v["groups_firefox_only"] == []
+
+    def test_a_group_with_no_rival_anywhere_is_separated(self):
+        v = build_metrics_view(self._raw(
+            ("mc.first", "Capability query latency", {"firefox": (5.0, 40)}),
+            ("mc.avc", "Capability query latency", {"firefox": (9.0, 40)})))
+        assert v["groups_compared"] == []
+        assert [g["title"] for g in v["groups_firefox_only"]] == [
+            "Capability query latency"]
+
+    def test_a_mixed_group_is_split_per_card(self):
+        """Seek: cold has no rival, warm does, and they belong in different halves --
+        warm is a comparison, cold is a trend line. Splitting whole groups instead
+        left a hatched card in the compared half that could never be filled in."""
+        v = build_metrics_view(self._raw(
+            ("seek.cold", "Seek latency", {"firefox": (14.8, 76)}),
+            ("seek.warm", "Seek latency",
+             {"firefox": (14.1, 76), "chrome": (6.9, 20)})))
+        assert [g["title"] for g in v["groups_compared"]] == ["Seek latency"]
+        assert [m["id"] for m in v["groups_compared"][0]["metrics"]] == ["seek.warm"]
+        assert [g["title"] for g in v["groups_firefox_only"]] == ["Seek latency"]
+        assert [m["id"] for m in v["groups_firefox_only"][0]["metrics"]] == [
+            "seek.cold"]
+
+    def test_each_half_scales_to_what_it_draws(self):
+        """`axis_max` is recomputed per half; inheriting the whole group's would
+        squash the surviving bars against a maximum nothing on screen reaches."""
+        v = build_metrics_view(self._raw(
+            ("seek.cold", "Seek latency", {"firefox": (400.0, 76)}),
+            ("seek.warm", "Seek latency",
+             {"firefox": (14.1, 76), "chrome": (6.9, 20)})))
+        assert v["groups_compared"][0]["axis_max"] < 100
+
+    def test_a_thinly_sampled_rival_makes_a_group_compared(self):
+        """Chrome at n=1 on seek is a comparison now, so `Decoder warm` belongs in
+        the compared half rather than sitting among the Firefox-only cards."""
+        v = build_metrics_view(self._raw(
+            ("seek.warm", "Seek latency",
+             {"firefox": (14.1, 76), "chrome": (6.9, 1)})))
+        assert [g["title"] for g in v["groups_compared"]] == ["Seek latency"]
+        assert v["groups_firefox_only"] == []
+
+    def test_every_card_lands_in_exactly_one_half(self):
+        """Groups may appear in both halves now, but a *card* must appear once --
+        dropping one would lose a measurement, duplicating one would double-count."""
+        v = build_metrics_view(self._raw(
+            ("vpl.h264", "First frame latency",
+             {"firefox": (160.0, 77), "chrome": (287.8, 14)}),
+            ("seek.cold", "Seek latency", {"firefox": (14.8, 76)}),
+            ("seek.warm", "Seek latency",
+             {"firefox": (14.1, 76), "chrome": (6.9, 1)}),
+            ("mc.first", "Capability query latency", {"firefox": (5.0, 40)})))
+        placed = [m["id"] for half in ("groups_compared", "groups_firefox_only")
+                  for g in v[half] for m in g["metrics"]]
+        assert sorted(placed) == sorted(m["id"] for m in v["metrics"])
+        assert len(placed) == len(set(placed)), "a card was placed twice"
+
+    def test_the_undivided_group_list_is_still_published(self):
+        """Kept so nothing that reads `groups` breaks, and so the split stays a
+        presentation concern rather than a change to the underlying data."""
+        v = build_metrics_view(self._raw(
+            ("vpl.h264", "First frame latency",
+             {"firefox": (160.0, 77), "chrome": (287.8, 14)})))
+        assert [g["title"] for g in v["groups"]] == ["First frame latency"]
+
+    def test_each_group_says_whether_it_is_compared(self):
+        v = build_metrics_view(self._raw(
+            ("vpl.h264", "First frame latency",
+             {"firefox": (160.0, 77), "chrome": (287.8, 14)}),
+            ("mc.first", "Capability query latency", {"firefox": (5.0, 40)})))
+        flags = {g["title"]: g["compared"] for g in v["groups"]}
+        assert flags == {"First frame latency": True,
+                         "Capability query latency": False}
+
+
+class TestAFirefoxOnlyCardCanCompareAgainstItsSibling:
+    """A card with no rival browser can still carry a ratio -- against another of our
+    own measurements.
+
+    `Decoder cold` has no rival and never will: no other browser reports a cold seek.
+    But it has a natural counterpart in `Decoder warm`, and the ratio between them is
+    the cost of re-initialising the decoder, which is a real finding about our own
+    code. Showing `1.05x warm` says more than "no other browser measured yet".
+
+    Declared per card rather than inferred, because "the other metric in this group"
+    is not a rule -- the capability-query group has seven cards with no such pairing.
+    """
+
+    def _raw(self, cold=14.8, warm=14.1, lower=True):
+        def m(mid, title, median, **kw):
+            return {"id": mid, "group": "Seek latency", "title": title,
+                    "unit": "ms", "lower_is_better": lower, "note": "",
+                    "platform": "macosx1470-64-shippable",
+                    "stale": False, "days_behind": 0, "window_end": "2026-08-21",
+                    "series": {"firefox": {"n": 76, "median": median,
+                                           "p25": median, "p75": median, "cv": 1.0,
+                                           "signature_id": 1, "days_behind": 0}},
+                    **kw}
+        return {"generated_at": "2026-08-21T00:00:00Z", "window_days": 30,
+                "metrics": [
+                    m("media-seek.cold", "Decoder cold", cold,
+                      baseline="media-seek.warm", baseline_label="warm"),
+                    m("media-seek.warm", "Decoder warm", warm)]}
+
+    def _cold(self, **kw):
+        v = build_metrics_view(self._raw(**kw))
+        return [m for m in v["metrics"] if m["id"] == "media-seek.cold"][0]
+
+    def test_the_ratio_is_attached(self):
+        b = self._cold()["baseline_comparison"]
+        assert b["factor"] == pytest.approx(1.05, abs=0.01)
+        assert b["label"] == "warm"
+
+    def test_it_says_which_way_the_ratio_runs(self):
+        """Cold is the slower of the two, and the card must not imply otherwise."""
+        b = self._cold()["baseline_comparison"]
+        assert b["worse"] is True
+
+    def test_a_faster_card_reports_the_other_direction(self):
+        b = self._cold(cold=10.0, warm=14.1)["baseline_comparison"]
+        assert b["worse"] is False
+        assert b["factor"] == pytest.approx(1.41, abs=0.01)
+
+    def test_direction_follows_the_metric_not_the_arithmetic(self):
+        """On a higher-is-better metric a larger number is the better one."""
+        b = self._cold(cold=14.8, warm=14.1, lower=False)["baseline_comparison"]
+        assert b["worse"] is False
+
+    def test_the_sibling_itself_gets_no_ratio(self):
+        v = build_metrics_view(self._raw())
+        warm = [m for m in v["metrics"] if m["id"] == "media-seek.warm"][0]
+        assert warm["baseline_comparison"] is None
+
+    def test_a_card_with_no_baseline_configured_gets_none(self):
+        v = build_metrics_view({
+            "generated_at": "x", "window_days": 30,
+            "metrics": [{"id": "mc.first", "group": "Capability query latency",
+                         "title": "First query", "unit": "ms",
+                         "lower_is_better": True, "note": "",
+                         "platform": "macosx1470-64-shippable",
+                         "stale": False, "days_behind": 0,
+                         "window_end": "2026-08-21",
+                         "series": {"firefox": {"n": 40, "median": 5.0, "p25": 5.0,
+                                                "p75": 5.0, "cv": 1.0,
+                                                "signature_id": 1,
+                                                "days_behind": 0}}}]})
+        assert v["metrics"][0]["baseline_comparison"] is None
+
+    def test_a_missing_sibling_is_not_an_error(self):
+        """The sibling can vanish -- a renamed suite, a metric that resolved to
+        nothing. That must leave the card plain, not raise."""
+        raw = self._raw()
+        raw["metrics"] = [raw["metrics"][0]]
+        v = build_metrics_view(raw)
+        assert v["metrics"][0]["baseline_comparison"] is None
+
+    def test_identical_values_read_as_parity_not_as_a_gap(self):
+        b = self._cold(cold=14.1, warm=14.1)["baseline_comparison"]
+        assert b["factor"] == pytest.approx(1.0, abs=0.001)
+
+    def test_it_does_not_claim_a_cross_browser_result(self):
+        """`compared` means a rival BROWSER, and a sibling ratio is not one -- the
+        flag stays False so nothing downstream reads it as a competitive verdict.
+
+        It does move the card out of the Firefox-only section, though: that section is
+        for cards with nothing to show, and this one now has a chart.
+        """
+        cold = self._cold()
+        assert cold["compared"] is False
+        assert cold["charted"] is True
+        v = build_metrics_view(self._raw())
+        solo = [m["id"] for g in v["groups_firefox_only"] for m in g["metrics"]]
+        assert "media-seek.cold" not in solo
+
+
+class TestASelfComparisonCardDrawsAChart:
+    """`Decoder cold` charts against `Decoder warm` like a two-browser card.
+
+    It had a ratio in the corner but a hatched "nothing to compare" bar, and its
+    expansion showed one lonely `firefox` row. Both are wrong now that the card has a
+    real second measurement: the bar should show the gap and the plot should show both
+    figures, labelled `firefox cold` and `firefox warm`.
+
+    Still not a cross-browser result -- `compared` stays False and the colour stays
+    neutral -- but it is a comparison, and it belongs among the charts.
+    """
+
+    def _raw(self, cold=14.8, warm=14.1):
+        def m(mid, title, median, **kw):
+            return {"id": mid, "group": "Seek latency", "title": title,
+                    "unit": "ms", "lower_is_better": True, "note": "",
+                    "platform": "macosx1470-64-shippable",
+                    "stale": False, "days_behind": 0, "window_end": "2026-08-21",
+                    "series": {"firefox": {"n": 76, "median": median,
+                                           "p25": median * 0.9, "p75": median * 1.1,
+                                           "cv": 5.0,
+                                           "signature_id": kw.pop("sig", 1),
+                                           "days_behind": 0}},
+                    **kw}
+        return {"generated_at": "2026-08-21T00:00:00Z", "window_days": 30,
+                "metrics": [
+                    m("media-seek.cold", "Decoder cold", cold, sig=5889016,
+                      baseline="media-seek.warm", baseline_label="warm",
+                      self_label="cold"),
+                    m("media-seek.warm", "Decoder warm", warm, sig=5889017)]}
+
+    def _cold(self, **kw):
+        v = build_metrics_view(self._raw(**kw))
+        return [m for m in v["metrics"] if m["id"] == "media-seek.cold"][0]
+
+    def test_both_rows_are_carried_for_the_plot(self):
+        b = self._cold()["baseline_comparison"]
+        assert b["self_label"] == "cold"
+        assert b["label"] == "warm"
+        assert b["series"]["median"] == 14.1, "the sibling's own figures"
+        assert b["series"]["n"] == 76
+
+    def test_the_axis_covers_the_sibling_too(self):
+        """The plot draws two rows now, so a maximum from one of them would run the
+        other off the end."""
+        cold = self._cold(cold=10.0, warm=40.0)
+        assert cold["axis_max"] >= 40.0
+
+    def test_it_is_still_not_a_cross_browser_comparison(self):
+        cold = self._cold()
+        assert cold["compared"] is False
+        assert cold["comparison"]["factor"] is None
+
+    def test_it_is_charted_rather_than_set_aside(self):
+        """A card with a chart does not belong under "no other browser measures
+        these" -- that section is for cards with nothing to show."""
+        v = build_metrics_view(self._raw())
+        charted = [m["id"] for g in v["groups_compared"] for m in g["metrics"]]
+        solo = [m["id"] for g in v["groups_firefox_only"] for m in g["metrics"]]
+        assert "media-seek.cold" in charted
+        assert "media-seek.cold" not in solo
+
+    def test_a_card_with_no_sibling_is_still_set_aside(self):
+        """The capability cards have nothing to compare against at all, and must stay
+        in the Firefox-only section."""
+        v = build_metrics_view({
+            "generated_at": "x", "window_days": 30,
+            "metrics": [{"id": "mc.first", "group": "Capability query latency",
+                         "title": "First query", "unit": "ms",
+                         "lower_is_better": True, "note": "",
+                         "platform": "macosx1470-64-shippable",
+                         "stale": False, "days_behind": 0,
+                         "window_end": "2026-08-21",
+                         "series": {"firefox": {"n": 40, "median": 5.0, "p25": 5.0,
+                                                "p75": 5.0, "cv": 1.0,
+                                                "signature_id": 1,
+                                                "days_behind": 0}}}]})
+        assert [m["id"] for g in v["groups_firefox_only"]
+                for m in g["metrics"]] == ["mc.first"]
+        assert v["groups_compared"] == []
+
+    def test_the_sibling_card_is_unchanged(self):
+        """`Decoder warm` compares against Chrome in the ordinary way; it must not
+        acquire a mirror-image self comparison."""
+        v = build_metrics_view(self._raw())
+        warm = [m for m in v["metrics"] if m["id"] == "media-seek.warm"][0]
+        assert warm["baseline_comparison"] is None
+
+    def test_the_graph_link_covers_both_series(self):
+        """"open these exact series in Perfherder" must open both rows the card draws.
+
+        This assertion used to be `assert cold["graph_url"]` -- true whenever a link
+        existed at all, so it passed while the link plotted only the cold series and
+        silently omitted the warm one it was being compared against. A link that opens
+        half the chart is worse than no link: it looks like corroboration.
+        """
+        cold = self._cold()
+        own = cold["series"]["firefox"]["signature_id"]
+        sibling = cold["baseline_comparison"]["series"]["signature_id"]
+        assert sibling != own, "the fixture must use two distinct signatures"
+        assert f",{own}," in cold["graph_url"], "own series missing"
+        assert f",{sibling}," in cold["graph_url"], "sibling series missing"
+
+    def test_the_link_does_not_grow_for_a_card_with_no_sibling(self):
+        v = build_metrics_view(self._raw())
+        warm = [m for m in v["metrics"] if m["id"] == "media-seek.warm"][0]
+        assert warm["graph_url"].count("series=") == 1
+
+
+class TestEveryConfigKeyReachesTheRenderer:
+    """A key declared in METRICS but not copied by `collect` is silently dropped.
+
+    This has now bitten three times -- `baseline`, `baseline_label` and `self_label`
+    each had to be added in two places, and the middle failure rendered a row labelled
+    "firefox this" because the label never left the config. The fetcher copies an
+    explicit key list, which is the right call (it stops junk reaching the page) but
+    means additions must be made twice.
+    """
+
+    def _module(self):
+        import importlib.util, pathlib, sys
+        spec = importlib.util.spec_from_file_location(
+            "fpm_keys", pathlib.Path("fetch_perf_metrics.py"))
+        mod = importlib.util.module_from_spec(spec)
+        sys.modules["fpm_keys"] = mod
+        spec.loader.exec_module(mod)
+        return mod
+
+    def test_no_configured_key_is_dropped_on_the_way_out(self):
+        import pathlib, re
+        mod = self._module()
+        src = pathlib.Path("fetch_perf_metrics.py").read_text(encoding="utf-8")
+        # Keys the fetcher consumes itself rather than passing on.
+        consumed = {"suite", "test", "test_suffix"}
+        declared = {k for e in mod.METRICS for k in e} - consumed
+        for key in sorted(declared):
+            assert re.search(rf'["\']{re.escape(key)}["\']', src), key
+            # It must appear somewhere that writes the output, not only in the table.
+            body = src[src.index("def collect("):]
+            assert key in body, (
+                f"{key!r} is configured but `collect` never writes it, so the page "
+                f"never sees it")
+
+    def test_the_baseline_keys_specifically_survive(self):
+        """Named so the failure message points at the feature, not just a key."""
+        mod = self._module()
+        cold = [e for e in mod.METRICS if e["id"] == "media-seek.cold"][0]
+        assert cold["baseline"] == "media-seek.warm"
+        assert cold["baseline_label"] == "warm"
+        assert cold["self_label"] == "cold"

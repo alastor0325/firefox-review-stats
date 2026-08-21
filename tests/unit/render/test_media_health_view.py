@@ -582,13 +582,13 @@ class TestMetricCards:
 
     def test_each_metric_is_an_expandable_card(self):
         js = self._js(_render(_ROADMAP))
-        assert "function metricCard(m)" in js
+        assert re.search(r"function metricCard\(m\b", js)
         assert "'<details class=\"pm-card" in js
 
     def test_metrics_are_grouped_into_categories(self):
         js = self._js(_render(_ROADMAP))
         assert "pm-cat-h" in js
-        assert "g.metrics.map(metricCard)" in js, (
+        assert re.search(r"g\.metrics\.map\(\s*(metricCard|m =>)", js), (
             "a category renders its own metrics, keeping a family together"
         )
 
@@ -608,13 +608,13 @@ class TestMetricCards:
 
     def test_warning_is_an_icon_with_detail_in_the_expansion(self):
         js = self._js(_render(_ROADMAP))
-        assert "function warnIcon(m)" in js
+        assert re.search(r"function warnIcon\(m\b", js)
         assert "expand for detail" in js
         assert "pm-facts" in js, "the window and staleness detail live in the body"
 
     def test_window_detail_is_in_the_expansion_not_the_row(self):
         js = self._js(_render(_ROADMAP))
-        m = re.search(r"function metricCard\(m\) \{(.*?)\n  \}", js, re.DOTALL)
+        m = re.search(r"function metricCard\(m[^)]*\) \{(.*?)\n  \}", js, re.DOTALL)
         assert m is not None
         body = m.group(1)
         assert "window'" in body or "-day window" in body
@@ -1408,7 +1408,10 @@ class TestAStaleRivalIsVisibleOnTheCard:
         i = html.index("function warnIcon")
         body = html[i:i + 1400]
         assert "m.mixed_windows" in body, "mixed_windows does not gate the marker"
-        assert "!m.compared || m.stale || m.mixed_windows" in body
+        gate = re.search(r"if \(\(?!m\.compared.*?\) \{", body, re.DOTALL)
+        assert gate, "no earning condition found"
+        for part in ("m.compared", "m.stale", "m.mixed_windows"):
+            assert part in gate.group(0), f"{part} does not gate the marker"
 
     def test_the_stale_browser_is_named(self):
         assert "m.stale_browsers" in self._html()
@@ -1506,3 +1509,466 @@ class TestANewMetricGroupPaintsWithoutTemplateWork:
                           "'WebCodecs encode'", '"WebCodecs encode"'):
             assert hardcoded not in html, (
                 f"group name {hardcoded} is hardcoded in the template")
+
+
+class TestTheVerdictIsOneLinePerBrowser:
+    """`1.05x chrome` on a single line -- no direction word in the visible text.
+
+    Direction is carried by colour and by the diverging bar in the same row, whose
+    header reads "firefox behind | parity | firefox ahead". Spelling it out a third
+    time cost a line per rival and pushed the browser name onto its own row.
+
+    The word is kept in each line's tooltip. That matters: the extra rival lines have
+    no bar of their own, so without it their direction would be colour-only.
+    """
+
+    def _html(self):
+        return _joined(render_html(_MINIMAL_DATA, roadmap_data=_ROADMAP))
+
+    def test_the_emitted_markup_is_only_the_two_halves(self):
+        """Whether a word is *visible* cannot be settled by reading the source -- the
+        same 'ahead' literal is also the CSS class name. So this asserts the shape of
+        what is emitted, and the rendered-text check lives in the integration test.
+        """
+        html = self._html()
+        i = html.index("function rivalLine")
+        body = html[i:html.index("function verdictOf")]
+        payload = body[body.rindex("data-tip"):]
+        assert payload.count("pm-nb") == 2
+        assert "r.factor" in payload and "r.browser" in payload
+
+    def test_the_direction_survives_in_the_tooltip(self):
+        """Colour alone would fail a reader who cannot separate the two greens, and
+        would vanish entirely in greyscale."""
+        html = self._html()
+        i = html.index("function rivalLine")
+        body = html[i:html.index("function verdictOf")]
+        assert "data-tip" in body
+        assert "ahead of" in body and "behind" in body
+
+    def test_the_factor_and_the_browser_share_one_line(self):
+        """Two nowrap halves with a single space between them, so they sit on one
+        line and can only wrap as a last resort."""
+        html = self._html()
+        i = html.index("function rivalLine")
+        body = html[i:html.index("function verdictOf")]
+        assert body.count("pm-nb") == 2
+        assert "<br>" not in body
+
+    def test_the_headline_also_shares_one_line(self):
+        html = self._html()
+        i = html.index("function verdictOf")
+        body = html[i:html.index("function warnIcon")]
+        assert "pm-nb" in body
+        # the only <br> left is the "no other browser measured yet" fallback
+        assert body.count("<br>") == 1
+
+    def test_no_provisional_plumbing_remains(self):
+        """A flag nothing reads is worse than none: the next reader assumes it still
+        gates something."""
+        html = self._html()
+        assert "provisional" not in html
+
+    def test_a_sample_count_is_not_shown_in_the_collapsed_row(self):
+        """`safari n=1` was there to say the comparison was being withheld. It is not
+        withheld any more, and `n` is in the expansion for anyone weighing it."""
+        html = self._html()
+        i = html.index("function rivalLine")
+        body = html[i:html.index("function verdictOf")]
+        assert "'n=' + r.n" not in body
+
+
+class TestTheVerdictNamesEveryRival:
+    """"best of 2" is replaced by a line per rival.
+
+    The H.264 card compared against Chrome and never mentioned Safari, which we beat
+    by more. The headline stays dominant -- the list must not cost the collapsed row
+    its single-glance number -- and each extra rival rides underneath.
+    """
+
+    def _html(self):
+        return _joined(render_html(_MINIMAL_DATA, roadmap_data=_ROADMAP))
+
+    def test_the_best_of_n_wording_is_gone(self):
+        assert "best of " not in _visible(self._html())
+
+    def test_it_reads_the_per_rival_breakdown(self):
+        assert "m.rivals" in self._html()
+
+    def test_each_rival_line_carries_its_own_direction(self):
+        """Per rival, not shared: on one metric we can be behind Chrome and ahead of
+        Safari. The colour class and the tooltip both come from that rival's own
+        `ahead`, so a shared word can never be wrong for one of them."""
+        html = self._html()
+        i = html.index("function rivalLine")
+        body = html[i:html.index("function verdictOf")]
+        assert "r.ahead ? 'ahead' : 'behind'" in body
+        assert "r.ahead ? 'ahead of' : 'behind'" in body
+
+    def test_every_rival_gets_a_factor_whatever_its_sample_size(self):
+        """Withholding it made a brand-new cross-browser number -- the thing this
+        view exists to surface -- read as "not compared" for its first week."""
+        html = self._html()
+        i = html.index("function rivalLine")
+        body = html[i:i + 1100]
+        assert "r.factor.toFixed(2)" in body
+        assert "r.provisional" not in body
+
+    def test_the_extra_rivals_are_styled_smaller_than_the_headline(self):
+        """Asserted numerically: if these ever matched the headline size the row
+        would read as a table and lose its glance value."""
+        html = self._html()
+        m_more = re.search(r"\.pm-vs-more\s*\{[^}]*font-size:\s*([\d.]+)px", html)
+        m_head = re.search(r"\.pm-verdict\s*\{[^}]*font-size:\s*([\d.]+)px", html)
+        assert m_more and m_head, "expected both font sizes to be declared"
+        assert float(m_more.group(1)) < float(m_head.group(1))
+
+    def test_extra_rivals_stack_rather_than_run_on(self):
+        """They are siblings inside one 150px grid cell."""
+        html = self._html()
+        assert re.search(r"\.pm-vs-more\s*\{[^}]*display:\s*block", html)
+
+    def test_only_a_genuinely_unmeasured_card_says_so(self):
+        """There is one uncompared state left. A thin rival is compared now, so the
+        "not compared yet" wording it needed is gone with it."""
+        html = self._html()
+        i = html.index("function verdictOf")
+        body = html[i:html.index("function warnIcon")]
+        assert "no other browser" in body
+        assert "not compared" not in body
+
+
+class TestTheVerdictStackOccupiesOneGridCell:
+    """The headline and the rival lines must be one cell of the row grid.
+
+    Returned as siblings they each became an extra child of the 3-column `.pm-row`
+    grid, wrapped onto a new implicit row, and rendered under the *metric name*
+    instead of under the verdict. Every DOM assertion still passed -- the text was
+    present and correct, just in the wrong column. Only a screenshot showed it.
+    """
+
+    def _html(self):
+        return _joined(render_html(_MINIMAL_DATA, roadmap_data=_ROADMAP))
+
+    def test_the_stack_is_wrapped(self):
+        html = self._html()
+        i = html.index("function verdictOf")
+        body = html[i:html.index("function warnIcon")]
+        assert 'class="pm-vs"' in body, "verdict stack is not wrapped in one element"
+
+    def test_the_wrapper_is_styled(self):
+        assert re.search(r"\.pm-vs\s*\{", self._html()), "no .pm-vs rule"
+
+    def test_rival_lines_are_not_returned_as_bare_siblings(self):
+        """The regression guard: `head + rest` with no wrapper is what broke it."""
+        html = self._html()
+        i = html.index("function verdictOf")
+        body = html[i:i + 1400]
+        assert "return head + rest" not in body
+
+
+class TestTheFirefoxOnlySectionIsSeparate:
+    """Groups with no rival render under their own heading.
+
+    Inline among compared cards, all eight uncompared cards showed the same hatched
+    "no other browser measured yet" bar, so the capability-query suite -- which is
+    Firefox-only by design -- looked identical to a comparison that had broken.
+    """
+
+    def _html(self):
+        return _joined(render_html(_MINIMAL_DATA, roadmap_data=_ROADMAP))
+
+    def test_both_buckets_are_read_from_the_data(self):
+        html = self._html()
+        assert "METRICS.groups_compared" in html
+        assert "METRICS.groups_firefox_only" in html
+
+    def test_the_section_is_labelled(self):
+        html = _visible(self._html())
+        assert "Firefox only" in html
+        assert "no other browser measures these" in html
+
+    def test_the_section_says_these_are_not_verdicts(self):
+        """The whole point of separating them: a reader must not take a hatched bar
+        as a loss."""
+        html = _visible(self._html())
+        assert "not comparisons" in html or "not a verdict" in html
+
+    def test_the_section_is_styled_as_its_own_block(self):
+        html = self._html()
+        assert re.search(r"\.pm-solo\s*\{", html), "no .pm-solo rule"
+        assert re.search(r"\.pm-solo-h\s*\{", html), "no heading rule"
+
+    def test_it_is_set_apart_by_a_rule_not_by_colour(self):
+        """Colouring the section would imply these numbers are worse rather than
+        answering a different question."""
+        html = self._html()
+        m = re.search(r"\.pm-solo\s*\{([^}]*)\}", html)
+        assert "border-top" in m.group(1)
+
+    def test_neither_section_renders_when_empty(self):
+        """A team with only compared metrics must not get an empty heading."""
+        html = self._html()
+        i = html.index("pm-cards').innerHTML")
+        body = html[i:i + 1200]
+        assert "soloOnly.length" in body
+        assert "compared.length" in body
+
+    def test_the_group_renderer_is_shared(self):
+        """Both sections must draw cards identically -- a second copy would drift."""
+        html = self._html()
+        assert html.count("function catBlock") == 1
+        i = html.index("pm-cards').innerHTML")
+        body = html[i:i + 1200]
+        assert body.count("catBlock") == 2
+
+
+class TestTheMarkerIsNotRedundantWithItsSection:
+    """Inside the Firefox-only section, "uncompared" alone must not earn the `!`.
+
+    All nine cards there carried the marker for exactly the reason the section
+    heading states, so the icon said nothing the reader had not just read -- and a
+    marker that appears on every row stops meaning anything where it flags a real
+    problem. Seven of the nine warn for that reason and nothing else.
+
+    The other two keep it: `Decoder cold` is noisy, `Decoder warm` is noisy and has a
+    rival too thin to compare. Those are facts the heading does not cover.
+    """
+
+    def _html(self):
+        return _joined(render_html(_MINIMAL_DATA, roadmap_data=_ROADMAP))
+
+    def test_the_marker_knows_which_section_it_is_in(self):
+        html = self._html()
+        i = html.index("function warnIcon")
+        body = html[i:i + 1900]
+        assert "solo" in body, "warnIcon cannot tell where it is rendering"
+
+    def test_uncompared_alone_still_earns_the_marker_outside_the_section(self):
+        """A mixed group -- seek once Chrome has history -- keeps an uncompared cold
+        card among compared siblings, and there the marker is the only signal."""
+        html = self._html()
+        i = html.index("function warnIcon")
+        body = html[i:i + 1900]
+        assert "!m.compared" in body
+
+    def test_the_flag_is_threaded_from_the_section_to_the_card(self):
+        html = self._html()
+        assert re.search(r"function catBlock\(g,\s*\w+\)", html), (
+            "catBlock does not take a section flag")
+        assert re.search(r"function metricCard\(m,\s*\w+\)", html), (
+            "metricCard does not take a section flag")
+
+    def test_the_expansion_still_explains_it(self):
+        """The icon is a scanning aid and goes; the expansion is read deliberately
+        and may sit far below the heading, so the sentence stays."""
+        html = _visible(self._html())
+        assert "no other browser measures this" in html
+
+
+class TestRivalLinesWrapRatherThanClip:
+    """`2.40× behind custom-car · old` needs 165px in a 150px cell.
+
+    With `white-space: nowrap` four rows were cropped mid-word. Widening the column
+    only moves the threshold, because the text length depends on the browser's name
+    and how many caveats it carries -- neither of which we control. So these lines
+    wrap.
+    """
+
+    def _html(self):
+        return _joined(render_html(_MINIMAL_DATA, roadmap_data=_ROADMAP))
+
+    def test_the_rival_lines_are_not_nowrap(self):
+        html = self._html()
+        m = re.search(r"\.pm-vs-more\s*\{([^}]*)\}", html)
+        assert m, "no .pm-vs-more rule"
+        assert "nowrap" not in m.group(1), (
+            "nowrap clips the longest rival line instead of wrapping it")
+
+    def test_the_headline_wraps_too_now_that_it_is_one_line(self):
+        """It used to put the browser on its own line, so nowrap was safe. On one
+        line it can overflow the same way, and the halves are bound instead."""
+        html = self._html()
+        m = re.search(r"\.pm-verdict\s*\{([^}]*)\}", html)
+        assert m and "nowrap" not in m.group(1)
+
+    def test_a_line_height_is_set_for_the_wrapped_case(self):
+        """Default leading on a 9.5px line makes a two-line rival look detached from
+        the card it belongs to."""
+        html = self._html()
+        m = re.search(r"\.pm-vs-more\s*\{([^}]*)\}", html)
+        assert "line-height" in m.group(1)
+
+    def test_a_rival_line_cannot_break_inside_a_browser_name(self):
+        """Non-breaking spaces were not enough: the hyphen in "custom-car" is its own
+        break opportunity, so the name split down the middle. Each half of the line
+        is a nowrap span, leaving exactly one legal break point between them."""
+        html = self._html()
+        assert re.search(r"\.pm-nb\s*\{[^}]*white-space:\s*nowrap", html), (
+            "no nowrap rule for the line halves")
+        i = html.index("function rivalLine")
+        body = html[i:i + 1100]
+        assert body.count('pm-nb') == 2, "both halves must be bound"
+
+
+class TestTheOffScaleMarkerExplainsItself:
+    """The `→` beside a factor past 4x must be legible as an axis marker.
+
+    The diverging bar's scale is capped at 4x so one outlier cannot squash every
+    other bar. AV1 1080p is 4.26x, so its bar is clamped at full width and the arrow
+    says the true value is further out than the bar can draw -- without it, 4.26x and
+    a hypothetical 12x would render identically.
+
+    It was read as a rendering glitch, which it looks like: nothing on the page said
+    the scale ends, and the marker had no explanation. The logic was right and the
+    communication was missing.
+    """
+
+    def _html(self):
+        return _joined(render_html(_MINIMAL_DATA, roadmap_data=_ROADMAP))
+
+    def test_the_last_tick_shows_the_scale_ends(self):
+        """`4x+` rather than `4x`, so the cap is visible without hovering anything.
+
+        Reads the raw HTML, not `_joined`: that helper collapses `' + '` to splice JS
+        concatenation back together, and the literal `'+'` this emits is exactly that
+        pattern, so the joined text has it removed. The page is fine; the helper
+        cannot see it.
+        """
+        raw = render_html(_MINIMAL_DATA, roadmap_data=_ROADMAP)
+        i = raw.index("const tickLabel")
+        body = raw[i:i + 200]
+        assert "t === CAP" in body and "'+'" in body, (
+            "the final tick does not say the scale continues")
+
+    def test_a_clamped_card_says_so_in_its_tooltip(self):
+        html = self._html()
+        i = html.index("function verdictOf")
+        body = html[i:html.index("function warnIcon")]
+        assert "cmp.factor > CAP" in body
+        assert "clamped" in body or "further" in body, (
+            "the tooltip does not explain the arrow")
+
+    def test_an_on_scale_card_gets_no_marker(self):
+        """The marker has to be absent most of the time or it says nothing."""
+        html = self._html()
+        i = html.index("function verdictOf")
+        body = html[i:html.index("function warnIcon")]
+        assert "cmp.factor > CAP ?" in body, "the arrow is unconditional"
+
+    def test_the_cap_is_one_constant(self):
+        """The bar geometry, the ticks and the marker must all read the same cap."""
+        html = self._html()
+        assert html.count("const CAP = ") == 1
+
+
+class TestASiblingRatioIsShownNeutrally:
+    """`1.05× warm` on a card no other browser reports.
+
+    "no other browser measured yet" was all the cold-seek card could say, though the
+    useful number was right beside it: the ratio to our own warm seek, which is the
+    cost of re-initialising the decoder.
+
+    Rendered in neutral ink deliberately. The ahead/behind palette means "versus
+    another browser"; painting our own two numbers green or amber would read as a
+    competitive result.
+    """
+
+    def _html(self):
+        return _joined(render_html(_MINIMAL_DATA, roadmap_data=_ROADMAP))
+
+    def test_the_card_reads_the_sibling_ratio(self):
+        assert "m.baseline_comparison" in self._html()
+
+    def test_it_is_shown_in_place_of_the_no_rival_text(self):
+        html = self._html()
+        i = html.index("function verdictOf")
+        body = html[i:html.index("function warnIcon")]
+        assert "base.factor.toFixed(2)" in body
+        assert "no other browser" in body, "the fallback must survive for cards with no sibling"
+
+    def test_it_does_not_use_the_ahead_or_behind_classes(self):
+        html = self._html()
+        i = html.index("function verdictOf")
+        body = html[i:html.index("function warnIcon")]
+        j = body.index("base.factor")
+        near = body[max(0, j - 400):j]
+        assert "pm-verdict self" in near
+        assert "ahead' : 'behind'" not in near
+
+    def test_the_neutral_class_is_styled(self):
+        html = self._html()
+        assert re.search(r"\.pm-verdict\.self\s*\{[^}]*color", html)
+
+    def test_the_tooltip_says_both_numbers_are_ours(self):
+        """Otherwise a bare `1.05x warm` looks like a browser called "warm"."""
+        html = _visible(self._html())
+        assert "not a comparison with another" in html
+
+
+class TestASelfComparisonCardIsCharted:
+    """`Decoder cold` draws a bar and a two-row plot, both neutral.
+
+    It had the ratio in the corner but a hatched "nothing to compare" bar, and one
+    lonely `firefox` row on expanding. The card has two real measurements, so it
+    should look like it.
+    """
+
+    def _html(self):
+        return _joined(render_html(_MINIMAL_DATA, roadmap_data=_ROADMAP))
+
+    def test_the_bar_is_drawn_from_the_sibling_ratio(self):
+        html = self._html()
+        i = html.index("function divergeBar")
+        body = html[i:html.index("function rivalLine")]
+        assert "m.baseline_comparison" in body
+        assert "base.factor" in body
+
+    def test_the_bar_is_neutral_not_the_verdict_palette(self):
+        html = self._html()
+        i = html.index("function divergeBar")
+        body = html[i:html.index("function rivalLine")]
+        assert "pm-bar self" in body
+        assert re.search(r"\.pm-bar\.self\s*\{", html), "no neutral bar style"
+
+    def test_the_hatched_fallback_survives_for_cards_with_nothing(self):
+        """The seven capability cards still have nothing to draw."""
+        html = self._html()
+        i = html.index("function divergeBar")
+        body = html[i:html.index("function rivalLine")]
+        assert "pm-diverge uncompared" in body
+
+    def test_the_plot_labels_both_rows(self):
+        html = self._html()
+        i = html.index("function dotRows")
+        body = html[i:i + 1200]
+        assert "base.self_label" in body and "base.label" in body
+        assert "'firefox '" in body
+
+    def test_both_rows_are_styled_as_ours(self):
+        """Both are Firefox, so both take the Firefox swatch -- matching on the
+        prefix rather than an exact 'firefox' key."""
+        html = self._html()
+        i = html.index("function dotRows")
+        body = html[i:i + 1400]
+        assert "b.startsWith('firefox')" in body
+
+    def test_no_best_label_on_a_self_comparison(self):
+        """"best" would be praising one of our own measurements over another."""
+        html = self._html()
+        i = html.index("function dotRows")
+        body = html[i:i + 1400]
+        assert "? null : m.leader" in body
+
+    def test_the_expansion_does_not_call_it_a_bare_trend_line(self):
+        """It said "no other browser measures this, so the figure is a trend line
+        rather than a comparison" -- on a card that now draws a comparison."""
+        html = self._html()
+        i = html.index("function metricCard")
+        body = html[i:i + 1400]
+        assert "m.baseline_comparison" in body
+        assert "charted against" in body
+
+    def test_the_plain_wording_survives_for_cards_with_no_sibling(self):
+        html = _visible(self._html())
+        assert "trend line for us rather than a comparison" in html

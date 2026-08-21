@@ -64,58 +64,59 @@ def _metrics_payload():
 
 
 def _metric(mid, group, title, series, **kw):
+    """The RAW shape the fetcher writes -- not the rendered one.
+
+    This used to hand-build the rendered fields (`compared`, `comparison`,
+    `axis_max`, ...) which meant the double drifted from the contract every time the
+    renderer grew one: `provisional_browsers` and `rivals` both arrived and the page
+    threw `Cannot read properties of undefined`, which this very test caught. Feeding
+    the real transform instead means the fixture cannot go stale.
+    """
     base = {
         "id": mid, "group": group, "title": title, "unit": "ms",
         "lower_is_better": True, "platform": "macosx1470-64-shippable",
         "note": "", "series": series, "window_days": 30, "stale": False,
-        "days_behind": 0, "window_end": "2026-08-10", "noisy": False,
-        "axis_max": 300.0, "graph_url": "https://example.invalid/graph",
-        "compared": len(series) > 1,
-        "comparison": ({"ahead": True, "factor": 1.8, "versus": "chrome",
-                        "rival_count": 1} if len(series) > 1
-                       else {"ahead": None, "factor": None, "versus": None,
-                             "rival_count": 0}),
+        "days_behind": 0, "window_end": "2026-08-10",
     }
     base.update(kw)
     return base
 
 
-def _s(median, n=50, cv=2.0):
+def _s(median, n=50, cv=2.0, days_behind=0):
     return {"n": n, "median": median, "p25": median * 0.98,
-            "p75": median * 1.02, "cv": cv, "signature_id": 1}
+            "p75": median * 1.02, "cv": cv, "signature_id": 1,
+            "days_behind": days_behind}
 
 
 def _full_metrics():
-    """Exercises every branch the renderer has: a compared metric, a
-    Firefox-only one, a stale one, and a higher-is-better one."""
+    """Exercises every branch the renderer has, through the REAL transform.
+
+    A compared metric, a Firefox-only one, a stale one, a higher-is-better one, and
+    a rival too thinly sampled to compare against (Safari landed on vpl-h264 with a
+    single run). Built by `build_metrics_view` rather than by hand so the fixture
+    always matches whatever the renderer expects.
+    """
+    from reviewstats.perfmetrics import build_metrics_view
+
     ms = [
         _metric("vpl.h264", "First frame latency", "H.264",
-                {"firefox": _s(160.0), "chrome": _s(288.0)}),
+                {"firefox": _s(160.0, n=77), "chrome": _s(288.0, n=14),
+                 # n=1: provisional, so it is named but carries no factor.
+                 "safari": _s(367.9, n=1, cv=0.0)}),
         _metric("seek.cold", "Seek latency", "Decoder cold",
-                {"firefox": _s(15.0, cv=22.5)}, noisy=True, axis_max=20.0),
+                {"firefox": _s(15.0, cv=22.5)}),
         _metric("ve.h264", "WebCodecs encode", "H.264 realtime",
-                {"firefox": _s(1.0), "chrome": _s(4.3)}, stale=True,
-                days_behind=100, window_end="2026-05-01", axis_max=5.0),
+                {"firefox": _s(1.0), "chrome": _s(4.3),
+                 # stale rival: real data, from other weeks.
+                 "custom-car": _s(4.1, n=23, days_behind=45)},
+                stale=True, days_behind=100, window_end="2026-05-01"),
         _metric("webaudio.score", "Web Audio score", "Score",
                 {"firefox": _s(96.0), "chrome": _s(316.0)},
-                unit="score", lower_is_better=False, axis_max=400.0,
-                comparison={"ahead": False, "factor": 3.29, "versus": "chrome",
-                            "rival_count": 2}),
+                unit="score", lower_is_better=False),
     ]
-    groups = {}
-    for m in ms:
-        g = groups.setdefault(m["group"], {
-            "title": m["group"], "unit": m["unit"],
-            "lower_is_better": m["lower_is_better"],
-            "platform": m["platform"], "metrics": [], "axis_max": 0})
-        g["metrics"].append(m)
-        g["axis_max"] = max(g["axis_max"], m["axis_max"])
     payload = _metrics_payload()
     payload["metrics"] = ms
-    payload["groups"] = list(groups.values())
-    payload["summary"] = ms
-    payload["counts"] = {"total": len(ms), "compared": 3, "firefox_only": 1}
-    return payload
+    return build_metrics_view(payload)
 
 
 @pytest.fixture(scope="module")
@@ -175,10 +176,21 @@ def page_state(rendered):
             views = page.evaluate(
                 "() => [...document.querySelectorAll("
                 "'.toggle-bar button[data-view]')].map(b => b.dataset.view)")
+            # The Metrics subview is display:none until its tab is active, so the
+            # verdict text has to be read after clicking through.
+            page.click('[data-view="health"]')
+            page.click('[data-health="metrics"]')
+            page.wait_for_timeout(400)
+            verdict_lines = page.evaluate(
+                "() => [...document.querySelectorAll('.pm-vs-more, .pm-verdict')]"
+                " .map(e => e.textContent.replace(/\\s+/g, ' ').trim())"
+                " .filter(s => /^[0-9]/.test(s))")
+            body_text = page.evaluate("() => document.body.innerText")
         finally:
             browser.close()
     return {"errors": errors, "failed_urls": failed_urls,
-            "lengths": lengths, "views": views}
+            "lengths": lengths, "views": views,
+            "verdict_lines": verdict_lines, "body_text": body_text}
 
 
 class TestPageExecutes:
@@ -254,3 +266,29 @@ class TestNoOrphanedElementWrites:
             assert f"'{cid}'" in html, (
                 f"#{cid} is never referenced by any script, directly or by name"
             )
+
+
+class TestTheVerdictTextIsCompact:
+    """Read off the rendered page, because this is a question about visible text.
+
+    The unit tests can only inspect the template source, where the same `ahead`
+    literal is both a tooltip word and a CSS class name. What a reader actually sees
+    is settled here.
+    """
+
+    def test_no_direction_word_is_rendered(self, page_state):
+        for text in page_state["verdict_lines"]:
+            assert "ahead" not in text, text
+            assert "behind" not in text, text
+
+    def test_a_rival_line_is_a_factor_and_a_browser(self, page_state):
+        """`2.30x safari` -- nothing else, bar two markers that are not words: an
+        arrow when the factor runs past the 4x axis cap, and `· old` for a series
+        that stopped reporting."""
+        import re
+        for text in page_state["verdict_lines"]:
+            assert re.fullmatch(
+                r"\d+\.\d{2}×(\s+→)?\s+\S+(\s+·\s+old)?", text), text
+
+    def test_custom_car_appears_nowhere(self, page_state):
+        assert "custom-car" not in page_state["body_text"]

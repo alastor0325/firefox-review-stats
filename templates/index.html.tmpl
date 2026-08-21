@@ -748,13 +748,54 @@
     font-family: var(--mono); font-size: 9px; color: var(--ink-soft);
   }
   .pm-verdict {
-    font-family: var(--mono); font-size: 11px; text-align: right;
-    white-space: nowrap; color: var(--ink-soft);
+    display: block; font-family: var(--mono); font-size: 11px; text-align: right;
+    white-space: normal; color: var(--ink-soft); cursor: help;
   }
   .pm-verdict b { font-variant-numeric: tabular-nums; font-size: 12px }
   .pm-verdict.ahead b { color: var(--pm-ahead) }
   .pm-verdict.behind b { color: var(--pm-behind) }
   .pm-verdict.none { font-size: 10px }
+  /* A ratio against one of our own measurements. Neutral on purpose: the
+     ahead/behind palette means "versus another browser", and this is not that. */
+  /* A bar between two of our own measurements. Context grey, so it reads as
+     "these are both ours" rather than a win or a loss against a competitor. */
+  .pm-bar.self { background: var(--pm-them); opacity: 0.55 }
+  .pm-verdict.self { color: var(--ink-soft) }
+  .pm-verdict.self b { color: var(--ink) }
+  /* Additional rivals, listed under the headline. Deliberately a step down in
+     size and weight: naming them must not cost the row its single-glance number.
+     `display: block` because these are siblings of .pm-verdict inside the same
+     150px grid cell, so they stack instead of running on. */
+  /* The Firefox-only section. Set apart by a rule and a heading rather than by
+     colour or indentation: these numbers are not lesser, they answer a different
+     question, and the reader needs to know which question before reading them. */
+  .pm-solo { margin-top: 26px; border-top: 1px solid var(--rule); padding-top: 16px }
+  .pm-solo-h {
+    margin: 0; font-size: 15px; font-weight: 500; color: var(--ink);
+  }
+  .pm-solo-note {
+    margin: 4px 0 14px; font-size: 11.5px; line-height: 1.5;
+    color: var(--ink-soft); max-width: 62ch;
+  }
+  /* The whole verdict stack occupies one grid cell of .pm-row. */
+  .pm-vs { min-width: 0 }
+  /* Wraps rather than clips. `2.40× behind custom-car · old` needs 165px in a
+     150px cell, so nowrap cropped four rows mid-word. Widening the column would
+     only move the threshold -- the text length depends on the browser's name, which
+     we do not control -- so these lines wrap and the row grows by one line instead. */
+  .pm-vs-more {
+    display: block; font-family: var(--mono); font-size: 10px;
+    text-align: right; white-space: normal; color: var(--ink-soft);
+    font-variant-numeric: tabular-nums; margin-top: 3px; line-height: 1.35;
+    cursor: help;
+  }
+  /* Colour reinforces the word, never replaces it -- the direction is spelled out
+     on every line, so a CVD reader loses nothing. */
+  .pm-vs-more.ahead { color: var(--pm-ahead) }
+  .pm-vs-more.behind { color: var(--pm-behind) }
+  /* Keeps a rival line's two halves whole, so a wrap lands between them rather
+     than inside "custom-car" -- whose hyphen is its own break opportunity. */
+  .pm-nb { white-space: nowrap }
   .pm-flag {
     font-family: var(--mono); font-size: 8.5px; text-transform: uppercase;
     letter-spacing: 0.06em; color: var(--ink-soft);
@@ -2410,16 +2451,32 @@ function renderMetrics() {
   // silently change every bar length whenever a new extreme appeared, breaking
   // week-over-week reading on a weekly-refreshed page.
   const ticks = [1, 2, 3, 4];
+  // The outermost tick reads "4x+", not "4x": the scale stops there but the values do
+  // not, and a bar sitting at the end is otherwise indistinguishable from one that ran
+  // off it. The arrow on such a card's verdict is the other half of saying so.
+  const tickLabel = t => t + '\u00D7' + (t === CAP ? '+' : '');
   const tickRow = '<div class="pm-ticks">'
     + ticks.slice().reverse().map(t =>
         '<span style="left:' + (50 - half(t)) + '%">'
-        + (t === 1 ? '1\u00D7' : t + '\u00D7') + '</span>').join('')
+        + tickLabel(t) + '</span>').join('')
     + ticks.slice(1).map(t =>
-        '<span style="left:' + (50 + half(t)) + '%">' + t + '\u00D7</span>').join('')
+        '<span style="left:' + (50 + half(t)) + '%">' + tickLabel(t) + '</span>').join('')
     + '</div>';
 
   function divergeBar(m) {
     const cmp = m.comparison;
+    // A card with no rival browser but a sibling of our own still has a gap to
+    // draw. Neutral fill, because the parity axis here separates two of OUR
+    // measurements -- the green/amber palette would read as beating a competitor.
+    const base = m.baseline_comparison;
+    if (!cmp.factor && base) {
+      const bw = half(base.factor);
+      return '<div class="pm-diverge">'
+        + (base.worse
+            ? '<div class="pm-bar self" style="right:50%;width:' + bw + '%"></div>'
+            : '<div class="pm-bar self" style="left:50%;width:' + bw + '%"></div>')
+        + '</div>';
+    }
     if (!cmp.factor) return '<div class="pm-diverge uncompared"></div>';
     const w = half(cmp.factor);
     const st = m.stale ? ' stale' : '';
@@ -2430,28 +2487,82 @@ function renderMetrics() {
     return '<div class="pm-diverge">' + bar + '</div>';
   }
 
+  // Every rival is named with its own factor. Picking only the strongest and
+  // saying "best of 2" hid that another browser was measured at all -- the H.264
+  // card never mentioned Safari, which we beat by more than Chrome. The headline
+  // stays dominant so the list is still scannable at a glance; the extra rivals
+  // ride underneath in a smaller weight.
+  //
+  // Direction is per rival, not shared: on one metric we can be behind Chrome and
+  // ahead of Safari, so a single ahead/behind word would be wrong for one of them.
+  // Each line carries its own word, never colour alone.
+  function rivalLine(r) {
+    // "2.30x safari" -- one line, no direction word. Direction is carried by colour
+    // plus the diverging bar in the same row, whose header reads
+    // "firefox behind | parity | firefox ahead". The word is kept in the tooltip so a
+    // reader who cannot separate the two greens can still recover it, and so the
+    // meaning survives a greyscale print.
+    const dir = r.ahead ? 'ahead of' : 'behind';
+    return '<span class="pm-vs-more ' + (r.ahead ? 'ahead' : 'behind') + '"'
+      + ' data-tip="Firefox is ' + r.factor.toFixed(2) + '\u00D7 ' + dir + ' '
+      + escA(r.browser) + ' on this metric, over ' + r.n
+      + (r.n === 1 ? ' run' : ' runs')
+      + (r.stale ? '. That series stopped reporting, so it is older than ours.' : '.')
+      + '">'
+      + '<span class="pm-nb">' + r.factor.toFixed(2) + '\u00D7</span> '
+      + '<span class="pm-nb">' + esc(r.browser)
+      + (r.stale ? ' \u00B7 old' : '') + '</span></span>';
+  }
+
   function verdictOf(m) {
     const cmp = m.comparison;
-    if (!cmp.factor) {
-      return '<span class="pm-verdict none">no other browser<br>measured yet</span>';
-    }
-    return '<span class="pm-verdict ' + (cmp.ahead ? 'ahead' : 'behind')
-      + '"><b>' + cmp.factor.toFixed(2) + '\u00D7</b> '
-      + (cmp.ahead ? 'ahead' : 'behind')
-      + (cmp.factor > CAP ? ' \u2192' : '') + '<br>' + esc(cmp.versus)
-      + (cmp.rival_count > 1 ? ' (best of ' + cmp.rival_count + ')' : '')
-      + '</span>';
+    const rivals = m.rivals || [];
+    const rest = rivals.filter(r => r.browser !== cmp.versus).map(rivalLine).join('');
+
+    // One wrapper, because .pm-row is a 3-column grid: returning these as siblings
+    // made each an extra grid child, so they wrapped onto a new implicit row and
+    // rendered under the metric name instead of under the verdict.
+    // A card no other browser reports can still carry a ratio against a sibling
+    // measurement of our own -- cold seek against warm seek. Neutral ink, not the
+    // ahead/behind palette: it describes our own two numbers, and colouring it green
+    // or amber would read as a result against a competitor.
+    const base = m.baseline_comparison;
+    const head = !cmp.factor
+      ? (base
+          ? '<span class="pm-verdict self" data-tip="Firefox’s own '
+            + escA(String(m.title).toLowerCase()) + ' measures '
+            + base.factor.toFixed(2) + '× its ' + escA(base.label)
+            + ' figure. Both are ours — this is not a comparison with another'
+            + ' browser.">'
+            + '<span class="pm-nb"><b>' + base.factor.toFixed(2) + '×</b></span> '
+            + '<span class="pm-nb">' + esc(base.label) + '</span></span>'
+          : '<span class="pm-verdict none">no other browser<br>measured yet</span>')
+      : '<span class="pm-verdict ' + (cmp.ahead ? 'ahead' : 'behind') + '"'
+        + ' data-tip="Firefox is ' + cmp.factor.toFixed(2) + '\u00D7 '
+        + (cmp.ahead ? 'ahead of' : 'behind') + ' ' + escA(cmp.versus)
+        + ', the strongest browser measured here.'
+        + (cmp.factor > CAP
+            ? ' The arrow means this runs past the end of the scale: the bar is'
+              + ' clamped at ' + CAP + '\u00D7, so its length understates the gap.'
+            : '') + '">'
+        + '<span class="pm-nb"><b>' + cmp.factor.toFixed(2) + '\u00D7</b>'
+        + (cmp.factor > CAP ? ' \u2192' : '') + '</span> '
+        + '<span class="pm-nb">' + esc(cmp.versus) + '</span></span>';
+    return '<div class="pm-vs">' + head + rest + '</div>';
   }
 
   // Compact warning. The detail it stands for lives in the expansion, so the
   // collapsed row stays scannable.
-  function warnIcon(m) {
+  function warnIcon(m, solo) {
     // The marker means: do not lean on this as a cross-browser result. Two things
     // earn it - nothing else measures it, or the suite has stopped producing.
     // Spread and thin samples ride along as extra lines but never earn it alone,
     // so the marker stays meaningful instead of appearing on every card.
     const why = [];
-    if (!m.compared) why.push('no other browser measures this');
+    // Suppressed inside the Firefox-only section: the heading there already says
+    // this, and a marker on every row stops meaning anything where it flags a real
+    // problem. The reasons below are not covered by the heading, so they still count.
+    if (!m.compared && !solo) why.push('no other browser measures this');
     if (m.stale) why.push('suite stopped producing ' + m.days_behind + ' days ago');
     if (m.mixed_windows) {
       why.push(m.stale_browsers.join(' and ') + ' stopped reporting, so that '
@@ -2461,7 +2572,7 @@ function renderMetrics() {
     if (m.low_samples) why.push('only ' + m.min_samples + ' runs in the window');
     // A comparison drawn across two timeframes is as untrustworthy as one drawn
     // against nothing, so it earns the marker on the same footing.
-    if (!m.compared || m.stale || m.mixed_windows) {
+    if ((!m.compared && !solo) || m.stale || m.mixed_windows) {
       return '<span class="pm-warn-icon" title="' + escA(why.join('; ')
         + ' \u2014 expand for detail') + '">!</span>';
     }
@@ -2473,13 +2584,23 @@ function renderMetrics() {
   function dotRows(m) {
     const max = m.axis_max * 1.08;
     const fmt = v => max < 10 ? v.toFixed(1) : String(Math.round(v));
-    const browsers = Object.keys(m.series).sort(
+    // A self-comparison card plots its two own measurements instead of one
+    // anonymous `firefox` row: "firefox cold" against "firefox warm". Both are ours,
+    // so both get the Firefox swatch and neither is a rival.
+    const base = m.baseline_comparison;
+    const rowSeries = (!m.comparison.factor && base)
+      ? {['firefox ' + base.self_label]: m.series.firefox,
+         ['firefox ' + base.label]: base.series}
+      : m.series;
+    const browsers = Object.keys(rowSeries).sort(
       (a, b) => (a === 'firefox' ? -1 : b === 'firefox' ? 1 : a.localeCompare(b)));
     // Decided in the data layer, which knows which series are stale. A series that
-    // stopped reporting cannot hold "best" while a current one is on the card.
-    const leader = m.leader;
+    // stopped reporting cannot hold "best" while a current one is on the card. A
+    // self comparison has no leader: both rows are ours, so "best" would be praising
+    // one of our own measurements over another.
+    const leader = (!m.comparison.factor && base) ? null : m.leader;
     const rows = browsers.map(b => {
-      const s = m.series[b], us = b === 'firefox';
+      const s = rowSeries[b], us = b.startsWith('firefox');
       const l = pct(s.p25, max), r = pct(s.p75, max);
       const flat = s.p75 <= s.p25;
       return '<div class="pm-plot-row' + (us ? ' us' : '')
@@ -2494,7 +2615,8 @@ function renderMetrics() {
         + '<div class="pm-track ' + (m.lower_is_better ? 'better-left' : 'better-right')
         + '" title="' + escA(b + ': median ' + s.median + ' ' + m.unit
             + ', p25-p75 ' + s.p25 + '-' + s.p75 + ', ' + s.n
-            + ' runs, run-to-run CV ' + s.cv + '%') + '">'
+            + ' runs, run-to-run CV '
+            + (s.cv_known ? s.cv + '%' : 'not measurable from one run')) + '">'
         + (flat ? '' : '<div class="pm-range" style="left:' + l + '%;width:'
             + Math.max(0.4, r - l) + '%"></div>')
         + '<div class="pm-dot' + (flat ? ' nospread' : '')
@@ -2503,8 +2625,9 @@ function renderMetrics() {
         + '<div class="pm-value">'
         + (b === leader ? '<b class="pm-best">best</b> ' : '')
         + s.median + ' ' + esc(m.unit)
-        + ' <span>&nbsp;n=' + s.n + ' &middot; CV ' + Math.round(s.cv)
-        + '%</span></div></div>';
+        + ' <span>&nbsp;n=' + s.n + ' &middot; CV '
+        + (s.cv_known ? Math.round(s.cv) + '%' : '\u2014')
+        + '</span></div></div>';
     }).join('');
     // Ticks always ascend left to right; direction is stated beside the unit and
     // tinted on the favourable half, never by flipping the ruler.
@@ -2520,13 +2643,18 @@ function renderMetrics() {
     return band + rows + axis;
   }
 
-  function metricCard(m) {
+  function metricCard(m, solo) {
     const facts = [];
     facts.push(m.window_days + '-day window'
       + (m.window_end ? ' ending ' + esc(m.window_end) : ''));
     if (!m.compared) {
-      facts.push('<b>no other browser measures this</b>, so the figure is a trend '
-        + 'line for us rather than a comparison');
+      // A card with a sibling ratio is not a bare trend line, so it must not say so.
+      facts.push(m.baseline_comparison
+        ? '<b>no other browser reports this measurement</b>, so it is charted against '
+          + 'our own <b>' + esc(m.baseline_comparison.label) + '</b> figure instead. '
+          + 'Both rows above are Firefox \u2014 the ratio is not a cross-browser result.'
+        : '<b>no other browser measures this</b>, so the figure is a trend '
+          + 'line for us rather than a comparison');
     }
     if (m.stale) {
       facts.push('<b>this suite has stopped producing \u2014 the window is the '
@@ -2559,7 +2687,7 @@ function renderMetrics() {
 
     return '<details class="pm-card' + (m.stale ? ' is-stale' : '') + '">'
       + '<summary><div class="pm-row">'
-      + '<div class="pm-row-label">' + esc(m.title) + warnIcon(m)
+      + '<div class="pm-row-label">' + esc(m.title) + warnIcon(m, solo)
       + '<em class="pm-flag">expand for browsers, window and source</em></div>'
       + divergeBar(m) + verdictOf(m) + '</div></summary>'
       + '<div class="pm-card-body">'
@@ -2570,33 +2698,56 @@ function renderMetrics() {
 
   // Categories keep a family together -- every WebCodecs codec in one place --
   // and are ordered worst-first by their weakest member, like the roadmap cards.
-  const cats = METRICS.groups.map(g => {
-    const worst = Math.min(...g.metrics.map(m => {
-      const c = m.comparison;
-      if (!c.factor) return 99;          // uncompared sorts last
-      return c.ahead ? 50 + c.factor : -c.factor;
-    }));
-    return { g, worst };
-  }).sort((a, b) => a.worst - b.worst);
+  function sortCats(groups) {
+    return groups.map(g => {
+      const worst = Math.min(...g.metrics.map(m => {
+        const c = m.comparison;
+        if (!c.factor) return 99;          // uncompared sorts last
+        return c.ahead ? 50 + c.factor : -c.factor;
+      }));
+      return { g, worst };
+    }).sort((a, b) => a.worst - b.worst).map(({ g }) => g);
+  }
 
-  document.getElementById('pm-cards').innerHTML =
+  function catBlock(g, solo) {
+    // No direction pill here: the tinted "better this way" band inside each
+    // expanded plot already says it, next to the marks it applies to.
+    // Repeating it in the header was the same fact three times over.
+    return '<div class="pm-cat"><div class="pm-cat-h">' + esc(g.title)
+      + '<span class="pm-cat-meta">'
+      + '<span>' + esc(plat(g.platform)) + ' \u00B7 ' + esc(g.unit) + ' \u00B7 '
+      + g.metrics.length + (g.metrics.length === 1 ? ' metric' : ' metrics')
+      + '</span></span></div>'
+      + g.metrics.map(m => metricCard(m, solo)).join('') + '</div>';
+  }
+
+  const axisHead =
     '<div class="pm-row pm-head">'
     + '<span class="pm-axis-dir">metric</span>'
     + '<span class="pm-axis-dir" style="text-align:center">'
     + '\u25C0 firefox behind &nbsp;|&nbsp; parity &nbsp;|&nbsp; firefox ahead \u25B6</span>'
     + '<span class="pm-axis-dir" style="text-align:right">vs</span></div>'
     + '<div class="pm-row" style="padding:0"><span></span>' + tickRow
-    + '<span></span></div>'
-    + cats.map(({ g }) =>
-        // No direction pill here: the tinted "better this way" band inside each
-        // expanded plot already says it, next to the marks it applies to.
-        // Repeating it in the header was the same fact three times over.
-        '<div class="pm-cat"><div class="pm-cat-h">' + esc(g.title)
-        + '<span class="pm-cat-meta">'
-        + '<span>' + esc(plat(g.platform)) + ' \u00B7 ' + esc(g.unit) + ' \u00B7 '
-        + g.metrics.length + (g.metrics.length === 1 ? ' metric' : ' metrics')
-        + '</span></span></div>'
-        + g.metrics.map(metricCard).join('') + '</div>').join('');
+    + '<span></span></div>';
+
+  // Two sections. Groups with nothing to compare against were rendering inline
+  // among the compared ones, all showing the same hatched "no other browser
+  // measured yet" bar -- so a suite that is Firefox-only by design (the seven
+  // capability-query cards) looked indistinguishable from a broken comparison.
+  // Separating them says which it is, without discarding a single number.
+  const compared = sortCats(METRICS.groups_compared || []);
+  const soloOnly = sortCats(METRICS.groups_firefox_only || []);
+
+  document.getElementById('pm-cards').innerHTML =
+    (compared.length ? axisHead + compared.map(g => catBlock(g, false)).join('') : '')
+    + (soloOnly.length
+        ? '<div class="pm-solo"><h3 class="pm-solo-h">Firefox only \u2014 no other '
+          + 'browser measures these</h3>'
+          + '<p class="pm-solo-note">Trend lines for us, not comparisons. Either the '
+          + 'suite runs only in Firefox, or a rival has started running but has too '
+          + 'few results yet. Nothing here is a verdict against another browser.</p>'
+          + soloOnly.map(g => catBlock(g, true)).join('') + '</div>'
+        : '');
 
   // --- measured codec/container support ---------------------------------
   // Container-first, because a container has a MEASURED header (the probe asks

@@ -109,13 +109,29 @@ METRICS = [
      "suite": "ve-av1-rt", "test": None,
      "test_suffix": "RGBX canvas realtime encode - frame-to-frame mean (non key)",
      "platform": MAC_INTEL, "unit": "ms", "lower_is_better": True, "note": ""},
+    # Only warm has a rival. Chrome runs `seekedWarmLatency` on macOS and Linux and
+    # has no cold signature at all, so the cold card is structurally Firefox-only
+    # rather than merely waiting for data.
+    #
+    # So cold is measured against our own warm figure instead: that ratio is the cost
+    # of re-initialising the decoder, a finding about our code rather than a
+    # cross-browser result. The two land within a few percent -- 5% on macOS, 7% on
+    # Linux, stable across 30- and 90-day windows -- which is why the note says
+    # re-initialisation is not where seek cost lives. Kept qualitative on purpose: a
+    # hardcoded number here would go stale silently.
     {"id": "media-seek.cold", "group": "Seek latency", "title": "Decoder cold",
      "suite": "media-seek", "test": "seekedColdLatency",
+     "baseline": "media-seek.warm", "baseline_label": "warm",
+     "self_label": "cold",
      "platform": MAC_INTEL, "unit": "ms", "lower_is_better": True,
-     "note": "256x144 VP9 clip. Firefox only so far."},
+     "note": "256x144 VP9 clip. No other browser reports a cold seek, so this one "
+             "cannot be compared across browsers. Measured against our own warm "
+             "seek instead: the two sit within a few percent, which says decoder "
+             "re-initialisation is not where seek cost lives."},
     {"id": "media-seek.warm", "group": "Seek latency", "title": "Decoder warm",
      "suite": "media-seek", "test": "seekedWarmLatency",
-     "platform": MAC_INTEL, "unit": "ms", "lower_is_better": True, "note": ""},
+     "platform": MAC_INTEL, "unit": "ms", "lower_is_better": True,
+     "note": "The comparable half of the pair: Chrome reports this one."},
 
     # How long a capability query takes, as opposed to what it answers -- the
     # companion to the support matrix lower down the same page. Firefox-only, like
@@ -369,6 +385,9 @@ def collect(days: int) -> dict:
             k: spec[k] for k in
             ("id", "group", "title", "unit", "lower_is_better", "platform", "note")
         } | {
+            "baseline": spec.get("baseline"),
+            "baseline_label": spec.get("baseline_label"),
+            "self_label": spec.get("self_label"),
             "series": series,
             "window_days": days,
             "stale": stale,

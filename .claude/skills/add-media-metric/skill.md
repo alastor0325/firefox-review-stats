@@ -64,6 +64,7 @@ them, so a missing one fails at commit rather than at fetch:
 | `platform` | usually `MAC_INTEL` |
 | `unit`, `lower_is_better` | `lower_is_better` must be a real `bool` |
 | `note` | `""` is fine when the group's first card explains the family |
+| `baseline`, `baseline_label` | optional; point a card with no rival browser at a sibling of ours, so it shows e.g. `1.05× warm` instead of "no other browser measured yet" |
 
 ### `test` vs `test_suffix`
 
@@ -165,12 +166,26 @@ Before believing a gap, check these — the numbers alone will not tell you:
   and the headline verdict. Stale rivals are now marked, drawn recessively, and barred
   from being comparator or leader while a current rival exists — but check
   `days_behind` per series when a result surprises you.
+- **A brand-new rival needs no config change to appear.** The fetcher collects every
+  application matching the suite/test/platform, so a browser that starts running an
+  existing suite shows up on the next refresh — at whatever sample count it has, and it
+  will carry the verdict from its first run. Check `n` in the expansion before quoting
+  a factor. Only `DISPLAY_BROWSERS` (firefox, chrome, safari) is shown at all;
+  `custom-car` is filtered because it duplicated Chrome to within a rounding error.
 - **Sample counts differ by design.** Non-Firefox perf tasks have
   `run-on-projects: []` and are scheduled by cron, so Firefox lands ~246 runs a year
   where Chrome lands ~44. A thin rival series is normal, not suspicious.
 - **The `!` marker means uncompared, dead, or mixed-window** — not "slightly noisy".
   Spread and low samples ride along as extra lines in the expansion but never earn the
   marker alone, so it stays meaningful.
+
+### Where a new card will land
+
+The subview has a **compared** half and a **Firefox only** section at the end, decided
+**per card** by whether it has any rival. A Firefox-only suite (media-capabilities, and
+seek's cold half) lands in the second section automatically — that is not a problem to
+fix, and cards there deliberately do not carry a `!` for being uncompared. A group with
+both kinds appears in both halves under the same title.
 
 ## The weekly refresh
 

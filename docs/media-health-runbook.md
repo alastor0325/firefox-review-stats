@@ -170,12 +170,82 @@ rival is marked and made recessive but still plotted, and it cannot be the compa
 or the leader while a current rival exists. If *every* rival is stale the comparison
 still runs against them — an old comparison, marked, beats claiming nobody measures it.
 
+**A rival that duplicates another.** `custom-car` is a Chromium build that tracks
+Chrome, so its bar restated Chrome's to within a rounding error — 6.7 ms against
+6.8 ms on VP8 — while dragging in its own staleness caveat, which then earned the card
+a warning marker and two extra lines of text. `DISPLAY_BROWSERS` in
+`reviewstats/perfmetrics.py` is the list the view shows: `firefox`, `chrome`, `safari`.
+Filtered in the data layer, so the verdict, the plot and the warnings cannot disagree
+about who is in the comparison.
+
+**Sample size does not gate a comparison.** A new browser appears on an existing suite
+with *no config change at all* — the fetcher collects every application matching a
+suite/test/platform. Safari landed on `vpl-h264` and Chrome on `media-seek` with one
+run each. An earlier rule withheld the verdict below five runs, which meant a
+brand-new cross-browser number — the thing this view exists to surface — read as "not
+compared" for its first week. It now compares, and `n` rides along in the expansion so
+the reader can weigh it. The one thing still suppressed is a *false* precision: a lone
+sample reports its spread as `—` rather than `CV 0%`, which read as rock-steady.
+
 Neither problem is detectable from the numbers alone. When a cross-browser card looks
 surprising, check `days_behind` per series before believing the gap.
 
 ---
 
-## 3. Codec and container support (browser probe)
+### Two sections, derived not configured
+
+The Metrics subview splits into **compared** cards and a **Firefox only** section at
+the end. The split is per CARD and computed, never a list of names.
+
+`Seek latency` is the case that shaped it: cold is a trend line no other browser
+reports, warm is a comparison Chrome does report, and they belong in different halves.
+An earlier version split whole *groups* to keep a family together, which left a hatched
+card in the compared half that could never be filled in. A group can now appear in both
+halves under the same title, and `axis_max` is recomputed per half so bars scale to
+what is actually drawn.
+
+Two consequences worth knowing before editing this area:
+
+- Nine cards were rendering the same hatched "no other browser measured yet" bar
+  inline among compared ones, which made a deliberate Firefox-only measurement look
+  like a broken comparison. The section heading is what distinguishes them.
+- Inside that section, being uncompared no longer earns the `!` marker, because the
+  heading says it. Seven of the nine cards warned for that reason alone. The other
+  reasons (stale, noisy, thin samples) still apply everywhere.
+
+### A Firefox-only card can still carry a ratio
+
+`baseline` / `baseline_label` on a metric point it at a sibling of our own, and the
+card shows that ratio instead of "no other browser measured yet". `Decoder cold` uses
+it: no browser reports a cold seek, but the ratio to our own warm seek (currently
+**1.05×**) is the cost of re-initialising the decoder — a finding about our code.
+
+Rendered in neutral ink, never the ahead/behind palette: that palette means "versus
+another browser", and painting two of our own numbers green or amber would read as a
+competitive result. `worse` follows the metric's declared direction rather than the
+arithmetic, so it stays right on a higher-is-better measure. Declared per card because
+"the other metric in this group" is not a rule — the capability-query group has seven
+cards with no such pairing.
+
+### The 4× cap and its arrow
+
+The diverging bar's scale stops at 4× so one outlier cannot squash every other bar. A
+card past that is clamped to full width and its factor carries a `→`; without it,
+4.26× and a hypothetical 12× would draw identically. The outermost ticks read `4×+`
+rather than `4×` so the cap is visible without hovering, and the clamped card's
+tooltip says the bar understates the gap. This was read as a rendering glitch before
+those two additions — the logic was right and the communication was missing.
+
+### The verdict is one line per browser
+
+`1.05× chrome`, with direction carried by colour and by the diverging bar in the same
+row. The words "ahead"/"behind" were dropped from the visible text as a third
+statement of the same fact — but they are kept in each line's `data-tip`, because the
+extra rival lines have no bar of their own and would otherwise be colour-only. An
+integration test reads the rendered text to hold that line, since the template source
+cannot distinguish a tooltip word from a CSS class name.
+
+## 3. Codec and container support## 3. Codec and container support (browser probe)
 
 Measured by asking browsers, not by reading source — that is the whole point. An
 earlier source-derived matrix claimed Chrome plays PCM and AC-3 in Matroska; shipping
