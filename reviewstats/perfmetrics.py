@@ -83,6 +83,26 @@ def graph_url(series: dict, *, days: int, days_behind: int = 0) -> str:
     return f"{PERFHERDER_GRAPHS}?{'&'.join(parts)}&timerange={timerange}"
 
 
+def _keep_precision(v: float) -> float:
+    """Round to a useful number of places for the value's own magnitude.
+
+    A fixed 1 decimal was fine while every metric here measured 100+ ms. It is not
+    fine for `media-capabilities`, which answers in hundredths of a millisecond:
+
+      * 0.010 ms rounds to exactly 0.0, and a zero rival makes `compare_to_firefox`
+        report no rival at all -- which reached the page as a null factor and blanked
+        the whole view.
+      * 0.12 ms rounds to 0.1, turning a 41x gap into a 49x one. The verdict has to
+        reflect the measurement, not the formatting.
+    """
+    a = abs(v)
+    if a >= 10:
+        return round(v, 1)
+    if a >= 1:
+        return round(v, 2)
+    return round(v, 3)
+
+
 def summarize(values: list) -> dict | None:
     """Median, quartiles, spread and sample count for one browser's samples.
 
@@ -106,9 +126,10 @@ def summarize(values: list) -> dict | None:
     cv = (100.0 * _st.pstdev(nums) / mean) if mean else 0.0
     return {
         "n": len(nums),
-        "median": round(median, 1),
-        "p25": round(p25, 1),
-        "p75": round(p75, 1),
+        "median": _keep_precision(median),
+        "p25": _keep_precision(p25),
+        "p75": _keep_precision(p75),
+        # Spread is a percentage, so 1dp is plenty regardless of magnitude.
         "cv": round(cv, 1),
     }
 
@@ -166,6 +187,11 @@ def rival_breakdown(firefox: float, series: dict, *, lower_is_better: bool) -> l
     out = []
     for b, s in (series or {}).items():
         if b == "firefox" or not s:
+            continue
+        # A zero median cannot produce a ratio, and the page renders every entry it
+        # is handed -- so such a rival is left out of the list entirely rather than
+        # passed on with `factor: None` for the template to trip over.
+        if not s.get("median"):
             continue
         factor = ahead = None
         if firefox and s.get("median"):

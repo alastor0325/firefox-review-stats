@@ -1877,3 +1877,75 @@ class TestEveryConfigKeyReachesTheRenderer:
         assert cold["baseline"] == "media-seek.warm"
         assert cold["baseline_label"] == "warm"
         assert cold["self_label"] == "cold"
+
+
+class TestSmallValuesKeepEnoughPrecision:
+    """A median is rounded to a fixed 1 decimal, which sub-millisecond metrics cannot
+    survive.
+
+    The rounding was written when everything here measured 100+ ms. `media-capabilities`
+    reports in tenths and hundredths of a millisecond, and at that scale 1dp does two
+    kinds of damage:
+
+      * **It fabricates zeros.** Chrome answers a repeat query in 0.010 ms, which
+        rounds to exactly 0.0 -- and a zero rival makes `compare_to_firefox` return
+        `versus: None`, which blanked the whole Metrics view via a null factor.
+      * **It distorts the verdict.** Chrome's 0.12 ms becomes 0.1, so `4.88 / 0.12`
+        (41x) renders as `4.9 / 0.1` (49x) -- a 20% error in the headline number.
+
+    Four of the seven capability cards currently sit at 0.1, one step from the first
+    problem. So precision follows magnitude instead of being fixed.
+    """
+
+    def test_large_values_are_unchanged(self):
+        """The metrics this was written for must not move."""
+        assert summarize([160.0])["median"] == 160.0
+        assert summarize([10, 20, 30, 40, 50])["median"] == 30
+
+    def test_a_sub_millisecond_value_survives(self):
+        assert summarize([0.12])["median"] == 0.12
+        assert summarize([0.010])["median"] == 0.01
+
+    def test_a_tiny_value_does_not_become_zero(self):
+        """The crash trigger: a zero rival voids the comparison and the template then
+        calls .toFixed on a null factor."""
+        assert summarize([0.010])["median"] != 0
+        assert summarize([0.030])["median"] != 0
+        assert summarize([0.049])["median"] != 0
+
+    def test_mid_range_values_keep_two_decimals(self):
+        assert summarize([4.88])["median"] == 4.88
+
+    def test_the_quartiles_get_the_same_treatment(self):
+        """A collapsed p25/p75 on a small value would draw a zero-width range at the
+        origin."""
+        s = summarize([0.11, 0.12, 0.13, 0.14])
+        assert s["p25"] != 0 and s["p75"] != 0
+        assert s["p25"] < s["p75"]
+
+    def test_the_factor_is_computed_from_the_kept_precision(self):
+        """The point of all this: the verdict must reflect the measurement."""
+        c = compare_to_firefox(4.88, {"chrome": 0.12}, lower_is_better=True)
+        assert c["factor"] == pytest.approx(40.67, abs=0.05), (
+            "rounded to 1dp this reads 48.8x")
+
+    def test_an_exact_zero_is_still_possible_and_must_not_crash_the_view(self):
+        """Precision helps but is not a guarantee -- a genuine 0.0 can still arrive.
+        The comparison must degrade to "no rival", never to a null factor on a rival
+        the page will try to render."""
+        from reviewstats.perfmetrics import build_metrics_view
+        raw = {"generated_at": "x", "window_days": 30, "metrics": [{
+            "id": "mc.avc.hot", "group": "Capability query latency",
+            "title": "H.264, repeat query", "unit": "ms", "lower_is_better": True,
+            "note": "", "platform": "macosx1470-64-shippable",
+            "stale": False, "days_behind": 0, "window_end": "2026-08-26",
+            "series": {
+                "firefox": {"n": 52, "median": 4.88, "p25": 4.8, "p75": 5.0,
+                            "cv": 5.0, "signature_id": 1, "days_behind": 0},
+                "chrome": {"n": 1, "median": 0.0, "p25": 0.0, "p75": 0.0,
+                           "cv": 0.0, "signature_id": 2, "days_behind": 0}}}]}
+        m = build_metrics_view(raw)["metrics"][0]
+        # Whatever the policy, no rival may reach the page with a null factor.
+        for r in m["rivals"]:
+            assert r["factor"] is not None, (
+                f"{r['browser']} would hit .toFixed(null) and blank the view")
