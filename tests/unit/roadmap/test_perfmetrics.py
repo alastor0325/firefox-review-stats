@@ -1949,3 +1949,168 @@ class TestSmallValuesKeepEnoughPrecision:
         for r in m["rivals"]:
             assert r["factor"] is not None, (
                 f"{r['browser']} would hit .toFixed(null) and blank the view")
+
+
+class TestVideoPlaybackPowerIsCharted:
+    """The media-playback power suite (bug 2063085) is on the page, as two cards.
+
+    First suite here measuring energy rather than latency, and the first on Windows --
+    desktop power measurement is only available on Windows hardware workers, so
+    `run-on-projects` pins Firefox there and the group cannot share a platform with
+    anything existing.
+
+    **Only `powerUsage_cpu_package` is charted**, because it is the only series that
+    alerts: the manifests set `alert_on = "powerUsage_cpu_package"`, and Perfherder
+    reports `should_alert: True` for it on Firefox and False for every other series and
+    for Chrome. The rest are collected for diagnosis, not for a dashboard.
+
+    Two cards, deliberately:
+
+      * 4K H.264 hardware decode -- the cross-browser reading.
+      * Idle -- the baseline it must be read against, since most of a package figure is
+        the cost of having a browser open at all.
+
+    Three traps this encodes, all of which were live at some point:
+
+      * Signatures for `mp-2160p30-h264-hw / presentedFps / chrome` exist on macOS and
+        Linux and even carry data, because the task label is generated wherever the
+        `browsertime` test-set is attached. Firefox never runs there, so a card
+        configured for macOS would find a signature, produce no Firefox series, and
+        vanish. The platform must be Windows.
+      * `mp-idle / powerUsage_gpu` is identically 0.00 for both browsers, so charting
+        it would add a card whose axis is zero and whose verdict reads "no other
+        browser measured yet" while both browsers are in fact reporting.
+      * `powerUsage_cpu_package` CONTAINS `powerUsage_cpu_cores` and
+        `powerUsage_gpu` -- they are RAPL PKG, PP0 and PP1, so PKG is the parent
+        domain. Charting them beside it invites adding them together.
+    """
+
+    WIN = "windows11-64-24h2-shippable"
+
+    def _entries(self):
+        import importlib.util, pathlib, sys
+        spec = importlib.util.spec_from_file_location(
+            "fpm_power", pathlib.Path("fetch_perf_metrics.py"))
+        m = importlib.util.module_from_spec(spec)
+        sys.modules["fpm_power"] = m
+        spec.loader.exec_module(m)
+        return [e for e in m.METRICS if str(e["suite"]).startswith("mp-")]
+
+    def test_exactly_two_cards(self):
+        ids = sorted(e["id"] for e in self._entries())
+        assert ids == ["mp.hw.package", "mp.idle.package"], ids
+
+    def test_only_the_alerting_series_is_charted(self):
+        """`should_alert` is True for powerUsage_cpu_package and False for every other
+        series the suite measures. A dashboard that charts the non-alerting ones is
+        showing diagnostics as results."""
+        for e in self._entries():
+            assert e["test"] == "powerUsage_cpu_package", (
+                f"{e['id']} charts {e['test']}, which does not alert")
+
+    def test_every_card_is_on_windows(self):
+        for e in self._entries():
+            assert e["platform"] == self.WIN, (
+                f"{e['id']} is not on Windows; power is not measured elsewhere")
+
+    def test_power_is_in_microwatt_hours_and_lower_is_better(self):
+        for e in self._entries():
+            assert e["unit"] == "uWh", e["id"]
+            assert e["lower_is_better"] is True, e["id"]
+
+    def test_they_share_one_group(self):
+        """Same unit, same direction, same platform, and the second is the baseline for
+        the first -- so they belong on one axis, adjacent."""
+        assert len({e["group"] for e in self._entries()}) == 1
+
+    def test_the_idle_baseline_is_charted(self):
+        """The suite's own premise is that a browser costs most of the reading just by
+        being open, so the playback figure is unreadable without it."""
+        assert any(e["suite"] == "mp-idle" for e in self._entries())
+
+    def test_the_hardware_title_states_the_resolution_and_the_decode_path(self):
+        """4K hardware is not interchangeable with the 1080p software subtest the suite
+        also defines, and a reader must not have to open the card to learn that."""
+        hw = [e for e in self._entries() if e["suite"] == "mp-2160p30-h264-hw"][0]
+        assert "4K" in hw["title"] or "2160" in hw["title"]
+        assert "hardware" in hw["title"].lower()
+
+    def test_the_gpu_breakdown_is_not_charted(self):
+        for e in self._entries():
+            assert e["test"] != "powerUsage_gpu", (
+                "PKG already contains PP1; it is a diagnostic, not a result")
+
+    def test_cpu_cores_is_not_charted(self):
+        for e in self._entries():
+            assert e["test"] != "powerUsage_cpu_cores", (
+                "PKG already contains PP0")
+
+    def test_frame_pacing_is_not_charted(self):
+        """It is a guard on the energy figure, not a result -- and it does not alert.
+        A card reading "30.00 vs 29.88 fps" invites the question of whether we are
+        trying to win at frame rate, which is not the point."""
+        for e in self._entries():
+            assert e["test"] != "presentedFps", e["id"]
+
+    def test_software_decode_is_not_charted_yet(self):
+        """Deferred on purpose. The comparison worth making is Firefox software against
+        Firefox hardware at the SAME resolution, and the suite schedules only 1080p
+        software and 2160p hardware -- so any ratio between them would conflate
+        resolution with decode path. It arrives when 1080p hardware is scheduled."""
+        for e in self._entries():
+            assert e["suite"] != "mp-1080p30-h264-sw", (
+                "charted before there is a like-for-like hardware figure for it")
+
+
+
+
+class TestEveryConfiguredPlatformIsFetched:
+    """`collect` must query signatures for every platform in METRICS, not just macOS.
+
+    Until the media-playback power suite there was exactly one platform, so a
+    hardcoded `MAC_INTEL` anywhere in the fetch path would have behaved identically to
+    deriving it. Now a second platform is load-bearing: if the platform list stops
+    coming from the config, the Windows cards resolve to nothing and disappear with
+    only a stderr warning to say so.
+    """
+
+    def _src(self):
+        import pathlib
+        return pathlib.Path("fetch_perf_metrics.py").read_text(encoding="utf-8")
+
+    def _module(self):
+        import importlib.util, pathlib, sys
+        spec = importlib.util.spec_from_file_location(
+            "fpm_plats", pathlib.Path("fetch_perf_metrics.py"))
+        m = importlib.util.module_from_spec(spec)
+        sys.modules["fpm_plats"] = m
+        spec.loader.exec_module(m)
+        return m
+
+    def test_more_than_one_platform_is_configured(self):
+        """Guards the premise of everything below."""
+        plats = {e["platform"] for e in self._module().METRICS}
+        assert len(plats) >= 2, plats
+
+    def test_the_platform_list_is_derived_from_the_config(self):
+        src = self._src()
+        body = src[src.index("def collect("):]
+        assert 'for m in METRICS' in body and '["platform"]' in body, (
+            "collect does not derive its platforms from METRICS")
+
+    def test_the_fetch_loop_does_not_hardcode_a_platform(self):
+        """A literal platform name inside collect() would silently pin the fetch to
+        one machine pool."""
+        src = self._src()
+        body = src[src.index("def collect("):src.index("def main(")]
+        for literal in ("macosx1470", "windows11", "linux2404"):
+            assert literal not in body, (
+                f"{literal} is hardcoded in collect(); platforms must come from config")
+
+    def test_each_metric_is_matched_against_its_own_platform(self):
+        """Signatures from both pools are merged into one dict, so without a per-metric
+        platform check a Windows card could match a macOS signature."""
+        src = self._src()
+        body = src[src.index("def collect("):]
+        assert 'machine_platform' in body
+        assert 'spec["platform"]' in body

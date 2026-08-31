@@ -1972,3 +1972,48 @@ class TestASelfComparisonCardIsCharted:
     def test_the_plain_wording_survives_for_cards_with_no_sibling(self):
         html = _visible(self._html())
         assert "trend line for us rather than a comparison" in html
+
+
+class TestThinSamplesDoNotEarnTheMarker:
+    """Spread and sample count are expansion detail, never the `!` itself.
+
+    The rule is: uncompared, dead, or comparing across timeframes. `warnIcon` had two
+    branches -- one for those reasons, one fallback -- and they were **byte-identical**,
+    so the gate was dead code and any reason at all produced the marker.
+
+    It went unnoticed while every card had 30+ runs. The five media-playback power
+    cards arrive at n=7, so all five lit up for "only 7 runs in the window" -- a marker
+    on every card in a group says nothing, which is the reason the rule exists.
+    """
+
+    def _html(self):
+        return _joined(render_html(_MINIMAL_DATA, roadmap_data=_ROADMAP))
+
+    def _icon_src(self):
+        html = self._html()
+        i = html.index("function warnIcon")
+        return html[i:html.index("function dotRows")]
+
+    def test_the_two_branches_are_not_identical(self):
+        """The regression guard: identical branches make the condition meaningless."""
+        src = self._icon_src()
+        returns = re.findall(r"return\s+('<span class=\"pm-warn-icon\"|'')", src)
+        assert len(returns) >= 2, "expected an earning branch and a bail-out"
+        assert "return ''" in src, (
+            "no branch returns nothing, so every reason earns the marker")
+
+    def test_only_one_branch_emits_the_icon(self):
+        src = self._icon_src()
+        assert src.count('pm-warn-icon') == 1, (
+            "the icon is emitted from more than one branch; the gate is dead code")
+
+    def test_the_earning_reasons_are_still_the_gate(self):
+        src = self._icon_src()
+        for part in ("m.compared", "m.stale", "m.mixed_windows"):
+            assert part in src, part
+
+    def test_spread_and_samples_are_still_collected_as_detail(self):
+        """They must keep appearing in the tooltip text and the expansion -- the
+        change is only whether they light the marker on their own."""
+        src = self._icon_src()
+        assert "m.noisy" in src and "m.low_samples" in src

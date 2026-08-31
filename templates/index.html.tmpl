@@ -2572,13 +2572,16 @@ function renderMetrics() {
     if (m.low_samples) why.push('only ' + m.min_samples + ' runs in the window');
     // A comparison drawn across two timeframes is as untrustworthy as one drawn
     // against nothing, so it earns the marker on the same footing.
+    // Only these earn the marker. The fallback used to return the same icon for any
+    // reason at all, which made this condition dead code -- unnoticed while every card
+    // had 30+ runs, then every media-playback power card lit up for "only 7 runs".
+    // Spread and sample count stay in the tooltip text and the expansion; they are
+    // detail about a number, not a reason to distrust it as a cross-browser result.
     if ((!m.compared && !solo) || m.stale || m.mixed_windows) {
       return '<span class="pm-warn-icon" title="' + escA(why.join('; ')
         + ' \u2014 expand for detail') + '">!</span>';
     }
-    if (!why.length) return '';
-    return '<span class="pm-warn-icon" title="' + escA(why.join('; ')
-      + ' \u2014 expand for detail') + '">!</span>';
+    return '';
   }
 
   function dotRows(m) {

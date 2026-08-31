@@ -55,6 +55,9 @@ BROWSERTIME_FRAMEWORK = 13
 UA = "firefox-review-stats (media dashboard; github.com/alastor0325/firefox-review-stats)"
 
 MAC_INTEL = "macosx1470-64-shippable"
+# Desktop power measurement is only available on Windows hardware workers, so the
+# media-playback suite runs nowhere else and cannot share a group with anything above.
+WIN11 = "windows11-64-24h2-shippable"
 
 # What to chart, and in what order. `group` gathers metrics onto one shared scale.
 # `lower_is_better` is authoritative here — see the module docstring.
@@ -119,6 +122,48 @@ METRICS = [
     # Linux, stable across 30- and 90-day windows -- which is why the note says
     # re-initialisation is not where seek cost lives. Kept qualitative on purpose: a
     # hardcoded number here would go stale silently.
+    # Video playback power (bug 2063085). The first suite here measuring energy
+    # rather than latency, and the first on Windows -- desktop power measurement is
+    # only available on Windows hardware workers.
+    #
+    # Only `powerUsage_cpu_package` is charted, because it is the only series that
+    # alerts: the manifests set `alert_on = "powerUsage_cpu_package"`, and Perfherder
+    # reports `should_alert: True` for it on Firefox and False for every other series
+    # and for Chrome. The suite also measures `powerUsage_cpu_cores`,
+    # `powerUsage_gpu` and `presentedFps`; those are diagnostics, and PKG already
+    # CONTAINS the other two -- they are RAPL PKG, PP0 and PP1, so charting them
+    # beside it invites adding them together.
+    #
+    # Two traps before editing this block:
+    #
+    #   * `mp-2160p30-h264-hw / presentedFps / chrome` signatures exist on macOS and
+    #     Linux and even carry data, because the task label is generated wherever the
+    #     `browsertime` test-set is attached. Firefox is pinned to Windows by
+    #     `run-on-projects`, so a card configured for macOS would find a signature,
+    #     produce no Firefox series, and silently vanish.
+    #   * `mp-idle / powerUsage_gpu` is identically 0.00 for both browsers.
+    #
+    # Not charted yet: `mp-1080p30-h264-sw`. The comparison worth making there is
+    # Firefox software against Firefox hardware at the SAME resolution, and the suite
+    # schedules only 1080p software and 2160p hardware, so any ratio between them
+    # would conflate resolution with decode path. Add it once 1080p hardware is
+    # scheduled -- that is one line in the subtest list in desktop.yml.
+    {"id": "mp.hw.package", "group": "Video playback power",
+     "title": "4K H.264, hardware decode",
+     "suite": "mp-2160p30-h264-hw", "test": "powerUsage_cpu_package",
+     "platform": WIN11, "unit": "uWh", "lower_is_better": True,
+     "note": "Energy over the whole chip package while playing 2160p30 H.264 with "
+             "hardware decoding \u2014 cores, integrated GPU and on-package uncore "
+             "together. Read it against the idle card below: most of the figure is "
+             "the cost of having a browser open at all. 4K rather than 1080p because "
+             "more pixels make playback a larger share of that reading."},
+    {"id": "mp.idle.package", "group": "Video playback power",
+     "title": "Idle, no video playing",
+     "suite": "mp-idle", "test": "powerUsage_cpu_package",
+     "platform": WIN11, "unit": "uWh", "lower_is_better": True,
+     "note": "The baseline the card above is read against: what the browser costs "
+             "sitting on the page with nothing playing. Subtract it before quoting a "
+             "playback figure."},
     {"id": "media-seek.cold", "group": "Seek latency", "title": "Decoder cold",
      "suite": "media-seek", "test": "seekedColdLatency",
      "baseline": "media-seek.warm", "baseline_label": "warm",
