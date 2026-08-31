@@ -1,8 +1,8 @@
 ==============================================================================
 WEBRTC-REVIEWERS AUTHOR-PATCH LISTING (raw author %an, no aliasing)
-Source: github.com/mozilla-firefox/firefox   Paths: dom/media/webrtc, dom/media/systemservices   Since: 2026-02-27T20:03:46Z
+Source: github.com/mozilla-firefox/firefox   Paths: dom/media/webrtc, dom/media/systemservices   Since: 2026-03-04T16:48:54Z
 Excluded paths: (none)
-Authors: 46    Patches: 419    (Lando-format / Lando-author / merge / Revert commits already excluded)
+Authors: 46    Patches: 424    (Lando-format / Lando-author / merge / Revert commits already excluded)
 ==============================================================================
 
 Known aliases (applied in HTML report, NOT below):
@@ -159,9 +159,14 @@ Known aliases (applied in HTML report, NOT below):
       2026-03-05  a312568fa085  Bug 2020617: Use actual types to serialize/deserialize these. r=mjf
       2026-03-05  d8a5f382521e  Bug 2017801: Some defensive sanity-checking. r=mjf
 
-[ 3] Michael Froman  —  52 patch(es)
+[ 3] Michael Froman  —  56 patch(es)
     ----------------------------------------------------------------------
       2026-08-25  747ab3821c81  Bug 2066200 - fix messaging when upstream commit sha is not found in detect_upstream_revert.sh r=dbaker DONTBUILD
+      2026-08-25  ee4d092aee32  Bug 2064200 (MOZ) - upstream removed implicit conversion for RtpHeaderExtensionId<->int
+      2026-08-25  8c0d74bd82ca  Bug 2064200 (MOZ) - upstream changed decoded_frame_counts to key_frames_decoded
+      2026-08-25  6f642ca230ba  Bug 2064200 (MOZ) - upstream changed frame_counts to decoded_frame_counts and received_frame_counts
+      2026-08-21  2a42c06fd9c9  Bug 2064200 (MOZ) - use AudioReceiveStreamInterface::Config.Copy() since we reuse our config
+      2026-08-18  4131d19a2d80  Bug 2064200 - updated default_config_env for v153
       2026-08-06  b401d5a32fe5  Bug 2061302 - call save_patch_stack directly from loop-ff.py r=dbaker
       2026-08-03  54c1860efd09  Bug 2060362 - properly handle 0 no-op cherry-pick files. r=dbaker
       2026-08-03  e42e498367b5  Bug 2045368 - Enforce the webrtc outgoing port restriction in the parent process for ICE-TCP. r=bwc
@@ -212,7 +217,6 @@ Known aliases (applied in HTML report, NOT below):
       2026-03-04  b601dc8b0f19  Bug 2013730 - remove all the 'extern C' sections for nrappkit/nICEr includes. r=bwc
       2026-03-04  94729695047f  Bug 2013730 - update nicer.gyp and nrappkit.gyp to build as c++ r=bwc
       2026-03-04  5faf57f3cf34  Bug 2013730 - rename all nrappkit and nicer .c to .cpp r=bwc
-      2026-03-02  7a87af29029a  Bug 2018686 - reject setLocalDescription if msection active with stopped transceiver. r=bwc
 
 [ 4] Daniel Holbert  —  29 patch(es)
     ----------------------------------------------------------------------
@@ -246,7 +250,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-06-01  5e9255499f12  Bug 2043860: Change SdpAttribute::Clone() to provide the clone in a UniquePtr. r=webrtc-reviewers,bwc
       2026-06-01  47dee9bf0986  Bug 2043860: In SdpAttributeList concrete classes, store attributes in UniquePtrs instead of raw pointers. r=webrtc-reviewers,bwc
 
-[ 5] serge-sans-paille  —  27 patch(es)
+[ 5] serge-sans-paille  —  26 patch(es)
     ----------------------------------------------------------------------
       2026-08-21  f8597c25ab45  Bug 2064119 - Use default operator equal implementation when possible in dom/ r=media-playback-reviewers,webrtc-reviewers,dom-storage-reviewers,bwc,janv,padenot
       2026-08-09  d80b662fa54f  Bug 2053404 - Cleanup default state for static-analysis on Windows / dom part r=media-playback-reviewers,webrtc-reviewers,dom-worker-reviewers,bwc,alwu,edenchuang
@@ -274,7 +278,6 @@ Known aliases (applied in HTML report, NOT below):
       2026-03-18  a64dec2665c7  Bug 2023519 - Make our codebase modernize-use-equals-default + modernize-use-equals-delete -safe wrt. clang-tidy r=sylvestre,necko-reviewers,media-playback-reviewers,profiler-reviewers,dom-storage-reviewers,layout-reviewers,dom-worker-reviewers,valentin,jesup,padenot,edenchuang,emilio
       2026-03-09  cbc6f5607dd4  Bug 1992162 - Make Maybe type constinit compatible r=emilio
       2026-03-04  b093ca6e207a  Bug 2020581 - Replace copy assignment by move assignment in dom/ r=media-playback-reviewers,webrtc-reviewers,dom-worker-reviewers,dom-core,asuth,padenot,smaug,bwc
-      2026-03-04  38c02da27ede  Bug 2020581 - Replace copy assignment by move assignment in dom/ r=media-playback-reviewers,webrtc-reviewers,dom-worker-reviewers,dom-core,asuth,padenot,smaug,bwc
 
 [ 6] Philipp Hancke  —  20 patch(es)
     ----------------------------------------------------------------------
@@ -299,7 +302,26 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-02  007182b76d1c  Bug 2028060: add rtpTimestamp to RTCEncodedFrameMetadata r=bwc,smaug,webidl
       2026-04-01  214b99f05141  Bug 2028060: add mimeType to RTCEncoded(Audio|Video)Frame r=webidl,smaug,bwc
 
-[ 7] az  —  16 patch(es)
+[ 7] Sylvestre Ledru  —  16 patch(es)
+    ----------------------------------------------------------------------
+      2026-08-26  4d7a5d7a5bf7  Bug 2066694 - Silence clang 23 -Wunused-template in vendored abseil-cpp r=webrtc-reviewers,sandbox-reviewers,bobowen,bwc
+      2026-08-13  05b12e317113  Bug 2062206 - Restore ostream format state in SDP imageattr serialization (Coverity CID 1315812, 1315813, 1315814) r=webrtc-reviewers,bwc
+      2026-08-13  88d5dab6e497  Bug 2062884 - Fix unused function templates in dom/media to fix -Wunused-template with clang 23 r=webrtc-reviewers,pehrsons
+      2026-08-04  40233118ef86  Bug 2058054 - Coverity CID 1600393: move the Transport back into mTransports in ActivateTransport r=webrtc-reviewers,ng
+      2026-08-04  aa4f8b0bb022  Bug 2058054 - Coverity CID 1697202: move profileLevelId into the codec parameter map r=webrtc-reviewers,ng
+      2026-07-21  a98cf98a604b  Bug 2036402 - Apply std::move in dom (assorted modules) where values can be moved instead of copied r=dom-core-reviewers,necko-reviewers,webrtc-reviewers,dom-worker-reviewers,smaug,valentin,ng,edenchuang
+      2026-07-21  2c7f8b5eb595  Bug 2056243 - Move Maybe<RTCErrorParams> in PeerConnectionImpl DTLS state-change handlers. r=webrtc-reviewers,bwc
+      2026-07-21  0a948b6e566e  Bug 2056243 - Move Maybe<RTCErrorParams> in MediaTransportChild Recv handlers. r=webrtc-reviewers,bwc
+      2026-07-21  ba5e645ed3e3  Bug 2056243 - Move Maybe<RTCErrorParams> in MediaTransportHandlerSTS state-change handlers. r=webrtc-reviewers,bwc
+      2026-05-05  d65af2e5b0b2  Bug 1617369 - Reformat recent rust changes with rustfmt r=padenot,necko-reviewers,firefox-style-system-reviewers,emilio,jesup
+      2026-05-05  f5250d79af24  Bug 1519636 - Reformat recent changes to the Google coding style r=webrtc-reviewers,mjf
+      2026-05-04  cb1d1d9721d9  Bug 2036402 - Apply std::move in dom/media where values can be moved instead of copied r=media-playback-reviewers,padenot
+      2026-05-04  236507fe8bf9  Bug 2036402 - Use const ref bindings/iteration in dom/media to avoid copies r=media-playback-reviewers,padenot
+      2026-05-04  f20cc8e1168d  Bug 2036400 - Initialize uninitialized scalar fields in dom/media to fix Coverity uninitialized-scalar defects r=media-playback-reviewers,padenot
+      2026-04-21  3baa4071fd2b  Bug 2023419 - Remove remaining Emacs/Vim modelines from the source tree r=emilio,necko-reviewers,geckoview-reviewers,media-playback-reviewers,webidl,webrtc-reviewers,devtools-reviewers,places-reviewers,win-reviewers,firefox-style-system-reviewers,layout-reviewers,mstriemer,dshin,nchevobbe,padenot,ohall,handyman,valentin,mjf
+      2026-03-16  9eb1a31a9849  Bug 2023419 - Remove Emacs/Vim modelines from dom/ r=emilio,media-playback-reviewers,webidl,padenot
+
+[ 8] az  —  16 patch(es)
     ----------------------------------------------------------------------
       2026-07-15  90968e9918a2  Bug 2052237 - Keep hardware H.264 decode for WebRTC when no software decoder is available. r=dbaker
       2026-07-06  0157fffe8fe6  Bug 2052237 - Remove H.264 Access Unit Delimiter NALs before WebRTC OpenH264 decoder. r=dbaker
@@ -317,24 +339,6 @@ Known aliases (applied in HTML report, NOT below):
       2026-05-06  137d0ef31300  Bug 1825286 - Part 10: Add CodecInfo.{cpp,h} to parse and export WebRTC codec information for use with Media Capabilities support checks. r=pehrsons
       2026-05-06  8dcf681e2ead  Bug 1825286 - Part 9: Add functions to expose default WebRTC audio/video codecs. r=pehrsons
       2026-03-16  d4ff4b1fbfef  Bug 2001319 - Part 2: Unprovision MediaDRM origins when clearing browsing data. r=aosmond,media-playback-reviewers,webrtc-reviewers,jib
-
-[ 8] Sylvestre Ledru  —  15 patch(es)
-    ----------------------------------------------------------------------
-      2026-08-13  05b12e317113  Bug 2062206 - Restore ostream format state in SDP imageattr serialization (Coverity CID 1315812, 1315813, 1315814) r=webrtc-reviewers,bwc
-      2026-08-13  88d5dab6e497  Bug 2062884 - Fix unused function templates in dom/media to fix -Wunused-template with clang 23 r=webrtc-reviewers,pehrsons
-      2026-08-04  40233118ef86  Bug 2058054 - Coverity CID 1600393: move the Transport back into mTransports in ActivateTransport r=webrtc-reviewers,ng
-      2026-08-04  aa4f8b0bb022  Bug 2058054 - Coverity CID 1697202: move profileLevelId into the codec parameter map r=webrtc-reviewers,ng
-      2026-07-21  a98cf98a604b  Bug 2036402 - Apply std::move in dom (assorted modules) where values can be moved instead of copied r=dom-core-reviewers,necko-reviewers,webrtc-reviewers,dom-worker-reviewers,smaug,valentin,ng,edenchuang
-      2026-07-21  2c7f8b5eb595  Bug 2056243 - Move Maybe<RTCErrorParams> in PeerConnectionImpl DTLS state-change handlers. r=webrtc-reviewers,bwc
-      2026-07-21  0a948b6e566e  Bug 2056243 - Move Maybe<RTCErrorParams> in MediaTransportChild Recv handlers. r=webrtc-reviewers,bwc
-      2026-07-21  ba5e645ed3e3  Bug 2056243 - Move Maybe<RTCErrorParams> in MediaTransportHandlerSTS state-change handlers. r=webrtc-reviewers,bwc
-      2026-05-05  d65af2e5b0b2  Bug 1617369 - Reformat recent rust changes with rustfmt r=padenot,necko-reviewers,firefox-style-system-reviewers,emilio,jesup
-      2026-05-05  f5250d79af24  Bug 1519636 - Reformat recent changes to the Google coding style r=webrtc-reviewers,mjf
-      2026-05-04  cb1d1d9721d9  Bug 2036402 - Apply std::move in dom/media where values can be moved instead of copied r=media-playback-reviewers,padenot
-      2026-05-04  236507fe8bf9  Bug 2036402 - Use const ref bindings/iteration in dom/media to avoid copies r=media-playback-reviewers,padenot
-      2026-05-04  f20cc8e1168d  Bug 2036400 - Initialize uninitialized scalar fields in dom/media to fix Coverity uninitialized-scalar defects r=media-playback-reviewers,padenot
-      2026-04-21  3baa4071fd2b  Bug 2023419 - Remove remaining Emacs/Vim modelines from the source tree r=emilio,necko-reviewers,geckoview-reviewers,media-playback-reviewers,webidl,webrtc-reviewers,devtools-reviewers,places-reviewers,win-reviewers,firefox-style-system-reviewers,layout-reviewers,mstriemer,dshin,nchevobbe,padenot,ohall,handyman,valentin,mjf
-      2026-03-16  9eb1a31a9849  Bug 2023419 - Remove Emacs/Vim modelines from dom/ r=emilio,media-playback-reviewers,webidl,padenot
 
 [ 9] Daniel Baker  —  13 patch(es)
     ----------------------------------------------------------------------
@@ -398,8 +402,9 @@ Known aliases (applied in HTML report, NOT below):
       2026-03-12  33b22a373fdf  Bug 1814459 - Part 1. Add RTCError and RTCErrorEvent WebIDL interfaces and base C++ implementation. r=bwc,webidl,saschanaz,smaug
       2026-03-05  5987282452ba  Bug 1561441 - Implement RTCPeerConnection icecandidateerror event. r=bwc,webidl,smaug,mjf
 
-[14] Emilio Cobos Álvarez  —  6 patch(es)
+[14] Emilio Cobos Álvarez  —  7 patch(es)
     ----------------------------------------------------------------------
+      2026-08-27  5708a8ea6501  Bug 2067071 - Fix a couple rust nightly warnings. r=gfx-reviewers,firefox-style-system-reviewers,dshin
       2026-05-02  1bd0da8bf764  Bug 2033243 - Rename GetOwnerGlobal to GetRelevantGlobal. r=dom-core,media-playback-reviewers,credential-management-reviewers,webrtc-reviewers,dom-storage-reviewers,firefox-style-system-reviewers,dimi,janv,dshin,aosmond,smaug
       2026-05-02  7177a68e67c5  Bug 2033243 - Rename GetOwnerGlobal to GetRelevantGlobal. r=dom-core,media-playback-reviewers,credential-management-reviewers,webrtc-reviewers,dom-storage-reviewers,firefox-style-system-reviewers,dimi,janv,dshin,aosmond,smaug
       2026-05-01  a7945292ed30  Bug 2033243 - Rename GetOwnerGlobal to GetRelevantGlobal. r=dom-core,media-playback-reviewers,credential-management-reviewers,webrtc-reviewers,dom-storage-reviewers,firefox-style-system-reviewers,dimi,janv,dshin,aosmond,smaug
