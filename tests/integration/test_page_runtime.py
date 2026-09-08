@@ -176,6 +176,20 @@ def page_state(rendered):
             views = page.evaluate(
                 "() => [...document.querySelectorAll("
                 "'.toggle-bar button[data-view]')].map(b => b.dataset.view)")
+            # Presence != reachability. A config-disabled view (see
+            # render.DISABLED_VIEWS) keeps its button in the DOM but hides
+            # it, which is exactly what `visibleAxisValues` reads.
+            visible_views = page.evaluate(
+                "() => [...document.querySelectorAll("
+                "'.toggle-bar button[data-view]')]"
+                ".filter(b => b.offsetParent !== null).map(b => b.dataset.view)")
+            queue_rows = page.evaluate(
+                "() => document.querySelectorAll('#queue-table tbody tr').length")
+            # A deep link must not be able to open a hidden view.
+            page.evaluate("() => { location.hash = '#queue'; }")
+            page.wait_for_timeout(300)
+            view_after_queue_hash = page.evaluate(
+                "() => document.body.dataset.view")
             # The Metrics subview is display:none until its tab is active, so the
             # verdict text has to be read after clicking through.
             page.click('[data-view="health"]')
@@ -190,7 +204,15 @@ def page_state(rendered):
             browser.close()
     return {"errors": errors, "failed_urls": failed_urls,
             "lengths": lengths, "views": views,
+            "visible_views": visible_views, "queue_rows": queue_rows,
+            "view_after_queue_hash": view_after_queue_hash,
             "verdict_lines": verdict_lines, "body_text": body_text}
+
+
+def _disabled():
+    from reviewstats.render import DISABLED_VIEWS
+
+    return DISABLED_VIEWS
 
 
 class TestPageExecutes:
@@ -226,9 +248,49 @@ class TestPageExecutes:
         )
 
     def test_every_view_button_is_present(self, page_state):
+        """Every view still ships its button, including disabled ones —
+        that is what keeps re-enabling a one-constant flip."""
         assert page_state["views"] == [
             "team", "member", "queue", "recent", "health"
         ]
+
+    def test_disabled_views_are_not_reachable(self, page_state):
+        """The actual contract of render.DISABLED_VIEWS. Asserted on
+        visibility rather than on the generated JS, so it survives a
+        refactor of the gate and fails if the gate stops working."""
+        DISABLED_VIEWS = _disabled()
+        for view in DISABLED_VIEWS:
+            assert view in page_state["views"], (
+                f"{view} button should still ship"
+            )
+            assert view not in page_state["visible_views"], (
+                f"{view} is disabled but its tab is still visible"
+            )
+        # team/member have no data gate, so they are reachable on every
+        # page — a useful control that the gate hid only what it should.
+        # recent/health are excluded: this fixture has no recent_changes
+        # block, so `!RECENT` legitimately hides that tab too.
+        for view in ("team", "member"):
+            if view not in DISABLED_VIEWS:
+                assert view in page_state["visible_views"], (
+                    f"{view} should be reachable but is hidden"
+                )
+
+    def test_disabled_view_shows_no_rows(self, page_state):
+        """User-visible outcome: nothing is built for a hidden view.
+
+        Two mechanisms guarantee this — render_html strips `patch_list`
+        and setupQueue early-returns — so this asserts the outcome, not
+        either mechanism. The strip is pinned directly in
+        test_phab_render_e2e.py.
+        """
+        if "queue" in _disabled():
+            assert page_state["queue_rows"] == 0
+
+    def test_hash_cannot_open_a_disabled_view(self, page_state):
+        """`#queue` in the URL must be refused, not honoured."""
+        if "queue" in _disabled():
+            assert page_state["view_after_queue_hash"] != "queue"
 
 
 class TestNoOrphanedElementWrites:

@@ -20,11 +20,11 @@ Each per-team page has four views, toggled at the top — plus a fifth, **Media 
 
 - **Team View** — Headline summary (in-scope patch count, group-tagged %, listed-members reviewing, "landed without team review" with a foldable drill-down pie + patch list). Within-group reviewer distribution, concentration metrics (Gini, bus factor), sole-reviewer-risk, total reviews per member, top patch authors, author→reviewer mapping. Four periods: **1-Month** / **3-Month** / **6-Month** rollups (same content, narrower commit slices) and **Per-Week** (most-recent-week slice for wait-time data).
 - **Member View** — Per-member profile: weekly activity (reviews + patches submitted), authors whose patches they reviewed, wait-time tiles when they're the author.
-- **Wait Queue** — Per-revision table of in-scope, member-authored patches sorted by longest wait first. Links straight into Phabricator.
+- **Wait Queue** — Per-revision table of in-scope, member-authored patches sorted by longest wait first. Links straight into Phabricator. **Currently disabled on every team page** — see [Temporarily disabling a view](#temporarily-disabling-a-view).
 - **Recent Changes** — A "what changed in this component" digest, defaulting to **This Week** (toggle to **This Month**). Landed **patches** (one per revision; re-lands counted once) are grouped into **feature areas** — the subdirectory each patch changed the most, mapped to a friendly label — **ordered by number of patches**, with a `count/total · %` badge per area. Each area shows a short, plain-language LLM **overview** (what changed and why it matters; a key highlight may be bolded in red) with its full patch list tucked behind a **"Show N patches"** toggle, collapsed by default. Covers all landings, not just team-reviewed ones. Overviews are generated at refresh time by the Claude API (see [Recent-change summaries](#recent-change-summaries)); without an API key the tab still renders the patch lists, just without overviews.
 - **Media Health** *(playback only)* — The media roadmap and, later, the Raptor performance metrics. Two subviews: **Roadmap** and **Performance**. Roadmap renders the curated item list in three groups — **Ordered** (impact against how many users meet the problem, cost breaking ties), **Need measuring first** (unranked: low confidence, or no reach figure — the next action is to find out, not to build), and **Continuous** (spec and upkeep, budgeted as a share of time rather than ranked). Each row expands to its authored consequence, evidence and details. **Reach is shown; the score it feeds is not** — reach is a contested input worth arguing about, the arithmetic isn't. The metrics table at the bottom is the seam with Performance: every target is currently unset, which is what blocks the perennial-quality scope. Unlike the other four views, this one is about the product rather than the review process, which is why it exists for one team only. It removes itself automatically on teams with no roadmap.
 
-**Keyboard navigation:** on a team page, **←/→** cycle the view (Team → Member → Wait Queue → Recent Changes → Media Health) and **Shift+←/→** cycle the current view's secondary axis — the period in Team View (6-Month → 3-Month → 1-Month → Per-Week), the window in Recent Changes, the section in Media Health. Arrows are ignored while typing in a field, and Cmd/Alt/Ctrl+arrow are left to the OS/browser (Ctrl+← / → is the macOS Spaces switch, which is why Shift — not Ctrl — drives the period).
+**Keyboard navigation:** on a team page, **←/→** cycle the view (Team → Member → Wait Queue → Recent Changes → Media Health, skipping any that are hidden) and **Shift+←/→** cycle the current view's secondary axis — the period in Team View (6-Month → 3-Month → 1-Month → Per-Week), the window in Recent Changes, the section in Media Health. Arrows are ignored while typing in a field, and Cmd/Alt/Ctrl+arrow are left to the OS/browser (Ctrl+← / → is the macOS Spaces switch, which is why Shift — not Ctrl — drives the period).
 
 **Deep links:** the view and its period/window are encoded in the URL hash, so you can link straight to a state — `#team/6m`, `#team/3m`, `#team/1m`, `#team/weekly`, `#member`, `#queue`, `#recent/1w`, `#recent/1m`, `#health/roadmap`. The hash updates as you toggle and is restored on load and on back/forward.
 
@@ -95,6 +95,25 @@ Both publishers (`.github/workflows/refresh.yml` and `refresh-overviews.sh`) der
 If the team's review group is tagged in commit messages under a hashtag that doesn't end in `-reviewers` — a secondary alias like `r=dom-core`, or a suffixless project like `#webidl` — add it to `_GROUP_ALIASES` in `reviewstats/parse.py`. Otherwise the tag parses as an individual, `_has_group()` misses it, and the group's load is undercounted.
 
 Seeding note: `analyze_phab.py` scrapes each new D-number through Playwright, and the weekly job only commits `raw_data/` at the very end — a first run large enough to hit the 60-minute timeout throws the whole scrape away. Run step 3 locally and commit `raw_data/` before letting CI take over.
+
+## Temporarily disabling a view
+
+`DISABLED_VIEWS` in `reviewstats/render.py` hides a view's tab on every team
+page, whatever data exists behind it. **To re-enable, remove the id and
+regenerate** — nothing else to undo:
+
+```python
+DISABLED_VIEWS: tuple[str, ...] = ("queue",)
+```
+
+Hiding the tab is enough: `visibleAxisValues` filters on `offsetParent`, so a
+hidden view drops out of keyboard cycling and is refused by `#hash` deep links.
+Payload whose only reader is a disabled view is also stripped at render time
+(`patch_list` is 13-20% of a page), while `data_phab.json` keeps every key so
+re-enabling never needs a re-scrape.
+
+Distinct from Recent Changes and Media Health, which disappear when their data
+is missing rather than by config.
 
 ## Local development
 

@@ -131,16 +131,41 @@ def test_phab_last_week_slice_survives_render():
     assert lw["percentiles"]["p50"] == 3.0
 
 
-def test_wait_queue_rows_survive_render():
+def test_wait_queue_rows_survive_render(monkeypatch):
     """The Wait Queue table is JS-rendered from phab.patch_list.
-    Verify the underlying records all made it into the embedded
-    JSON."""
+    Verify the underlying records all made it into the embedded JSON.
+
+    Rendered with the view enabled: `patch_list` is deliberately stripped
+    while the Wait Queue is disabled (see render.DISABLED_VIEWS and
+    test_patch_list_is_not_shipped_while_the_view_is_disabled below), so
+    this pins the plumbing that has to still work when it is switched
+    back on.
+    """
+    from reviewstats import render
+
+    monkeypatch.setattr(render, "DISABLED_VIEWS", ())
     html = render_html(_MIN_DATA, phab_data=_PHAB)
     phab = _extract(html, "PHAB_DATA")
     rows = phab["patch_list"]
     assert len(rows) == 2
     d_numbers = {r["d_number"] for r in rows}
     assert d_numbers == {"D101", "D102"}
+
+
+def test_patch_list_is_not_shipped_while_the_view_is_disabled():
+    """The removal half of the contract. `patch_list` is 13-20% of a
+    rendered page and the Wait Queue table is its only reader, so while
+    that view is off the payload must not reach the page at all."""
+    from reviewstats.render import DISABLED_VIEWS
+
+    html = render_html(_MIN_DATA, phab_data=_PHAB)
+    phab = _extract(html, "PHAB_DATA")
+    if "queue" in DISABLED_VIEWS:
+        assert "patch_list" not in phab
+        # Everything else the page still reads must survive the strip.
+        assert phab["per_author"]["alwu"]["n_react"] == 2
+    else:
+        assert "patch_list" in phab
 
 
 def test_per_author_wait_tile_data_survives_render():

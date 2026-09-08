@@ -13,6 +13,20 @@ _ROADMAP_PLACEHOLDER = "__ROADMAP_DATA_JSON__"
 _METRICS_PLACEHOLDER = "__METRICS_DATA_JSON__"
 _GH_CORNER_PLACEHOLDER = "__GH_CORNER__"
 _GH_CORNER_CSS_PLACEHOLDER = "__GH_CORNER_CSS__"
+_DISABLED_VIEWS_PLACEHOLDER = "__DISABLED_VIEWS_JSON__"
+
+# Views switched off on every team page, whatever data exists behind them —
+# a config gate, unlike Recent Changes and Media Health which hide
+# themselves when their payload is missing. Ordered, so the rendered page
+# doesn't churn between runs.
+#
+# TO RE-ENABLE: remove the id. Nothing else to undo.
+DISABLED_VIEWS: tuple[str, ...] = ("queue",)
+
+# Payload that only a disabled view can render, and is worth not shipping:
+# `patch_list` is 13-20% of a rendered page and has exactly one reader, the
+# Wait Queue table. Keyed by view id so the association is explicit.
+_VIEW_PAYLOAD_KEYS: dict[str, str] = {"queue": "patch_list"}
 
 
 def _safe_json(data: object) -> str:
@@ -22,6 +36,31 @@ def _safe_json(data: object) -> str:
         json.dumps(data, default=str, ensure_ascii=False)
         .replace("<", "\\u003c")
     )
+
+
+def strip_disabled_payloads(
+    phab_data: dict | None,
+    disabled: tuple[str, ...] | None = None,
+) -> dict | None:
+    """Drop payload whose only reader is a disabled view.
+
+    Hiding the tab already makes the view unreachable; this stops the page
+    carrying data nothing can render. Returns a shallow copy — the caller's
+    dict is written to disk as `data_phab.json` and must keep every key, so
+    re-enabling stays a config flip with no re-scrape.
+    """
+    # Resolved at call time, not bound as a default — otherwise the module
+    # constant is captured at import and can never be overridden.
+    disabled = DISABLED_VIEWS if disabled is None else disabled
+    if not phab_data:
+        return phab_data
+    drop = {
+        key for view, key in _VIEW_PAYLOAD_KEYS.items()
+        if view in disabled and key in phab_data
+    }
+    if not drop:
+        return phab_data
+    return {k: v for k, v in phab_data.items() if k not in drop}
 
 
 def render_html(
@@ -45,9 +84,10 @@ def render_html(
     return (
         template
         .replace(_DATA_PLACEHOLDER, _safe_json(data))
-        .replace(_PHAB_PLACEHOLDER, _safe_json(phab_data))
+        .replace(_PHAB_PLACEHOLDER, _safe_json(strip_disabled_payloads(phab_data)))
         .replace(_ROADMAP_PLACEHOLDER, _safe_json(roadmap_data))
         .replace(_METRICS_PLACEHOLDER, _safe_json(metrics_data))
         .replace(_GH_CORNER_PLACEHOLDER, github_corner_html())
         .replace(_GH_CORNER_CSS_PLACEHOLDER, GITHUB_CORNER_CSS)
+        .replace(_DISABLED_VIEWS_PLACEHOLDER, _safe_json(list(DISABLED_VIEWS)))
     )

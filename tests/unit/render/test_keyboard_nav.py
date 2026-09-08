@@ -1,10 +1,13 @@
 """Tests for arrow-key navigation of the two-axis toggle bar.
 
-The dashboard already switches state via `data-view` (team|member|queue)
+The dashboard already switches state via `data-view` (team|member|queue).
+Note: `queue` is currently hidden by `render.DISABLED_VIEWS`, so a user
+cycles team -> member -> recent. These tests pin the axis mechanics, which
+must keep working for whatever set of views is visible
 and `data-period` (1m|3m|total|weekly) on `<body>`. This feature adds a
 global `keydown` handler so the keyboard mirrors the click toggles:
 
-  * Left / Right            → cycle the VIEW axis (team → member → queue)
+  * Left / Right            → cycle the VIEW axis (visible views only)
   * Shift + Left / Right    → cycle the PERIOD axis, Team View only
 
 Shift (not Ctrl) is the period modifier: Ctrl+Arrow is the macOS Spaces

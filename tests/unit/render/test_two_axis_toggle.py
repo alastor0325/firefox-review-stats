@@ -187,6 +187,8 @@ class TestCSSMatrix:
                 "{ display: none }"
             )
 
+    # Queue is hidden by render.DISABLED_VIEWS; these guard the markup
+    # and CSS so re-enabling stays a one-constant flip.
     def test_queue_only_hidden_in_other_views(self):
         html = _render()
         for v in ("team", "member"):
@@ -266,6 +268,8 @@ class TestSectionTagging:
 
 
 class TestWaitQueueView:
+    # Queue is hidden by render.DISABLED_VIEWS; these guard the markup
+    # and CSS so re-enabling stays a one-constant flip.
     def test_queue_section_present(self):
         html = _render()
         assert re.search(r'class="queue-only"', html), (

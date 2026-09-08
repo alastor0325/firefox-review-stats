@@ -1619,6 +1619,9 @@ __GH_CORNER__
 const DATA = __DATA_JSON__;
 const PHAB_DATA = __PHAB_DATA_JSON__;
 const RECENT = DATA.recent_changes || null;
+// Views turned off in config rather than by missing data — see
+// DISABLED_VIEWS in reviewstats/render.py. Temporary by design.
+const DISABLED_VIEWS = __DISABLED_VIEWS_JSON__;
 // Only the team that has a roadmap gets a payload here; null everywhere else,
 // which is what removes the Media Health tab. Both subviews are driven by this
 // one payload: Roadmap renders `items`, Performance renders `metrics`.
@@ -2092,6 +2095,23 @@ if (!RECENT) {
 if (!ROADMAP) {
   document.querySelectorAll('.toggle-bar button[data-view="health"]')
     .forEach(b => { b.style.display = 'none'; });
+}
+
+// Views turned off in config rather than by missing data. Same
+// hide-the-button mechanism as the two gates above.
+DISABLED_VIEWS.forEach(v => {
+  document.querySelectorAll(`.toggle-bar button[data-view="${v}"]`)
+    .forEach(b => { b.style.display = 'none'; });
+});
+
+// Whatever hid it, never leave the body on a view whose tab is gone — every
+// section would be display:none. Asks the DOM rather than any one gate, so
+// this covers RECENT and ROADMAP too, not just the config list.
+{
+  const visible = visibleAxisValues('view');
+  if (visible.length && !visible.includes(document.body.dataset.view)) {
+    setView(visible[0]);
+  }
 }
 
 // Initial team-total render — reads the HTML's default data-period
@@ -3596,6 +3616,13 @@ if (PHAB_DATA && PHAB_DATA.n > 0) {
 // Wait Queue view: per-revision audit table with sortable columns
 // =============================================================
 (function setupQueue() {
+  // Builds one row per revision — hundreds of them. Skip it whenever the
+  // tab is unreachable, for whatever reason: asking the DOM (the same
+  // source visibleAxisValues uses) rather than the config list means this
+  // keeps working if the queue is ever hidden by something other than
+  // DISABLED_VIEWS. render_html also strips `patch_list` while the view is
+  // off, so there is usually nothing to build anyway.
+  if (!visibleAxisValues('view').includes('queue')) return;
   const rows = (PHAB_DATA && PHAB_DATA.patch_list) || [];
   document.getElementById('queue-total').textContent =
     `${rows.length} revisions`;
