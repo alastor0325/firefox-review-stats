@@ -32,7 +32,15 @@ echo "Regenerating reports + overviews..."
 "$PY" analyze_git.py
 
 echo "Committing overviews + summary cache..."
-git add -A index.html playback/ webrtc/ gfx/ .summary_cache/
+# Derived from the registry, not hardcoded: a team added to TEAMS but
+# missed here would generate its dashboard and never have it committed,
+# and the script would report "No changes to commit". Only existing
+# folders are listed — `git add` on a missing pathspec is a fatal error
+# under `set -e`, and a team whose window has no commits gets no folder.
+TEAM_DIRS=$("$PY" -c 'import os; from reviewstats.teams import TEAMS; print(" ".join(f"{s}/" for s in TEAMS if os.path.isdir(s)))')
+# Unquoted on purpose — the slug list must word-split into separate args.
+# shellcheck disable=SC2086
+git add -A index.html $TEAM_DIRS .summary_cache/
 if git diff --cached --quiet; then
   echo "No changes to commit."
 else

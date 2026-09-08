@@ -21,6 +21,24 @@ _LANDO_FORMAT_RE = re.compile(r"apply code formatting via Lando", re.IGNORECASE)
 _MERGE_RE = re.compile(r"^Merge\b", re.IGNORECASE)
 _REVERT_RE = re.compile(r"^Revert\b", re.IGNORECASE)
 _GROUP_SUFFIXES = ("-reviewers", "-reviewers-rotation")
+# Review groups the `-reviewers` suffix rule can't recognise. Two shapes:
+# a project's secondary hashtag (`#dom-core` and `#dom-core-reviewers`
+# both resolve to Phab project 178), and a project whose only hashtag
+# has no suffix at all (`#webidl` is project 112). Both are common in
+# mozilla-central subjects — `r=dom-core` accounts for 237 of that
+# group's 575 tags over a 6-month window — and without this table they
+# parse as *individuals*, so `_has_group()` misses them and the bare
+# hashtag shows up as a phantom person in the non-member reviewer list.
+#
+# Values are the canonical name the rest of the pipeline matches on
+# (`Team.group`); a suffixless project maps to itself. Keep this an
+# explicit allow-list: inferring "looks like a component" would
+# misclassify real handles.
+_GROUP_ALIASES: dict[str, str] = {
+    "dom-core": "dom-core-reviewers",  # Phab project 178
+    "layout": "layout-reviewers",      # Phab project 126
+    "webidl": "webidl",                # Phab project 112, no suffix
+}
 _EXCLUDED_AUTHORS = frozenset({"Lando"})
 
 
@@ -30,8 +48,21 @@ class Reviewer:
     is_group: bool
 
 
+def canonical_group(token: str) -> str | None:
+    """The canonical review-group name a reviewer token denotes, or
+    None if the token is an individual.
+
+    Aliases resolve to the spelling `Team.group` uses, so
+    `r=dom-core` and `r=dom-core-reviewers` are the same group
+    downstream.
+    """
+    if token in _GROUP_ALIASES:
+        return _GROUP_ALIASES[token]
+    return token if token.endswith(_GROUP_SUFFIXES) else None
+
+
 def is_group_reviewer(token: str) -> bool:
-    return token.endswith(_GROUP_SUFFIXES)
+    return canonical_group(token) is not None
 
 
 def parse_reviewers(subject: str) -> list[Reviewer]:
@@ -39,11 +70,17 @@ def parse_reviewers(subject: str) -> list[Reviewer]:
     seen: set[str] = set()
     for match in _REVIEWER_BLOCK_RE.finditer(subject):
         for raw in match.group(1).split(","):
-            name = raw.strip().lstrip("#").rstrip(".")
-            if not name or name in seen:
+            token = raw.strip().lstrip("#").rstrip(".")
+            if not token:
+                continue
+            group = canonical_group(token)
+            # De-dup on the canonical name so a subject naming both an
+            # alias and its canonical spelling yields one Reviewer.
+            name = group or token
+            if name in seen:
                 continue
             seen.add(name)
-            out.append(Reviewer(name=name, is_group=is_group_reviewer(name)))
+            out.append(Reviewer(name=name, is_group=group is not None))
     return out
 
 

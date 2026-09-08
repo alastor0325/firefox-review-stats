@@ -77,16 +77,59 @@ def test_commits_phab_outputs(workflow_text):
     assert "raw_data" in workflow_text
 
 
-def test_commits_per_team_subfolders(workflow_text):
-    """The commit step must stage every registered team's subfolder
-    so their data_git.json / data_phab.json / index.html land in
-    the auto-publish push. A future team added to TEAMS that's
-    missing here will silently never appear on the live site."""
+# Both publishers stage the same team folders: the weekly workflow, and
+# refresh-overviews.sh for local overview regeneration. They used to
+# spell the slug list out by hand, so adding a team meant editing three
+# files and the dashboard silently never shipped if you missed one.
+_SCRIPT = _WORKFLOW.parent.parent.parent / "refresh-overviews.sh"
+_PUBLISHERS = [_WORKFLOW, _SCRIPT]
+
+
+def _git_add_line(path: Path) -> str:
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if line.lstrip().startswith("git add"):
+            return line
+    raise AssertionError(f"{path.name} has no `git add` line")
+
+
+@pytest.mark.parametrize("path", _PUBLISHERS, ids=lambda p: p.name)
+def test_publisher_derives_team_folders_from_the_registry(path):
+    """The team folders must be DERIVED from reviewstats.teams.TEAMS,
+    not listed literally. A hardcoded list is the failure mode this
+    replaced: a team in the registry but missing from the list
+    generates its dashboard and never gets committed."""
+    line = _git_add_line(path)
+    assert "$TEAM_DIRS" in line, (
+        f"{path.name} should stage $TEAM_DIRS, not a literal slug list."
+    )
+    text = path.read_text(encoding="utf-8")
+    assert "from reviewstats.teams import TEAMS" in text, (
+        f"{path.name} sets TEAM_DIRS without deriving it from TEAMS."
+    )
+
+
+@pytest.mark.parametrize("path", _PUBLISHERS, ids=lambda p: p.name)
+def test_publisher_does_not_hardcode_a_team_slug(path):
+    """Guards the derivation from quietly regrowing a manual list."""
     from reviewstats.teams import TEAMS
+    line = _git_add_line(path)
     for slug in TEAMS:
-        assert f"{slug}/" in workflow_text, (
-            f"workflow doesn't commit the {slug}/ subfolder — its "
-            "data will never make it to GH Pages."
+        assert f"{slug}/" not in line, (
+            f"{path.name} hardcodes {slug}/ in its git-add line — "
+            "the whole point of $TEAM_DIRS is that it can't drift."
+        )
+
+
+def test_derivation_filters_out_missing_folders():
+    """`git add` on a pathspec matching nothing is fatal, and both
+    publishers run under `set -e`. A team whose window yielded no
+    commits produces no folder, so the derivation must skip it or the
+    publish step takes the whole run down."""
+    for path in _PUBLISHERS:
+        text = path.read_text(encoding="utf-8")
+        assert "os.path.isdir" in text, (
+            f"{path.name} stages every registered slug unconditionally; "
+            "a team with no output folder would abort the publish."
         )
 
 

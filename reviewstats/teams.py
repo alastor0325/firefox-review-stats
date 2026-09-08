@@ -133,10 +133,108 @@ GFX_TEAM = Team(
 )
 
 
+LAYOUT_TEAM = Team(
+    slug="layout",
+    display_name="layout-reviewers",
+    group="layout-reviewers",
+    # All of layout/, including layout/style. The style system has its
+    # own group (firefox-style-system-reviewers is the more common tag
+    # there, 251 uses vs 69 over 6 months), but this roster reviews
+    # style work as individuals — keeping it in scope measures 74%
+    # team review against 68% without it. servo/ (Stylo) is the style
+    # system's own tree and stays out of scope entirely.
+    paths=("layout",),
+    excludes=(),
+    # Source: https://phabricator.services.mozilla.com/project/members/126/
+    # tnikkel also appears in GFX_TEAM — same independent-roster
+    # arrangement as aosmond across playback/gfx.
+    members={
+        "emilio": "Emilio Cobos Álvarez",
+        "dholbert": "Daniel Holbert",
+        "dshin": "David Shin",
+        "TYLin": "Ting-Yu Lin",
+        "jfkthame": "Jonathan Kew",
+        "boris": "Boris Chiou",
+        "hiro": "Hiroyuki Ikezoe",
+        "jwatt": "Jonathan Watt",
+        "tnikkel": "Timothy Nikkel",
+        "AlaskanEmily": "Emily Anne McDonough",
+        "tlouw": "Tiaan Louw",
+    },
+)
+
+
+DOM_CORE_TEAM = Team(
+    slug="dom-core",
+    display_name="dom-core-reviewers",
+    group="dom-core-reviewers",
+    # An ALLOW-LIST, not `dom/` minus excludes. dom/ is a federation of
+    # review groups and dom-core is not the dominant reviewer in most
+    # of it: scoping to all of dom/ measures 27% team review, so 73% of
+    # patches would land in the "no team review" bucket and the
+    # headline risk metric would be noise. These 8 paths measure 58%.
+    #
+    # Measured owners of the subtrees deliberately left out:
+    #   dom/media                 media-playback-reviewers / webrtc
+    #   dom/canvas, dom/webgpu    gfx-reviewers / webgpu-reviewers
+    #   dom/quota, dom/indexedDB,
+    #     dom/localstorage        dom-storage-reviewers
+    #   dom/workers,
+    #     dom/serviceworkers,
+    #     dom/cache               dom-worker-reviewers
+    #   dom/svg                   firefox-svg-reviewers
+    #   dom/animation             layout-scroll-driven-animation-reviewers
+    #   dom/webtransport,
+    #     dom/network, dom/fetch  necko-reviewers
+    #
+    # An allow-list also fails safe. A new dom/ subdirectory owned by
+    # another group stays out of scope until someone opts it in, where
+    # an exclude-list would silently pull it in and need chasing.
+    paths=(
+        "dom/base",
+        "dom/html",
+        "dom/events",
+        "dom/bindings",
+        "dom/webidl",
+        "dom/ipc",
+        "docshell",
+        "parser",
+    ),
+    excludes=(),
+    # Source: https://phabricator.services.mozilla.com/project/members/178/
+    members={
+        "smaug": "Olli Pettay",
+        "peterv": "Peter Van der Beken",
+        "edgar": "Edgar Chen",
+        "farre": "Andreas Farre",
+        "masayuki": "Masayuki Nakano",
+        "hsivonen": "Henri Sivonen",
+        "mccr8": "Andrew McCreight",
+        "sefeng": "Sean Feng",
+        "hsinyi": "Hsin-Yi Tsai",
+        "jjaschke": "Jan Jaeschke [:jjaschke]",
+        "avandolder": "Adam Vandolder",
+        "keithamus": "Keith Cirkel",
+        "zcorpan": "Simon Pieters",
+        "sfarre": "Simon Farre",
+        "vhilla": "Vincent Hilla",
+    },
+    # The highest-volume non-roster reviewers inside these paths.
+    # Adjacent-team peers do a lot of the reviewing here; without them
+    # "landed without team review" reads ~42% for reasons that have
+    # nothing to do with queue health.
+    approved_reviewers=frozenset(
+        {"emilio", "nika", "asuth", "saschanaz", "tschuster"}
+    ),
+)
+
+
 TEAMS: dict[str, Team] = {
     PLAYBACK_TEAM.slug: PLAYBACK_TEAM,
     WEBRTC_TEAM.slug: WEBRTC_TEAM,
     GFX_TEAM.slug: GFX_TEAM,
+    LAYOUT_TEAM.slug: LAYOUT_TEAM,
+    DOM_CORE_TEAM.slug: DOM_CORE_TEAM,
 }
 
 

@@ -12,10 +12,15 @@ If a future commit adds a second team, that team gets its own
 test file — this one only certifies the playback team didn't drift.
 """
 
+from itertools import permutations, product
+
 import pytest
 
+from reviewstats.parse import _GROUP_ALIASES
 from reviewstats.teams import (
+    DOM_CORE_TEAM,
     GFX_TEAM,
+    LAYOUT_TEAM,
     PLAYBACK_TEAM,
     TEAMS,
     Team,
@@ -125,24 +130,6 @@ def test_webrtc_is_registered():
     assert get_team("webrtc") is WEBRTC_TEAM
 
 
-def test_playback_and_webrtc_paths_are_disjoint():
-    """A commit touching only dom/media/webrtc must not appear in the
-    playback report — playback's excludes drop it. Conversely, a
-    commit touching only dom/media (e.g. mediacapabilities) doesn't
-    land in the webrtc report because webrtc's paths don't include
-    that root. Pin both ends so a future config edit can't quietly
-    overlap the teams."""
-    # Playback owns dom/media but excludes the webrtc-owned subtrees.
-    assert PLAYBACK_TEAM.paths == ("dom/media",)
-    for ex in WEBRTC_TEAM.paths:
-        assert ex in PLAYBACK_TEAM.excludes, (
-            f"Playback should exclude every WebRTC root ({ex!r}) "
-            "to avoid double-counting."
-        )
-    # WebRTC's paths don't include the bare dom/media root.
-    assert "dom/media" not in WEBRTC_TEAM.paths
-
-
 def test_gfx_team_matches_user_spec():
     """Scope from the design discussion: gfx + image + dom/canvas +
     dom/webgpu (Option A — what gfx-reviewers actually review day to
@@ -190,25 +177,6 @@ def test_gfx_is_registered():
     assert get_team("gfx") is GFX_TEAM
 
 
-def test_gfx_paths_do_not_overlap_with_playback_or_webrtc():
-    """gfx's roots are entirely disjoint from playback's `dom/media`
-    and webrtc's `dom/media/webrtc` + `dom/media/systemservices`.
-    A commit can't end up double-counted in two teams' git-side
-    reports just because the path scopes overlap."""
-    other_paths = set(PLAYBACK_TEAM.paths) | set(WEBRTC_TEAM.paths)
-    for gp in GFX_TEAM.paths:
-        for op in other_paths:
-            assert not gp.startswith(op + "/"), (
-                f"gfx path {gp!r} is nested under {op!r} (other team)."
-            )
-            assert not op.startswith(gp + "/"), (
-                f"Other team path {op!r} is nested under gfx {gp!r}."
-            )
-            assert gp != op, (
-                f"gfx and another team share root {gp!r}."
-            )
-
-
 def test_aosmond_listed_in_both_playback_and_gfx():
     """Documented overlap: aosmond reviews image work in both trees.
     Pin it explicitly so a future edit that drops him from one
@@ -222,3 +190,123 @@ def test_members_dict_is_a_plain_dict_for_easy_consumption():
     A bare dict satisfies both — locking the type prevents a future
     "I'll use a CustomMembers class" refactor that breaks them."""
     assert isinstance(PLAYBACK_TEAM.members, dict)
+
+
+def test_layout_team_matches_user_spec():
+    """Pins the scope decided in teams.py — all of `layout/`, style
+    included, servo/ out. See the LAYOUT_TEAM comment for why."""
+    assert LAYOUT_TEAM.slug == "layout"
+    assert LAYOUT_TEAM.group == "layout-reviewers"
+    assert LAYOUT_TEAM.paths == ("layout",)
+    assert LAYOUT_TEAM.excludes == ()
+
+
+def test_layout_team_roster_matches_phab_project_126():
+    """11 members sourced from Phab project 126 via Conduit
+    project.search + user.search. Pinned to catch silent drift."""
+    assert LAYOUT_TEAM.members == {
+        "emilio": "Emilio Cobos Álvarez",
+        "dholbert": "Daniel Holbert",
+        "dshin": "David Shin",
+        "TYLin": "Ting-Yu Lin",
+        "jfkthame": "Jonathan Kew",
+        "boris": "Boris Chiou",
+        "hiro": "Hiroyuki Ikezoe",
+        "jwatt": "Jonathan Watt",
+        "tnikkel": "Timothy Nikkel",
+        "AlaskanEmily": "Emily Anne McDonough",
+        "tlouw": "Tiaan Louw",
+    }
+
+
+def test_layout_is_registered():
+    assert TEAMS["layout"] is LAYOUT_TEAM
+    assert get_team("layout") is LAYOUT_TEAM
+
+
+def test_dom_core_team_matches_user_spec():
+    """Pins the allow-list scope decided in teams.py. `dom` itself
+    must never appear here — see the DOM_CORE_TEAM comment for the
+    measured ownership of every subtree left out."""
+    assert DOM_CORE_TEAM.slug == "dom-core"
+    assert DOM_CORE_TEAM.group == "dom-core-reviewers"
+    assert DOM_CORE_TEAM.paths == (
+        "dom/base",
+        "dom/html",
+        "dom/events",
+        "dom/bindings",
+        "dom/webidl",
+        "dom/ipc",
+        "docshell",
+        "parser",
+    )
+    assert DOM_CORE_TEAM.excludes == ()
+
+
+def test_dom_core_team_roster_matches_phab_project_178():
+    """15 members sourced from Phab project 178 via Conduit."""
+    assert DOM_CORE_TEAM.members == {
+        "smaug": "Olli Pettay",
+        "peterv": "Peter Van der Beken",
+        "edgar": "Edgar Chen",
+        "farre": "Andreas Farre",
+        "masayuki": "Masayuki Nakano",
+        "hsivonen": "Henri Sivonen",
+        "mccr8": "Andrew McCreight",
+        "sefeng": "Sean Feng",
+        "hsinyi": "Hsin-Yi Tsai",
+        "jjaschke": "Jan Jaeschke [:jjaschke]",
+        "avandolder": "Adam Vandolder",
+        "keithamus": "Keith Cirkel",
+        "zcorpan": "Simon Pieters",
+        "sfarre": "Simon Farre",
+        "vhilla": "Vincent Hilla",
+    }
+
+
+def test_dom_core_approved_reviewers_are_trusted_non_members():
+    """The highest-volume non-roster reviewers inside dom-core's
+    paths. Without them the dashboard reads ~42% 'landed without
+    team review' purely because adjacent-team peers do the review."""
+    assert DOM_CORE_TEAM.approved_reviewers == frozenset(
+        {"emilio", "nika", "asuth", "saschanaz", "tschuster"}
+    )
+    assert DOM_CORE_TEAM.approved_reviewers.isdisjoint(DOM_CORE_TEAM.members)
+
+
+def test_dom_core_is_registered():
+    assert TEAMS["dom-core"] is DOM_CORE_TEAM
+    assert get_team("dom-core") is DOM_CORE_TEAM
+
+
+def test_no_team_path_is_nested_under_another_teams_path():
+    """Generalises the old pairwise playback/webrtc/gfx checks to every
+    registered team. Nesting means one commit is counted in two teams'
+    git-side reports unless the outer team excludes the inner one —
+    which only playback does, for the two WebRTC roots."""
+    for a, b in permutations(TEAMS.values(), 2):
+        for ap, bp in product(a.paths, b.paths):
+            assert ap != bp, f"{a.slug} and {b.slug} share root {ap!r}"
+            if bp.startswith(ap + "/"):
+                assert bp in a.excludes, (
+                    f"{b.slug} path {bp!r} is nested under {a.slug} path "
+                    f"{ap!r} without an exclude — double-counted."
+                )
+
+
+def test_group_aliases_resolve_to_a_real_group():
+    """`_GROUP_ALIASES` in parse.py hardcodes the canonical group name
+    each hashtag maps to, duplicating `Team.group` with nothing binding
+    the two. Rename a team's group and the alias silently goes dead —
+    both sides stay green because each is pinned separately. This is
+    that binding."""
+    # Groups with no dashboard here: real Phabricator review groups we
+    # must still parse as groups (else they become phantom individuals
+    # in every team's non-member reviewer list), but no team owns them.
+    teamless = {"webidl"}
+    registered = {t.group for t in TEAMS.values()}
+    for alias, canonical in _GROUP_ALIASES.items():
+        assert canonical in registered or canonical in teamless, (
+            f"alias {alias!r} maps to {canonical!r}, which is neither a "
+            f"registered Team.group nor a known teamless group."
+        )

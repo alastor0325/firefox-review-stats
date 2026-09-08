@@ -70,6 +70,9 @@ FEATURE_LABELS: dict[str, str] = {
     "gfx/gl": "OpenGL / GL contexts",
     "gfx/vr": "Virtual & augmented reality",
     "gfx/config": "Graphics configuration",
+    # Needs an explicit entry: without one the leaf lookup below finds
+    # playback's "ipc" key and labels gfx's IPC area "Media IPC".
+    "gfx/ipc": "Graphics IPC",
     "gfx/ycbcr": "Video colour conversion (YCbCr)",
     "gfx/qcms": "Colour management (QCMS)",
     "gfx/src": "Graphics core internals",
@@ -82,6 +85,36 @@ FEATURE_LABELS: dict[str, str] = {
     "dom/canvas/test": "Canvas tests",
     "dom/webgpu": "WebGPU",
     "dom/webgpu/tests": "WebGPU tests",
+    # layout-reviewers — single-root team over layout/, so leaf buckets.
+    # Only leaves whose label differs from the title-cased fallback are
+    # listed ("reftests" would render as "Reftests" either way).
+    "style": "Style system (CSS)",
+    "generic": "Frame construction & reflow",
+    "painting": "Display lists & painting",
+    "inspector": "Style inspector APIs",
+    "printing": "Printing & print preview",
+    "mathml": "MathML",
+    "tables": "Table layout",
+    "forms": "Form controls layout",
+    "xul": "XUL layout",
+    # dom-core-reviewers — multi-root team, so root and one-level-deeper
+    # buckets. The roots are the feature areas here; the deeper buckets
+    # below are the ones with enough traffic to stand on their own.
+    "dom/base": "DOM core (document, window, node)",
+    "dom/base/test": "DOM core tests",
+    "dom/html": "HTML elements",
+    "dom/events": "DOM events",
+    "dom/events/test": "DOM event tests",
+    "dom/bindings": "WebIDL bindings (codegen)",
+    "dom/webidl": "WebIDL interface definitions",
+    "dom/ipc": "DOM IPC (process model)",
+    "docshell": "Docshell & navigation",
+    "docshell/base": "Docshell core",
+    "docshell/shistory": "Session history",
+    "parser": "Parsers",
+    "parser/html": "HTML parser",
+    "parser/htmlparser": "HTML parser (legacy)",
+    "parser/expat": "XML parser (expat)",
     # Shared sentinel buckets emitted by primary_subdir / the classifier.
     "(top-level)": "General / top-level",
     "(unknown)": "Other",

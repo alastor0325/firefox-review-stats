@@ -13,11 +13,15 @@ permissions:
 jobs:
   refresh:
     runs-on: ubuntu-latest
-    # Summaries are batched (~12 feature areas per Copilot call), so the
-    # ~49 uncached areas per week cost ~5 calls at ~30-60s each, not ~49.
-    # 60 min stays comfortable. Note a timeout here is expensive, not just
-    # slow: .summary_cache/ is only committed by the final step, so any
-    # overviews already generated that run are discarded.
+    # Summaries are batched (~12 feature areas per Copilot call) but
+    # batched PER TEAM, so each team rounds up to its own partial call.
+    # With 5 teams that is ~10 calls per week rather than the ~5 this
+    # comment described when there were 3. Note a timeout here is
+    # expensive, not just slow: .summary_cache/ is only committed by the
+    # final step, so any overviews already generated that run are
+    # discarded. If this starts timing out, batch `summarize_features`
+    # once across all teams instead of once per team — the cache keys
+    # are content hashes and already team-independent.
     timeout-minutes: 60
 
     steps:
@@ -118,11 +122,20 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           # Per-team analyzer output lives in <slug>/; the landing
           # page sits at root. raw_data/ is shared across teams and
-          # tracked in git. dump_author_patches.py now writes
+          # tracked in git. dump_author_patches.py writes
           # author_patches.txt into each team's subfolder, so the
-          # playback/ + webrtc/ adds pick those up too. .summary_cache/ is
+          # per-team adds pick those up too. .summary_cache/ is
           # tracked so any overview reuse/gap-fill is captured.
-          git add -A index.html playback/ webrtc/ gfx/ raw_data/ .summary_cache/
+          #
+          # The team folders are derived from reviewstats.teams.TEAMS
+          # rather than hardcoded: a team added to the registry but
+          # missed here would silently never reach GH Pages. Missing
+          # folders are filtered out because `git add` on a pathspec
+          # that matches nothing is fatal, and a team whose window has
+          # no commits produces no folder.
+          TEAM_DIRS=$(python -c 'import os; from reviewstats.teams import TEAMS; print(" ".join(f"{s}/" for s in TEAMS if os.path.isdir(s)))')
+          echo "Staging team folders: $TEAM_DIRS"
+          git add -A index.html $TEAM_DIRS raw_data/ .summary_cache/
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else

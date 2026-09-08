@@ -175,3 +175,54 @@ class TestStripBugPrefix:
 
     def test_only_strips_leading_occurrence(self):
         assert strip_bug_prefix("Bug 1 - see Bug 2 - for context") == "see Bug 2 - for context"
+
+
+class TestSuffixlessGroupHashtags:
+    """Review-group hashtags that don't end in `-reviewers` — a
+    secondary alias (`r=dom-core`) or a suffixless project
+    (`#webidl`). See `_GROUP_ALIASES` in parse.py for why they can't
+    be inferred from the token's shape."""
+
+    def test_dom_core_alias_is_a_group(self):
+        assert is_group_reviewer("dom-core") is True
+
+    def test_layout_alias_is_a_group(self):
+        assert is_group_reviewer("layout") is True
+
+    def test_suffixless_webidl_project_is_a_group(self):
+        assert is_group_reviewer("webidl") is True
+
+    def test_alias_is_normalised_to_the_canonical_group(self):
+        """`r=dom-core` must produce the same Reviewer as
+        `r=dom-core-reviewers`, otherwise `_has_group(c, team.group)`
+        stays False for 40% of the team's patches."""
+        assert parse_reviewers("Bug 1 - fix. r=dom-core,smaug") == [
+            Reviewer("dom-core-reviewers", True),
+            Reviewer("smaug", False),
+        ]
+
+    def test_suffixless_group_keeps_its_own_name(self):
+        """`webidl` has no canonical `-reviewers` spelling to map to —
+        it is flagged as a group under its own hashtag."""
+        assert parse_reviewers("Bug 1 - fix. r=webidl,smaug") == [
+            Reviewer("webidl", True),
+            Reviewer("smaug", False),
+        ]
+
+    def test_alias_and_canonical_in_one_subject_dedupe(self):
+        """Dedup is on the canonical name, so a subject naming both
+        spellings yields one Reviewer, not two identical ones."""
+        assert parse_reviewers(
+            "Bug 1 - fix. r=dom-core,dom-core-reviewers"
+        ) == [Reviewer("dom-core-reviewers", True)]
+
+    def test_hash_prefixed_alias_still_resolves(self):
+        assert parse_reviewers("Bug 1 - fix. r=#dom-core") == [
+            Reviewer("dom-core-reviewers", True),
+        ]
+
+    def test_unknown_suffixless_token_stays_an_individual(self):
+        """The alias table is an explicit allow-list — a normal handle
+        that happens to look like a component name is still a person."""
+        assert is_group_reviewer("emilio") is False
+        assert is_group_reviewer("padenot") is False

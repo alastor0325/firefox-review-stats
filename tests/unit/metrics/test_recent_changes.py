@@ -1,5 +1,7 @@
 """Unit tests for the pure recent-changes aggregation helpers."""
 
+import pytest
+
 from reviewstats.recent_changes import (
     FEATURE_LABELS,
     deep_feature_bucket,
@@ -150,3 +152,29 @@ class TestDeepFeatureBucket:
         assert humanize_feature("gfx/wr") == FEATURE_LABELS["gfx/wr"]
         assert humanize_feature("dom/media/webrtc/transport") == \
             FEATURE_LABELS["dom/media/webrtc/transport"]
+
+
+class TestLayoutAndDomCoreFeatureLabels:
+    """The layout and dom-core teams bucket into areas the label table
+    didn't know about. Without an entry `humanize_feature` title-cases
+    the leaf, giving headings like "Base", "Ipc" and "Webidl"."""
+
+    # layout is single-root, so `primary_subdir` emits bare leaf names;
+    # dom-core is multi-root, so `deep_feature_bucket` emits the root
+    # path, or one level under it.
+    @pytest.mark.parametrize("bucket", [
+        "style", "generic", "painting", "inspector", "printing",
+        "mathml", "tables", "xul", "forms",
+        "dom/base", "dom/html", "dom/events", "dom/bindings",
+        "dom/webidl", "dom/ipc", "docshell", "parser",
+        "docshell/base", "parser/html",
+    ])
+    def test_new_team_bucket_has_a_curated_label(self, bucket):
+        assert humanize_feature(bucket) == FEATURE_LABELS[bucket]
+
+    def test_gfx_ipc_does_not_inherit_playbacks_ipc_label(self):
+        """Regression guard for the leaf-lookup leak: `gfx/ipc` has no
+        entry of its own, `humanize_feature` falls back to the leaf,
+        and playback's "ipc" key labelled gfx's IPC area "Media IPC"."""
+        assert humanize_feature("gfx/ipc") == "Graphics IPC"
+        assert humanize_feature("ipc") == "Media IPC"

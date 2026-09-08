@@ -9,6 +9,10 @@ Per-team dashboards for Mozilla — review-load distribution plus a digest of wh
 | [Playback](https://alastor0325.github.io/firefox-review-stats/playback/) | `media-playback-reviewers` | `dom/media` (excluding `dom/media/webrtc`, `dom/media/systemservices`) |
 | [WebRTC](https://alastor0325.github.io/firefox-review-stats/webrtc/) | `webrtc-reviewers` | `dom/media/webrtc`, `dom/media/systemservices` |
 | [GFX](https://alastor0325.github.io/firefox-review-stats/gfx/) | `gfx-reviewers` | `gfx`, `image`, `dom/canvas`, `dom/webgpu` (excluding vendored upstreams) |
+| [Layout](https://alastor0325.github.io/firefox-review-stats/layout/) | `layout-reviewers` | `layout` (including `layout/style`; `servo/` out of scope) |
+| [DOM Core](https://alastor0325.github.io/firefox-review-stats/dom-core/) | `dom-core-reviewers` | `dom/base`, `dom/html`, `dom/events`, `dom/bindings`, `dom/webidl`, `dom/ipc`, `docshell`, `parser` |
+
+DOM Core is scoped by an allow-list rather than all of `dom/`: that tree is shared by ~10 review groups (`dom-storage-reviewers`, `dom-worker-reviewers`, `necko-reviewers`, `firefox-svg-reviewers`, `webgpu-reviewers`, …), and scoping to the whole thing measures 27% team review — the "landed without team review" metric would be noise. An allow-list also fails safe: a new `dom/` subdirectory owned by another group stays out of scope until someone opts it in.
 
 ## What the dashboard shows
 
@@ -83,11 +87,14 @@ The multi-team refactor means this is a config-only change. Roughly 4 lines + te
    )
    TEAMS[FOO_TEAM.slug] = FOO_TEAM
    ```
-2. Edit `.github/workflows/refresh.yml` and add `foo/` to the `git add` line.
-3. Add a `test_foo_team_matches_user_spec` (and roster test) in `tests/unit/core/test_teams.py` — mirrors the existing `WEBRTC_TEAM` / `GFX_TEAM` tests.
-4. Run `python analyze_git.py && python analyze_phab.py && python dump_author_patches.py` locally. Verify `foo/index.html` looks right. Commit + push.
+2. Add a `test_foo_team_matches_user_spec` (and roster test) in `tests/unit/core/test_teams.py` — mirrors the existing `WEBRTC_TEAM` / `GFX_TEAM` tests.
+3. Run `python analyze_git.py && python analyze_phab.py && python dump_author_patches.py` locally. Verify `foo/index.html` looks right. Commit + push.
 
-The `test_commits_per_team_subfolders` test iterates `TEAMS` and will fail loudly if step 2 is missing.
+Both publishers (`.github/workflows/refresh.yml` and `refresh-overviews.sh`) derive the folders they stage from `TEAMS`, so there is no slug list to keep in sync — `test_publisher_derives_team_folders_from_the_registry` fails if either regrows one.
+
+If the team's review group is tagged in commit messages under a hashtag that doesn't end in `-reviewers` — a secondary alias like `r=dom-core`, or a suffixless project like `#webidl` — add it to `_GROUP_ALIASES` in `reviewstats/parse.py`. Otherwise the tag parses as an individual, `_has_group()` misses it, and the group's load is undercounted.
+
+Seeding note: `analyze_phab.py` scrapes each new D-number through Playwright, and the weekly job only commits `raw_data/` at the very end — a first run large enough to hit the 60-minute timeout throws the whole scrape away. Run step 3 locally and commit `raw_data/` before letting CI take over.
 
 ## Local development
 
