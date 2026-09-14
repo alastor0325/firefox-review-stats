@@ -1,8 +1,8 @@
 ==============================================================================
 GFX-REVIEWERS AUTHOR-PATCH LISTING (raw author %an, no aliasing)
-Source: github.com/mozilla-firefox/firefox   Paths: gfx, image, dom/canvas, dom/webgpu   Since: 2026-03-12T17:49:38Z
+Source: github.com/mozilla-firefox/firefox   Paths: gfx, image, dom/canvas, dom/webgpu   Since: 2026-03-18T15:47:22Z
 Excluded paths: gfx/angle, gfx/cairo, gfx/skia, gfx/harfbuzz, gfx/ots, gfx/sfntly, gfx/graphite2
-Authors: 121    Patches: 1871    (Lando-format / Lando-author / merge / Revert commits already excluded)
+Authors: 124    Patches: 1912    (Lando-format / Lando-author / merge / Revert commits already excluded)
 ==============================================================================
 
 Known aliases (applied in HTML report, NOT below):
@@ -11,8 +11,18 @@ Known aliases (applied in HTML report, NOT below):
 
 ==============================================================================
 
-[ 1] Nicolas Silva  —  273 patch(es)
+[ 1] Nicolas Silva  —  277 patch(es)
     ----------------------------------------------------------------------
+      2026-09-11  1745b6748da8  Bug 2068160 - Part 14 - Retire VisPixel in favour of RasterPixel. r=gw
+      2026-09-11  8e9079528d4f  Bug 1900953 - Use Device space instead of world space in composite.glsl. r=gfx-reviewers,gw
+      2026-09-11  bbac0edf66f3  Bug 1900953 - Use raster space instead of world space in shaders. r=gfx-reviewers,gw
+      2026-09-09  3c5d056fc2c3  Bug 2068160 - Part 13 - Cull raster-root content against the raster root's own space. r=gw
+      2026-09-09  2e703e325cbf  Bug 2070131 - Add a context menu to the wrshell scene tree. r=gfx-reviewers,bradwerth
+      2026-09-09  2d3d3763feff  Bug 2070131 - Add a built scene inspector to the WebRender debugger and wrshell. r=gfx-reviewers,gw
+      2026-09-08  3cfc84bdeb65  Bug 2070131 - Add a context menu to the wrshell scene tree. r=gfx-reviewers,bradwerth
+      2026-09-08  c556ca6c731b  Bug 2070131 - Add a built scene inspector to the WebRender debugger and wrshell. r=gfx-reviewers,gw
+      2026-09-08  9f4fd4307025  Bug 2068160 - Part 12 - Handle clips that can't be expressed in a surface's raster space. r=gw
+      2026-09-08  4ec45e2182c8  Bug 2068160 - Part 11 - Cull tile cache content against the tile cache's own space. r=gw
       2026-09-08  161ecf4e3985  Bug 2069951 - Build wrshell in the Linux debug WebRender CI job. r=gfx-reviewers,gw
       2026-09-08  09d3233a7e8e  Bug 2069951 - Fix wrshell build. r=gfx-reviewers,gw
       2026-09-07  de14c16b69ef  Bug 2068160 - Part 10 - Flag a failed culling rect projection explicitly. r=gw
@@ -280,15 +290,34 @@ Known aliases (applied in HTML report, NOT below):
       2026-03-19  60578c17f272  Bug 2020923 - Make the repetition iterator more NaN-proof. r=gfx-reviewers,lsalzman
       2026-03-19  2d752a07832b  Bug 2020923 - Avoid referring to clips across iframes in a wrench test. r=gw
       2026-03-19  fcebfd8d1b37  Bug 2020923 - Fix some repeated patterns incorrectly treated as opaque. r=gw
-      2026-03-17  ec344ef3f2ef  Bug 2020923 - Disable the remaining use of non-quad linear gradients. r=gw
-      2026-03-17  1d5a40e48cc3  Bug 2019934 - Make getting the source texture of a quad primitive fallible. r=gw
-      2026-03-17  1f3f27070239  Bug 2019934 - Skip an intermediate pass if the source of the repeat shader is already a render task. r=gw
-      2026-03-17  05d2ee364a9b  Bug 2020923 - Make the repetition iterator more NaN-proof. r=gfx-reviewers,lsalzman
-      2026-03-17  7c88c871becb  Bug 2020923 - Avoid referring to clips across iframes in a wrench test. r=gw
-      2026-03-17  09f373c97fe9  Bug 2020923 - Fix some repeated patterns incorrectly treated as opaque. r=gw
 
-[ 2] Glenn Watson  —  220 patch(es)
+[ 2] Glenn Watson  —  239 patch(es)
     ----------------------------------------------------------------------
+      2026-09-13  88ae0340c4b1  Bug 2070683 - Snap reference-frame origins, and pick image raster sizes at the snapped phase r=gfx-reviewers,nical
+      2026-09-10  0c87244bf99f  Bug 2070481 - Don't apply the snap outset to an outset box-shadow's ClipOut r=gfx-reviewers,nical
+      2026-09-10  fd3e981d9100  Bug 2070400 - Pt 6 - Remove ClipTreeLeaf and intern the local clip rect r=gfx-reviewers,nical
+      2026-09-10  822a814dc6bd  Bug 2070400 - Pt 5 - Make PictureIndex a u32 rather than a usize r=gfx-reviewers,nical
+      2026-09-10  216b5ae7ecaa  Bug 2070400 - Pt 4 - Move the clip chain start onto the primitive instance r=gfx-reviewers,nical
+      2026-09-10  40f4f0661877  Bug 2070400 - Pt 3 - Derive the snap policy from PrimitiveKind r=gfx-reviewers,nical
+      2026-09-10  b7ef5fca9e0a  Bug 2070400 - Pt 2 - Move the clip root stack into frame visibility state r=gfx-reviewers,nical
+      2026-09-10  640abceed218  Bug 2070400 - Pt 1 - Stop storing the snapped leaf clip rect on the clip tree r=gfx-reviewers,nical
+      2026-09-09  da9d514d8e45  Bug 2069782 - Part 11 of 11: Rename PBO types, add DeviceOptions and tag program cache digests by API r=gfx-reviewers,nical
+      2026-09-09  fffaad0c2b59  Bug 2069782 - Part 10 of 11: Remove the last GL accessors from the WebRender embedder surface r=gfx-reviewers,nical
+      2026-09-09  c4cf2127cd54  Bug 2069782 - Part 9 of 11: Replace raw GL ids in the WebRender embedder API with opaque handles r=gfx-reviewers,nical
+      2026-09-09  820c34a06054  Bug 2069782 - Part 8 of 11: Make WebRender render passes explicit in the Device API r=gfx-reviewers,nical
+      2026-09-09  6f10d03d2256  Bug 2070400 - Pt 6 - Remove ClipTreeLeaf and intern the local clip rect r=gfx-reviewers,nical
+      2026-09-09  e493856d430d  Bug 2070400 - Pt 5 - Make PictureIndex a u32 rather than a usize r=gfx-reviewers,nical
+      2026-09-09  800d19001e59  Bug 2070400 - Pt 4 - Move the clip chain start onto the primitive instance r=gfx-reviewers,nical
+      2026-09-09  c88a20987ea1  Bug 2070400 - Pt 3 - Derive the snap policy from PrimitiveKind r=gfx-reviewers,nical
+      2026-09-09  5e3d17a2c5f7  Bug 2070400 - Pt 2 - Move the clip root stack into frame visibility state r=gfx-reviewers,nical
+      2026-09-09  2b0df47e9391  Bug 2070400 - Pt 1 - Stop storing the snapped leaf clip rect on the clip tree r=gfx-reviewers,nical
+      2026-09-08  1929f3c0d8df  Bug 2069782 - Part 7 of 11: Collapse WebRender blend and depth state toggles into single Device setters r=gfx-reviewers,nical
+      2026-09-08  44626a5ba99a  Bug 2069782 - Part 6 of 11: Take the last GL extension queries out of the WebRender renderer r=gfx-reviewers,nical
+      2026-09-08  fd7cecc50fd7  Bug 2069782 - Part 5 of 11: Construct the WebRender GPU profiler through Device r=gfx-reviewers,nical
+      2026-09-08  70eb277320f9  Bug 2069782 - Part 4 of 11: Route WebRender API info, OOM detection and blend barriers through Device r=gfx-reviewers,nical
+      2026-09-08  1db7a9907b63  Bug 2069782 - Part 3 of 11: Express readback row order as a WebRender device capability r=gfx-reviewers,nical
+      2026-09-08  b53e0137c8c0  Bug 2069782 - Part 2 of 11: Move shader target selection from GlType into WebRender device capabilities r=gfx-reviewers,nical
+      2026-09-08  70c5c9793cce  Bug 2069782 - Part 1 of 11: Add a test guarding against GL use outside the WebRender device layer r=gfx-reviewers,nical
       2026-09-06  0bf135913272  Bug 2059620 - Pt 3 - Compute an over-thick border's interior split once r=gfx-reviewers,nical
       2026-09-06  8bdef41e9329  Bug 2059620 - Pt 2 - Only run the app-unit round trip on an axis the scroll offset moves r=gfx-reviewers,nical
       2026-09-06  3994c0b0e94c  Bug 2059620 - Pt 1 - Move the unsnapped prim rect back into the interning key and template r=gfx-reviewers,nical
@@ -503,15 +532,13 @@ Known aliases (applied in HTML report, NOT below):
       2026-03-19  7271bf9808ed  Bug 2018816 - Move prim_origin from interning keys to prim instances r=gfx-reviewers,lsalzman
       2026-03-18  ec4b440098d2  Bug 2023900 - Pool ClipManager clip cache maps to avoid alloc/free churn r=gfx-reviewers,nical
       2026-03-18  ffcf0482a1d7  Bug 2023900 - Pool ClipManager clip cache maps to avoid alloc/free churn r=gfx-reviewers,nical
-      2026-03-17  4a1d966433a7  Bug 2023739 - Remove unused external_scroll_offset from HitTestSpatialNode r=gfx-reviewers,tnikkel
-      2026-03-16  5fdc3c43b197  Bug 2022415 - Fix regression with shared surfaces in render task graph r=gfx-reviewers,nical
-      2026-03-16  9149d4fdf031  Bug 2023003 - Support combining multiple rounded-rect clips on picture cache slices r=gfx-reviewers,nical
-      2026-03-15  c1085f30f297  Bug 2023465 - Fix panic in add_spatial_node with uid not being unique r=gfx-reviewers,tnikkel
-      2026-03-13  70509b17674d  Bug 2013682 - Allow stacking contexts with groups clips to be promoted to compositor clips r=layout-reviewers,gfx-reviewers,emilio,lsalzman
-      2026-03-12  e6d7d3124569  Bug 2022725 - Remove reference frame mapper from DL building r=gfx-reviewers,nical
 
-[ 3] Timothy Nikkel  —  132 patch(es)
+[ 3] Timothy Nikkel  —  133 patch(es)
     ----------------------------------------------------------------------
+      2026-09-12  8b01005306ff  Bug 2069212. Update image/test/mochitest/test_jxl_progressive.html because progressive rendering has improved. r=saschanaz
+      2026-09-12  42921bac9352  Bug 2069212. Regenerate the JXL gtest reference so we can ask for an exact match. r=saschanaz
+      2026-09-12  d3da296c0032  Bug 2069212. Adapt our code to changes in jxl-rs. r=saschanaz
+      2026-09-12  9caa5af57eb4  Bug 2069212. Upgrade jxl-rs to 0.7.2. r=saschanaz,supply-chain-reviewers
       2026-09-06  66b9023deadc  Bug 2069594. Give nsRect the default copy constructor so the compiler knows it is trivially copyable. r=layout-reviewers,emilio
       2026-09-05  cdce7a837da9  Bug 2065753. Add gtests that parallel JXL decoding produces the same pixels as serial. r=saschanaz
       2026-09-05  6af1ede335ea  Bug 2065753. Decode JXL images on a dedicated thread pool. r=saschanaz,jstutte
@@ -641,12 +668,13 @@ Known aliases (applied in HTML report, NOT below):
       2026-03-20  0912be77cff2  Bug 2024357. r=gfx-reviewers,bradwerth
       2026-03-19  de17b0cb0f74  Bug 2020281. Add getter for rendering intent of qcms profiles. r=jrmuizel
       2026-03-19  2a8adf1424d1  Bug 2020281. Consider the system rendering intent and cms profile for jpeg xl decoding. r=saschanaz
-      2026-03-17  0cec55e6b3b5  Bug 2023742. Update jxl-rs to 0.4. r=saschanaz,supply-chain-reviewers
-      2026-03-15  2f89d2a7dbe4  Bug 2023383. Use image::SurfaceCache::IsLegalSize over gfx::Factory::AllowedSurfaceSize in SourceSurfaceSharedDataWrapper. r=gfx-reviewers,lsalzman
-      2026-03-12  b6dcfeed4c12  Bug 2022960. Don't fallback to old deprecated code in gfx/ycbcr/yuv_convert.cpp in all common cases. r=gfx-reviewers,lsalzman
 
-[ 4] Jonathan Kew  —  114 patch(es)
+[ 4] Jonathan Kew  —  118 patch(es)
     ----------------------------------------------------------------------
+      2026-09-12  fe9deb509e62  Bug 2071557 - Keep color-font palette entries as hb_color_t to reduce memory footprint. r=firefox-style-system-reviewers,emilio
+      2026-09-12  3cb9d005f61d  Bug 2071557 - Keep color-font palette entries as hb_color_t to reduce memory footprint. r=firefox-style-system-reviewers,emilio
+      2026-09-11  817600ffaebc  Bug 2068126 - Skrifa support for installed DWrite fonts where local file is unavailable. r=AlaskanEmily
+      2026-09-11  a5d3fcab58ec  Bug 2040367 - Implement InitSkrifaFontFace in gfxDWriteFontEntry for locally-installed font files. r=AlaskanEmily
       2026-09-02  ce0226a1ed93  Bug 2065239 - Implement more metrics within InitMetricsFromSkrifa, including those derived from glyph measurement. r=AlaskanEmily,firefox-style-system-reviewers
       2026-09-02  2a6671870c5c  Bug 2065239 - Implement more metrics within InitMetricsFromSkrifa, including those derived from glyph measurement. r=AlaskanEmily,firefox-style-system-reviewers
       2026-08-27  e8707eb4d1f4  Bug 2065346 - Hold write lock around mCharacterMap update. r=gfx-reviewers,nical,lsalzman
@@ -764,6 +792,8 @@ Known aliases (applied in HTML report, NOT below):
 
 [ 5] Lee Salzman  —  90 patch(es)
     ----------------------------------------------------------------------
+      2026-09-11  df6bb4f2c80e  Bug 2068375. r=gfx-reviewers,bradwerth
+      2026-09-09  e90554f1a62a  Bug 2070441 - Recycle PathBuilders in Canvas2D. r=gfx-reviewers,nical
       2026-09-03  66721cbbc9ab  Bug 2068199 - Generate FillCircle events for circles with valid, positive radii. r=gfx-reviewers,gw
       2026-09-03  e8d96f1472da  Bug 2068199 - Generate FillCircle events for circles with valid, positive radii. r=gfx-reviewers,gw
       2026-09-02  6a8b28132e12  Bug 2068437. r=gfx-reviewers,nical
@@ -852,11 +882,11 @@ Known aliases (applied in HTML report, NOT below):
       2026-03-20  d6ae9093801c  Bug 2024455. r=aosmond
       2026-03-20  b4be83bbf293  Bug 2024383 - Make WebGL FormatInfo safer to use during shutdown. r=ahale
       2026-03-19  2fc848dfd74a  Bug 2024455. r=aosmond
-      2026-03-14  66f4564829bc  Bug 2015267. r=gfx-reviewers,ahale
-      2026-03-12  84ec9c77ab95  Bug 2022676. r=gfx-reviewers,bradwerth
 
-[ 6] Hiroyuki Ikezoe  —  80 patch(es)
+[ 6] Hiroyuki Ikezoe  —  82 patch(es)
     ----------------------------------------------------------------------
+      2026-09-13  f0927ac7fabc  Bug 2059195 - Clear WebRenderScrollData referent ids that the sender doesn't actually embed. r=botond
+      2026-09-13  a53710780cc4  Bug 2059195 - Track each pipeline's embedder LayersId in CompositorBridgeParent::LayerTreeState. r=gfx-reviewers,aosmond
       2026-08-31  440bc0a800c2  Bug 2059195 - Reject WebRenderScrollData whose referent isn't actually embedded by the sender. r=botond
       2026-08-31  016dbe1ee147  Bug 2059195 - Track each pipeline's embedder LayersId in CompositorBridgeParent::LayerTreeState. r=gfx-reviewers,aosmond
       2026-08-10  03666146cce8  Bug 2059190 - Reject WebRenderScrollData referencing the same LayersId more than once. r=botond
@@ -938,7 +968,89 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-12  5cdc1fc8db17  Bug 2029551 - Use relative scroll position update for ScrollOrigin::Clamp. r=botond
       2026-04-09  ed100a1338e9  Bug 2029540 - Rename NotifyLayersUpdate_XX gtests to NotifyMainThreadTransaction_XX. r=botond
 
-[ 7] serge-sans-paille  —  78 patch(es)
+[ 7] Sotaro Ikeda  —  79 patch(es)
+    ----------------------------------------------------------------------
+      2026-09-14  be1400a6c2e3  Bug 2059000 r=gfx-reviewers,lsalzman
+      2026-09-13  e9d9b51aac5d  Bug 2066020 - Enable SharedSurface_AndroidHardwareBuffer with WebGL on Android r=gfx-reviewers,lsalzman
+      2026-09-11  a87e28e039a8  Bug 2068339 - Recycle MacIOSurfaceTextureHostOGL for WebGL/WebGPU on macOS r=gfx-reviewers,lsalzman
+      2026-09-11  a96211f61527  Bug 2071189 - Fix AndroidHardwareBuffer::MergeFences() r=gfx-reviewers,lsalzman
+      2026-09-11  700a8304455e  Bug 2070788 - Rename RenderCompositor::GetAndResetReleaseFence() to GetAndResetReadFence() r=gfx-reviewers,nical
+      2026-09-10  c8196f9387c5  Bug 2068875 - Store GpuFenceMTLSharedEvent in CompositeProcessFencesHolderMap r=gfx-reviewers,bradwerth
+      2026-09-10  68a713d7550d  Bug 2068875 - Store GpuFenceMTLSharedEvent in CompositeProcessFencesHolderMap r=gfx-reviewers,bradwerth
+      2026-09-10  c2dd29c88ec7  Bug 2046257 - Add fence handling to AndroidImageReader r=gfx-reviewers,nical
+      2026-09-09  56b20259e551  Bug 2068804 - Change CompositeProcessFencesHolderMap to platform independent r=gfx-reviewers,bradwerth
+      2026-09-09  3fe2649f80b5  Bug 2068804 - Rename CompositeProcessD3D11FencesHolderMap to CompositeProcessFencesHolderMap r=gfx-reviewers,gw
+      2026-09-04  d30a7e372c76  Bug 2069205 - Fix wait sync in SharedSurface_AndroidHardwareBuffer::WaitForBufferOwnership() r=gfx-reviewers,lsalzman
+      2026-09-04  29aa9c780125  Bug 2069177 - Limit SurfaceDescriptor type in ContentCompositorBridgeParent::AllocPTextureParent() r=gfx-reviewers,lsalzman
+      2026-09-03  38e471d38fba  Bug 2067381 - Remove RemoteDecoderVideoSubDescriptor r=gfx-reviewers,lsalzman
+      2026-09-03  eb05f7288c75  Bug 2068438 r=gfx-reviewers,lsalzman
+      2026-09-03  298cf7862295  Bug 2068330 - Recycle DMABUFTextureHostOGL for WebGL/WebGPU on Linux r=gfx-reviewers,lsalzman
+      2026-09-02  22865964ba6b  Bug 2066718 - Recycle AndroidHardwareBufferTextureHost for WebGL/WebGPU on Android r=gfx-reviewers,lsalzman
+      2026-09-01  bfadf18dc993  Bug 2067635 - Add fence merge handling of AndroidHardwareBuffer r=gfx-reviewers,lsalzman
+      2026-08-30  6c8c4a8e4994  Bug 2036655 - Recycle DXGITextureHostD3D11 for WebGL and WebGPU r=gfx-reviewers,aosmond
+      2026-08-27  27acd175dc69  Bug 2066982 - Remove unused GLBlitHelper::BlitImageToFramebuffer() r=gfx-reviewers,lsalzman
+      2026-08-27  c1b4318c71c2  Bug 2066982 - Remove unused GLBlitHelper::BlitImageToFramebuffer() r=gfx-reviewers,lsalzman
+      2026-08-26  cd06fa501703  Bug 2065996 - Disable SharedSurface_SurfaceTexture with ANGLE on Android r=gfx-reviewers,lsalzman
+      2026-08-25  28d2c0d2f6d2  Bug 2064312 - Disable SharedSurface_EGLImage with ANGLE on Android r=gfx-reviewers,nical
+      2026-08-23  dfc601359983  Bug 2060295 r=gfx-reviewers,lsalzman
+      2026-08-19  a71279f779e8  Bug 2061532 r=gfx-reviewers,lsalzman
+      2026-08-18  a6b2a45d7168  Bug 2064209 - Fix DeviceResetDetectPlace r=gfx-reviewers,aosmond
+      2026-08-13  2331354b8449  Bug 2063174 - Add device reset check in RendererOGL::UpdateAndRender() during taking screenshot r=gfx-reviewers,lsalzman
+      2026-08-07  641e79a14ac1  Bug 2059636 - Move GetBufferSize() calling place in RendererOGL::UpdateAndRender() r=gfx-reviewers,lsalzman
+      2026-08-04  9178c688df23  Bug 2060449 - Wait ImageBrige task handled in CanvasContext::Unconfigure() with offscreen canvas r=gfx-reviewers,aosmond
+      2026-08-04  fe6d7e59fbe9  Bug 2055751 - Make HTMLCanvasElement::CaptureStream() to use async readback IPC with WebGLs r=gfx-reviewers,lsalzman
+      2026-07-30  99e6475d1acd  Bug 2057101 r=gfx-reviewers,nical
+      2026-07-30  0324618b835b  Bug 2057100 r=gfx-reviewers,nical
+      2026-07-30  f56986b9ff7b  Bug 2053159 r=gfx-reviewers,lsalzman
+      2026-07-27  bd3be7b65450  Bug 2056627 - Invalidate tiles that intersects with cancelled underlays r=gfx-reviewers,nical
+      2026-07-22  076f33aea8c3  Bug 2056558 r=gfx-reviewers,nical
+      2026-07-21  f9c1898490f8  Bug 2053679 - Add AndroidImageReader::MaybeRenderFirstFrame() r=gfx-reviewers,aosmond
+      2026-07-17  bb9b97a24ebd  Bug 2055748 - Mark ReadPixelsResultIpc to [MoveOnly] r=gfx-reviewers,nical
+      2026-07-03  23421b79ddf2  Bug 2051653 r=gfx-reviewers,lsalzman
+      2026-07-02  6c1293bf4aef  Bug 2051658 r=gfx-reviewers,lsalzman
+      2026-07-02  164be79c1459  Bug 2046260 - Implement AndroidImageReaderImage::BuildSurfaceDescriptorBuffer() r=gfx-reviewers,lsalzman
+      2026-06-29  acb1c23819b2  Bug 2051208 - Use gfx::SurfaceFormat::R8G8B8X8 in AndroidImageReader::UpdateTexImage() r=gfx-reviewers,lsalzman
+      2026-06-28  30b83f1464f1  Bug 2049977 - Add mAcquiredImageCount to AndroidImageReader r=gfx-reviewers,lsalzman
+      2026-06-28  a20d87da4321  Bug 2051108 - Fix AndroidImageReader::UpdateTexImage() error handling r=gfx-reviewers,lsalzman
+      2026-06-27  0b54b3229952  Bug 2045240 - Avoid to call WaitForRemoteTextureOwner() if possible in WebRenderImageHost::UseRemoteTexture() r=gfx-reviewers,lsalzman
+      2026-06-25  50c2c6385fcf  Bug 2049320 - Cancel underlay when mix blend intersects with the underlay r=gfx-reviewers,nical
+      2026-06-25  2faf7d914c8b  Bug 2049818 r=gfx-reviewers,nical
+      2026-06-25  ab21dc75c504  Bug 2050173 - Post dummy texture when shared texture is not submitted in WebGPUParent::SwapChainPresent() r=webgpu-reviewers,ErichDonGubler
+      2026-06-19  ed8c3d0ae151  Bug 2048838 - Enable GpuProcessAndroidImageReaderMap when pref gfx.video.aimage-reader-gpu-process-android is true r=gfx-reviewers,jnicol
+      2026-06-18  fdd922107f11  Bug 2046254 - Add AImageReader support on Android r=media-playback-reviewers,gfx-reviewers,alwu,jnicol
+      2026-06-18  5641ea933052  Bug 2046254 - Add AImageReader support on Android r=media-playback-reviewers,gfx-reviewers,alwu,jnicol
+      2026-06-09  b95fb403384a  Bug 2045177 - Allow more underlays if forced in TileCacheInstance::can_promote_to_surface() r=gfx-reviewers,bradwerth
+      2026-06-02  2794ed2bfdba  Bug 2043966 - Prevent to disable video underlay in TileCacheInstance::post_update() if video is HDR r=gfx-reviewers,bradwerth
+      2026-05-14  01d73be2a072  Bug 2039470 - Prevent to disable video overlay if video is HDR even with slow present r=gfx-reviewers,lsalzman,bradwerth
+      2026-05-12  aeb5cb535896  Bug 2038906 - Disable WebGL overlay when RenderDXGITextureHost::GetDCompositionTexture() is slow r=gfx-reviewers,gw
+      2026-05-12  2bbd7be91826  Bug 2037698 - Fix RescalingFactorForColorDepth() r=gfx-reviewers,jrmuizel
+      2026-04-30  4f7917aade32  Bug 1994121 - Enable underlay when backdrop filter does not intersect with underlay r=gfx-reviewers,nical
+      2026-04-28  2a0f2fa98838  Bug 2033341- Disable external composite when size is too big in composite_simple() r=gfx-reviewers,nical
+      2026-04-28  b54a89fe23d6  Bug 2035359 - Adjust gfx error log for Bug 2035063 r=gfx-reviewers,lsalzman
+      2026-04-27  2db32539c2d8  Bug 1996562 - Add zero divide check to ClipColor() r=gfx-reviewers,nical
+      2026-04-27  3ea88c5218b8  Bug 2030323 - Add DcompSurfaceDescriptor validity check r=gfx-reviewers,bradwerth
+      2026-04-19  d14b96f43405  Bug 2026870 - Remove native compositor support from DCLayerTree r=gfx-reviewers,gw
+      2026-04-17  4ac624c8aaac  Bug 2030108 - Hold BufferTextureData's Shmem in ShmemHolder r=lsalzman
+      2026-04-17  51af3f25799f  Bug 2025957 - Fix wgpu_vksemaphore_destroy r=webgpu-reviewers,ErichDonGubler
+      2026-04-13  a4ad291da442  Bug 2027623 - Call ID3D11VideoContext2::VideoProcessorSetOutputHDRMetaData() for video overlay r=gfx-reviewers,ahale
+      2026-04-11  4bbe5c242803  Bug 2029457 - Hold a reference of AsyncImagePipelineManager r=gfx-reviewers,bradwerth
+      2026-04-10  f0763650f518  Bug 2030230 - Always store ShmemTextureHost's shmem in ShmemDeallocRunnable r=gfx-reviewers,lsalzman
+      2026-04-07  18b4cb681f21  Bug 2024241 - Strip DEALLOCATE_CLIENT in TextureHost::CreateIPDLActor() r=gfx-reviewers,lsalzman
+      2026-04-07  08ecb22bd858  Bug 2027284 - Defer shmem deallocation until RenderTextureHost destruction r=lsalzman
+      2026-04-07  cad323a31bad  Bug 2027964 - Reject root pipeline in Add/RemovePipelineIdForCompositable r=gfx-reviewers,lsalzman
+      2026-04-07  6300364112a4  Bug 2027974 - Centralize OpDestroy de-duplication in CompositableParentManager::DestroyActors r=gfx-reviewers,lsalzman
+      2026-04-05  94bd677bc949  Bug 2028461 - Re-enable optimization for cases where the BufferTextureHost format is YCbCr r=gfx-reviewers,lsalzman
+      2026-04-03  1b361460f7db  Bug 2028818 - Clip dirty_rect to device_size in Renderer::composite_simple() r=gfx-reviewers,lsalzman
+      2026-04-01  3390d0055e4e  Bug 2028034 - Fix dirty_rect empty check to account for device_size r=gfx-reviewers,bradwerth
+      2026-03-31  9f142e010230  Bug 2027961 - Add gfxCriticalNote to DCLayerCompositionSurface::Bind() r=gfx-reviewers,tnikkel
+      2026-03-25  946f39c1f570  Bug 2001989 - Post SharedTexture only when it is submitted r=webgpu-reviewers,gfx-reviewers,teoxoy
+      2026-03-25  9c164966b49f  Bug 2022381- Ensure DataSourceSurface created by BufferTextureHost::GetAsSurface() valid during its usage r=lsalzman
+      2026-03-25  c18700ecc899  Bug 2025060 - Add size check r=webgpu-reviewers,gfx-reviewers,bradwerth
+      2026-03-24  4a4dc5c2b4d5  Bug 2022731 - Add namespace checck r=gfx-reviewers,bradwerth
+      2026-03-23  0c6984e87962  Bug 2025015 - Fix software decoding HDR video on Windows by using P010 format r=jrmuizel,gfx-reviewers
+      2026-03-19  12709323e849  Bug 2024510 - Use vk::ImageCreateFlags::ALIAS in wgpu_vkimage_create_with_dma_buf() r=webgpu-reviewers,jimb
+
+[ 8] serge-sans-paille  —  78 patch(es)
     ----------------------------------------------------------------------
       2026-09-07  8ca0e5032f6a  Bug 2069586 - Fix typo in SSE4.2 configuration handling r=padenot
       2026-09-01  e68e3aea285e  Bug 2065399 - Do not specify inequality operator when not needed r=ipc-reviewers,media-playback-reviewers,profiler-reviewers,win-reviewers,dom-storage-reviewers,gtk-reviewers,emilio,gstoll,nika,asuth,canova,padenot
@@ -1019,82 +1131,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-03-18  a64dec2665c7  Bug 2023519 - Make our codebase modernize-use-equals-default + modernize-use-equals-delete -safe wrt. clang-tidy r=sylvestre,necko-reviewers,media-playback-reviewers,profiler-reviewers,dom-storage-reviewers,layout-reviewers,dom-worker-reviewers,valentin,jesup,padenot,edenchuang,emilio
       2026-03-18  f6a3d7ccf1f6  Bug 2023525 - Make our codebase readability-redundant-string-cstr + readability-redundant-string-init -safe wrt. clang-tidy r=sylvestre,profiler-reviewers,canaltinova
 
-[ 8] Sotaro Ikeda  —  72 patch(es)
-    ----------------------------------------------------------------------
-      2026-09-04  d30a7e372c76  Bug 2069205 - Fix wait sync in SharedSurface_AndroidHardwareBuffer::WaitForBufferOwnership() r=gfx-reviewers,lsalzman
-      2026-09-04  29aa9c780125  Bug 2069177 - Limit SurfaceDescriptor type in ContentCompositorBridgeParent::AllocPTextureParent() r=gfx-reviewers,lsalzman
-      2026-09-03  38e471d38fba  Bug 2067381 - Remove RemoteDecoderVideoSubDescriptor r=gfx-reviewers,lsalzman
-      2026-09-03  eb05f7288c75  Bug 2068438 r=gfx-reviewers,lsalzman
-      2026-09-03  298cf7862295  Bug 2068330 - Recycle DMABUFTextureHostOGL for WebGL/WebGPU on Linux r=gfx-reviewers,lsalzman
-      2026-09-02  22865964ba6b  Bug 2066718 - Recycle AndroidHardwareBufferTextureHost for WebGL/WebGPU on Android r=gfx-reviewers,lsalzman
-      2026-09-01  bfadf18dc993  Bug 2067635 - Add fence merge handling of AndroidHardwareBuffer r=gfx-reviewers,lsalzman
-      2026-08-30  6c8c4a8e4994  Bug 2036655 - Recycle DXGITextureHostD3D11 for WebGL and WebGPU r=gfx-reviewers,aosmond
-      2026-08-27  27acd175dc69  Bug 2066982 - Remove unused GLBlitHelper::BlitImageToFramebuffer() r=gfx-reviewers,lsalzman
-      2026-08-27  c1b4318c71c2  Bug 2066982 - Remove unused GLBlitHelper::BlitImageToFramebuffer() r=gfx-reviewers,lsalzman
-      2026-08-26  cd06fa501703  Bug 2065996 - Disable SharedSurface_SurfaceTexture with ANGLE on Android r=gfx-reviewers,lsalzman
-      2026-08-25  28d2c0d2f6d2  Bug 2064312 - Disable SharedSurface_EGLImage with ANGLE on Android r=gfx-reviewers,nical
-      2026-08-23  dfc601359983  Bug 2060295 r=gfx-reviewers,lsalzman
-      2026-08-19  a71279f779e8  Bug 2061532 r=gfx-reviewers,lsalzman
-      2026-08-18  a6b2a45d7168  Bug 2064209 - Fix DeviceResetDetectPlace r=gfx-reviewers,aosmond
-      2026-08-13  2331354b8449  Bug 2063174 - Add device reset check in RendererOGL::UpdateAndRender() during taking screenshot r=gfx-reviewers,lsalzman
-      2026-08-07  641e79a14ac1  Bug 2059636 - Move GetBufferSize() calling place in RendererOGL::UpdateAndRender() r=gfx-reviewers,lsalzman
-      2026-08-04  9178c688df23  Bug 2060449 - Wait ImageBrige task handled in CanvasContext::Unconfigure() with offscreen canvas r=gfx-reviewers,aosmond
-      2026-08-04  fe6d7e59fbe9  Bug 2055751 - Make HTMLCanvasElement::CaptureStream() to use async readback IPC with WebGLs r=gfx-reviewers,lsalzman
-      2026-07-30  99e6475d1acd  Bug 2057101 r=gfx-reviewers,nical
-      2026-07-30  0324618b835b  Bug 2057100 r=gfx-reviewers,nical
-      2026-07-30  f56986b9ff7b  Bug 2053159 r=gfx-reviewers,lsalzman
-      2026-07-27  bd3be7b65450  Bug 2056627 - Invalidate tiles that intersects with cancelled underlays r=gfx-reviewers,nical
-      2026-07-22  076f33aea8c3  Bug 2056558 r=gfx-reviewers,nical
-      2026-07-21  f9c1898490f8  Bug 2053679 - Add AndroidImageReader::MaybeRenderFirstFrame() r=gfx-reviewers,aosmond
-      2026-07-17  bb9b97a24ebd  Bug 2055748 - Mark ReadPixelsResultIpc to [MoveOnly] r=gfx-reviewers,nical
-      2026-07-03  23421b79ddf2  Bug 2051653 r=gfx-reviewers,lsalzman
-      2026-07-02  6c1293bf4aef  Bug 2051658 r=gfx-reviewers,lsalzman
-      2026-07-02  164be79c1459  Bug 2046260 - Implement AndroidImageReaderImage::BuildSurfaceDescriptorBuffer() r=gfx-reviewers,lsalzman
-      2026-06-29  acb1c23819b2  Bug 2051208 - Use gfx::SurfaceFormat::R8G8B8X8 in AndroidImageReader::UpdateTexImage() r=gfx-reviewers,lsalzman
-      2026-06-28  30b83f1464f1  Bug 2049977 - Add mAcquiredImageCount to AndroidImageReader r=gfx-reviewers,lsalzman
-      2026-06-28  a20d87da4321  Bug 2051108 - Fix AndroidImageReader::UpdateTexImage() error handling r=gfx-reviewers,lsalzman
-      2026-06-27  0b54b3229952  Bug 2045240 - Avoid to call WaitForRemoteTextureOwner() if possible in WebRenderImageHost::UseRemoteTexture() r=gfx-reviewers,lsalzman
-      2026-06-25  50c2c6385fcf  Bug 2049320 - Cancel underlay when mix blend intersects with the underlay r=gfx-reviewers,nical
-      2026-06-25  2faf7d914c8b  Bug 2049818 r=gfx-reviewers,nical
-      2026-06-25  ab21dc75c504  Bug 2050173 - Post dummy texture when shared texture is not submitted in WebGPUParent::SwapChainPresent() r=webgpu-reviewers,ErichDonGubler
-      2026-06-19  ed8c3d0ae151  Bug 2048838 - Enable GpuProcessAndroidImageReaderMap when pref gfx.video.aimage-reader-gpu-process-android is true r=gfx-reviewers,jnicol
-      2026-06-18  fdd922107f11  Bug 2046254 - Add AImageReader support on Android r=media-playback-reviewers,gfx-reviewers,alwu,jnicol
-      2026-06-18  5641ea933052  Bug 2046254 - Add AImageReader support on Android r=media-playback-reviewers,gfx-reviewers,alwu,jnicol
-      2026-06-09  b95fb403384a  Bug 2045177 - Allow more underlays if forced in TileCacheInstance::can_promote_to_surface() r=gfx-reviewers,bradwerth
-      2026-06-02  2794ed2bfdba  Bug 2043966 - Prevent to disable video underlay in TileCacheInstance::post_update() if video is HDR r=gfx-reviewers,bradwerth
-      2026-05-14  01d73be2a072  Bug 2039470 - Prevent to disable video overlay if video is HDR even with slow present r=gfx-reviewers,lsalzman,bradwerth
-      2026-05-12  aeb5cb535896  Bug 2038906 - Disable WebGL overlay when RenderDXGITextureHost::GetDCompositionTexture() is slow r=gfx-reviewers,gw
-      2026-05-12  2bbd7be91826  Bug 2037698 - Fix RescalingFactorForColorDepth() r=gfx-reviewers,jrmuizel
-      2026-04-30  4f7917aade32  Bug 1994121 - Enable underlay when backdrop filter does not intersect with underlay r=gfx-reviewers,nical
-      2026-04-28  2a0f2fa98838  Bug 2033341- Disable external composite when size is too big in composite_simple() r=gfx-reviewers,nical
-      2026-04-28  b54a89fe23d6  Bug 2035359 - Adjust gfx error log for Bug 2035063 r=gfx-reviewers,lsalzman
-      2026-04-27  2db32539c2d8  Bug 1996562 - Add zero divide check to ClipColor() r=gfx-reviewers,nical
-      2026-04-27  3ea88c5218b8  Bug 2030323 - Add DcompSurfaceDescriptor validity check r=gfx-reviewers,bradwerth
-      2026-04-19  d14b96f43405  Bug 2026870 - Remove native compositor support from DCLayerTree r=gfx-reviewers,gw
-      2026-04-17  4ac624c8aaac  Bug 2030108 - Hold BufferTextureData's Shmem in ShmemHolder r=lsalzman
-      2026-04-17  51af3f25799f  Bug 2025957 - Fix wgpu_vksemaphore_destroy r=webgpu-reviewers,ErichDonGubler
-      2026-04-13  a4ad291da442  Bug 2027623 - Call ID3D11VideoContext2::VideoProcessorSetOutputHDRMetaData() for video overlay r=gfx-reviewers,ahale
-      2026-04-11  4bbe5c242803  Bug 2029457 - Hold a reference of AsyncImagePipelineManager r=gfx-reviewers,bradwerth
-      2026-04-10  f0763650f518  Bug 2030230 - Always store ShmemTextureHost's shmem in ShmemDeallocRunnable r=gfx-reviewers,lsalzman
-      2026-04-07  18b4cb681f21  Bug 2024241 - Strip DEALLOCATE_CLIENT in TextureHost::CreateIPDLActor() r=gfx-reviewers,lsalzman
-      2026-04-07  08ecb22bd858  Bug 2027284 - Defer shmem deallocation until RenderTextureHost destruction r=lsalzman
-      2026-04-07  cad323a31bad  Bug 2027964 - Reject root pipeline in Add/RemovePipelineIdForCompositable r=gfx-reviewers,lsalzman
-      2026-04-07  6300364112a4  Bug 2027974 - Centralize OpDestroy de-duplication in CompositableParentManager::DestroyActors r=gfx-reviewers,lsalzman
-      2026-04-05  94bd677bc949  Bug 2028461 - Re-enable optimization for cases where the BufferTextureHost format is YCbCr r=gfx-reviewers,lsalzman
-      2026-04-03  1b361460f7db  Bug 2028818 - Clip dirty_rect to device_size in Renderer::composite_simple() r=gfx-reviewers,lsalzman
-      2026-04-01  3390d0055e4e  Bug 2028034 - Fix dirty_rect empty check to account for device_size r=gfx-reviewers,bradwerth
-      2026-03-31  9f142e010230  Bug 2027961 - Add gfxCriticalNote to DCLayerCompositionSurface::Bind() r=gfx-reviewers,tnikkel
-      2026-03-25  946f39c1f570  Bug 2001989 - Post SharedTexture only when it is submitted r=webgpu-reviewers,gfx-reviewers,teoxoy
-      2026-03-25  9c164966b49f  Bug 2022381- Ensure DataSourceSurface created by BufferTextureHost::GetAsSurface() valid during its usage r=lsalzman
-      2026-03-25  c18700ecc899  Bug 2025060 - Add size check r=webgpu-reviewers,gfx-reviewers,bradwerth
-      2026-03-24  4a4dc5c2b4d5  Bug 2022731 - Add namespace checck r=gfx-reviewers,bradwerth
-      2026-03-23  0c6984e87962  Bug 2025015 - Fix software decoding HDR video on Windows by using P010 format r=jrmuizel,gfx-reviewers
-      2026-03-19  12709323e849  Bug 2024510 - Use vk::ImageCreateFlags::ALIAS in wgpu_vkimage_create_with_dma_buf() r=webgpu-reviewers,jimb
-      2026-03-18  283382a18717  Bug 2022379 - Fix flags of vk::ImageCreateInfo in create_texture_with_shared_texture_dmabuf() r=gfx-reviewers,nical
-      2026-03-14  717b77849b68  Bug 2017820 - Reverse layer order in RenderCompositorLayerNative::CompositorBeginFrame() r=gfx-reviewers,bradwerth
-      2026-03-13  2107eea0bfff  Bug 2017820 - Reverse layer order in RenderCompositorLayerNative::CompositorBeginFrame() r=gfx-reviewers,bradwerth
-
-[ 9] Jamie Nicol  —  66 patch(es)
+[ 9] Jamie Nicol  —  60 patch(es)
     ----------------------------------------------------------------------
       2026-08-13  813e34cdb8c0  Bug 2063203 - Fix Metal synchronisation when exporting or snapshotting canvas surfaces. r=gfx-reviewers,lsalzman
       2026-08-07  3154f11044d1  Bug 2059717 - Share instance buffers between webrender draw calls. r=gfx-reviewers,ahale
@@ -1156,14 +1193,8 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-22  4a5539c91664  Bug 1999625 - Update glslopt to 0.1.13. r=gfx-reviewers,supply-chain-reviewers,gw
       2026-04-22  e19a55dac405  Bug 1899266 - Make ScaleOffset::(un)map_rect operate on min and max points rather than origin and size. r=gfx-reviewers,gw
       2026-04-02  8e9905173118  Bug 2028516 - Ensure WebRenderLayerManager's mWrChild cannot be null. r=gfx-reviewers,lsalzman
-      2026-03-18  6bc9c4160ff3  Bug 2022874. r=gfx-reviewers,media-playback-reviewers,padenot,lsalzman
-      2026-03-17  c92f63adcef5  Bug 2023511 - Ensure WebRenderBridgeParent is initialized before attempting to use it. r=gfx-reviewers,bradwerth
-      2026-03-17  694fa16d661e  Bug 2023511 - Store WebRenderAPI in LayerTreeState. r=botond,gfx-reviewers,bradwerth
-      2026-03-16  593c9f3ec94f  Bug 2022351 - Check upload totalRows. r=lsalzman
-      2026-03-12  598e545f02c9  Bug 2022351 - Check texture upload depth. r=lsalzman
-      2026-03-12  32fc2ed34ce5  Bug 2022243 - Avoid deserializing invalid surface descriptors when sent cross process. r=gfx-reviewers,bradwerth
 
-[10] Emilio Cobos Álvarez  —  57 patch(es)
+[10] Emilio Cobos Álvarez  —  56 patch(es)
     ----------------------------------------------------------------------
       2026-09-07  80e3ae9f9057  Bug 2068000 - Fix some clippy nits in gecko-profiler. r=canova,profiler-reviewers
       2026-09-05  6c104321846c  Bug 2067994 - Cleanup some webrender pref usage. r=nical,gfx-reviewers
@@ -1221,7 +1252,6 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-08  f914c4cc2286  Bug 2029991 - Fix hidden handling in XUL trees. r=mkmelin,darktrojan
       2026-03-22  5016086e1a6f  Bug 2025089 - Remove some includes from nsINode.h and Element.h. r=dom-core,dom-storage-reviewers,firefox-svg-reviewers,janv,smaug
       2026-03-21  11be49123704  Bug 2024942 - Reduce more includes of ServoStyleConsts. r=sergesanspaille
-      2026-03-16  7eb8b17a1a30  Bug 2023344 - Remove some unneeded includes of ServoStyleConst with common headers. r=firefox-style-system-reviewers,dom-core,webidl,layout-reviewers,smaug,tlouw
 
 [11] Rémi Papillié  —  55 patch(es)
     ----------------------------------------------------------------------
@@ -1380,7 +1410,41 @@ Known aliases (applied in HTML report, NOT below):
       2026-03-24  0c9586cd3c8b  Bug 2023130: Remove variable shadow in RemoteTextureMap::WaitRemoteTextureReady. r=gfx-reviewers,lsalzman
       2026-03-19  0492fe8b2078  Bug 2023266: Make WebRenderLayerScrollData::ValidateSubtree properly handle invalid subtrees. r=gfx-reviewers,gw
 
-[14] Daniel Holbert  —  31 patch(es)
+[14] Andy Leiserson  —  31 patch(es)
+    ----------------------------------------------------------------------
+      2026-09-08  00ab5f28735a  Bug 2005061 - WebGPU: Add transient attachment support r=webgpu-reviewers,webidl,smaug,ErichDonGubler
+      2026-08-20  17df8e4ffb17  Bug 2060047. r=gfx-reviewers,lsalzman,ErichDonGubler
+      2026-08-20  46b080be704b  Bug 2059599 - WebGPU tests not running on MacOS in release branch CI r=webgpu-reviewers,jimb
+      2026-08-19  24f381f39a42  Bug 2060047. r=gfx-reviewers,lsalzman,ErichDonGubler
+      2026-08-17  b15b0a638267  Bug 2059002. r=webgpu-reviewers,ErichDonGubler
+      2026-08-13  23bb2518bfc6  Bug 2055704. r=webgpu-reviewers,teoxoy
+      2026-07-28  41b180029e18  Bug 1924328 - WebGPU: Enable `dual-source-blending` feature, when available r=webgpu-reviewers,webidl,saschanaz,ErichDonGubler
+      2026-07-23  d5202c7d76df  Bug 2055769 - Update WebGPU CTS to 499044af47ec2717e06e644d0943e6fcdb3f3538 (2026-07-21) r=webgpu-reviewers,nical
+      2026-07-17  2c64d0abef82  Bug 2055081 - Update wgpu to f680a2c2 (2026-07-16) r=webgpu-reviewers,supply-chain-reviewers,nical
+      2026-07-02  64991be16a1a  Bug 2051443 - WebGPU: Fix error case accounting for readback buffer IDs r=webgpu-reviewers,teoxoy
+      2026-07-02  5e1c9e21a62a  Bug 2050871 - Remember swap chain parameters at creation time r=webgpu-reviewers,teoxoy
+      2026-06-24  30ce00c747d3  Bug 2049015 - Increase WebGPU maxBufferSize to the safe limit r=webgpu-reviewers,teoxoy
+      2026-06-22  3a8589913eb5  Bug 2048728 - Update wgpu to 43981de5 (2026-06-18) r=webgpu-reviewers,supply-chain-reviewers,nical
+      2026-06-22  aaa996745512  Bug 2045840 - Support readback from a WebGPU canvas before it is used r=webgpu-reviewers,ErichDonGubler
+      2026-06-20  82d95582ebf1  Bug 2014639 - Flush messages before canvas readback r=webgpu-reviewers,teoxoy
+      2026-06-18  97b484591e1d  Bug 2014639 - Flush messages before canvas readback r=webgpu-reviewers,teoxoy
+      2026-06-10  621ecde78123  Bug 2045852 - Stricter blocking of wgpu native extensions r=webgpu-reviewers,jimb
+      2026-05-29  b673b592e920  Bug 2042580 - Update WebGPU CTS to 9a848e6eae8bc1efda4908fd3f2e194bebf8d2c7 r=webgpu-reviewers,nical
+      2026-05-28  bbc830a3e2bb  Bug 2042510 - Update wgpu to a16439c1 (2026-05-26) r=webgpu-reviewers,supply-chain-reviewers,afranchuk,ErichDonGubler
+      2026-05-15  b81351c6bb0d  Bug 2039754 - `canvas.getContext("webgpu")` should return null when WebGPU is not supported r=webgpu-reviewers,ErichDonGubler
+      2026-05-14  242c0996566d  Bug 1889639 - Disable WebGPU on 32-bit targets r=webgpu-reviewers,nical
+      2026-04-22  333866edf2af  Bug 2028886 - Restrict use of graphite on worker threads r=gfx-reviewers,jfkthame,bradwerth
+      2026-04-15  2f60dcd5cdbe  Bug 2028585 - Update wgpu to f7b650d5 (2026-04-10) r=webgpu-reviewers,supply-chain-reviewers,ErichDonGubler
+      2026-04-08  114f53e7e48b  Bug 2028268 - Gate VR process on dom.vr.enabled r=gfx-reviewers,bradwerth
+      2026-04-07  b0a103a698c6  Bug 2028230 - Update WebGPU CTS to 09fdb847d90d0b5bfe57068ce2eb9283cb77fc7f r=webgpu-reviewers,jimb
+      2026-03-30  aefaebc5e9e7  Bug 2026979 - Disable WebGPU reftests on Linux release_or_beta builds r=webgpu-reviewers,ErichDonGubler
+      2026-03-29  094098d7e032  Bug 2025979 - Update wgpu to fd2fa777 (2026-03-26) r=webgpu-reviewers,supply-chain-reviewers,nical
+      2026-03-27  af98916ed154  Bug 2006720 - Expose additional WebGPU limits r=webgpu-reviewers,webidl,teoxoy,saschanaz
+      2026-03-26  02c0752340b0  Bug 2026107 - Fix panic in InitWebGPUConfig for a rare config/pref r=webgpu-reviewers,nical
+      2026-03-24  ec9910496370  Bug 1975273 - Enable WebGPU reftests r=webgpu-reviewers,ErichDonGubler
+      2026-03-18  c08024a96209  Bug 2024084 - Write wgpu traces to the next available trace directory r=webgpu-reviewers,nical,ErichDonGubler
+
+[15] Daniel Holbert  —  31 patch(es)
     ----------------------------------------------------------------------
       2026-06-18  efa4dcaeb70a  Bug 2048330: Use std::move in CopyOnWrite move-constructors, to ensure param doesn't decay into lvalue. r=tnikkel
       2026-06-18  b393350218cc  Bug 2048330: Migrate image/CopyOnWrite.h to use 'MakeRefPtr' instead of 'new' to allocate refcounted objects. r=tnikkel
@@ -1414,41 +1478,9 @@ Known aliases (applied in HTML report, NOT below):
       2026-05-02  3f3c19c8e159  Bug 2035966: When extending mFaceNamesRead, explicitly set new entries to 'false'. r=jfkthame
       2026-04-07  238ca5ca4e9d  Bug 2028888: Change gfxFT2FontBase::GetCachedGlyphMetrics() to return its answer by value, instead of by reference. r=jfkthame,lsalzman
 
-[15] Andy Leiserson  —  30 patch(es)
+[16] Erich Gubler  —  29 patch(es)
     ----------------------------------------------------------------------
-      2026-08-20  17df8e4ffb17  Bug 2060047. r=gfx-reviewers,lsalzman,ErichDonGubler
-      2026-08-20  46b080be704b  Bug 2059599 - WebGPU tests not running on MacOS in release branch CI r=webgpu-reviewers,jimb
-      2026-08-19  24f381f39a42  Bug 2060047. r=gfx-reviewers,lsalzman,ErichDonGubler
-      2026-08-17  b15b0a638267  Bug 2059002. r=webgpu-reviewers,ErichDonGubler
-      2026-08-13  23bb2518bfc6  Bug 2055704. r=webgpu-reviewers,teoxoy
-      2026-07-28  41b180029e18  Bug 1924328 - WebGPU: Enable `dual-source-blending` feature, when available r=webgpu-reviewers,webidl,saschanaz,ErichDonGubler
-      2026-07-23  d5202c7d76df  Bug 2055769 - Update WebGPU CTS to 499044af47ec2717e06e644d0943e6fcdb3f3538 (2026-07-21) r=webgpu-reviewers,nical
-      2026-07-17  2c64d0abef82  Bug 2055081 - Update wgpu to f680a2c2 (2026-07-16) r=webgpu-reviewers,supply-chain-reviewers,nical
-      2026-07-02  64991be16a1a  Bug 2051443 - WebGPU: Fix error case accounting for readback buffer IDs r=webgpu-reviewers,teoxoy
-      2026-07-02  5e1c9e21a62a  Bug 2050871 - Remember swap chain parameters at creation time r=webgpu-reviewers,teoxoy
-      2026-06-24  30ce00c747d3  Bug 2049015 - Increase WebGPU maxBufferSize to the safe limit r=webgpu-reviewers,teoxoy
-      2026-06-22  3a8589913eb5  Bug 2048728 - Update wgpu to 43981de5 (2026-06-18) r=webgpu-reviewers,supply-chain-reviewers,nical
-      2026-06-22  aaa996745512  Bug 2045840 - Support readback from a WebGPU canvas before it is used r=webgpu-reviewers,ErichDonGubler
-      2026-06-20  82d95582ebf1  Bug 2014639 - Flush messages before canvas readback r=webgpu-reviewers,teoxoy
-      2026-06-18  97b484591e1d  Bug 2014639 - Flush messages before canvas readback r=webgpu-reviewers,teoxoy
-      2026-06-10  621ecde78123  Bug 2045852 - Stricter blocking of wgpu native extensions r=webgpu-reviewers,jimb
-      2026-05-29  b673b592e920  Bug 2042580 - Update WebGPU CTS to 9a848e6eae8bc1efda4908fd3f2e194bebf8d2c7 r=webgpu-reviewers,nical
-      2026-05-28  bbc830a3e2bb  Bug 2042510 - Update wgpu to a16439c1 (2026-05-26) r=webgpu-reviewers,supply-chain-reviewers,afranchuk,ErichDonGubler
-      2026-05-15  b81351c6bb0d  Bug 2039754 - `canvas.getContext("webgpu")` should return null when WebGPU is not supported r=webgpu-reviewers,ErichDonGubler
-      2026-05-14  242c0996566d  Bug 1889639 - Disable WebGPU on 32-bit targets r=webgpu-reviewers,nical
-      2026-04-22  333866edf2af  Bug 2028886 - Restrict use of graphite on worker threads r=gfx-reviewers,jfkthame,bradwerth
-      2026-04-15  2f60dcd5cdbe  Bug 2028585 - Update wgpu to f7b650d5 (2026-04-10) r=webgpu-reviewers,supply-chain-reviewers,ErichDonGubler
-      2026-04-08  114f53e7e48b  Bug 2028268 - Gate VR process on dom.vr.enabled r=gfx-reviewers,bradwerth
-      2026-04-07  b0a103a698c6  Bug 2028230 - Update WebGPU CTS to 09fdb847d90d0b5bfe57068ce2eb9283cb77fc7f r=webgpu-reviewers,jimb
-      2026-03-30  aefaebc5e9e7  Bug 2026979 - Disable WebGPU reftests on Linux release_or_beta builds r=webgpu-reviewers,ErichDonGubler
-      2026-03-29  094098d7e032  Bug 2025979 - Update wgpu to fd2fa777 (2026-03-26) r=webgpu-reviewers,supply-chain-reviewers,nical
-      2026-03-27  af98916ed154  Bug 2006720 - Expose additional WebGPU limits r=webgpu-reviewers,webidl,teoxoy,saschanaz
-      2026-03-26  02c0752340b0  Bug 2026107 - Fix panic in InitWebGPUConfig for a rare config/pref r=webgpu-reviewers,nical
-      2026-03-24  ec9910496370  Bug 1975273 - Enable WebGPU reftests r=webgpu-reviewers,ErichDonGubler
-      2026-03-18  c08024a96209  Bug 2024084 - Write wgpu traces to the next available trace directory r=webgpu-reviewers,nical,ErichDonGubler
-
-[16] Erich Gubler  —  28 patch(es)
-    ----------------------------------------------------------------------
+      2026-09-10  d9e39d91f400  Bug 2069928 - style(webgpu): run `cargo fmt` on `wgpu_bindings` r=webgpu-reviewers,nical
       2026-08-19  517fcc633726  Bug 2062837 - test(webgpu): update CTS to 535149e23e538e4f8fe3d6266e32c68b7017ccc0 r=webgpu-reviewers,teoxoy
       2026-08-19  358684b72a10  Bug 2060712 - test(webgpu): update CTS to dc20b8682aa71ff31f135de6ae7f8acaa2e16383 r=webgpu-reviewers,aleiserson
       2026-08-19  9965ea3fd966  Bug 2062837 - test(webgpu): update CTS to 535149e23e538e4f8fe3d6266e32c68b7017ccc0 r=webgpu-reviewers,teoxoy
@@ -1478,8 +1510,9 @@ Known aliases (applied in HTML report, NOT below):
       2026-03-19  ed6b541dcdd9  Bug 2024484 - chore(wr): upgrade `ron` 0.11 → 0.12 r=gfx-reviewers,gw
       2026-03-19  4452601c812b  Bug 2024484 - chore(wr): run `cargo check` to force lockfile alignment r=gfx-reviewers,gw
 
-[17] Sylvestre Ledru  —  26 patch(es)
+[17] Sylvestre Ledru  —  25 patch(es)
     ----------------------------------------------------------------------
+      2026-09-11  e173c24599a3  Bug 2058821 - doc: apply the markdownlint fixes over the tree r=firefox-source-docs-reviewers,ipc-reviewers,devtools-reviewers,releng-reviewers,android-reviewers,bhearsum,nchevobbe,ahal,tcampbell DONTBUILD
       2026-08-13  81a308e15df2  Bug 2062884 - Fix unused function templates in dom to fix -Wunused-template with clang 23 r=dom-core-reviewers,dom-storage-reviewers,gfx-reviewers,smaug,lsalzman,jesup
       2026-08-13  32d076e67c9d  Bug 2062884 - Fix unused function templates in gfx to fix -Wunused-template with clang 23 r=gfx-reviewers,lsalzman
       2026-08-10  e1f3236895d0  Bug 2062207 - Fix big-endian ARGB packing in UnpackRowRGB24_To_ARGB (Coverity CID 1690687) r=gfx-reviewers,lsalzman
@@ -1504,31 +1537,8 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-30  a2ce5437cef5  Bug 2024589 - doc: use the :searchfox: macro r=asuth,perftest-reviewers,necko-reviewers,mozperftest-reviewers,geckoview-reviewers,extension-reviewers,credential-management-reviewers,search-reviewers,releng-reviewers,places-reviewers,profiler-reviewers,win-reviewers,omc-reviewers,urlbar-reviewers,permissions-reviewers,core-sessionstore-reviewers,browser-installer-reviewers,layout-reviewers,dom-worker-reviewers,ai-platform-reviewers,niklas,sthompson,janerik,bhearsum,valentin,dshin,sparky,scunnane,canaltinova,hanna_a,handyman,ahal,farre,jteow,emz,nrishel,ohall,dimi,robwu,emilio
       2026-04-30  62b1ca8d057b  Bug 2024589 - adjust the code: searchfox.org/mozilla-central is now redirecting to searchfox.org/firefox-main/ r=asuth,perftest-reviewers,necko-reviewers,jgraham,webcompat-reviewers,mozperftest-reviewers,geckoview-reviewers,extension-reviewers,credential-management-reviewers,devtools-reviewers,taskgraph-reviewers,releng-reviewers,desktop-theme-reviewers,win-reviewers,translations-reviewers,omc-reviewers,firefox-desktop-core-reviewers ,home-newtab-reviewers,core-sessionstore-reviewers,browser-installer-reviewers,profiles-reviewers,dom-worker-reviewers,geckodriver-reviewers,ai-platform-reviewers,Sasha,niklas,manuel,janerik,bhearsum,valentin,twisniewski,nchevobbe,emcminn,webrtc-reviewers,mjf,handyman,mconley,mossop,ahal,sparky,nrishel,robwu,ohall,dimi,hjones
       2026-04-21  3baa4071fd2b  Bug 2023419 - Remove remaining Emacs/Vim modelines from the source tree r=emilio,necko-reviewers,geckoview-reviewers,media-playback-reviewers,webidl,webrtc-reviewers,devtools-reviewers,places-reviewers,win-reviewers,firefox-style-system-reviewers,layout-reviewers,mstriemer,dshin,nchevobbe,padenot,ohall,handyman,valentin,mjf
-      2026-03-17  8f90026828d1  Bug 2023419 - Remove Emacs/Vim modelines from image/ r=emilio
-      2026-03-16  9eb1a31a9849  Bug 2023419 - Remove Emacs/Vim modelines from dom/ r=emilio,media-playback-reviewers,webidl,padenot
 
-[18] Ashley Hale  —  18 patch(es)
-    ----------------------------------------------------------------------
-      2026-09-01  5f06427ddffb  Bug 2008887 - Handle HDR BT2100PQ full range NV12 video in ShaderBlt which has no corresponding DXGI color space enum r=gfx-reviewers,nical,media-playback-reviewers,padenot
-      2026-07-20  d4445a394647  Bug 2055054 - query HDR display information and show it in about:support r=gfx-reviewers,geckoview-reviewers,win-reviewers,bradwerth,nalexander,yjuglaret
-      2026-07-08  cb19b6d4ac7b  Bug 2053263 - Fix some memory leaks with SavedD3D11State helper class r=gfx-reviewers,gw
-      2026-06-30  7f61a94bf1d6  Bug 2037689 - Use a D3D11 shader for HDR video conversions r=gfx-reviewers,sotaro
-      2026-06-29  e2a4c2803824  Bug 2037689 - Use a D3D11 shader for HDR video conversions r=gfx-reviewers,sotaro
-      2026-06-11  7462ba89d382  Bug 2046730 - Fix a couple math bugs in TfFromLinear and one bug in LinearFromTf r=gfx-reviewers,lsalzman
-      2026-06-02  58e08926f91b  Bug 2042678 - Change VIDEO_HDR allowlist to blocklist with no entries r=gfx-reviewers,bradwerth
-      2026-06-02  14c5f4030a56  Bug 2033762 - Detect unsupported VideoProcessorBlt features at startup r=gfx-reviewers,geckoview-reviewers,win-reviewers,firefox-style-system-reviewers,nalexander,bradwerth,emilio,gstoll
-      2026-05-27  c68c45b9febf  Bug 2033762 - Detect unsupported VideoProcessorBlt features at startup r=gfx-reviewers,geckoview-reviewers,win-reviewers,firefox-style-system-reviewers,nalexander,bradwerth,emilio,gstoll
-      2026-05-27  a0536ce1c696  Bug 2042595 - Enumerate outputs on all adapters for multi-gpu systems r=gfx-reviewers,bradwerth
-      2026-05-05  494e31d4a5f1  Bug 2030165 - Allow HDR video on Windows only on AMD/NVIDIA initially r=gfx-reviewers,win-reviewers,bradwerth,aosmond,gstoll
-      2026-05-04  5f426b833c9f  Bug 2030165 - Allow HDR video on Windows only on AMD/NVIDIA initially r=gfx-reviewers,bradwerth,aosmond
-      2026-04-23  ba37d504631a  Bug 2028843 - Combine several HDR prefs and add a force_enabled pref r=gfx-reviewers,bradwerth
-      2026-04-23  77f0c5b292b4  Bug 2033180 - Gracefully handle VideoProcessorBlt errors for HLG video by showing as non-HDR r=gfx-reviewers,lsalzman
-      2026-03-31  14c669784228  Bug 2012850 - Add TransferFunction to TextureHost and PiecewiseGamma to support HLG transfer function r=tnikkel,bradwerth,gfx-reviewers,media-playback-reviewers,alwu
-      2026-03-30  2550eb5e9b5b  Bug 2012850 - Add TransferFunction to TextureHost and PiecewiseGamma to support HLG transfer function r=tnikkel,bradwerth,gfx-reviewers,media-playback-reviewers,alwu
-      2026-03-16  fbbf64f75d98  Bug 2023264 - Use RGB10A2 swapchain for HDR video even if not an overlay, clarify name of HDR overlay support in about:support r=gfx-reviewers,bradwerth
-      2026-03-12  9e82a9622b18  Bug 2021018 - Use RGB10A2 overlay for video in all cases as was intended r=gfx-reviewers,bradwerth
-
-[19] Martin Stransky  —  18 patch(es)
+[18] Martin Stransky  —  18 patch(es)
     ----------------------------------------------------------------------
       2026-08-31  e89bb99780c4  Bug 2054811 [Linux] Blit only actual content of VA-API texures r=emilio,gtk-reviewers
       2026-08-26  0f5aadb4e6dd  Bug 2063979 [Linux] Disable HW video decoding if dmabuf is not available r=emilio,gtk-reviewers
@@ -1549,6 +1559,25 @@ Known aliases (applied in HTML report, NOT below):
       2026-05-11  6838dec71062  Bug 2000840 [Wayland][HDR] Run emulated VSync only if all layers are hidden r=emilio
       2026-05-11  3ffaad35c508  Bug 2000840 [Wayland] Add an external handler to configure emulated VSync run r=emilio
 
+[19] Ashley Hale  —  16 patch(es)
+    ----------------------------------------------------------------------
+      2026-09-01  5f06427ddffb  Bug 2008887 - Handle HDR BT2100PQ full range NV12 video in ShaderBlt which has no corresponding DXGI color space enum r=gfx-reviewers,nical,media-playback-reviewers,padenot
+      2026-07-20  d4445a394647  Bug 2055054 - query HDR display information and show it in about:support r=gfx-reviewers,geckoview-reviewers,win-reviewers,bradwerth,nalexander,yjuglaret
+      2026-07-08  cb19b6d4ac7b  Bug 2053263 - Fix some memory leaks with SavedD3D11State helper class r=gfx-reviewers,gw
+      2026-06-30  7f61a94bf1d6  Bug 2037689 - Use a D3D11 shader for HDR video conversions r=gfx-reviewers,sotaro
+      2026-06-29  e2a4c2803824  Bug 2037689 - Use a D3D11 shader for HDR video conversions r=gfx-reviewers,sotaro
+      2026-06-11  7462ba89d382  Bug 2046730 - Fix a couple math bugs in TfFromLinear and one bug in LinearFromTf r=gfx-reviewers,lsalzman
+      2026-06-02  58e08926f91b  Bug 2042678 - Change VIDEO_HDR allowlist to blocklist with no entries r=gfx-reviewers,bradwerth
+      2026-06-02  14c5f4030a56  Bug 2033762 - Detect unsupported VideoProcessorBlt features at startup r=gfx-reviewers,geckoview-reviewers,win-reviewers,firefox-style-system-reviewers,nalexander,bradwerth,emilio,gstoll
+      2026-05-27  c68c45b9febf  Bug 2033762 - Detect unsupported VideoProcessorBlt features at startup r=gfx-reviewers,geckoview-reviewers,win-reviewers,firefox-style-system-reviewers,nalexander,bradwerth,emilio,gstoll
+      2026-05-27  a0536ce1c696  Bug 2042595 - Enumerate outputs on all adapters for multi-gpu systems r=gfx-reviewers,bradwerth
+      2026-05-05  494e31d4a5f1  Bug 2030165 - Allow HDR video on Windows only on AMD/NVIDIA initially r=gfx-reviewers,win-reviewers,bradwerth,aosmond,gstoll
+      2026-05-04  5f426b833c9f  Bug 2030165 - Allow HDR video on Windows only on AMD/NVIDIA initially r=gfx-reviewers,bradwerth,aosmond
+      2026-04-23  ba37d504631a  Bug 2028843 - Combine several HDR prefs and add a force_enabled pref r=gfx-reviewers,bradwerth
+      2026-04-23  77f0c5b292b4  Bug 2033180 - Gracefully handle VideoProcessorBlt errors for HLG video by showing as non-HDR r=gfx-reviewers,lsalzman
+      2026-03-31  14c669784228  Bug 2012850 - Add TransferFunction to TextureHost and PiecewiseGamma to support HLG transfer function r=tnikkel,bradwerth,gfx-reviewers,media-playback-reviewers,alwu
+      2026-03-30  2550eb5e9b5b  Bug 2012850 - Add TransferFunction to TextureHost and PiecewiseGamma to support HLG transfer function r=tnikkel,bradwerth,gfx-reviewers,media-playback-reviewers,alwu
+
 [20] Justin Link  —  16 patch(es)
     ----------------------------------------------------------------------
       2026-09-04  c34751174a60  Bug 2068715: Use unchecked indexing in SkConvolutionFilter1D::FilterForValue r=lsalzman
@@ -1568,7 +1597,44 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-27  2a3df001f68d  Bug 2034852: Stop passing around unused DrawTarget in text shaping code r=jfkthame
       2026-04-10  d58b512d88ee  Bug 2030147: Don't flush the word cache just because it reaches a certain size. r=jfkthame
 
-[21] Nika Layzell  —  15 patch(es)
+[21] Teodor Tanasoaia  —  16 patch(es)
+    ----------------------------------------------------------------------
+      2026-09-10  30e739ff4faf  Bug 1976766 - Stop assuming a buffer is still mapped in the GPU process. r=webgpu-reviewers,ErichDonGubler
+      2026-09-10  74d2c26c85d6  Bug 2069735. r=webgpu-reviewers,aleiserson
+      2026-09-04  81ee9d2ca84f  Bug 2066780 - Update `wgpu` to revision 9b095f553c0701329b92a347f5ab02ec02e133fc. r=webgpu-reviewers,supply-chain-reviewers,nical
+      2026-08-27  b14e80842d84  Bug 2037013 - Don't hold Vulkan objects in `SharedTextureDMABuf`. r=webgpu-reviewers,aleiserson
+      2026-08-06  57b28210267e  Bug 2059019. r=webgpu-reviewers,aleiserson
+      2026-08-06  7858629ebaa1  Bug 2059019. r=webgpu-reviewers,aleiserson
+      2026-07-15  5a3fe1458851  Bug 2052197 - Move render pass encoding out of the content process. r=webgpu-reviewers,ErichDonGubler
+      2026-07-15  b492139ac345  Bug 2052197 - Move compute pass encoding out of the content process. r=webgpu-reviewers,ErichDonGubler
+      2026-07-15  7f998016bdda  Bug 2052197 - Use our own `CommandEncoderCommand` enum. r=webgpu-reviewers,ErichDonGubler
+      2026-07-15  7a1d065eb74c  Bug 2052197 - Move bundle encoding out of the content process. r=webgpu-reviewers,ErichDonGubler
+      2026-07-07  c3a25d6f5541  Bug 2052109 - Update `wgpu` to revision 93e00976015c937fc86f02bd9efcf343c6ce5e5d. r=webgpu-reviewers,supply-chain-reviewers,ErichDonGubler
+      2026-07-06  2358dff21707  Bug 2052109 - Update `wgpu` to revision 398303061d3066594a9b098d5b37ae5dc9e5ffc0. r=webgpu-reviewers,supply-chain-reviewers,ErichDonGubler
+      2026-06-29  94b01edf180a  Bug 2045410. r=webgpu-reviewers,aleiserson
+      2026-06-16  ca6e1947f706  Bug 2047625 - Enable `InstanceFlags::STRICT_WEBGPU_COMPLIANCE`. r=webgpu-reviewers,ErichDonGubler
+      2026-04-17  902def36332a  Bug 2031993 - Update `wgpu` to revision 0b4bdaf9cea213ce614405a834ff049b9dfba103. r=webgpu-reviewers,supply-chain-reviewers,webidl,smaug,aleiserson
+      2026-03-24  7a057178644f  Bug 2022554. r=gfx-reviewers,ErichDonGubler
+
+[22] Chun-Min Chang  —  15 patch(es)
+    ----------------------------------------------------------------------
+      2026-09-09  318beee1c1b5  Bug 2057759 - Logging by gfx's logging convention r=media-playback-reviewers,gtk-reviewers,emilio,padenot
+      2026-09-09  3fea0e52800e  Bug 2057759 - Add debugging logs for PlanarYCbCrData r=media-playback-reviewers,gfx-reviewers,bradwerth,padenot
+      2026-09-09  53d18a533eed  Bug 2057759 - Preserve decoded color metadata across remote image transport r=media-playback-reviewers,alwu
+      2026-09-09  826f955493bb  Bug 2057759 - Add debugging logs for PlanarYCbCrData r=media-playback-reviewers,gfx-reviewers,bradwerth,padenot
+      2026-09-09  fa90afcaf1f6  Bug 2057759 - Preserve decoded color metadata across remote image transport r=media-playback-reviewers,alwu
+      2026-09-01  37d56c6540e4  Bug 2057759 - Preserve decoded color metadata across remote image transport r=media-playback-reviewers,alwu
+      2026-09-01  d421c372bc19  Bug 2057759 - Preserve decoded color metadata across remote image transport r=media-playback-reviewers,alwu
+      2026-09-01  9f52281a493b  Bug 2057759 - Preserve decoded color metadata across remote image transport r=media-playback-reviewers,alwu
+      2026-08-27  c63d13a432e7  Bug 2066869 - Preserve HDR metadata in planar YUV image copies r=media-playback-reviewers,alwu
+      2026-08-14  5ca1407858d8  Bug 2028330 - Add gtest r=gfx-reviewers,bradwerth
+      2026-07-18  7ae92e67d094  Bug 2050480 - Unify NVImage NV12/NV21 to I420 conversion into a shared helper r=gfx-reviewers,bradwerth
+      2026-05-09  8500567d78bc  Bug 2015268 - Add tests r=gfx-reviewers,bradwerth
+      2026-05-08  1181eeb43407  Bug 2015268 - Add tests r=gfx-reviewers,bradwerth
+      2026-05-05  b8b43a3b1333  Bug 2015268 - Add tests r=gfx-reviewers,bradwerth
+      2026-04-17  9225ae77810d  Bug 2031524 - Pass aDst by reference in SwizzleChunkOpaqueCopy r=gfx-reviewers,bradwerth
+
+[23] Nika Layzell  —  15 patch(es)
     ----------------------------------------------------------------------
       2026-08-31  c51090b13586  Bug 2052614 - Add a structured RemoteType representation. r=ipc-reviewers,necko-reviewers,geckoview-reviewers,extension-reviewers,media-playback-reviewers,webrtc-reviewers,places-reviewers,layout-reviewers,dom-worker-reviewers,ai-platform-reviewers,sandbox-reviewers,janerik,emilio,hiro,kershaw,bwc,asuth,mccr8,alwu,nordzilla,valentin,bobowen
       2026-08-20  90bed268089a  Bug 2059018 - Explicitly record serializable support in components.conf, r=xpcom-reviewers,necko-reviewers,layout-reviewers,mccr8,dholbert,valentin
@@ -1586,25 +1652,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-20  3d1199b4d409  Bug 2005002 - Part 1: Support do_QueryObject for nsSimpleURI and subclasses, r=necko-reviewers,valentin,asuth
       2026-03-24  5f0f9dd22a69  Bug 2020817 - Part 4: Annotate & clean up nsACString callers of BeginReading/Data, r=xpcom-reviewers,media-playback-reviewers,webrtc-reviewers,cookie-reviewers,profiler-reviewers,win-reviewers,dom-storage-reviewers,permissions-reviewers,toolkit-telemetry-reviewers-rotation,layout-reviewers,dom-worker-reviewers,gfx-reviewers,webgpu-reviewers,necko-reviewers,dom-core,smaug,handyman,emilio,pehrsons,kershaw,timhuang,edenchuang,padenot,bradwerth
 
-[22] Tom Schuster  —  15 patch(es)
-    ----------------------------------------------------------------------
-      2026-08-05  1faf9ca0f6ba  Bug 2059936 - Convert callsites from set(JS::XXXXValue()) to setXXXValue. r=spidermonkey-reviewers,dom-core-reviewers,dom-storage-reviewers,janerik,janv,jonco,smaug
-      2026-06-22  28880e04b7b6  Bug 2044313 - Only allow loading page-icon, moz-icon and moz-remote-image in image contexts. r=nika
-      2026-05-07  4df4183fb02c  Bug 2037596 - Use the enum for CommandLayerInfo's samplingFilter. r=gfx-reviewers,bradwerth
-      2026-04-28  2173abb1ecb7  Bug 2034426 - Remove IsEnumCase. r=gfx-reviewers,lsalzman
-      2026-04-28  ca15fc6757c0  Bug 2034762 - Use WebIDLEnumSerializer for GPUDeviceLostReason. r=webgpu-reviewers,teoxoy
-      2026-04-25  75c5e55d897a  Bug 2034741 - Use BitFlagsEnumSerializer for CrossProcessPaintFlags. r=gfx-reviewers,lsalzman
-      2026-04-16  efbf99ad2891  Bug 2031694 - Reduce boilerplate with DEFINE_IPC_SERIALIZER in GfxMessageUtils.h. r=gfx-reviewers,lsalzman
-      2026-04-11  071555a066b4  Bug 2030377 - Improve some gfx serializers. r=gfx-reviewers,bradwerth
-      2026-04-09  c14c342e8b83  Bug 2030324. r=gfx-reviewers,nical
-      2026-03-31  d252a1f17046  Bug 2027812 - ContiguousEnumSerializer for CrashGuardType. r=gfx-reviewers,aosmond
-      2026-03-27  b15e8ddb4801  Bug 2023925 - Modernize the SVG filter attribute enums. r=gfx-reviewers,firefox-svg-reviewers,longsonr,bradwerth
-      2026-03-24  81d470997880  Bug 2023814 - Harden ImageData structured cloning. r=gfx-reviewers,lsalzman
-      2026-03-16  601fafa65ba6  Bug 2021178 - Return Maybe<int32_t> from Get*Stride. r=tnikkel,media-playback-reviewers,webrtc-reviewers,webgpu-reviewers,bradwerth,ErichDonGubler,pehrsons,padenot
-      2026-03-16  1dc03331dd13  Bug 2021178 - Return Maybe<uint32_t> from Compute*BufferSize. r=tnikkel,media-playback-reviewers,padenot
-      2026-03-16  957f0b902287  Bug 2021606 - Update tests for canvas randomization. r=timhuang
-
-[23] stransky  —  15 patch(es)
+[24] stransky  —  15 patch(es)
     ----------------------------------------------------------------------
       2026-09-08  3b4c8650f988  Bug 2069823 [Wayland] Update SW rendering path for SHMBufSurface r=emilio,gtk-reviewers
       2026-09-08  8088a2228130  Bug 2069823 [Wayland] Update SW rendering path for SHMBufSurface r=emilio,gtk-reviewers
@@ -1621,23 +1669,6 @@ Known aliases (applied in HTML report, NOT below):
       2026-05-12  d71c28012f64  Bug 2000840 [Wayland] Rename FrameCallback to VSync callback and unify opaque frame callback r=emilio
       2026-05-11  798ce755c4a4  Bug 2000840 [Wayland] Fire emulated VSync events for unmapped surfaces r=emilio
       2026-05-11  b4cd080ed13a  Bug 2000840 [Wayland] Rename FrameCallback to VSync callback and unify opaque frame callback r=emilio
-
-[24] Teodor Tanasoaia  —  14 patch(es)
-    ----------------------------------------------------------------------
-      2026-09-04  81ee9d2ca84f  Bug 2066780 - Update `wgpu` to revision 9b095f553c0701329b92a347f5ab02ec02e133fc. r=webgpu-reviewers,supply-chain-reviewers,nical
-      2026-08-27  b14e80842d84  Bug 2037013 - Don't hold Vulkan objects in `SharedTextureDMABuf`. r=webgpu-reviewers,aleiserson
-      2026-08-06  57b28210267e  Bug 2059019. r=webgpu-reviewers,aleiserson
-      2026-08-06  7858629ebaa1  Bug 2059019. r=webgpu-reviewers,aleiserson
-      2026-07-15  5a3fe1458851  Bug 2052197 - Move render pass encoding out of the content process. r=webgpu-reviewers,ErichDonGubler
-      2026-07-15  b492139ac345  Bug 2052197 - Move compute pass encoding out of the content process. r=webgpu-reviewers,ErichDonGubler
-      2026-07-15  7f998016bdda  Bug 2052197 - Use our own `CommandEncoderCommand` enum. r=webgpu-reviewers,ErichDonGubler
-      2026-07-15  7a1d065eb74c  Bug 2052197 - Move bundle encoding out of the content process. r=webgpu-reviewers,ErichDonGubler
-      2026-07-07  c3a25d6f5541  Bug 2052109 - Update `wgpu` to revision 93e00976015c937fc86f02bd9efcf343c6ce5e5d. r=webgpu-reviewers,supply-chain-reviewers,ErichDonGubler
-      2026-07-06  2358dff21707  Bug 2052109 - Update `wgpu` to revision 398303061d3066594a9b098d5b37ae5dc9e5ffc0. r=webgpu-reviewers,supply-chain-reviewers,ErichDonGubler
-      2026-06-29  94b01edf180a  Bug 2045410. r=webgpu-reviewers,aleiserson
-      2026-06-16  ca6e1947f706  Bug 2047625 - Enable `InstanceFlags::STRICT_WEBGPU_COMPLIANCE`. r=webgpu-reviewers,ErichDonGubler
-      2026-04-17  902def36332a  Bug 2031993 - Update `wgpu` to revision 0b4bdaf9cea213ce614405a834ff049b9dfba103. r=webgpu-reviewers,supply-chain-reviewers,webidl,smaug,aleiserson
-      2026-03-24  7a057178644f  Bug 2022554. r=gfx-reviewers,ErichDonGubler
 
 [25] Botond Ballo  —  13 patch(es)
     ----------------------------------------------------------------------
@@ -1685,7 +1716,22 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-06  dcc03ca7522e  Bug 2022615: Use extractionBehavior in GetInputStream/GetImageBuffer r=timhuang
       2026-04-06  d66396c53a48  Bug 2022615: Add mochitest for HTMLCanvasElement readback after transferControlToOffscreen r=tnikkel
 
-[28] longsonr  —  12 patch(es)
+[28] Tom Schuster  —  12 patch(es)
+    ----------------------------------------------------------------------
+      2026-08-05  1faf9ca0f6ba  Bug 2059936 - Convert callsites from set(JS::XXXXValue()) to setXXXValue. r=spidermonkey-reviewers,dom-core-reviewers,dom-storage-reviewers,janerik,janv,jonco,smaug
+      2026-06-22  28880e04b7b6  Bug 2044313 - Only allow loading page-icon, moz-icon and moz-remote-image in image contexts. r=nika
+      2026-05-07  4df4183fb02c  Bug 2037596 - Use the enum for CommandLayerInfo's samplingFilter. r=gfx-reviewers,bradwerth
+      2026-04-28  2173abb1ecb7  Bug 2034426 - Remove IsEnumCase. r=gfx-reviewers,lsalzman
+      2026-04-28  ca15fc6757c0  Bug 2034762 - Use WebIDLEnumSerializer for GPUDeviceLostReason. r=webgpu-reviewers,teoxoy
+      2026-04-25  75c5e55d897a  Bug 2034741 - Use BitFlagsEnumSerializer for CrossProcessPaintFlags. r=gfx-reviewers,lsalzman
+      2026-04-16  efbf99ad2891  Bug 2031694 - Reduce boilerplate with DEFINE_IPC_SERIALIZER in GfxMessageUtils.h. r=gfx-reviewers,lsalzman
+      2026-04-11  071555a066b4  Bug 2030377 - Improve some gfx serializers. r=gfx-reviewers,bradwerth
+      2026-04-09  c14c342e8b83  Bug 2030324. r=gfx-reviewers,nical
+      2026-03-31  d252a1f17046  Bug 2027812 - ContiguousEnumSerializer for CrashGuardType. r=gfx-reviewers,aosmond
+      2026-03-27  b15e8ddb4801  Bug 2023925 - Modernize the SVG filter attribute enums. r=gfx-reviewers,firefox-svg-reviewers,longsonr,bradwerth
+      2026-03-24  81d470997880  Bug 2023814 - Harden ImageData structured cloning. r=gfx-reviewers,lsalzman
+
+[29] longsonr  —  12 patch(es)
     ----------------------------------------------------------------------
       2026-09-03  3323bdf55a0f  Bug 2068445 - Detach canvas observer when we reassign the filter r=dholbert
       2026-08-26  894aa6a96122  Bug 2064601 - Improve processing of feConvolveMatrix kernelMatrix r=ahale
@@ -1700,7 +1746,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-05-10  4a339675d6cc  Bug 2038495 - Use kRadPerDegree in more places r=emilio,firefox-style-system-reviewers
       2026-04-10  a135d95656d5  Bug 2028374 - Use std::array for filter lookup tables r=dholbert
 
-[29] Alastor Wu  —  10 patch(es)
+[30] Alastor Wu  —  10 patch(es)
     ----------------------------------------------------------------------
       2026-06-26  ba3797fd94e3  Bug 2045774 - Adjust picture-region handling for decoded video buffers. r=media-playback-reviewers,chunmin
       2026-05-20  1bfc0607c0f5  Bug 2034990 - Part 1: Add PDMFactorySupport singleton with pref/gfxVar invalidation. r=media-playback-reviewers,padenot
@@ -1713,33 +1759,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-23  92e66f1ed25a  Bug 2030296 - Part 3: Fix mContentIsHDR to check transfer function, not just pixel format. r=ahale
       2026-03-30  d47f194b61bf  Bug 2025502 - Serialize MediaSystemResourceService shutdown on the compositor thread. r=media-playback-reviewers,padenot
 
-[30] André Bargull  —  10 patch(es)
-    ----------------------------------------------------------------------
-      2026-03-26  ea1d6e352d01  Bug 2023878 - Part 3: Replace MOZ_LITTLE_ENDIAN uses with std::endian::little. r=sergesanspaille,media-playback-reviewers,padenot
-      2026-03-26  fa4ed7a8a1fe  Bug 2023878 - Part 2: Replace MOZ_BIG_ENDIAN uses with std::endian::big. r=sergesanspaille,media-playback-reviewers,profiler-reviewers,canaltinova,padenot,necko-reviewers,dom-storage-reviewers,jesup
-      2026-03-26  e89c61d0643d  Bug 2023878 - Part 3: Replace MOZ_LITTLE_ENDIAN uses with std::endian::little. r=sergesanspaille,media-playback-reviewers,padenot
-      2026-03-26  be3c506fcf35  Bug 2023878 - Part 2: Replace MOZ_BIG_ENDIAN uses with std::endian::big. r=sergesanspaille,media-playback-reviewers,profiler-reviewers,canaltinova,padenot,necko-reviewers,dom-storage-reviewers,jesup
-      2026-03-24  d8d935ef4c24  Bug 2023878 - Part 3: Replace MOZ_LITTLE_ENDIAN uses with std::endian::little. r=sergesanspaille,media-playback-reviewers,padenot
-      2026-03-24  9970613aaf25  Bug 2023878 - Part 2: Replace MOZ_BIG_ENDIAN uses with std::endian::big. r=sergesanspaille,media-playback-reviewers,profiler-reviewers,canaltinova,padenot
-      2026-03-24  965507e925af  Bug 2023878 - Part 3: Replace MOZ_LITTLE_ENDIAN uses with std::endian::little. r=sergesanspaille,media-playback-reviewers,padenot
-      2026-03-24  43b7f808c43c  Bug 2023878 - Part 2: Replace MOZ_BIG_ENDIAN uses with std::endian::big. r=sergesanspaille,media-playback-reviewers,profiler-reviewers,canaltinova,padenot
-      2026-03-14  22f5b5c7c595  Bug 2020608 - Part 12: Replace IsPowerOfTwo with std::has_single_bit outside of js/. r=sergesanspaille,profiler-reviewers,win-reviewers,gstoll,canaltinova
-      2026-03-13  cec056f5d6e6  Bug 2020608 - Part 12: Replace IsPowerOfTwo with std::has_single_bit outside of js/. r=sergesanspaille,profiler-reviewers,win-reviewers,gstoll,canaltinova
-
-[31] Chun-Min Chang  —  10 patch(es)
-    ----------------------------------------------------------------------
-      2026-09-01  37d56c6540e4  Bug 2057759 - Preserve decoded color metadata across remote image transport r=media-playback-reviewers,alwu
-      2026-09-01  d421c372bc19  Bug 2057759 - Preserve decoded color metadata across remote image transport r=media-playback-reviewers,alwu
-      2026-09-01  9f52281a493b  Bug 2057759 - Preserve decoded color metadata across remote image transport r=media-playback-reviewers,alwu
-      2026-08-27  c63d13a432e7  Bug 2066869 - Preserve HDR metadata in planar YUV image copies r=media-playback-reviewers,alwu
-      2026-08-14  5ca1407858d8  Bug 2028330 - Add gtest r=gfx-reviewers,bradwerth
-      2026-07-18  7ae92e67d094  Bug 2050480 - Unify NVImage NV12/NV21 to I420 conversion into a shared helper r=gfx-reviewers,bradwerth
-      2026-05-09  8500567d78bc  Bug 2015268 - Add tests r=gfx-reviewers,bradwerth
-      2026-05-08  1181eeb43407  Bug 2015268 - Add tests r=gfx-reviewers,bradwerth
-      2026-05-05  b8b43a3b1333  Bug 2015268 - Add tests r=gfx-reviewers,bradwerth
-      2026-04-17  9225ae77810d  Bug 2031524 - Pass aDst by reference in SwizzleChunkOpaqueCopy r=gfx-reviewers,bradwerth
-
-[32] Jeff Muizelaar  —  10 patch(es)
+[31] Jeff Muizelaar  —  10 patch(es)
     ----------------------------------------------------------------------
       2026-08-27  8f82b339b262  Bug 2066889 - Return a Result from CreateWebRenderCommands. r=nical,gw
       2026-05-21  b7a1d25a0e70  Bug 2040002 - Add inline storage to PathOps r=lsalzman
@@ -1751,6 +1771,19 @@ Known aliases (applied in HTML report, NOT below):
       2026-03-26  834f491c5a2a  Bug 2026306 - Fix reporting in ShaderValidatorResults::SizeOfIncludingThis. r=mccr8
       2026-03-26  e42d80b5d4de  Bug 1838218 - Add [AllowLarge] to WebGL methods to support >2GB TypedArrays r=webidl,edgar
       2026-03-25  89b1ed588ff0  Bug 2025015 - Fix software decoding HDR video on Windows by using P010 format r=jrmuizel,gfx-reviewers
+
+[32] canalun  —  10 patch(es)
+    ----------------------------------------------------------------------
+      2026-09-09  6a860f18759a  Bug 2064211 - Move messages sent only to the parent process from PAPZ to PAPZInputBridge. r=botond,hiro
+      2026-09-09  8aa660504e43  Bug 2064211 - Move messages sent only to the parent process from PAPZCTreeManager to PAPZInputBridge. r=botond,hiro
+      2026-09-09  e65ec172ddcc  Bug 2064211 - Move messages sent only from the parent process from PAPZCTreeManager to PAPZInputBridge. r=botond,geckoview-reviewers,hiro
+      2026-09-09  57c647e76c75  Bug 2067277 - Always report APZ autoscroll rejection by message. r=hiro,botond
+      2026-09-03  afcdb0d90fc1  Bug 2036966 - Support an overscroll-behavior value, "chain". r=hiro
+      2026-08-24  3e8c8eb84268  Bug 2065549 - Disable helper_pan_end_snap_to_current_position_scrollend.html on Linux. r=hiro
+      2026-08-13  e96991110303  Bug 2062805 - Add a diagram of the architecture around APZCTreeManager. r=botond,hiro
+      2026-08-12  6ea98f2b85c6  Bug 2059192 - Add a check for the root-layer-tree instance. r=hiro
+      2026-08-12  9f77c02430cc  Bug 2059191 - Add a check for the root-layer-tree instance. r=hiro
+      2026-05-20  1f11dcb51cd0  Bug 1611949 - Avoid swipe navigation when APZ can scroll a pan gesture. r=botond,hiro
 
 [33] Alex Franchuk  —  9 patch(es)
     ----------------------------------------------------------------------
@@ -1764,7 +1797,18 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-14  cbd064501f3f  Bug 2023271 p2 - Improve NrIceStunAddr serialization by unpacking nr_local_addr r=bwc,ipc-reviewers,nika
       2026-04-14  92f74ccdc927  Bug 2023271 - Improve NrIceStunAddr serialization by unpacking nr_local_addr r=bwc,ipc-reviewers,nika
 
-[34] Bas Schouten  —  8 patch(es)
+[34] André Bargull  —  8 patch(es)
+    ----------------------------------------------------------------------
+      2026-03-26  ea1d6e352d01  Bug 2023878 - Part 3: Replace MOZ_LITTLE_ENDIAN uses with std::endian::little. r=sergesanspaille,media-playback-reviewers,padenot
+      2026-03-26  fa4ed7a8a1fe  Bug 2023878 - Part 2: Replace MOZ_BIG_ENDIAN uses with std::endian::big. r=sergesanspaille,media-playback-reviewers,profiler-reviewers,canaltinova,padenot,necko-reviewers,dom-storage-reviewers,jesup
+      2026-03-26  e89c61d0643d  Bug 2023878 - Part 3: Replace MOZ_LITTLE_ENDIAN uses with std::endian::little. r=sergesanspaille,media-playback-reviewers,padenot
+      2026-03-26  be3c506fcf35  Bug 2023878 - Part 2: Replace MOZ_BIG_ENDIAN uses with std::endian::big. r=sergesanspaille,media-playback-reviewers,profiler-reviewers,canaltinova,padenot,necko-reviewers,dom-storage-reviewers,jesup
+      2026-03-24  d8d935ef4c24  Bug 2023878 - Part 3: Replace MOZ_LITTLE_ENDIAN uses with std::endian::little. r=sergesanspaille,media-playback-reviewers,padenot
+      2026-03-24  9970613aaf25  Bug 2023878 - Part 2: Replace MOZ_BIG_ENDIAN uses with std::endian::big. r=sergesanspaille,media-playback-reviewers,profiler-reviewers,canaltinova,padenot
+      2026-03-24  965507e925af  Bug 2023878 - Part 3: Replace MOZ_LITTLE_ENDIAN uses with std::endian::little. r=sergesanspaille,media-playback-reviewers,padenot
+      2026-03-24  43b7f808c43c  Bug 2023878 - Part 2: Replace MOZ_BIG_ENDIAN uses with std::endian::big. r=sergesanspaille,media-playback-reviewers,profiler-reviewers,canaltinova,padenot
+
+[35] Bas Schouten  —  8 patch(es)
     ----------------------------------------------------------------------
       2026-08-13  fa8c1a618efe  Bug 1940240 - Part 2: Compute rect and region areas in 64-bit to avoid overflow. r=gfx-reviewers,bradwerth,lsalzman
       2026-08-13  c419214bb9ed  Bug 1940240 - Part 2: Compute rect and region areas in 64-bit to avoid overflow. r=gfx-reviewers,bradwerth,lsalzman
@@ -1775,7 +1819,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-05-06  991c89d3d119  Bug 2036751: Add telemetry alerting to a number of important high-level performance probes. r=sparky,tabbrowser-reviewers,sthompson
       2026-04-30  3703d9cebb7b  Bug 2033454: Move critical parts of PerfStats into mozglue and make lockless. r=acreskey
 
-[35] Kagami Sascha Rosylight  —  8 patch(es)
+[36] Kagami Sascha Rosylight  —  8 patch(es)
     ----------------------------------------------------------------------
       2026-08-04  f88354a77831  Bug 2059096 - Un-invert the inverted CMYK math r=aosmond
       2026-05-13  defccdbbac40  Bug 2031661 - Part 6: Add missing cycle collection entries in dom/(misc) r=dom-core,smaug
@@ -1786,7 +1830,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-28  4c257f84f867  Bug 2017954 - Update glslopt to 0.1.14 r=jnicol,gfx-reviewers,supply-chain-reviewers
       2026-04-10  9b509b51972e  Bug 2030694 - Add proper WeakPtr unlinking r=emilio,dom-core,firefox-style-system-reviewers,mccr8
 
-[36] Ryan VanderMeulen  —  7 patch(es)
+[37] Ryan VanderMeulen  —  7 patch(es)
     ----------------------------------------------------------------------
       2026-09-07  a4c95e23ba83  Bug 2069468 - Fix clang 23 unused warnings in gfx. r=gfx-reviewers,nical
       2026-06-13  1db587feaae9  Bug 2047051 - Update Wine to version 11.10. r=firefox-build-system-reviewers,sergesanspaille
@@ -1796,7 +1840,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-19  cc755d2bdc32  Bug 2027403 - Add back expected failure annotations for Windows 32-bit. r=jrmuizel
       2026-04-13  6533ad405c87  Bug 2031093 - Fix various "supress" typos in the codebase. r=necko-reviewers,geckoview-reviewers,Gijs,hiro,nalexander
 
-[37] Emily McDonough  —  6 patch(es)
+[38] Emily McDonough  —  6 patch(es)
     ----------------------------------------------------------------------
       2026-09-01  4cbf967613e0  Bug 2064547 - Prefer Skrifa for metrics in FreeType fonts r=jfkthame
       2026-08-26  1047c20827e1  Bug 2064548 - Prefer Skrifa for glyph codes in FreeType fonts. r=jfkthame
@@ -1805,7 +1849,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-08-12  75bc0d62e619  Bug 2063087 - Add basic cbindgen.toml for gfx/fontations_glue r=jfkthame
       2026-07-20  f4efa409ca5e  Bug 2038941 - Initial addition of gfx/fontations_glue, vendor skrifa + read-font + font-types r=supply-chain-reviewers,jfkthame,sylvestre
 
-[38] Florian Quèze  —  6 patch(es)
+[39] Florian Quèze  —  6 patch(es)
     ----------------------------------------------------------------------
       2026-09-05  4ec29ad67988  Bug 2069345 - Remove test.wait300msAfterTabSwitch from remaining tests that already pass without it. r=firefox-desktop-core-reviewers ,necko-reviewers,media-playback-reviewers,layout-reviewers,padenot,valentin,dshin,Gijs
       2026-06-24  3851c2f7200b  Bug 2050057 - Read profiler screenshots as RGBA on GLES lacking GL_EXT_read_format_bgra, r=gfx-reviewers,jnicol.
@@ -1814,7 +1858,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-03  b0e7e3682f28  Bug 2026600 - Skip known standalone perma-failures for mochitest-plain and mochitest-chrome, r=aryx,extension-reviewers,taskgraph-reviewers,ahal,robwu.
       2026-04-03  55c0ac8506b5  Bug 2026600 - Skip known standalone perma-failures for mochitest-plain and mochitest-chrome, r=aryx,extension-reviewers,taskgraph-reviewers,ahal,robwu.
 
-[39] James Teh  —  6 patch(es)
+[40] James Teh  —  6 patch(es)
     ----------------------------------------------------------------------
       2026-03-20  66110424ce48  Bug 1657973 part 5: Hook up PdfStructTreeBuilder to the layout and gfx code. r=emilio,lsalzman,layout-reviewers
       2026-03-20  362b9f27e45e  Bug 1657973 part 4: Hook up PdfStructTreeBuilder to the printing and PDF code. r=layout-reviewers,dshin
@@ -1822,15 +1866,6 @@ Known aliases (applied in HTML report, NOT below):
       2026-03-18  50abf9d6c337  Bug 1657973 part 5: Hook up PdfStructTreeBuilder to the layout and gfx code. r=emilio,lsalzman,layout-reviewers
       2026-03-18  f600fda75a97  Bug 1657973 part 4: Hook up PdfStructTreeBuilder to the printing and PDF code. r=layout-reviewers,dshin
       2026-03-18  cc79f1945a0f  Bug 1657973 part 1: Plumb BrowsingContext id to PrintTargetSkPDF::BeginPrinting and make it available to nsDeviceContext::End/AbortDocument. r=emilio,geckoview-reviewers,win-reviewers,layout-reviewers,gstoll,m_kato
-
-[40] canalun  —  6 patch(es)
-    ----------------------------------------------------------------------
-      2026-09-03  afcdb0d90fc1  Bug 2036966 - Support an overscroll-behavior value, "chain". r=hiro
-      2026-08-24  3e8c8eb84268  Bug 2065549 - Disable helper_pan_end_snap_to_current_position_scrollend.html on Linux. r=hiro
-      2026-08-13  e96991110303  Bug 2062805 - Add a diagram of the architecture around APZCTreeManager. r=botond,hiro
-      2026-08-12  6ea98f2b85c6  Bug 2059192 - Add a check for the root-layer-tree instance. r=hiro
-      2026-08-12  9f77c02430cc  Bug 2059191 - Add a check for the root-layer-tree instance. r=hiro
-      2026-05-20  1f11dcb51cd0  Bug 1611949 - Avoid swipe navigation when APZ can scroll a pan gesture. r=botond,hiro
 
 [41] Alex Jakobi  —  5 patch(es)
     ----------------------------------------------------------------------
@@ -1848,7 +1883,15 @@ Known aliases (applied in HTML report, NOT below):
       2026-06-11  f03db675f80f  Bug 2045769 - Check required snapshot shmem size against actual size. r=lsalzman
       2026-05-08  6f4d4f8ce7d5  Bug 2037873 - Close FontSubstitutes registry key after use. r=jfkthame
 
-[43] Tymur Boiko  —  5 patch(es)
+[43] Exploding-Joysticks  —  5 patch(es)
+    ----------------------------------------------------------------------
+      2026-09-09  90dd6ce8f372  Bug 1883563 - Remove the webgl.can-lose-context-in-foreground pref r=gfx-reviewers,nical
+      2026-09-02  158183beba71  Bug 1851058 - Remove the image.exif-density-correction.sanity-check.enabled pref r=nical
+      2026-09-01  629e70803c76  Bug 1860411 - Remove the gfx.e10s.font-list.shared pref r=mconley,jfkthame
+      2026-08-31  0be12f331872  Bug 2004869 - Remove the media.rvfc.enable pref r=webidl,smaug
+      2026-08-30  e49a1b2b27be  Bug 2004869 - Remove the media.rvfc.enable pref r=webidl,smaug
+
+[44] Tymur Boiko  —  5 patch(es)
     ----------------------------------------------------------------------
       2026-05-05  92ab17043ca3  Bug 2036839 - DMABuf - Defer EGL modifier queries to after hardware video decoding is enabled. r=stransky
       2026-05-05  04a81dc2cdeb  Bug 2036839 - DMABuf - Defer EGL modifier queries to after hardware video decoding is enabled. r=stransky
@@ -1856,7 +1899,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-28  157217280755  Bug 2021722 - GFX - GL/EGL, layers, and compositor IPC for Vulkan video. r=stransky,lsalzman
       2026-04-24  e930cad7fa2a  Bug 2021722 - GFX - GL/EGL, layers, and compositor IPC for Vulkan video. r=stransky,lsalzman
 
-[44] Vinit Jangir  —  5 patch(es)
+[45] Vinit Jangir  —  5 patch(es)
     ----------------------------------------------------------------------
       2026-08-05  7776d0e6c71d  Bug 2052970 - Change return type of AsyncPanZoomController::GetCompositorScrollUpdates from std::vector to nsTArray r=botond
       2026-07-31  117ceb8e0bab  Bug 2027136 - Batch compositor scroll updates into an nsTArray across IPDL, IPC, and Widget layers. Rename NotifyCompositorScrollUpdate to NotifyCompositorScrollUpdates. r=botond
@@ -1864,54 +1907,47 @@ Known aliases (applied in HTML report, NOT below):
       2026-06-03  f5d1e6bedfc4  Bug 2042602 - Unify early exits and parent space for sticky/scroll nodes r=botond
       2026-05-21  8591930ae4f8  Bug 2026336 - Unify ASR to Spatial ID mapping in WebRenderAPI. r=botond,layout-reviewers,emilio
 
-[45] Andrew McCreight  —  4 patch(es)
+[46] Andrew McCreight  —  4 patch(es)
     ----------------------------------------------------------------------
       2026-08-21  1c496e724aab  Bug 2063717, part 5 - A few minor cleanups to the generated Services files. r=xpcom-reviewers,emilio
       2026-06-30  ba5296b15e4b  Bug 2050657 - Fixes for setDouble, Float32Value and JS::NumberValue. r=dom-storage-reviewers,toolkit-telemetry-reviewers-rotation,jandem,nika,asuth
       2026-06-30  666518282bdc  Bug 2050657 - Fixes for setDouble, Float32Value and JS::NumberValue. r=dom-storage-reviewers,toolkit-telemetry-reviewers-rotation,jandem,nika,asuth
       2026-06-30  dfa3d4630792  Bug 2050990 - Call JS_NumberValue in ClientWebGLContext.cpp. r=gfx-reviewers,lsalzman
 
-[46] Chris H-C  —  4 patch(es)
+[47] Chris Peterson  —  4 patch(es)
     ----------------------------------------------------------------------
-      2026-06-23  e46918bcc9b6  Bug 2046193 - Update Glean SDK to v68.0.0 r=TravisLong,supply-chain-reviewers,mach-reviewers,ahochheiden
-      2026-06-18  46e6c995aa4e  Bug 2046193 - Update Glean SDK to v67.5.0 r=TravisLong,supply-chain-reviewers,mach-reviewers,ahochheiden
-      2026-04-07  de5bbe66ce80  Bug 2029649 - Update to Glean SDK v67.2.0 r=TravisLong,supply-chain-reviewers,mach-reviewers,ahochheiden
-      2026-03-13  a9dd14ccdb30  Bug 2022984 - Update to Glean v67.1.0 r=janerik,supply-chain-reviewers,mach-reviewers,ahochheiden
+      2026-09-11  82b54c3f40dd  Bug 2069691 - gfx: Move RenderSourceNLRS's destructor out of line for C++23 compatibility. r=gfx-reviewers,lsalzman
+      2026-08-25  5f8a8ac2377f  Bug 2066013 - image: Default-initialize nsAVIFDecoder's UniquePtr members for C++23 compatibility. r=tnikkel
+      2026-05-10  57c147c352f4  Bug 2038118 - Replace MOZ_UNLIKELY with C++20's [[unlikely]] in dom/canvas. r=gfx-reviewers,bradwerth
+      2026-05-10  92ac124669a2  Bug 2038118 - Replace MOZ_LIKELY with C++20's [[likely]] in dom/canvas. r=gfx-reviewers,bradwerth
 
-[47] Exploding-Joysticks  —  4 patch(es)
+[48] Eugeniusz Lewandowski  —  4 patch(es)
     ----------------------------------------------------------------------
-      2026-09-02  158183beba71  Bug 1851058 - Remove the image.exif-density-correction.sanity-check.enabled pref r=nical
-      2026-09-01  629e70803c76  Bug 1860411 - Remove the gfx.e10s.font-list.shared pref r=mconley,jfkthame
-      2026-08-31  0be12f331872  Bug 2004869 - Remove the media.rvfc.enable pref r=webidl,smaug
-      2026-08-30  e49a1b2b27be  Bug 2004869 - Remove the media.rvfc.enable pref r=webidl,smaug
+      2026-09-12  9ae0afd977f8  Bug 2056581 - Have autoscroll take DPI into account. r=botond
+      2026-05-27  31bacaa9765b  Bug 2041151 - Add a gtest for bug 1536520 - r=botond
+      2026-05-24  7987184e75e6  Bug 1536520 - Add timeout to cancelling of autoscroll due to scrolling - r=botond,mstriemer
+      2026-05-04  fc8097fcc380  Bug 1650944 - Remove ReflowInput.h include from nsIFrame.h r=firefox-style-system-reviewers,layout-reviewers,emilio
 
-[48] Henrik Skupin  —  4 patch(es)
+[49] Henrik Skupin  —  4 patch(es)
     ----------------------------------------------------------------------
       2026-05-18  8bb1110a8850  Bug 2033393 - Adapt consumers to http 1.x, hyper 1.x, and windows-sys HANDLE type changes. r=necko-reviewers,geckodriver-reviewers,gsvelto,smaug,jgraham,gw,kershaw
       2026-05-18  0ba394a1ccb2  Bug 2033393 - Vendor upgraded http, hyper, warp crates and their dependencies. r=supply-chain-reviewers,webrtc-reviewers,geckodriver-reviewers,jdescottes,jgraham,bwc,valentin,afranchuk,gsvelto,gw,padenot
       2026-05-13  adf2e68250d3  Bug 2033393 - Adapt consumers to http 1.x, hyper 1.x, and windows-sys HANDLE type changes. r=necko-reviewers,geckodriver-reviewers,gsvelto,smaug,jgraham,gw
       2026-05-13  f9052e80e2c8  Bug 2033393 - Vendor upgraded http, hyper, warp crates and their dependencies. r=supply-chain-reviewers,webrtc-reviewers,geckodriver-reviewers,jdescottes,jgraham,bwc,valentin,afranchuk,gsvelto,gw,padenot
 
-[49] Louis-Philippe  —  4 patch(es)
+[50] Louis-Philippe  —  4 patch(es)
     ----------------------------------------------------------------------
       2026-09-02  c2527ae2ebb7  Bug 2066333 - [Wayland][HDR] 10bit SDR video are rendered with oversaturated colors in compositor HDR mode. r=stransky,gtk-reviewers
       2026-08-24  1adfe6336f98  Bug 2063867 - [Wayland][HDR] Provide fallback luminance mechanism for metadata-less PQ videos. r=stransky,gtk-reviewers,emilio
       2026-08-12  569d6495ebfd  Bug 2057751 - Hardware decoded videos HDR metadata aren’t passed to compositor causing lack of luminance/washed colors. r=stransky,gtk-reviewers
       2026-08-12  fe77f218df48  Bug 2057751 - Hardware decoded videos HDR metadata aren’t passed to compositor causing lack of luminance/washed colors. r=stransky,gtk-reviewers
 
-[50] Maurice Dauer  —  4 patch(es)
+[51] Maurice Dauer  —  4 patch(es)
     ----------------------------------------------------------------------
       2026-09-01  b038e2a05e44  Bug 2066770 - Keep the window name as UTF-16, r=geckoview-reviewers,win-reviewers,layout-reviewers,dshin,emilio,gstoll,m_kato
       2026-08-31  cf79d0a3e6a0  Bug 2066085 - Add MOZ_GUARDED_BY to font-entry members, r=gfx-reviewers,nical
       2026-08-26  0d3efc88d2f4  Bug 2058065 - Truncate on on unexpected error, r=gfx-reviewers,nical
       2026-08-26  d6756af20470  Bug 2058064 - Validate vertexAttribPointer byteOffset, r=gfx-reviewers,lsalzman
-
-[51] Ryan Curran  —  4 patch(es)
-    ----------------------------------------------------------------------
-      2026-06-03  90486b7f8fcb  Bug 2037084 - Enable mochitest-plain (opt) on macosx1500-aarch64-vms r=ahal,mozbase-reviewers
-      2026-04-29  143b508425d4  Bug 2034604 - run macOS mochitests on AArch64 r=aryx,devtools-reviewers,jdescottes,media-playback-reviewers,padenot
-      2026-04-22  bf8ced11897f  Bug 2019625 - Disable screen capture and canvas throttle tests on macOS 15.3 ARM r=aryx
-      2026-03-16  459ed4c94386  Bug 2023606, Bug 2023607 - Skip test_acceleration.html and test_selection.html on aarch64 macOS 15.30 r=jmoss
 
 [52] Sajid Anwar  —  4 patch(es)
     ----------------------------------------------------------------------
@@ -1953,11 +1989,11 @@ Known aliases (applied in HTML report, NOT below):
       2026-05-21  9dda61e48a00  Bug 2003863: Improved 'unhelpful' createImageBitmap error messages r=lsalzman
       2026-05-19  bb82230a3bd3  Bug 1763742: Removed remaining lines as suggested. r=gfx-reviewers,bradwerth
 
-[58] Chris Peterson  —  3 patch(es)
+[58] Chris H-C  —  3 patch(es)
     ----------------------------------------------------------------------
-      2026-08-25  5f8a8ac2377f  Bug 2066013 - image: Default-initialize nsAVIFDecoder's UniquePtr members for C++23 compatibility. r=tnikkel
-      2026-05-10  57c147c352f4  Bug 2038118 - Replace MOZ_UNLIKELY with C++20's [[unlikely]] in dom/canvas. r=gfx-reviewers,bradwerth
-      2026-05-10  92ac124669a2  Bug 2038118 - Replace MOZ_LIKELY with C++20's [[likely]] in dom/canvas. r=gfx-reviewers,bradwerth
+      2026-06-23  e46918bcc9b6  Bug 2046193 - Update Glean SDK to v68.0.0 r=TravisLong,supply-chain-reviewers,mach-reviewers,ahochheiden
+      2026-06-18  46e6c995aa4e  Bug 2046193 - Update Glean SDK to v67.5.0 r=TravisLong,supply-chain-reviewers,mach-reviewers,ahochheiden
+      2026-04-07  de5bbe66ce80  Bug 2029649 - Update to Glean SDK v67.2.0 r=TravisLong,supply-chain-reviewers,mach-reviewers,ahochheiden
 
 [59] David Shin  —  3 patch(es)
     ----------------------------------------------------------------------
@@ -1971,35 +2007,35 @@ Known aliases (applied in HTML report, NOT below):
       2026-07-23  3c89df269fe4  Bug 1911075 - Rename font-stretch to font-width, and make the old property name an alias. r=jfkthame,geckoview-reviewers,webidl,firefox-style-system-reviewers,layout-reviewers,emilio,owlish,dshin,devtools-reviewers,nchevobbe
       2026-07-22  680518e767fa  Bug 1911075 - Rename font-stretch to font-width, and make the old property name an alias. r=jfkthame,geckoview-reviewers,webidl,firefox-style-system-reviewers,layout-reviewers,emilio,owlish,dshin
 
-[61] Eugeniusz Lewandowski  —  3 patch(es)
-    ----------------------------------------------------------------------
-      2026-05-27  31bacaa9765b  Bug 2041151 - Add a gtest for bug 1536520 - r=botond
-      2026-05-24  7987184e75e6  Bug 1536520 - Add timeout to cancelling of autoscroll due to scrolling - r=botond,mstriemer
-      2026-05-04  fc8097fcc380  Bug 1650944 - Remove ReflowInput.h include from nsIFrame.h r=firefox-style-system-reviewers,layout-reviewers,emilio
-
-[62] Frédéric Wang Nélar  —  3 patch(es)
+[61] Frédéric Wang Nélar  —  3 patch(es)
     ----------------------------------------------------------------------
       2026-03-26  eb50ea45ef7c  Bug 2023903 - Remove preference mathml.rtl_operator_mirroring.enabled. r=emilio,layout-reviewers
       2026-03-24  ada83c01ee49  Bug 2023903 - Remove preference mathml.rtl_operator_mirroring.enabled. r=emilio,layout-reviewers
       2026-03-23  8bcd92b612d5  Bug 2023903 - Remove preference mathml.rtl_operator_mirroring.enabled. r=emilio,layout-reviewers
 
-[63] Jan-Erik Rediger  —  3 patch(es)
+[62] Jan-Erik Rediger  —  3 patch(es)
     ----------------------------------------------------------------------
       2026-07-09  79facd40d3cc  Bug 2053054 - Update to Glean v68.0.1 r=TravisLong,supply-chain-reviewers,mach-reviewers,ahochheiden
       2026-05-18  fa9ca47f7a1c  Bug 2039260 - Update to Glean v67.3.2 r=TravisLong,supply-chain-reviewers,mach-reviewers,ahochheiden
       2026-05-11  bb2bdda1a193  Bug 2038207 - Update to Glean v67.3.1 r=TravisLong,supply-chain-reviewers,mach-reviewers,ahal
 
-[64] Masayuki Nakano  —  3 patch(es)
+[63] Masayuki Nakano  —  3 patch(es)
     ----------------------------------------------------------------------
       2026-08-25  01df2c4f8fa1  Bug 1625902 - part 3: Make some overloads of `nsContentUtils::Dispatch*Event` r=smaug,layout-reviewers,emilio
       2026-08-25  1645f3d86486  Bug 1625902 - part 2: Mark `nsContentUtils::Dispatch*Event` for chrome as `MOZ_CAN_RUN_SCRIPT` r=smaug,dom-core-reviewers,win-reviewers,layout-reviewers,emilio,handyman
       2026-08-25  976be8097ea1  Bug 1625902 - part 1: Mark `nsContentUtils::Dispatch*Event` as `MOZ_CAN_RUN_SCRIPT` except for chrome r=smaug,dom-core-reviewers,geckoview-reviewers,media-playback-reviewers,win-reviewers,padenot,handyman,m_kato
 
-[65] Mike Hommey  —  3 patch(es)
+[64] Mike Hommey  —  3 patch(es)
     ----------------------------------------------------------------------
       2026-05-19  2e89ec09a3c4  Bug 2008326 - Silence unnecessary-virtual-specifier warnings. r=smaug
       2026-05-18  76e63039e098  Bug 2008326 - Silence unnecessary-virtual-specifier warnings. r=smaug
       2026-05-14  7743ba2bdf93  Bug 2039421 - Avoid all warnings about built_frame not being used. r=gfx-reviewers,gw
+
+[65] Ryan Curran  —  3 patch(es)
+    ----------------------------------------------------------------------
+      2026-06-03  90486b7f8fcb  Bug 2037084 - Enable mochitest-plain (opt) on macosx1500-aarch64-vms r=ahal,mozbase-reviewers
+      2026-04-29  143b508425d4  Bug 2034604 - run macOS mochitests on AArch64 r=aryx,devtools-reviewers,jdescottes,media-playback-reviewers,padenot
+      2026-04-22  bf8ced11897f  Bug 2019625 - Disable screen capture and canvas throttle tests on macOS 15.3 ARM r=aryx
 
 [66] Tim Elliott  —  3 patch(es)
     ----------------------------------------------------------------------
@@ -2025,222 +2061,236 @@ Known aliases (applied in HTML report, NOT below):
       2026-05-04  b650d996586d  Bug 1870722 - Part 5: Fix CreateMediaEngineDevice to load d3d11.dll directly and fall back to WARP. r=sotaro
       2026-03-24  da9caadf0653  Bug 2024790 - Use LUID-matched adapter in CreateMediaEngineDevice. r=gfx-reviewers,sotaro
 
-[70] Edgar Chen  —  2 patch(es)
+[70] Adham-A  —  2 patch(es)
+    ----------------------------------------------------------------------
+      2026-09-11  ea6b888b0b8a  Bug 1985986 - Fix RTL glyph ink overflow measurement for contained glyphs. r=layout-reviewers,jfkthame
+      2026-09-11  adde773bf47e  Bug 1985986 - Fix RTL glyph ink overflow measurement for contained glyphs. r=layout-reviewers,jfkthame
+
+[71] Edgar Chen  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-08-01  abf79171ccba  Bug 2054740 - Harden image transferable buffer size validation; r=smaug,gfx-reviewers,bradwerth
       2026-06-17  6ccec70decb1  Bug 2046720 - Part 5: Use WarnOnceAndReportAbout() in various place; r=layout-reviewers,emilio
 
-[71] Jan de Mooij  —  2 patch(es)
+[72] Jan de Mooij  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-07-14  86014e65e6e7  Bug 2051957 part 2 - Replace remaining JS_NumberValue calls. r=mccr8,geckoview-reviewers,dom-storage-reviewers,TravisLong,owlish,asuth
       2026-07-14  80dfe993e933  Bug 2051957 part 1 - Use value.setNumber(x) instead of value.set(JS_NumberValue(x)). r=mccr8,geckoview-reviewers,dom-storage-reviewers,TravisLong,owlish,asuth
 
-[72] Jens Stutte  —  2 patch(es)
+[73] Jens Stutte  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-04-10  99ba1720681e  Bug 2027238 - Use promise-based SendRequestMemoryReport instead of callback overload. r=xpcom-reviewers,necko-reviewers,media-playback-reviewers,kershaw,padenot,nika
       2026-03-29  603e0642557f  Bug 2025772 - Stop running image decode tasks during shutdown. r=tnikkel
 
-[73] Josh Aas  —  2 patch(es)
+[74] Josh Aas  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-05-23  d5a342c5fd48  Bug 2041799 - macOS: Create autorelease pools for two startup threads doing font initialization. r=mac-reviewers,spohl
       2026-05-13  cc22a4ec3b3f  Bug 1782541 - Acknowledge child WebRender transactions immediately when the root WRBP has no display list, so content RefreshDrivers don't get stuck "waiting for paint" in headless mode. r=sotaro
 
-[74] Keith Cirkel  —  2 patch(es)
+[75] Keith Cirkel  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-06-15  09f3cf214638  Bug 2045043 - Part 55 - Fixup final classes using _FINAL cycle collecting isupports macro in dom/webgpu r=dom-core-reviewers,farre
       2026-06-09  33f1b29651d3  Bug 2045043 - Part 4 - Fixup final classes using _FINAL cycle collecting isupports macro in dom/canvas r=dom-core-reviewers,smaug
 
-[75] Kelly Cochrane  —  2 patch(es)
+[76] Kelly Cochrane  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-08-14  a5e0f6d0c6df  Bug 2062351 - Remove outer window gaps of floating chrome for nova r=desktop-theme-reviewers,emilio
       2026-08-13  dfea1bfeb553  Bug 2062351 - Remove outer window gaps of floating chrome for nova r=desktop-theme-reviewers,emilio
 
-[76] Mr. M  —  2 patch(es)
+[77] Mark Striemer  —  2 patch(es)
+    ----------------------------------------------------------------------
+      2026-09-11  93310090557b  Bug 2063178 - Differentiate default and disabled checkbox/radio more r=akulyk,emilio
+      2026-09-09  926ffded1b61  Bug 2063178 - Differentiate default and disabled checkbox/radio more r=akulyk,emilio
+
+[78] Mr. M  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-08-24  987e01a04029  Bug 1955168 - Prevent flashing when opening mica popups for the first time r=emilio
       2026-06-09  8880cba9faec  Bug 2035317 - Add rendering for CSS corner-shape support r=layout-reviewers,emilio,gfx-reviewers,firefox-style-system-reviewers,cheff,nical
 
-[77] Nicholas Rishel  —  2 patch(es)
+[79] Nicholas Rishel  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-09-01  70183d718570  Bug 2061503 - Validate draw fetch limits for matrix attribute columns. r=lsalzman
       2026-08-27  e965d74906f3  Bug 2061499 - Add UploadInitMemTracker to manage zeroing memory for partial texture uploads and marking uninitialized memory as initialized. r=lsalzman
 
-[78] Nico Burns  —  2 patch(es)
+[80] Nico Burns  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-07-22  7cc0eba7dca7  Bug 2046918: Move FastTransform to webrender_api crate r=gfx-reviewers,nical
       2026-06-12  ec130a8e644d  Bug 2046918: Move FastTransform to webrender_api crate r=gfx-reviewers,nical
 
-[79] Nikki Sharpley  —  2 patch(es)
+[81] Nikki Sharpley  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-08-31  1ad693ba2faa  Bug 2055043 - Re-enable browser_test_position_sticky.js under Nova r=sthompson,hiro
       2026-08-18  eeda7055fc1d  Bug 2055043 - Inset test content past Nova's rounded content-area corners and re-enable browser_test_position_sticky.js under Nova r=sthompson,hiro
 
-[80] Seunghyun An  —  2 patch(es)
+[82] Seunghyun An  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-08-14  e3333a67c2d3  Bug 2063033 - Do not delete borrowed MozFramebuffer color backings. r=gfx-reviewers,stransky,lsalzman
       2026-08-13  d9a1b493c4f3  Bug 2063033 - Do not delete borrowed MozFramebuffer color backings. r=gfx-reviewers,stransky,lsalzman
 
-[81] Yannis Juglaret  —  2 patch(es)
+[83] Yannis Juglaret  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-06-16  178fbd5f0e5a  Bug 2045746 - Copy strings to avoid holding a ref to CurrentState() during flush. r=gfx-reviewers,nical
       2026-06-16  88e0f3552da6  Bug 2045746 - Copy strings to avoid holding a ref to ContextState() during flush. r=gfx-reviewers,nical
 
-[82] Adam Vandolder  —  1 patch(es)
+[84] Adam Vandolder  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-03-18  18113ecfd20b  Bug 1892551 - Part 6: Remove now-unused attributes and methods from nsISHEntry. r=farre,dom-core
 
-[83] Alex Hochheiden  —  1 patch(es)
+[85] Alex Hochheiden  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-09-07  0d97f3e47929  Bug 2069656 - Add the annotations future import to the modules FA102 flags r=linter-reviewers,sylvestre
 
-[84] CaptPlasma  —  1 patch(es)
+[86] CaptPlasma  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-07-01  26077bdf2807  Bug 2049264 - Remove dead MacIOSurface::CreateSinglePlanarSurface. r=gfx-reviewers,bradwerth
 
-[85] Cheerful Ottering  —  1 patch(es)
+[87] Cheerful Ottering  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-04-21  522b75b466be  Bug 2002444 - Add a pref to dump the WebRender spatial tree. r=botond,gw
 
-[86] Coelacanthus  —  1 patch(es)
+[88] Coelacanthus  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-06-10  7f5354fee4bc  Bug 2008450 - cmap format 13 if used with platform 0 encoding 6 r=jfkthame
 
-[87] Daisuke Akatsuka  —  1 patch(es)
+[89] Daisuke Akatsuka  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-04-07  14efb900d974  Bug 2019153: Round the selection highlight for the urlbar input field r=layout-reviewers,adw,emilio,desktop-theme-reviewers,firefox-style-system-reviewers
 
-[88] Dão Gottwald  —  1 patch(es)
+[90] Daniel Baker  —  1 patch(es)
+    ----------------------------------------------------------------------
+      2026-09-08  7a76dbbff5b8  Bug 1340372 - Support Video Orientation RTP header extension: signaling and receive path. r=pehrsons,media-playback-reviewers,azebrowski
+
+[91] Drew Willcoxon  —  1 patch(es)
+    ----------------------------------------------------------------------
+      2026-09-10  3e7c069ee0d5  Bug 2035971 - Make the moz-remote-image protocol preserve the instrinsic aspect ratio by default and add a stretch param. r=mak,urlbar-reviewers,tnikkel
+
+[92] Dão Gottwald  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-08-04  ed3204e22fce  Bug 2059794 - Use native scrolling in vertical arrowscrollboxes. r=tabbrowser-reviewers,hiro,kcochrane
 
-[89] Fuqiao Xue  —  1 patch(es)
+[93] Fuqiao Xue  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-09-04  5da1ea67a156  Bug 1868500 - Add support for Fangsong and Kai font families in CSS r=firefox-style-system-reviewers,layout-reviewers,emilio,jfkthame
 
-[90] Gabriele Svelto  —  1 patch(es)
+[94] Gabriele Svelto  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-08-27  881de96cacc2  Bug 2066464 - Remove the thread id hack when initializing the crash reporter on macOS r=jld,necko-reviewers,ipc-reviewers,media-playback-reviewers,padenot
 
-[91] Gregory Pappas  —  1 patch(es)
-    ----------------------------------------------------------------------
-      2026-03-16  880e3432d787  Bug 1691346 - Fix mispositioned <select> popup in transformed non-oop iframe r=emilio
-
-[92] Helena  —  1 patch(es)
+[95] Helena  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-07-08  5bf297e4d625  Bug 2048402 - Don't request a discrete GPU GL renderer on Apple Silicon. r=gfx-reviewers,bradwerth
 
-[93] Jan Varga  —  1 patch(es)
+[96] Jan Varga  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-04-15  9f17c96a05b3  Bug 2031094 - Move ThreadSafeWeakPtrHashKey to xpcom; r=nika
 
-[94] Jan-Niklas Jaeschke  —  1 patch(es)
+[97] Jan-Niklas Jaeschke  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-06-17  f2ccd6487180  Bug 2045537, part 1 - Cache the spec hash on nsIURI. r=necko-reviewers,valentin
 
-[95] Jason Leo  —  1 patch(es)
-    ----------------------------------------------------------------------
-      2026-03-14  0e1110fd16be  Bug 1957175 - Clampping stop postion into a reasonable range to make rendering backend happy. r=gfx-reviewers,nical
-
-[96] Jonathan Kingston  —  1 patch(es)
+[98] Jonathan Kingston  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-04-13  287e9b2d3c23  Bug 2011007 - Return getImageData with the correct realm r=aosmond
 
-[97] Jonathan Moss  —  1 patch(es)
+[99] Jonathan Moss  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-05-18  0010107c8708  Bug 2040479 - Support updated Azure A10 WebGL renderer string. r=aryx
 
-[98] Katherine Ye  —  1 patch(es)
+[100] Katherine Ye  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-05-12  41bc5590a6ea  Bug 2036215 - Changed NewClonedProxy to return already_AddRefed type. r=AlaskanEmily
 
-[99] Kometes  —  1 patch(es)
+[101] Kometes  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-07-09  070102881b70  Bug 1954212 - Add general.autoscroll.speed_multiplier pref to scale autoscroll speed. r=botond
 
-[100] Lars Eggert  —  1 patch(es)
-    ----------------------------------------------------------------------
-      2026-03-18  87afbc916d44  Bug 2023197 - Upgrade `zlib-rs` crate to 0.6.3 r=kershaw,supply-chain-reviewers,necko-reviewers,devtools-reviewers,places-reviewers,Standard8,bomsy
-
-[101] Lukáš Lipinský  —  1 patch(es)
+[102] Lukáš Lipinský  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-07-28  69966471062e  Bug 1716579 - Trim transient WebRender resources when windows are paused. r=nical,gfx-reviewers
 
-[102] Markus Stange  —  1 patch(es)
+[103] Makoto Kato  —  1 patch(es)
+    ----------------------------------------------------------------------
+      2026-09-14  616fc3496f70  Bug 2065704 - Block HUAWEI devices to use AFont API. r=jfkthame
+
+[104] Markus Stange  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-06-04  a94f1018374d  Bug 2044160 - Remove line breaks from these macros. r=nical
 
-[103] Martin Bruse  —  1 patch(es)
+[105] Martin Bruse  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-04-17  393eb50f9672  Bug 2023488 - Replace StreamingLexer with direct SourceBufferIterator driving in nsJXLDecoder r=tnikkel,saschanaz
 
-[104] Mathew Hodson  —  1 patch(es)
+[106] Mathew Hodson  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-08-28  ab50be72f3fa  Bug 2067452 - Remove obsolete comment r=emilio
 
-[105] Matthew Gregan  —  1 patch(es)
-    ----------------------------------------------------------------------
-      2026-03-16  e9fdc0f156fb  Bug 2023277 - Minor bug fixes/code hardening in the mp4parse/Gecko interface.  r=media-playback-reviewers,padenot
-
-[106] PKhant78  —  1 patch(es)
+[107] PKhant78  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-07-14  84b7e437345e  Bug 2022995 - Add a WebRenderCommandBuilder::GetWebRenderUserData method. r=botond
 
-[107] Paul Adenot  —  1 patch(es)
+[108] Paul Adenot  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-03-20  77c62c860ba7  Bug 2023897 - Remove the ability to disable AV1 support. r=media-playback-reviewers,necko-reviewers,webrtc-reviewers,valentin,alwu,pehrsons,layout-reviewers,tnikkel
 
-[108] Randell Jesup  —  1 patch(es)
+[109] Randell Jesup  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-08-27  fe1fb0cd1377  Bug 2067212: Release SourceBuffer waiting consumers outside of mMutex r=azebrowski
 
-[109] Rong Bao  —  1 patch(es)
+[110] Rong Bao  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-08-20  27def1ef41e5  Bug 2065007 - Redefine X11's Success macro to X11Success to avoid conflicts. r=gfx-reviewers,gtk-reviewers,lsalzman,emilio
 
-[110] Sam Johnson  —  1 patch(es)
+[111] Sam Johnson  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-03-30  44835206d482  Bug 2018516 - Enable native menus for content select on macOS. r=mac-reviewers,extension-reviewers,devtools-reviewers,layout-reviewers,tgiles,robwu,ochameau,bradwerth,emilio
 
-[111] Seva Alipov  —  1 patch(es)
+[112] Seva Alipov  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-06-08  4f6218c8fe54  Bug 1927186: Alternative approach, fixing matrix zoom upsteam. r=firefox-style-system-reviewers,layout-reviewers,emilio,dshin
 
-[112] Stephen Thompson  —  1 patch(es)
+[113] Stephen Thompson  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-07-16  4d51dac23085  Bug 2050961 - fix misc Nova-specific test failures r=tabbrowser-reviewers,extension-reviewers,desktop-theme-reviewers,sfoster,rpl,omc-reviewers,mimi,nsharpley
 
-[113] SuGotLand 苏革岚  —  1 patch(es)
+[114] SuGotLand 苏革岚  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-04-04  1de39ae68826  Bug 2025558 - Replace "IndirectShadowTree" with "LayerTreeState" in a few method names r=sergesanspaille
 
-[114] Tiaan Louw  —  1 patch(es)
+[115] Tiaan Louw  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-08-20  811896c8f32a  Bug 2019903 - Stop loading font cmaps after shutdown begins r=layout-reviewers,jfkthame
 
-[115] Ting-Yu Lin  —  1 patch(es)
+[116] Ting-Yu Lin  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-08-18  fe383e1f43f1  Bug 2064271 Part 3 - Use C++20 defaulted operator<=> for ScrollGeneration. r=botond
 
-[116] Xidorn Quan  —  1 patch(es)
+[117] Xidorn Quan  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-05-20  06e6579ee6cb  Bug 2036986 - Fix ImageDecoder failing to decode animated GIFs with zero first-frame delay. r=aosmond
 
-[117] az  —  1 patch(es)
+[118] az  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-05-06  137d0ef31300  Bug 1825286 - Part 10: Add CodecInfo.{cpp,h} to parse and export WebRTC codec information for use with Media Capabilities support checks. r=pehrsons
 
-[118] giddeon  —  1 patch(es)
+[119] giddeon  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-08-31  5c44cb6ca110  Bug 2067328 - Removed duplicate method from TestTreeManager.cpp. r=botond
 
-[119] rperta  —  1 patch(es)
+[120] mayankleoboy1  —  1 patch(es)
+    ----------------------------------------------------------------------
+      2026-09-09  1ca87b4f6632  Bug 2070433 - Reuse cached monitor color spaces for startup telemetry r=bradwerth
+
+[121] owlishDeveloper  —  1 patch(es)
+    ----------------------------------------------------------------------
+      2026-09-08  db51560737b2  Bug 2057685 - Part 1: Add a ProcessCrossPaint function for obtaining full page screenshots on mobile r=emilio
+
+[122] rperta  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-07-27  825801038d4d  Bug 2057902 - lint failure fix
 
-[120] tatkasp  —  1 patch(es)
+[123] tatkasp  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-04-18  959f3da411fc  Bug 1826983 - Convert ClipTree::add_impl from tail recursion to iterative loop and use FastHashMap<ClipEntry, ClipNodeId> for children. r=gfx-reviewers,gw
 
-[121] zehuixu  —  1 patch(es)
+[124] zehuixu  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-06-15  980c9b1a9a61  Bug 2028402 - Filter Linux WebGPU dmabuf export modifiers by EGL consumer capabilities for shared-texture swapchain. r=webgpu-reviewers,gfx-reviewers,sotaro,ErichDonGubler
