@@ -5,14 +5,10 @@ No network: every input is a literal shaped like the real payloads
 chromiumdash schedule).
 """
 
-from datetime import date
-
 import pytest
 
 from reviewstats.libwebrtc import (
     Release,
-    age_label,
-    build_view,
     classify_libwebrtc_change,
     last_libwebrtc_change,
     last_vendored_upstream,
@@ -133,47 +129,6 @@ class TestUpdateInProgress:
         assert update_in_progress(remaining=None, branch_only=4) is True
 
 
-class TestAgeLabel:
-    @pytest.mark.parametrize("branched,label", [
-        (date(2026, 9, 14), "3 wk"),
-        (date(2026, 8, 17), "7 wk"),
-        (date(2026, 5, 4), "5 mo"),
-        (date(2023, 10, 30), "35 mo"),
-    ])
-    def test_weeks_then_months(self, branched, label):
-        assert age_label(branched, date(2026, 10, 5)) == label
-
-
-class TestBuildView:
-    def _row(self, **kw):
-        base = dict(label="Release", firefox="157.0.1",
-                    milestone=153, branch_head="branch-heads/8010",
-                    branched="2026-08-17", last_change={"date": "2026-09-01",
-                                                        "kind": "cherry-pick"},
-                    in_progress=False)
-        base.update(kw)
-        return base
-
-    def test_relation_to_chrome_stable(self):
-        rows = [self._row(label="Nightly", milestone=155),
-                self._row(label="Beta", milestone=154),
-                self._row(label="ESR 140", milestone=135)]
-        view = build_view(rows, chrome_stable=154, today=date(2026, 10, 5))
-        assert [r["vs_chrome"] for r in view["rows"]] == [
-            "1 ahead", "current", "19 behind"]
-
-    def test_age_is_computed_from_the_branch_date(self):
-        view = build_view([self._row()], chrome_stable=154, today=date(2026, 10, 5))
-        assert view["rows"][0]["age"] == "7 wk"
-        assert view["as_of"] == "2026-10-05"
-
-    def test_missing_branch_date_leaves_age_blank(self):
-        view = build_view([self._row(branched=None)], chrome_stable=154,
-                          today=date(2026, 10, 5))
-        assert view["rows"][0]["age"] is None
-
-
-
 class TestProjectView:
     """The page is versions only: missing branch-head fixes are mostly
     security fixes, and this site is public. `project_view` is the one
@@ -184,12 +139,13 @@ class TestProjectView:
         "chrome_stable": 154, "as_of": "2026-10-05",
         "rows": [{"label": "Release", "firefox": "157.0.1", "milestone": 153,
                   "branch_head": "branch-heads/8010", "branched": "2026-08-17",
-                  "age": "7 wk", "vs_chrome": "1 behind", "in_progress": False,
+                  "vs_chrome": "1 behind", "in_progress": False,
                   "last_change": {"date": "2026-09-01", "kind": "cherry-pick"}}],
     }
 
     def test_keeps_the_known_fields(self):
-        assert project_view(self.VIEW) == self.VIEW
+        assert project_view(self.VIEW) == {**self.VIEW, "next_update": None,
+                                           "patch_stack": None}
 
     def test_drops_unknown_row_fields(self):
         leaky = {**self.VIEW, "rows": [{**self.VIEW["rows"][0],
@@ -205,10 +161,3 @@ class TestProjectView:
 
     def test_drops_unknown_top_level_fields(self):
         assert "commits" not in project_view({**self.VIEW, "commits": [1]})
-
-    def test_build_view_output_is_already_projected(self):
-        row = dict(self.VIEW["rows"][0])
-        for k in ("age", "vs_chrome"):
-            row.pop(k)
-        view = build_view([row], chrome_stable=154, today=date(2026, 10, 5))
-        assert project_view(view) == view

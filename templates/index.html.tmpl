@@ -1165,6 +1165,12 @@
   body:not([data-view="libwebrtc"]) .libwebrtc-only
     { display: none !important; }
 
+  /* libwebrtc's own axis: data-lw ∈ {releases, next, stack}. */
+  body:not([data-lw="releases"]) .lw-releases-only,
+  body:not([data-lw="next"])     .lw-next-only,
+  body:not([data-lw="stack"])    .lw-stack-only
+    { display: none !important; }
+
   /* Media Health's own axis: data-health ∈ {roadmap, metrics}. */
   body[data-health="metrics"] .roadmap-only,
   body[data-health="roadmap"]     .metrics-only
@@ -1183,7 +1189,8 @@
      new view adds nothing here. */
   .toggle-group-period, .toggle-sep-period,
   .toggle-group-recent, .toggle-sep-recent,
-  .toggle-group-health, .toggle-sep-health { display: none; }
+  .toggle-group-health, .toggle-sep-health,
+  .toggle-group-lw, .toggle-sep-lw { display: none; }
 
   body[data-view="team"]   .toggle-group-period  { display: flex; }
   body[data-view="team"]   .toggle-sep-period    { display: block; }
@@ -1191,6 +1198,8 @@
   body[data-view="recent"] .toggle-sep-recent    { display: block; }
   body[data-view="health"] .toggle-group-health  { display: flex; }
   body[data-view="health"] .toggle-sep-health    { display: block; }
+  body[data-view="libwebrtc"] .toggle-group-lw { display: flex; }
+  body[data-view="libwebrtc"] .toggle-sep-lw   { display: block; }
 
   /* Profile select */
   .profile-select {
@@ -1305,7 +1314,7 @@
   .recent-empty { color: var(--muted); font-style: italic; }
 </style>
 </head>
-<body data-view="team" data-period="total" data-recent="1w" data-health="metrics">
+<body data-view="team" data-period="total" data-recent="1w" data-health="metrics" data-lw="releases">
 
 __GH_CORNER__
 
@@ -1339,6 +1348,12 @@ __GH_CORNER__
     <div class="toggle-group toggle-group-health" role="tablist" aria-label="Media Health section">
       <button data-health="metrics" class="active" type="button">Metrics</button>
       <button data-health="roadmap" type="button">Roadmap</button>
+    </div>
+    <div class="toggle-sep toggle-sep-lw" aria-hidden="true"></div>
+    <div class="toggle-group toggle-group-lw" role="tablist" aria-label="libwebrtc section">
+      <button data-lw="releases" class="active" type="button">Releases</button>
+      <button data-lw="next" type="button">Next update</button>
+      <button data-lw="stack" type="button">Patch stack</button>
     </div>
   </nav>
 </div>
@@ -1555,6 +1570,8 @@ __GH_CORNER__
 <!-- ============= LIBWEBRTC (webrtc only) ============= -->
 <!-- The libwebrtc view. Its tab removes itself without a LIBWEBRTC payload. -->
 <div id="libwebrtc-section" class="libwebrtc-only">
+  <div class="footer-note" id="libwebrtc-stale" style="display:none"></div>
+  <div class="lw-releases-only">
   <section>
     <h2>libwebrtc in Firefox releases <span class="info" data-tip="Which Chrome milestone of libwebrtc each supported Firefox release vendors (MOZ_NEXT_LIBWEBRTC_MILESTONE on its branch). Releases come from product-details, so ESRs appear and drop out automatically. Branched = when Chrome cut that milestone."></span></h2>
     <div class="footer-note" id="libwebrtc-meta"></div>
@@ -1563,6 +1580,41 @@ __GH_CORNER__
       <th>Branched</th><th>vs Chrome stable</th><th>Last libwebrtc change</th>
     </tr></thead><tbody id="libwebrtc-rows"></tbody></table></div>
   </section>
+  </div>
+
+  <div class="lw-next-only">
+  <div class="footer-note" id="lw-next-note" style="display:none"></div>
+  <section>
+    <h2>Current update <span class="info" data-tip="The milestone Nightly is vendoring (MOZ_NEXT_LIBWEBRTC_MILESTONE) and the Firefox release it targets (MOZ_NEXT_FIREFOX_REL_TARGET), from main's default_config_env. It has to be complete before that release merges to Beta."></span></h2>
+    <div class="summary-grid" id="lw-current"></div>
+  </section>
+  <section>
+    <h2>Upcoming milestones <span class="info" data-tip="Projected: Chrome and Firefox both ship every two weeks, so each next Chrome milestone is expected to target the next Firefox train. A milestone that branches after that train merges to Beta shows no target. Dates from chromiumdash and whattrainisitnow.com; blank means not scheduled yet."></span></h2>
+    <div class="table-wrap"><table class="lw-table"><thead><tr>
+      <th>Chrome</th><th>Chrome branch</th><th>Chrome stable</th><th>Targets Firefox (projected)</th>
+      <th>Nightly from</th><th>Merges to Beta</th><th>Status</th>
+    </tr></thead><tbody id="lw-upcoming-rows"></tbody></table></div>
+  </section>
+  <section>
+    <h2>Nightly behind upstream main <span class="info" data-tip="Nightly's newest vendored upstream commit against the head of upstream main. Nightly takes upstream one milestone at a time, so it normally trails main by roughly the time since its milestone branched."></span></h2>
+    <div class="summary-grid" id="lw-lag"></div>
+  </section>
+  </div>
+
+  <div class="lw-stack-only">
+  <div class="footer-note" id="lw-stack-note" style="display:none"></div>
+  <section>
+    <h2>Mozilla patch stack <span class="info" data-tip="Patches Firefox carries on top of upstream libwebrtc (third_party/libwebrtc/moz-patch-stack). Each one has to be rebased at every milestone update, so growth means more update work."></span></h2>
+    <div class="footer-note" id="lw-stack-summary"></div>
+    <div class="chart-box"><canvas id="chart-lw-stack"></canvas></div>
+  </section>
+  <section>
+    <h2>Patches per release</h2>
+    <div class="table-wrap"><table class="lw-table"><thead><tr>
+      <th>Channel</th><th>Patches</th>
+    </tr></thead><tbody id="lw-stack-rows"></tbody></table></div>
+  </section>
+  </div>
 </div>
 
 <!-- ============= MEDIA HEALTH / ROADMAP ============= -->
@@ -2007,6 +2059,7 @@ const setView = bindToggle('view');
 const setPeriod = bindToggle('period');
 const setRecent = bindToggle('recent');
 const setHealth = bindToggle('health');
+const setLw = bindToggle('lw');
 
 // Deep-linkable URLs. The hash encodes the current view and its secondary
 // axis: #team/6m, #team/3m, #team/1m, #team/weekly, #member, #queue,
@@ -2030,6 +2083,7 @@ const VIEW_SECONDARY_AXIS = {
             toHash: PERIOD_TO_HASH, fromHash: HASH_TO_PERIOD },
   recent: { axis: 'recent', def: '1w', set: setRecent },
   health: { axis: 'health', def: 'metrics', set: setHealth },
+  libwebrtc: { axis: 'lw', def: 'releases', set: setLw },
 };
 
 let applyingHash = false;
@@ -2089,20 +2143,131 @@ if (!DATA.team_views) {
 //   libwebrtc — webrtc only (fetch_libwebrtc_status.py writes the file)
 const VIEW_PAYLOAD = { recent: RECENT, health: ROADMAP, libwebrtc: LIBWEBRTC };
 
+// Day arithmetic against the viewer's clock, so ages and countdowns are right
+// whenever the page is opened, not frozen at the weekly fetch.
+function daysFromToday(iso) {
+  return Math.round((Date.parse(iso + 'T00:00:00Z') - Date.now()) / 86400000);
+}
+function ageLabel(iso) {
+  const days = -daysFromToday(iso);
+  return days < 56 ? `${Math.round(days / 7)} wk` : `${Math.round(days / 30.44)} mo`;
+}
+const esc = s => escHtml(s == null ? '' : s);
+
+// The weekly fetch keeps last week's copy of anything it can't refresh, so
+// say how old the data is instead of letting it look current.
+const LIBWEBRTC_STALE_DAYS = 10;
+function staleNote(asOf, what) {
+  const age = -daysFromToday(asOf);
+  return age < LIBWEBRTC_STALE_DAYS ? ''
+    : `${what} last refreshed ${asOf} (${age} days ago) — the weekly libwebrtc `
+      + 'fetch may be failing; see fetch_libwebrtc_status.py in the workflow log.';
+}
+function setNote(id, text) {
+  const el = document.getElementById(id);
+  el.textContent = text;
+  el.style.display = text ? 'block' : 'none';
+}
+
 function renderLibwebrtc(view) {
-  const esc = s => escHtml(s == null ? '' : s);
+  setNote('libwebrtc-stale', staleNote(view.as_of, 'Release data'));
   document.getElementById('libwebrtc-meta').textContent =
     `Chrome stable: M${view.chrome_stable} · as of ${view.as_of}`;
   document.getElementById('libwebrtc-rows').innerHTML = view.rows.map(r => {
     const lc = r.last_change ? `${esc(r.last_change.date)} (${esc(r.last_change.kind)})` : '—';
     const ms = `M${esc(r.milestone)}` + (r.in_progress ? ' <em>(update in progress)</em>' : '');
-    const branched = r.branched ? `${esc(r.branched)} (${esc(r.age)})` : '—';
+    const branched = r.branched ? `${esc(r.branched)} (${ageLabel(r.branched)})` : '—';
     return `<tr><td>${esc(r.label)}</td><td>${esc(r.firefox)}</td><td>${ms}</td>`
       + `<td><code>${esc(r.branch_head)}</code></td><td>${branched}</td>`
       + `<td>${esc(r.vs_chrome)}</td><td>${lc}</td></tr>`;
   }).join('');
 }
-if (LIBWEBRTC) renderLibwebrtc(LIBWEBRTC);
+
+function renderLibwebrtcNext(next) {
+  if (!next) { setNote('lw-next-note', 'No next-update data yet; it appears after the next weekly refresh.'); return; }
+  setNote('lw-next-note', staleNote(next.as_of, 'Next-update data'));
+  const c = next.current;
+  const bug = c.fastforward_bug
+    ? `<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=${esc(c.fastforward_bug)}">Bug ${esc(c.fastforward_bug)}</a>`
+    : '—';
+  let status = 'Complete', detail = c.deadline ? `ahead of the ${esc(c.deadline)} Beta merge` : '';
+  if (c.in_progress == null) { status = 'Unknown'; detail = 'upstream status unavailable this week'; }
+  else if (c.in_progress) {
+    const left = c.deadline ? daysFromToday(c.deadline) : null;
+    status = 'In progress';
+    detail = left == null ? '' : left >= 0 ? `${left} days to the ${esc(c.deadline)} Beta merge`
+      : `past the ${esc(c.deadline)} Beta merge`;
+  }
+  document.getElementById('lw-current').replaceChildren(
+    stat('Vendoring', `M${esc(c.milestone)}`),
+    stat('Targets', `Firefox ${esc(c.firefox)}`),
+    stat('Fast-forward bug', bug),
+    stat('Status', status, detail));
+
+  document.getElementById('lw-upcoming-rows').innerHTML = next.upcoming.map(u => {
+    let st = '—';
+    if (u.chrome_branch) {
+      const d = daysFromToday(u.chrome_branch);
+      st = d > 0 ? `Branches in ${d} days` : 'Branched — ready to start';
+    }
+    const target = u.firefox ? `Firefox ${esc(u.firefox)}` : '— <em>(branches too late for its train)</em>';
+    return `<tr><td>M${esc(u.milestone)}</td><td>${esc(u.chrome_branch || '—')}</td>`
+      + `<td>${esc(u.chrome_stable || '—')}</td><td>${target}</td>`
+      + `<td>${esc(u.nightly_start || '—')}</td><td>${esc(u.merge_day || '—')}</td>`
+      + `<td>${st}</td></tr>`;
+  }).join('');
+
+  const lag = next.lag;
+  const grid = document.getElementById('lw-lag');
+  if (!lag) { grid.replaceChildren(); grid.textContent = 'No vendored upstream commit found on Nightly.'; return; }
+  const days = Math.round((Date.parse(lag.upstream_head) - Date.parse(lag.last_vendored)) / 86400000);
+  grid.replaceChildren(
+    stat('Last vendored upstream', esc(lag.last_vendored)),
+    stat('Upstream main head', esc(lag.upstream_head)),
+    stat('Behind', `${days} days`),
+    stat('Commits behind', lag.behind == null ? '—' : esc(lag.behind)));
+}
+
+function renderLibwebrtcStack(stack) {
+  if (!stack) { setNote('lw-stack-note', 'No patch-stack data yet; it appears after the next weekly refresh.'); return; }
+  setNote('lw-stack-note', staleNote(stack.as_of, 'Patch-stack data'));
+  const h = stack.history;
+  const nightly = stack.releases.find(r => r.label === 'Nightly');
+  const change = h.length > 1 ? h[h.length - 1].count - h[0].count : null;
+  document.getElementById('lw-stack-summary').textContent = nightly
+    ? `Nightly carries ${nightly.count} Mozilla patches on top of upstream`
+      + (change == null ? '.' : `, ${change >= 0 ? '+' : ''}${change} since ${h[0].month}.`)
+    : '';
+  document.getElementById('lw-stack-rows').innerHTML = stack.releases
+    .map(r => `<tr><td>${esc(r.label)}</td><td>${esc(r.count)}</td></tr>`).join('');
+  new Chart(document.getElementById('chart-lw-stack'), {
+    type: 'line',
+    data: {
+      labels: h.map(p => p.month),
+      datasets: [{
+        label: 'Patches on Nightly (end of month; this month so far)',
+        data: h.map(p => p.count),
+        borderColor: COLOR_NAVY,
+        backgroundColor: COLOR_NAVY + '33',
+        tension: 0.25,
+      }],
+    },
+    options: {
+      plugins: { legend: { position: 'bottom' } },
+      scales: { y: { title: { display: true, text: 'patches' } } },
+      maintainAspectRatio: false,
+    },
+  });
+}
+
+// Each section renders on its own: a malformed one must not stop the rest,
+// nor the tab-hiding code below.
+if (LIBWEBRTC) {
+  [[renderLibwebrtc, LIBWEBRTC], [renderLibwebrtcNext, LIBWEBRTC.next_update],
+   [renderLibwebrtcStack, LIBWEBRTC.patch_stack]].forEach(([fn, data]) => {
+    try { fn(data); } catch (e) { console.error(`${fn.name} failed`, e); }
+  });
+}
 
 // Hide the tab of every view with no payload, and of every view turned off
 // in config.

@@ -15,7 +15,8 @@ VIEW = {"chrome_stable": 154, "as_of": "2026-10-05", "rows": []}
 
 def test_reads_the_team_file_when_present(tmp_path):
     (tmp_path / "data_libwebrtc.json").write_text(json.dumps(VIEW))
-    assert analyze_git._read_libwebrtc_view(tmp_path) == VIEW
+    assert analyze_git._read_libwebrtc_view(tmp_path) == {
+        **VIEW, "next_update": None, "patch_stack": None}
 
 
 def test_none_without_the_file(tmp_path):
