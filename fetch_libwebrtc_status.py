@@ -10,7 +10,7 @@ Writes `<team>/data_libwebrtc.json`. Thin I/O only — the logic lives in
 Kept separate from analyze_git.py for the same reason as fetch_perf_metrics.py:
 GitHub, chromiumdash and Gitiles being slow or down must not fail the weekly
 report build. A failed or empty fetch leaves last week's file in place and exits
-nonzero; with no file at all the page simply has no card.
+nonzero; with no file at all the page simply has no libwebrtc tab.
 """
 
 import argparse

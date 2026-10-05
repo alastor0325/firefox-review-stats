@@ -80,7 +80,7 @@ def render_html(
     signal the page uses to remove the Media Health tab — the same
     data-availability gate Recent Changes already uses. That keeps the view
     playback-only without the template needing to know team names.
-    `libwebrtc_data` gates the libwebrtc version card the same way; only the
+    `libwebrtc_data` gates the libwebrtc view the same way; only the
     WebRTC folder has the data file it comes from.
     """
     path = template_path or _TEMPLATE_PATH

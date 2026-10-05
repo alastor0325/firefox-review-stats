@@ -1,6 +1,6 @@
-"""The libwebrtc card is WebRTC-only by data, like the Metrics subview:
+"""The libwebrtc view is WebRTC-only by data, like the Metrics subview:
 fetch_libwebrtc_status.py writes webrtc/data_libwebrtc.json, and a page
-renders the card only when its team directory has that file."""
+shows the tab only when its team directory has that file."""
 
 import json
 from pathlib import Path
@@ -28,7 +28,7 @@ def test_reading_applies_the_whitelist(tmp_path):
     assert "missing_fixes" not in analyze_git._read_libwebrtc_view(tmp_path)
 
 
-def test_unreadable_file_omits_the_card(tmp_path):
+def test_unreadable_file_omits_the_view(tmp_path):
     (tmp_path / "data_libwebrtc.json").write_text("{not json")
     assert analyze_git._read_libwebrtc_view(tmp_path) is None
 

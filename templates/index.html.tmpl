@@ -1154,29 +1154,15 @@
     white-space: normal;
   }
 
-  /* View axis: data-view ∈ {team, member, queue, recent} */
-  body[data-view="team"]    .member-only, body[data-view="team"]    .queue-only,
-  body[data-view="member"]  .team-only,   body[data-view="member"]  .queue-only,
-  body[data-view="queue"]   .team-only,   body[data-view="queue"]   .member-only
-    { display: none !important; }
-
-  /* Recent Changes is the 4th view. Stated additively so the matrix
-     above stays readable: hide everyone else's sections in recent, and
-     hide recent-only everywhere else. */
-  body[data-view="recent"] .team-only,
-  body[data-view="recent"] .member-only,
-  body[data-view="recent"] .queue-only,
-  body:not([data-view="recent"]) .recent-only
-    { display: none !important; }
-
-  /* Media Health is the 5th view, and unlike the other four it only exists
-     for the team that has a roadmap — the tab removes itself when no roadmap
-     payload was injected. Stated additively for the same reason as above. */
-  body[data-view="health"] .team-only,
-  body[data-view="health"] .member-only,
-  body[data-view="health"] .queue-only,
-  body[data-view="health"] .recent-only,
-  body:not([data-view="health"]) .health-only
+  /* View axis: each view's sections carry .<view>-only and are hidden in
+     every other view. One line per view — a new view adds one line and no
+     existing line names it. */
+  body:not([data-view="team"])      .team-only,
+  body:not([data-view="member"])    .member-only,
+  body:not([data-view="queue"])     .queue-only,
+  body:not([data-view="recent"])    .recent-only,
+  body:not([data-view="health"])    .health-only,
+  body:not([data-view="libwebrtc"]) .libwebrtc-only
     { display: none !important; }
 
   /* Media Health's own axis: data-health ∈ {roadmap, metrics}. */
@@ -1191,26 +1177,20 @@
   body[data-view="team"][data-period="total"] .weekly-only,
   body[data-view="team"][data-period="weekly"] .total-only { display: none !important; }
 
-  /* Three secondary toggle groups share the same top-bar component: the
-     Period axis (Team View), the Recent-window axis (Recent Changes) and the
-     Media Health axis. Only one is visible at a time, gated by data-view. */
+  /* Secondary toggle groups (Period in Team View, window in Recent
+     Changes, section in Media Health) share one top-bar slot. Each group and
+     its separator is off by default and shown only in its owning view, so a
+     new view adds nothing here. */
+  .toggle-group-period, .toggle-sep-period,
   .toggle-group-recent, .toggle-sep-recent,
   .toggle-group-health, .toggle-sep-health { display: none; }
 
-  body[data-view="member"] .toggle-group-period, body[data-view="member"] .toggle-sep,
-  body[data-view="queue"]  .toggle-group-period, body[data-view="queue"]  .toggle-sep,
-  body[data-view="recent"] .toggle-group-period, body[data-view="recent"] .toggle-sep,
-  body[data-view="health"] .toggle-group-period, body[data-view="health"] .toggle-sep
-    { display: none; }
-
-  /* Default-off above, shown only in the owning view — so no rule needs to
-     name any other view, and a 6th view adds nothing here. */
-  body[data-view="health"] .toggle-group-health { display: flex; }
-  body[data-view="health"] .toggle-sep-health { display: block; }
-
-  /* Recent Changes shows the week/month group instead (same styling as Period). */
-  body[data-view="recent"] .toggle-group-recent { display: flex; }
-  body[data-view="recent"] .toggle-sep-recent { display: block; }
+  body[data-view="team"]   .toggle-group-period  { display: flex; }
+  body[data-view="team"]   .toggle-sep-period    { display: block; }
+  body[data-view="recent"] .toggle-group-recent  { display: flex; }
+  body[data-view="recent"] .toggle-sep-recent    { display: block; }
+  body[data-view="health"] .toggle-group-health  { display: flex; }
+  body[data-view="health"] .toggle-sep-health    { display: block; }
 
   /* Profile select */
   .profile-select {
@@ -1341,8 +1321,9 @@ __GH_CORNER__
       <button data-view="queue"  type="button">Wait Queue</button>
       <button data-view="recent" type="button">Recent Changes</button>
       <button data-view="health" type="button">Media Health</button>
+      <button data-view="libwebrtc" type="button">libwebrtc</button>
     </div>
-    <div class="toggle-sep" aria-hidden="true"></div>
+    <div class="toggle-sep toggle-sep-period" aria-hidden="true"></div>
     <div class="toggle-group toggle-group-period" role="tablist" aria-label="Period">
       <button data-period="total"  class="active" type="button">6-Month</button>
       <button data-period="3m" type="button">3-Month</button>
@@ -1571,9 +1552,9 @@ __GH_CORNER__
   </section>
 </div>
 
-<!-- ============= LIBWEBRTC VERSIONS (webrtc only) ============= -->
-<!-- Filled from LIBWEBRTC; hidden without it. -->
-<div id="libwebrtc-section" class="team-only" style="display:none">
+<!-- ============= LIBWEBRTC (webrtc only) ============= -->
+<!-- The libwebrtc view. Its tab removes itself without a LIBWEBRTC payload. -->
+<div id="libwebrtc-section" class="libwebrtc-only">
   <section>
     <h2>libwebrtc in Firefox releases <span class="info" data-tip="Which Chrome milestone of libwebrtc each supported Firefox release vendors (MOZ_NEXT_LIBWEBRTC_MILESTONE on its branch). Releases come from product-details, so ESRs appear and drop out automatically. Branched = when Chrome cut that milestone."></span></h2>
     <div class="footer-note" id="libwebrtc-meta"></div>
@@ -1645,7 +1626,7 @@ const DISABLED_VIEWS = __DISABLED_VIEWS_JSON__;
 // one payload: Roadmap renders `items`, Performance renders `metrics`.
 const ROADMAP = __ROADMAP_DATA_JSON__;
 const METRICS = __METRICS_DATA_JSON__;
-// WebRTC page only; null elsewhere, which keeps #libwebrtc-section hidden.
+// WebRTC page only; null elsewhere, which removes the libwebrtc tab.
 const LIBWEBRTC = __LIBWEBRTC_DATA_JSON__;
 
 const tipEl = document.createElement('div');
@@ -2100,22 +2081,13 @@ if (!DATA.team_views) {
   ).forEach(b => { b.style.display = 'none'; });
 }
 
-// Reports generated before the Recent Changes feed existed have no
-// `recent_changes` block — hide the view button so it can't be selected
-// (and so keyboard cycling skips it, since visibleAxisValues filters on
-// offsetParent). The next weekly refresh fills it in and it reappears.
-if (!RECENT) {
-  document.querySelectorAll('.toggle-bar button[data-view="recent"]')
-    .forEach(b => { b.style.display = 'none'; });
-}
-
-// Media Health is playback-only, expressed as a data gate rather than a team
-// name: no roadmap payload means no tab. Same mechanism as RECENT above, so
-// visibleAxisValues keeps keyboard cycling correct without extra work.
-if (!ROADMAP) {
-  document.querySelectorAll('.toggle-bar button[data-view="health"]')
-    .forEach(b => { b.style.display = 'none'; });
-}
+// Views that exist only when their payload does, stated once. Each maps a
+// view to the payload it renders; a null payload removes the tab, and
+// visibleAxisValues then skips it for keyboard cycling and #hash links.
+//   recent    — reports from before the Recent Changes feed have none
+//   health    — playback only (the curated roadmap)
+//   libwebrtc — webrtc only (fetch_libwebrtc_status.py writes the file)
+const VIEW_PAYLOAD = { recent: RECENT, health: ROADMAP, libwebrtc: LIBWEBRTC };
 
 function renderLibwebrtc(view) {
   const esc = s => escHtml(s == null ? '' : s);
@@ -2129,20 +2101,20 @@ function renderLibwebrtc(view) {
       + `<td><code>${esc(r.branch_head)}</code></td><td>${branched}</td>`
       + `<td>${esc(r.vs_chrome)}</td><td>${lc}</td></tr>`;
   }).join('');
-  document.getElementById('libwebrtc-section').style.display = 'block';
 }
 if (LIBWEBRTC) renderLibwebrtc(LIBWEBRTC);
 
-// Views turned off in config rather than by missing data. Same
-// hide-the-button mechanism as the two gates above.
-DISABLED_VIEWS.forEach(v => {
-  document.querySelectorAll(`.toggle-bar button[data-view="${v}"]`)
-    .forEach(b => { b.style.display = 'none'; });
-});
+// Hide the tab of every view with no payload, and of every view turned off
+// in config.
+[...DISABLED_VIEWS, ...Object.keys(VIEW_PAYLOAD).filter(v => !VIEW_PAYLOAD[v])]
+  .forEach(v => {
+    document.querySelectorAll(`.toggle-bar button[data-view="${v}"]`)
+      .forEach(b => { b.style.display = 'none'; });
+  });
 
 // Whatever hid it, never leave the body on a view whose tab is gone — every
-// section would be display:none. Asks the DOM rather than any one gate, so
-// this covers RECENT and ROADMAP too, not just the config list.
+// section would be display:none. Asks the DOM rather than either list
+// above, so it holds whatever hid the tab.
 {
   const visible = visibleAxisValues('view');
   if (visible.length && !visible.includes(document.body.dataset.view)) {

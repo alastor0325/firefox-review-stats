@@ -251,7 +251,7 @@ class TestPageExecutes:
         """Every view still ships its button, including disabled ones —
         that is what keeps re-enabling a one-constant flip."""
         assert page_state["views"] == [
-            "team", "member", "queue", "recent", "health"
+            "team", "member", "queue", "recent", "health", "libwebrtc"
         ]
 
     def test_disabled_views_are_not_reachable(self, page_state):

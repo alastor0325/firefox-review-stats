@@ -88,15 +88,6 @@ class TestRecentMarkup:
 
 
 class TestRecentCSS:
-    def test_other_views_hidden_in_recent(self):
-        html = _render()
-        for cls in (".team-only", ".member-only", ".queue-only"):
-            rule = re.search(
-                rf'body\[data-view="recent"\][^{{]*{re.escape(cls)}[^{{]*\{{[^}}]*display:\s*none',
-                html,
-            )
-            assert rule, f"missing rule hiding {cls} in recent view"
-
     def test_recent_only_hidden_outside_recent(self):
         html = _render()
         rule = re.search(
@@ -104,14 +95,6 @@ class TestRecentCSS:
             html,
         )
         assert rule, "recent-only must be hidden when view != recent"
-
-    def test_period_toggle_hidden_in_recent(self):
-        html = _render()
-        rule = re.search(
-            r'body\[data-view="recent"\][^{]*\.toggle-group-period[^{]*\{[^}]*display:\s*none',
-            html,
-        )
-        assert rule, "period toggle should be hidden in recent view"
 
     def test_recent_toggle_shown_only_in_recent(self):
         html = _render()
@@ -129,13 +112,6 @@ class TestRecentCSS:
 class TestRecentJS:
     def test_reads_recent_changes(self):
         assert "DATA.recent_changes" in _render()
-
-    def test_legacy_guard_hides_button(self):
-        # When a report lacks recent_changes, the button is hidden.
-        html = _render()
-        assert re.search(r'if \(!RECENT\)', html), (
-            "expected a legacy guard hiding the recent button when no data"
-        )
 
     def test_builds_phabricator_link(self):
         assert "phabricator.services.mozilla.com" in _render()

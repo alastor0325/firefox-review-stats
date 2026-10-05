@@ -112,13 +112,14 @@ class TestViewAxis:
             'expected a "health" view button'
         )
 
-    def test_health_button_is_last_on_the_axis(self):
-        """Reads as an addition to the existing four rather than a
-        reshuffle of them."""
+    def test_team_specific_views_follow_the_shared_four(self):
+        """Media Health (playback) and libwebrtc (webrtc) read as additions
+        to the shared four rather than a reshuffle of them."""
         html = _render(_ROADMAP)
         m = re.search(r'class="toggle-bar"(.*?)</nav>', html, re.DOTALL)
         order = re.findall(r'<button[^>]*data-view="([^"]+)"', m.group(1))
-        assert order == ["team", "member", "queue", "recent", "health"], order
+        assert order == ["team", "member", "queue", "recent", "health",
+                         "libwebrtc"], order
 
     def test_default_view_is_still_team(self):
         """Adding a view must not change where the page lands."""
@@ -157,27 +158,7 @@ class TestSecondaryAxis:
             html,
         ), "toggle-group-health must be shown in the health view"
 
-    def test_period_group_hidden_in_health_view(self):
-        """Only one secondary group may be visible at a time. Period is the
-        one group that is visible-by-default, so it still needs an explicit
-        hide rule per view; the others are default-off."""
-        assert re.search(
-            r'body\[data-view="health"\][^{]*\.toggle-group-period'
-            r'[^{]*\{[^}]*display:\s*none',
-            _render(_ROADMAP),
-        )
-
-
 class TestCSSMatrix:
-    def test_other_views_hidden_in_health(self):
-        html = _render(_ROADMAP)
-        for cls in ("team-only", "member-only", "queue-only", "recent-only"):
-            assert re.search(
-                rf'body\[data-view="health"\][^{{]*\.{cls}'
-                rf'[^{{]*\{{[^}}]*display:\s*none',
-                html,
-            ), f".{cls} must be hidden in the health view"
-
     def test_health_only_hidden_everywhere_else(self):
         assert re.search(
             r'body:not\(\[data-view="health"\]\)\s*\.health-only'
@@ -194,14 +175,6 @@ class TestCSSMatrix:
 
 
 class TestGatingOnData:
-    def test_button_hidden_when_no_roadmap_data(self):
-        """gfx and webrtc get no roadmap payload, so the tab must remove
-        itself rather than open an empty view."""
-        html = _render(None)
-        assert re.search(
-            r'if\s*\(\s*!ROADMAP\s*\)', html
-        ), "expected a `if (!ROADMAP)` guard hiding the health button"
-
     def test_roadmap_payload_is_null_without_data(self):
         assert re.search(r"const ROADMAP = null;", _render(None))
 

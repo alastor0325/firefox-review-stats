@@ -1,4 +1,4 @@
-"""fetch_libwebrtc_status.py: the separate CI step that writes the card's
+"""fetch_libwebrtc_status.py: the separate CI step that writes the libwebrtc view's
 data. Upstream trouble must cost one week of freshness, never the build or
 last week's table."""
 

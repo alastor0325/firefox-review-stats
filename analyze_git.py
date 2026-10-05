@@ -155,8 +155,8 @@ def _load_roadmap_view(team: Team, *, audience: str,
 
 
 def _read_libwebrtc_view(team_dir: Path) -> dict | None:
-    """The libwebrtc card's payload from <team>/data_libwebrtc.json, or None
-    to leave the card off. Written by fetch_libwebrtc_status.py, which only
+    """The libwebrtc view's payload from <team>/data_libwebrtc.json, or None
+    to leave the tab off. Written by fetch_libwebrtc_status.py, which only
     targets webrtc. Re-projected on read so a hand-edited or older file can't
     put anything outside the whitelist on the page."""
     path = team_dir / "data_libwebrtc.json"

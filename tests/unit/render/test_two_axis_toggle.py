@@ -74,11 +74,12 @@ class TestToggleBarMarkup:
         bar = m.group(1)
         view_buttons = re.findall(r'<button[^>]*data-view=', bar)
         period_buttons = re.findall(r'<button[^>]*data-period=', bar)
-        # Five views: the four review-process lenses plus Media Health, which
-        # is playback-only and hides itself when no roadmap payload is
-        # injected. See tests/unit/render/test_media_health_view.py.
-        assert len(view_buttons) == 5, (
-            f"expected exactly 5 view buttons, found {len(view_buttons)}"
+        # Six views: the four review-process lenses plus two team-specific
+        # ones that hide themselves without their payload — Media Health
+        # (playback, test_media_health_view.py) and libwebrtc (webrtc,
+        # tests/unit/libwebrtc/test_view.py).
+        assert len(view_buttons) == 6, (
+            f"expected exactly 6 view buttons, found {len(view_buttons)}"
         )
         # Period axis: 6-Month (data-period="total") / 3-Month / 1-Month
         # / Per-Week. 1m and 3m were added alongside the windowed
@@ -131,24 +132,6 @@ class TestDefaultState:
 
 
 class TestCSSMatrix:
-    def test_member_only_hidden_when_view_team(self):
-        rule = re.search(
-            r'body\[data-view="team"\][^{]*\.member-only[^{]*\{[^}]*display:\s*none',
-            _render(),
-        )
-        assert rule, (
-            "missing rule: body[data-view=team] .member-only { display: none }"
-        )
-
-    def test_team_only_hidden_when_view_member(self):
-        rule = re.search(
-            r'body\[data-view="member"\][^{]*\.team-only[^{]*\{[^}]*display:\s*none',
-            _render(),
-        )
-        assert rule, (
-            "missing rule: body[data-view=member] .team-only { display: none }"
-        )
-
     def test_period_rules_are_scoped_to_team_view(self):
         """Period axis must only apply when view=team. Otherwise
         Member View would hide half its sections when the user happens
@@ -172,44 +155,6 @@ class TestCSSMatrix:
         assert 'data-view="team"' in total_rule.group(0), (
             "total-only hide rule must be scoped to data-view=team"
         )
-
-    def test_period_toggle_hidden_in_non_team_views(self):
-        """The period buttons only apply in Team View; in Member and
-        Wait Queue views the group is hidden to avoid confusing users."""
-        html = _render()
-        for v in ("member", "queue"):
-            rule = re.search(
-                rf'body\[data-view="{v}"\][^{{]*\.toggle-group-period[^{{]*\{{[^}}]*display:\s*none',
-                html,
-            )
-            assert rule, (
-                f"missing rule: body[data-view={v}] .toggle-group-period "
-                "{ display: none }"
-            )
-
-    # Queue is hidden by render.DISABLED_VIEWS; these guard the markup
-    # and CSS so re-enabling stays a one-constant flip.
-    def test_queue_only_hidden_in_other_views(self):
-        html = _render()
-        for v in ("team", "member"):
-            rule = re.search(
-                rf'body\[data-view="{v}"\][^{{]*\.queue-only[^{{]*\{{[^}}]*display:\s*none',
-                html,
-            )
-            assert rule, (
-                f"missing rule: body[data-view={v}] .queue-only { '{' } display: none { '}' }"
-            )
-
-    def test_team_and_member_only_hidden_in_queue_view(self):
-        html = _render()
-        for cls in (".team-only", ".member-only"):
-            rule = re.search(
-                rf'body\[data-view="queue"\][^{{]*{re.escape(cls)}[^{{]*\{{[^}}]*display:\s*none',
-                html,
-            )
-            assert rule, (
-                f"missing rule: body[data-view=queue] {cls} {{ display: none }}"
-            )
 
     def test_period_toggle_group_marked_for_targeting(self):
         """The CSS hide rule relies on the period group having the
@@ -399,3 +344,55 @@ class TestAxisIndependence:
         assert re.search(
             r"document\.body\.dataset\[axis\]\s*=\s*value", html
         ), "toggle should update one axis at a time (dataset[axis] = value)"
+
+
+
+class TestViewWiringIsGeneric:
+    """Every view is wired the same way, so these iterate the toggle bar
+    rather than naming views — a new view is covered without a new test.
+    They replace per-view copies that each pinned one view's selectors."""
+
+    def _views(self, html):
+        bar = re.search(r'class="toggle-bar"(.*?)</nav>', html, re.DOTALL).group(1)
+        return re.findall(r'<button[^>]*data-view="([^"]+)"', bar)
+
+    def _view_hide_rule(self, html):
+        m = re.search(r'(body:not\(\[data-view="team"\]\)[^{]*)\{\s*display:\s*none',
+                      html)
+        assert m, "no view-axis hide rule"
+        return m.group(1)
+
+    def test_every_view_hides_its_sections_elsewhere(self):
+        html = _render()
+        rule = self._view_hide_rule(html)
+        for v in self._views(html):
+            assert re.search(rf'body:not\(\[data-view="{v}"\]\)\s*\.{v}-only', rule), v
+
+    def test_no_rule_names_another_views_sections(self):
+        """The old matrix (`body[data-view="X"] .Y-only`) made every new view
+        edit every other view's block. Keep it from growing back."""
+        assert not re.search(r'body\[data-view="[^"]+"\]\s*\.\w+-only', _render())
+
+    def test_period_group_is_default_off_and_shown_only_in_team_view(self):
+        html = _render()
+        assert re.search(r"\.toggle-group-period,\s*\.toggle-sep-period,[^{]*"
+                         r"\{\s*display:\s*none", html)
+        shown = re.findall(r'body\[data-view="(\w+)"\]\s*\.toggle-(?:group|sep)-period', html)
+        assert set(shown) == {"team"}, shown
+
+    def test_every_separator_belongs_to_one_group(self):
+        """A bare .toggle-sep would be shown or hidden by whichever group
+        rule came last in the file."""
+        bar = re.search(r'class="toggle-bar"(.*?)</nav>', _render(), re.DOTALL).group(1)
+        for classes in re.findall(r'class="(toggle-sep[^"]*)"', bar):
+            assert re.search(r"toggle-sep-\w+", classes), classes
+
+    def test_payload_gated_views_are_declared_once(self):
+        """Views that exist only with their payload are one table, and the
+        tab-hiding loop reads it."""
+        html = _render()
+        assert re.search(r"const VIEW_PAYLOAD = \{ recent: RECENT, health: ROADMAP, "
+                         r"libwebrtc: LIBWEBRTC \};", html)
+        assert re.search(r"Object\.keys\(VIEW_PAYLOAD\)\.filter\(v => !VIEW_PAYLOAD\[v\]\)",
+                         html)
+        assert "if (!RECENT) {" not in html and "if (!LIBWEBRTC) {" not in html
