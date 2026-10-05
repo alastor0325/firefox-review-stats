@@ -407,9 +407,11 @@
   /* Chart boxes */
   .chart-box { position: relative; height: 280px; }
   .chart-box.tall { height: 380px; }
-  .chart-box.square { height: 280px; max-width: 420px; margin: 0 auto; }
-  .split { display: grid; grid-template-columns: 1.4fr 1fr; gap: 20px; align-items: center; }
-  @media (max-width: 800px) { .split { grid-template-columns: 1fr; } }
+  /* A Chart.js canvas keeps its old pixel width after the window narrows;
+     width: 100% and minmax(0, …) tracks let the .split row shrink with its card. */
+  .chart-box.square { height: 280px; width: 100%; max-width: 420px; margin: 0 auto; }
+  .split { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 20px; align-items: center; }
+  @media (max-width: 800px) { .split { grid-template-columns: minmax(0, 1fr); } }
 
   /* Tables */
   table {
