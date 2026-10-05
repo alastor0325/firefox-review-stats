@@ -26,6 +26,7 @@ from pathlib import Path
 from reviewstats.commit_files import fetch_commit_files_cached
 from reviewstats.github_commits import _get_auth_token, fetch_commits
 from reviewstats.landing import render_landing_page
+from reviewstats.libwebrtc import project_view
 from reviewstats.mediacaps import SURFACES, build_payload
 from reviewstats.metrics import (
     classify_landed_without_team_review_by_subdir,
@@ -151,6 +152,21 @@ def _load_roadmap_view(team: Team, *, audience: str,
         f"audience={audience}"
     )
     return view
+
+
+def _read_libwebrtc_view(team_dir: Path) -> dict | None:
+    """The libwebrtc card's payload from <team>/data_libwebrtc.json, or None
+    to leave the card off. Written by fetch_libwebrtc_status.py, which only
+    targets webrtc. Re-projected on read so a hand-edited or older file can't
+    put anything outside the whitelist on the page."""
+    path = team_dir / "data_libwebrtc.json"
+    if not path.exists():
+        return None
+    try:
+        return project_view(json.loads(path.read_text(encoding="utf-8")))
+    except (OSError, json.JSONDecodeError) as exc:
+        print(f"[{team_dir.name}] {path.name} unreadable ({exc}); card omitted.")
+        return None
 
 
 def _generate_for_team(
@@ -391,7 +407,8 @@ def _generate_for_team(
     html_path = team_dir / "index.html"
     html_path.write_text(
         render_html(report, phab_data=phab_data, roadmap_data=roadmap_data,
-                    metrics_data=metrics_data),
+                    metrics_data=metrics_data,
+                    libwebrtc_data=_read_libwebrtc_view(team_dir)),
         encoding="utf-8",
     )
 

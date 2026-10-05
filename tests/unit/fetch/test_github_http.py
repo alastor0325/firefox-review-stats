@@ -117,3 +117,37 @@ class TestGetJson:
             get_json("https://api.github.com/x")
         assert urlopen.call_count == 1
         assert sleep.call_count == 0
+
+
+class TestGetText:
+    """Raw-text sibling of get_json, for non-GitHub hosts (Gitiles prefixes
+    its JSON with an XSSI guard, so it can't be decoded directly)."""
+
+    @patch("reviewstats.github_http.time.sleep")
+    @patch("reviewstats.github_http.urllib.request.urlopen")
+    def test_returns_the_body_text(self, urlopen, sleep):
+        urlopen.return_value = _mk_response(None)
+        urlopen.return_value.read.return_value = b")]}'\n{}"
+        from reviewstats.github_http import get_text
+        assert get_text("https://webrtc.googlesource.com/x") == ")]}'\n{}"
+
+    @patch("reviewstats.github_http.time.sleep")
+    @patch("reviewstats.github_http.urllib.request.urlopen")
+    def test_sends_no_github_headers(self, urlopen, sleep):
+        urlopen.return_value = _mk_response(None)
+        urlopen.return_value.read.return_value = b"{}"
+        from reviewstats.github_http import get_text
+        get_text("https://chromiumdash.appspot.com/x")
+        req = urlopen.call_args.args[0]
+        assert req.get_header("Authorization") is None
+        assert req.get_header("Accept") is None
+
+    @patch("reviewstats.github_http.time.sleep")
+    @patch("reviewstats.github_http.urllib.request.urlopen")
+    def test_retries_transient_errors(self, urlopen, sleep):
+        ok = _mk_response(None)
+        ok.read.return_value = b"{}"
+        urlopen.side_effect = [_http_error(503), ok]
+        from reviewstats.github_http import get_text
+        assert get_text("https://chromiumdash.appspot.com/x") == "{}"
+        assert urlopen.call_count == 2

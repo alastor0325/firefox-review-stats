@@ -11,6 +11,7 @@ _DATA_PLACEHOLDER = "__DATA_JSON__"
 _PHAB_PLACEHOLDER = "__PHAB_DATA_JSON__"
 _ROADMAP_PLACEHOLDER = "__ROADMAP_DATA_JSON__"
 _METRICS_PLACEHOLDER = "__METRICS_DATA_JSON__"
+_LIBWEBRTC_PLACEHOLDER = "__LIBWEBRTC_DATA_JSON__"
 _GH_CORNER_PLACEHOLDER = "__GH_CORNER__"
 _GH_CORNER_CSS_PLACEHOLDER = "__GH_CORNER_CSS__"
 _DISABLED_VIEWS_PLACEHOLDER = "__DISABLED_VIEWS_JSON__"
@@ -69,6 +70,7 @@ def render_html(
     phab_data: dict | None = None,
     roadmap_data: dict | None = None,
     metrics_data: dict | None = None,
+    libwebrtc_data: dict | None = None,
     template_path: Path | None = None,
 ) -> str:
     """Render one team page.
@@ -78,6 +80,8 @@ def render_html(
     signal the page uses to remove the Media Health tab — the same
     data-availability gate Recent Changes already uses. That keeps the view
     playback-only without the template needing to know team names.
+    `libwebrtc_data` gates the libwebrtc version card the same way; only the
+    WebRTC folder has the data file it comes from.
     """
     path = template_path or _TEMPLATE_PATH
     template = path.read_text(encoding="utf-8")
@@ -87,6 +91,7 @@ def render_html(
         .replace(_PHAB_PLACEHOLDER, _safe_json(strip_disabled_payloads(phab_data)))
         .replace(_ROADMAP_PLACEHOLDER, _safe_json(roadmap_data))
         .replace(_METRICS_PLACEHOLDER, _safe_json(metrics_data))
+        .replace(_LIBWEBRTC_PLACEHOLDER, _safe_json(libwebrtc_data))
         .replace(_GH_CORNER_PLACEHOLDER, github_corner_html())
         .replace(_GH_CORNER_CSS_PLACEHOLDER, GITHUB_CORNER_CSS)
         .replace(_DISABLED_VIEWS_PLACEHOLDER, _safe_json(list(DISABLED_VIEWS)))

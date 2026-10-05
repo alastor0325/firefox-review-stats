@@ -97,6 +97,16 @@ jobs:
         continue-on-error: true
         run: python fetch_perf_metrics.py --days 30
 
+      # Same contract as the Perfherder step: a slow or down upstream costs the
+      # libwebrtc card one week of freshness, never the build. The fetcher keeps
+      # last week's webrtc/data_libwebrtc.json on any failure.
+      - name: Fetch libwebrtc release status
+        continue-on-error: true
+        timeout-minutes: 5
+        run: python fetch_libwebrtc_status.py
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Generate landing report (GitHub commits)
         # Recent Changes overviews are generated via the GitHub Copilot CLI,
         # which authenticates with the workflow's own token — no third-party

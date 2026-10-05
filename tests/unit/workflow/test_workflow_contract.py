@@ -248,3 +248,13 @@ class TestTheAddMetricSkillStaysWiredToReality:
             encoding="utf-8")
         assert "METRICS.groups" in tmpl
         assert "METRICS.groups" in self._skill
+
+
+def test_fetches_libwebrtc_status_in_its_own_tolerant_step(workflow_text):
+    """Like the Perfherder step: before the page build, allowed to fail, and
+    bounded, so a slow upstream can't eat the job's 60-minute budget."""
+    i = workflow_text.index("python fetch_libwebrtc_status.py")
+    step = workflow_text[workflow_text.rindex("- name:", 0, i):i]
+    assert "continue-on-error: true" in step
+    assert "timeout-minutes:" in step
+    assert i < workflow_text.index("run: python analyze_git.py")

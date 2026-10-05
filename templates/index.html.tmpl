@@ -412,6 +412,9 @@
   .chart-box.square { height: 280px; width: 100%; max-width: 420px; margin: 0 auto; }
   .split { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 20px; align-items: center; }
   @media (max-width: 800px) { .split { grid-template-columns: minmax(0, 1fr); } }
+  /* Short values: size columns to content and scroll on narrow screens. */
+  table.lw-table { table-layout: auto; }
+  table.lw-table td { white-space: nowrap; }
 
   /* Tables */
   table {
@@ -1568,6 +1571,19 @@ __GH_CORNER__
   </section>
 </div>
 
+<!-- ============= LIBWEBRTC VERSIONS (webrtc only) ============= -->
+<!-- Filled from LIBWEBRTC; hidden without it. -->
+<div id="libwebrtc-section" class="team-only" style="display:none">
+  <section>
+    <h2>libwebrtc in Firefox releases <span class="info" data-tip="Which Chrome milestone of libwebrtc each supported Firefox release vendors (MOZ_NEXT_LIBWEBRTC_MILESTONE on its branch). Releases come from product-details, so ESRs appear and drop out automatically. Branched = when Chrome cut that milestone."></span></h2>
+    <div class="footer-note" id="libwebrtc-meta"></div>
+    <div class="table-wrap"><table class="lw-table"><thead><tr>
+      <th>Channel</th><th>Firefox</th><th>libwebrtc</th><th>Upstream branch</th>
+      <th>Branched</th><th>vs Chrome stable</th><th>Last libwebrtc change</th>
+    </tr></thead><tbody id="libwebrtc-rows"></tbody></table></div>
+  </section>
+</div>
+
 <!-- ============= MEDIA HEALTH / ROADMAP ============= -->
 <!-- Playback only. The whole view removes itself when no roadmap payload
      was injected, so this markup is inert on the other teams. -->
@@ -1629,6 +1645,8 @@ const DISABLED_VIEWS = __DISABLED_VIEWS_JSON__;
 // one payload: Roadmap renders `items`, Performance renders `metrics`.
 const ROADMAP = __ROADMAP_DATA_JSON__;
 const METRICS = __METRICS_DATA_JSON__;
+// WebRTC page only; null elsewhere, which keeps #libwebrtc-section hidden.
+const LIBWEBRTC = __LIBWEBRTC_DATA_JSON__;
 
 const tipEl = document.createElement('div');
 tipEl.className = 'tip-floating';
@@ -2098,6 +2116,22 @@ if (!ROADMAP) {
   document.querySelectorAll('.toggle-bar button[data-view="health"]')
     .forEach(b => { b.style.display = 'none'; });
 }
+
+function renderLibwebrtc(view) {
+  const esc = s => escHtml(s == null ? '' : s);
+  document.getElementById('libwebrtc-meta').textContent =
+    `Chrome stable: M${view.chrome_stable} · as of ${view.as_of}`;
+  document.getElementById('libwebrtc-rows').innerHTML = view.rows.map(r => {
+    const lc = r.last_change ? `${esc(r.last_change.date)} (${esc(r.last_change.kind)})` : '—';
+    const ms = `M${esc(r.milestone)}` + (r.in_progress ? ' <em>(update in progress)</em>' : '');
+    const branched = r.branched ? `${esc(r.branched)} (${esc(r.age)})` : '—';
+    return `<tr><td>${esc(r.label)}</td><td>${esc(r.firefox)}</td><td>${ms}</td>`
+      + `<td><code>${esc(r.branch_head)}</code></td><td>${branched}</td>`
+      + `<td>${esc(r.vs_chrome)}</td><td>${lc}</td></tr>`;
+  }).join('');
+  document.getElementById('libwebrtc-section').style.display = 'block';
+}
+if (LIBWEBRTC) renderLibwebrtc(LIBWEBRTC);
 
 // Views turned off in config rather than by missing data. Same
 // hide-the-button mechanism as the two gates above.

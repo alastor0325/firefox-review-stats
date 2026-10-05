@@ -35,6 +35,31 @@ def backoff_seconds(attempt: int) -> float:
     return float(2 ** (attempt - 1))
 
 
+def get_text(
+    url: str,
+    *,
+    headers: dict[str, str] | None = None,
+    timeout: float = 30,
+    max_attempts: int = _MAX_ATTEMPTS,
+) -> str:
+    """GET `url` and return the body as text, retrying transient failures
+    with exponential backoff like `get_json`.
+
+    Sends only the given headers, so it is also the helper for non-GitHub
+    hosts, which must never see the GitHub token.
+    """
+    req = urllib.request.Request(url, headers=headers or {})
+    for attempt in range(1, max_attempts + 1):
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                return r.read().decode()
+        except Exception as exc:  # noqa: BLE001 — re-raised below if fatal
+            if attempt < max_attempts and is_retryable_error(exc):
+                time.sleep(backoff_seconds(attempt))
+                continue
+            raise
+
+
 def get_json(
     url: str,
     *,
@@ -52,13 +77,5 @@ def get_json(
     headers = {"Accept": "application/vnd.github+json"}
     if token:
         headers["Authorization"] = f"token {token}"
-    req = urllib.request.Request(url, headers=headers)
-    for attempt in range(1, max_attempts + 1):
-        try:
-            with urllib.request.urlopen(req, timeout=timeout) as r:
-                return json.loads(r.read().decode())
-        except Exception as exc:  # noqa: BLE001 — re-raised below if fatal
-            if attempt < max_attempts and is_retryable_error(exc):
-                time.sleep(backoff_seconds(attempt))
-                continue
-            raise
+    return json.loads(get_text(url, headers=headers, timeout=timeout,
+                               max_attempts=max_attempts))
