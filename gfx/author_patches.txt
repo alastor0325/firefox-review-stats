@@ -1,8 +1,8 @@
 ==============================================================================
 GFX-REVIEWERS AUTHOR-PATCH LISTING (raw author %an, no aliasing)
-Source: github.com/mozilla-firefox/firefox   Paths: gfx, image, dom/canvas, dom/webgpu   Since: 2026-04-08T21:18:02Z
+Source: github.com/mozilla-firefox/firefox   Paths: gfx, image, dom/canvas, dom/webgpu   Since: 2026-04-08T21:29:52Z
 Excluded paths: gfx/angle, gfx/cairo, gfx/skia, gfx/harfbuzz, gfx/ots, gfx/sfntly, gfx/graphite2
-Authors: 132    Patches: 1981    (Lando-format / Lando-author / merge / Revert commits already excluded)
+Authors: 132    Patches: 1983    (Lando-format / Lando-author / merge / Revert commits already excluded)
 ==============================================================================
 
 Known aliases (applied in HTML report, NOT below):
@@ -1931,7 +1931,15 @@ Known aliases (applied in HTML report, NOT below):
       2026-06-11  f03db675f80f  Bug 2045769 - Check required snapshot shmem size against actual size. r=lsalzman
       2026-05-08  6f4d4f8ce7d5  Bug 2037873 - Close FontSubstitutes registry key after use. r=jfkthame
 
-[42] Tom Ritter  —  5 patch(es)
+[42] Markus Stange  —  5 patch(es)
+    ----------------------------------------------------------------------
+      2026-10-05  c8e82c9d6375  Bug 2078055 - Remove unused gfxWindowsNativeDrawing and gfxSharedImageSurface. r=gfx-reviewers,lsalzman
+      2026-10-05  047640b42b7b  Bug 2078056 - Use Skia instead of Cairo for pixel format conversion and drag/icon image DrawTargets. r=gfx-reviewers,gtk-reviewers,emilio,lsalzman
+      2026-09-15  d6590d8e5588  Bug 2072075 - Remove the unused dynamic toolbar max height compositor channel. r=geckoview-reviewers,hiro
+      2026-09-14  c5e7bfd98df5  Bug 2071981 - Add Rect operators to allow addition / subtraction with margins. r=gfx-reviewers,bradwerth
+      2026-06-04  a94f1018374d  Bug 2044160 - Remove line breaks from these macros. r=nical
+
+[43] Tom Ritter  —  5 patch(es)
     ----------------------------------------------------------------------
       2026-10-01  e29e0a1bf9f4  Bug 2055176 - Bucket the WebGL vendor to a GPU family instead of a constant r=timhuang
       2026-08-17  8399a9834c4b  Bug 2060517: Do not enforce font restrictions on modern fedora versions r=timhuang
@@ -1939,7 +1947,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-06-28  542208dcdb89  Bug 2050515: Enable WebGL Vendor and Renderer protection in Nightly PBM r=timhuang
       2026-06-09  06c6e8733bdd  Bug 2044795: Avoid an int overflow in ShmSegmentsReader r=gfx-reviewers,jld,aosmond
 
-[43] Tymur Boiko  —  5 patch(es)
+[44] Tymur Boiko  —  5 patch(es)
     ----------------------------------------------------------------------
       2026-05-05  92ab17043ca3  Bug 2036839 - DMABuf - Defer EGL modifier queries to after hardware video decoding is enabled. r=stransky
       2026-05-05  04a81dc2cdeb  Bug 2036839 - DMABuf - Defer EGL modifier queries to after hardware video decoding is enabled. r=stransky
@@ -1947,7 +1955,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-28  157217280755  Bug 2021722 - GFX - GL/EGL, layers, and compositor IPC for Vulkan video. r=stransky,lsalzman
       2026-04-24  e930cad7fa2a  Bug 2021722 - GFX - GL/EGL, layers, and compositor IPC for Vulkan video. r=stransky,lsalzman
 
-[44] Vinit Jangir  —  5 patch(es)
+[45] Vinit Jangir  —  5 patch(es)
     ----------------------------------------------------------------------
       2026-08-05  7776d0e6c71d  Bug 2052970 - Change return type of AsyncPanZoomController::GetCompositorScrollUpdates from std::vector to nsTArray r=botond
       2026-07-31  117ceb8e0bab  Bug 2027136 - Batch compositor scroll updates into an nsTArray across IPDL, IPC, and Widget layers. Rename NotifyCompositorScrollUpdate to NotifyCompositorScrollUpdates. r=botond
@@ -1955,111 +1963,105 @@ Known aliases (applied in HTML report, NOT below):
       2026-06-03  f5d1e6bedfc4  Bug 2042602 - Unify early exits and parent space for sticky/scroll nodes r=botond
       2026-05-21  8591930ae4f8  Bug 2026336 - Unify ASR to Spatial ID mapping in WebRenderAPI. r=botond,layout-reviewers,emilio
 
-[45] Alan Liu  —  4 patch(es)
+[46] Alan Liu  —  4 patch(es)
     ----------------------------------------------------------------------
       2026-09-14  f8744b458ca5  Bug 2070077 - Skip the GL context when locking DMABUF images on the layer compositor path r=lsalzman,gfx-reviewers
       2026-09-02  a3dd8a3a3d8a  Bug 2011821 - Avoid per-frame texture create/release during direct scanout by locking without a GL context r=gfx-reviewers,lsalzman,stransky
       2026-08-27  c1b1a22b5d62  Bug 2011821 - Avoid per-frame texture create/release during direct scanout by locking without a GL context r=gfx-reviewers,lsalzman
       2026-05-22  11d040761ad6  Bug 2030272 - Avoid unnecessary texture update processing when update_list is empty r=gw
 
-[46] Chris Peterson  —  4 patch(es)
+[47] Chris Peterson  —  4 patch(es)
     ----------------------------------------------------------------------
       2026-09-11  82b54c3f40dd  Bug 2069691 - gfx: Move RenderSourceNLRS's destructor out of line for C++23 compatibility. r=gfx-reviewers,lsalzman
       2026-08-25  5f8a8ac2377f  Bug 2066013 - image: Default-initialize nsAVIFDecoder's UniquePtr members for C++23 compatibility. r=tnikkel
       2026-05-10  57c147c352f4  Bug 2038118 - Replace MOZ_UNLIKELY with C++20's [[unlikely]] in dom/canvas. r=gfx-reviewers,bradwerth
       2026-05-10  92ac124669a2  Bug 2038118 - Replace MOZ_LIKELY with C++20's [[likely]] in dom/canvas. r=gfx-reviewers,bradwerth
 
-[47] Eugeniusz Lewandowski  —  4 patch(es)
+[48] Eugeniusz Lewandowski  —  4 patch(es)
     ----------------------------------------------------------------------
       2026-09-12  9ae0afd977f8  Bug 2056581 - Have autoscroll take DPI into account. r=botond
       2026-05-27  31bacaa9765b  Bug 2041151 - Add a gtest for bug 1536520 - r=botond
       2026-05-24  7987184e75e6  Bug 1536520 - Add timeout to cancelling of autoscroll due to scrolling - r=botond,mstriemer
       2026-05-04  fc8097fcc380  Bug 1650944 - Remove ReflowInput.h include from nsIFrame.h r=firefox-style-system-reviewers,layout-reviewers,emilio
 
-[48] Henrik Skupin  —  4 patch(es)
+[49] Henrik Skupin  —  4 patch(es)
     ----------------------------------------------------------------------
       2026-05-18  8bb1110a8850  Bug 2033393 - Adapt consumers to http 1.x, hyper 1.x, and windows-sys HANDLE type changes. r=necko-reviewers,geckodriver-reviewers,gsvelto,smaug,jgraham,gw,kershaw
       2026-05-18  0ba394a1ccb2  Bug 2033393 - Vendor upgraded http, hyper, warp crates and their dependencies. r=supply-chain-reviewers,webrtc-reviewers,geckodriver-reviewers,jdescottes,jgraham,bwc,valentin,afranchuk,gsvelto,gw,padenot
       2026-05-13  adf2e68250d3  Bug 2033393 - Adapt consumers to http 1.x, hyper 1.x, and windows-sys HANDLE type changes. r=necko-reviewers,geckodriver-reviewers,gsvelto,smaug,jgraham,gw
       2026-05-13  f9052e80e2c8  Bug 2033393 - Vendor upgraded http, hyper, warp crates and their dependencies. r=supply-chain-reviewers,webrtc-reviewers,geckodriver-reviewers,jdescottes,jgraham,bwc,valentin,afranchuk,gsvelto,gw,padenot
 
-[49] Louis-Philippe  —  4 patch(es)
+[50] Louis-Philippe  —  4 patch(es)
     ----------------------------------------------------------------------
       2026-09-02  c2527ae2ebb7  Bug 2066333 - [Wayland][HDR] 10bit SDR video are rendered with oversaturated colors in compositor HDR mode. r=stransky,gtk-reviewers
       2026-08-24  1adfe6336f98  Bug 2063867 - [Wayland][HDR] Provide fallback luminance mechanism for metadata-less PQ videos. r=stransky,gtk-reviewers,emilio
       2026-08-12  569d6495ebfd  Bug 2057751 - Hardware decoded videos HDR metadata aren’t passed to compositor causing lack of luminance/washed colors. r=stransky,gtk-reviewers
       2026-08-12  fe77f218df48  Bug 2057751 - Hardware decoded videos HDR metadata aren’t passed to compositor causing lack of luminance/washed colors. r=stransky,gtk-reviewers
 
-[50] Mathew Hodson  —  4 patch(es)
+[51] Mathew Hodson  —  4 patch(es)
     ----------------------------------------------------------------------
       2026-10-02  0e7e6c4ff39d  Bug 2011408 - Remove some duplicated code used for debug asserts r=gfx-reviewers,nical
       2026-10-02  0c956e7b241a  Bug 2011408 - Fix clang warnings in gfxDWriteFontList.cpp r=gfx-reviewers,nical
       2026-10-02  78dd6eb3e8ae  Bug 2011408 - Remove GDI font table loading code r=gfx-reviewers,TravisLong,bradwerth
       2026-08-28  ab50be72f3fa  Bug 2067452 - Remove obsolete comment r=emilio
 
-[51] Maurice Dauer  —  4 patch(es)
+[52] Maurice Dauer  —  4 patch(es)
     ----------------------------------------------------------------------
       2026-09-01  b038e2a05e44  Bug 2066770 - Keep the window name as UTF-16, r=geckoview-reviewers,win-reviewers,layout-reviewers,dshin,emilio,gstoll,m_kato
       2026-08-31  cf79d0a3e6a0  Bug 2066085 - Add MOZ_GUARDED_BY to font-entry members, r=gfx-reviewers,nical
       2026-08-26  0d3efc88d2f4  Bug 2058065 - Truncate on on unexpected error, r=gfx-reviewers,nical
       2026-08-26  d6756af20470  Bug 2058064 - Validate vertexAttribPointer byteOffset, r=gfx-reviewers,lsalzman
 
-[52] Sajid Anwar  —  4 patch(es)
+[53] Sajid Anwar  —  4 patch(es)
     ----------------------------------------------------------------------
       2026-06-24  27a54e29f89d  Bug 2048827 - Improve FreeType2 fallback logic for ex-height and cap-height. r=layout-reviewers,jfkthame
       2026-05-21  2862395c8b52  Bug 2041003 - Check for initialized HarfBuzz shaper before retrieving font baselines. r=layout-reviewers,emilio
       2026-05-19  7301b087c642  Bug 2029869 - Synthesize vertical font metrics/baselines from horizontal metrics/baselines. r=layout-reviewers,jfkthame
       2026-05-11  8699ee2727ec  Bug 2029869 - Synthesize vertical font metrics/baselines from horizontal metrics/baselines. r=layout-reviewers,jfkthame
 
-[53] Sebastian Hengst  —  4 patch(es)
+[54] Sebastian Hengst  —  4 patch(es)
     ----------------------------------------------------------------------
       2026-07-27  7398dbc78df0  Bug 2057902 - skip tests with Nova design enabled if they fail permanently or frequently: browser_test_position_sticky.js
       2026-07-27  f7f30d78635e  Bug 2057902 - skip tests with Nova design enabled if they fail permanently or frequently: follow-up 3
       2026-07-27  776dade1716e  Bug 2057902 - skip tests with Nova design enabled if they fail permanently or frequently: follow-up 2
       2026-07-27  1cd5155da24e  Bug 2057902 - skip tests with Nova design enabled if they fail permanently or frequently. r=webcompat-reviewers,twisniewski
 
-[54] Tyler B. Thrailkill  —  4 patch(es)
+[55] Tyler B. Thrailkill  —  4 patch(es)
     ----------------------------------------------------------------------
       2026-06-02  500f1618edf2  Bug 2022783 - Add link-parameter parsing and rendering for svg r=firefox-style-system-reviewers,layout-reviewers,emilio
       2026-06-02  120c6bb1acd7  Bug 2022783 - Add link-parameter parsing and rendering for svg r=firefox-style-system-reviewers,layout-reviewers,emilio
       2026-06-02  9df9602da078  Bug 2022783 - Add link-parameter parsing and rendering for svg r=firefox-style-system-reviewers,layout-reviewers,emilio
       2026-04-14  f607d44e5fdb  Bug 2022783 - Add link-parameter parsing and rendering for svg r=firefox-style-system-reviewers,layout-reviewers,emilio
 
-[55] Bob Hood  —  3 patch(es)
+[56] Bob Hood  —  3 patch(es)
     ----------------------------------------------------------------------
       2026-05-26  a15ea268e397  Bug 651482: Added support for Adobe-style extensions (v2 & v3 info header sizes) r=tnikkel
       2026-05-21  9dda61e48a00  Bug 2003863: Improved 'unhelpful' createImageBitmap error messages r=lsalzman
       2026-05-19  bb82230a3bd3  Bug 1763742: Removed remaining lines as suggested. r=gfx-reviewers,bradwerth
 
-[56] David Shin  —  3 patch(es)
+[57] David Shin  —  3 patch(es)
     ----------------------------------------------------------------------
       2026-09-03  21f7739985da  Bug 2047776: Bring AtProgressTimelineBoundary up-to-date with spec. r=layout-scroll-driven-animation-reviewers,boris
       2026-04-10  b0992cce9f46  Bug 1765211: Avoid computing scroll source repeatedly. r=layout-scroll-driven-animation-reviewers,boris
       2026-04-09  d7e92c0e57e8  Bug 1765211: Avoid computing scroll source repeatedly. r=layout-scroll-driven-animation-reviewers,boris
 
-[57] Diego Escalante  —  3 patch(es)
+[58] Diego Escalante  —  3 patch(es)
     ----------------------------------------------------------------------
       2026-08-05  8dc93c08cab8  Bug 1911075 - Rename font-stretch to font-width, and make the old property name an alias. r=jfkthame,geckoview-reviewers,webidl,firefox-style-system-reviewers,layout-reviewers,emilio,owlish,dshin,devtools-reviewers,nchevobbe
       2026-07-23  3c89df269fe4  Bug 1911075 - Rename font-stretch to font-width, and make the old property name an alias. r=jfkthame,geckoview-reviewers,webidl,firefox-style-system-reviewers,layout-reviewers,emilio,owlish,dshin,devtools-reviewers,nchevobbe
       2026-07-22  680518e767fa  Bug 1911075 - Rename font-stretch to font-width, and make the old property name an alias. r=jfkthame,geckoview-reviewers,webidl,firefox-style-system-reviewers,layout-reviewers,emilio,owlish,dshin
 
-[58] Jeff Muizelaar  —  3 patch(es)
+[59] Jeff Muizelaar  —  3 patch(es)
     ----------------------------------------------------------------------
       2026-08-27  8f82b339b262  Bug 2066889 - Return a Result from CreateWebRenderCommands. r=nical,gw
       2026-05-21  b7a1d25a0e70  Bug 2040002 - Add inline storage to PathOps r=lsalzman
       2026-05-21  1f744d5fbe35  Bug 2040002 - Switch PathOps from std::vector to mozilla::Vector r=lsalzman
 
-[59] Mark Banner  —  3 patch(es)
+[60] Mark Banner  —  3 patch(es)
     ----------------------------------------------------------------------
       2026-09-18  c9739388e01b  Bug 2069131 - Rename remaining browser/base/content/test browser-chrome directories to match eslint-test-paths conventions r=frontend-codestyle-reviewers,webcompat-reviewers,fxview-reviewers,places-reviewers,android-reviewers,urlbar-reviewers,layout-reviewers,device-api-reviewers,timhuang,mossop,dshin,gstoll,jteow,twisniewski,daisuke,nsharpley
       2026-09-16  a27cc6def491  Bug 2069131 - Rename remaining browser/base/content/test browser-chrome directories to match eslint-test-paths conventions r=frontend-codestyle-reviewers,webcompat-reviewers,fxview-reviewers,places-reviewers,android-reviewers,urlbar-reviewers,layout-reviewers,device-api-reviewers,timhuang,mossop,dshin,gstoll,jteow,twisniewski,daisuke,nsharpley
       2026-09-16  b91b73934b45  Bug 2069131 - Rename remaining browser/base/content/test browser-chrome directories to match eslint-test-paths conventions r=frontend-codestyle-reviewers,webcompat-reviewers,fxview-reviewers,places-reviewers,android-reviewers,urlbar-reviewers,layout-reviewers,device-api-reviewers,timhuang,mossop,dshin,gstoll,jteow,twisniewski,daisuke,nsharpley
-
-[60] Markus Stange  —  3 patch(es)
-    ----------------------------------------------------------------------
-      2026-09-15  d6590d8e5588  Bug 2072075 - Remove the unused dynamic toolbar max height compositor channel. r=geckoview-reviewers,hiro
-      2026-09-14  c5e7bfd98df5  Bug 2071981 - Add Rect operators to allow addition / subtraction with margins. r=gfx-reviewers,bradwerth
-      2026-06-04  a94f1018374d  Bug 2044160 - Remove line breaks from these macros. r=nical
 
 [61] Masayuki Nakano  —  3 patch(es)
     ----------------------------------------------------------------------
