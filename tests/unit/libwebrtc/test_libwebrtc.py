@@ -139,12 +139,12 @@ class TestProjectView:
         "chrome_stable": 154, "as_of": "2026-10-05",
         "rows": [{"label": "Release", "firefox": "157.0.1", "milestone": 153,
                   "branch_head": "branch-heads/8010", "branched": "2026-08-17",
-                  "vs_chrome": "1 behind", "in_progress": False,
+                  "vs_chrome": "1 behind", "patches": 150,
                   "last_change": {"date": "2026-09-01", "kind": "cherry-pick"}}],
     }
 
     def test_keeps_the_known_fields(self):
-        assert project_view(self.VIEW) == {**self.VIEW, "next_update": None,
+        assert project_view(self.VIEW) == {**self.VIEW, "plan": None,
                                            "patch_stack": None}
 
     def test_drops_unknown_row_fields(self):

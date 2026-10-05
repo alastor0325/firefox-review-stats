@@ -4,7 +4,7 @@ sub-views."""
 from datetime import date
 
 from reviewstats.libwebrtc import (
-    build_next_update,
+    build_plan,
     count_patches,
     gitiles_date,
     known_history,
@@ -32,50 +32,58 @@ class TestConfigEnv:
         assert parse_rel_target("") == (None, None)
 
 
-SCHEDULE = {156: ("2026-09-28", "2026-10-20"), 157: ("2026-10-12", "2026-11-03"),
-            158: ("2026-10-26", "2026-11-17")}
+SCHEDULE = {155: ("2026-09-14", "2026-10-06"), 156: ("2026-09-28", "2026-10-20"),
+            157: ("2026-10-12", "2026-11-03"), 158: ("2026-10-26", "2026-11-17")}
 TRAINS = {159: ("2026-09-24", "2026-10-08"), 160: ("2026-10-08", "2026-10-22"),
           161: ("2026-10-22", "2026-11-05"), 162: ("2026-11-05", "2026-11-19")}
 LAG = {"last_vendored": "2026-09-18", "upstream_head": "2026-10-05", "behind": 201}
 
 
-def _next(**kw):
+def _plan(**kw):
     args = dict(milestone=155, rel_target=159, fastforward_bug=2072400,
                 in_progress=False, schedule=SCHEDULE, trains=TRAINS, lag=LAG)
     args.update(kw)
-    return build_next_update(**args)
+    return build_plan(**args)
 
 
-class TestBuildNextUpdate:
-    def test_current_update_has_its_beta_merge_deadline(self):
-        assert _next()["current"] == {"milestone": 155, "firefox": 159,
-                                      "fastforward_bug": 2072400, "in_progress": False,
-                                      "deadline": "2026-10-08"}
+class TestBuildPlan:
+    def test_the_vendoring_row_carries_its_own_status(self):
+        """The update in flight is a plan row, marked and self-describing, not
+        a separate object linked to the first row by position."""
+        assert _plan()["rows"][0] == {
+            "milestone": 155, "firefox": 159, "chrome_branch": "2026-09-14",
+            "chrome_stable": "2026-10-06", "nightly_start": "2026-09-24",
+            "merge_day": "2026-10-08", "vendoring": True,
+            "fastforward_bug": 2072400, "in_progress": False}
 
-    def test_upcoming_milestones_are_projected_one_per_train(self):
-        up = _next()["upcoming"]
-        assert [(u["milestone"], u["firefox"]) for u in up] == [
+    def test_later_milestones_are_projected_one_per_train(self):
+        later = _plan()["rows"][1:]
+        assert [(r["milestone"], r["firefox"]) for r in later] == [
             (156, 160), (157, 161), (158, 162)]
-        assert up[0] == {"milestone": 156, "firefox": 160,
-                         "chrome_branch": "2026-09-28", "chrome_stable": "2026-10-20",
-                         "nightly_start": "2026-10-08", "merge_day": "2026-10-22"}
+        assert not any(r["vendoring"] or r["fastforward_bug"] or r["in_progress"]
+                       for r in later)
 
     def test_a_milestone_too_late_for_its_train_loses_the_projection(self):
         """Cadences drift (Chrome's M159 -> M160 is three weeks). A milestone
         that branches on or after the train's Beta merge can't be in it."""
         late = {**SCHEDULE, 157: ("2026-11-05", "2026-11-24")}
-        up = _next(schedule=late)["upcoming"][1]
-        assert up["firefox"] is None and up["merge_day"] is None
-        assert up["chrome_branch"] == "2026-11-05"
+        row = _plan(schedule=late)["rows"][2]
+        assert row["firefox"] is None and row["merge_day"] is None
+        assert row["chrome_branch"] == "2026-11-05"
+
+    def test_the_vendoring_row_is_never_dropped(self):
+        """Its target is read from the tree, not projected."""
+        late = {**SCHEDULE, 155: ("2026-10-09", "2026-10-30")}
+        assert _plan(schedule=late)["rows"][0]["firefox"] == 159
 
     def test_unscheduled_dates_stay_blank(self):
-        up = _next(schedule={}, trains={})["upcoming"]
-        assert up[0]["chrome_branch"] is None and up[0]["merge_day"] is None
-        assert _next(trains={})["current"]["deadline"] is None
+        rows = _plan(schedule={}, trains={})["rows"]
+        assert rows[1]["chrome_branch"] is None and rows[1]["merge_day"] is None
+        assert rows[0]["merge_day"] is None
 
     def test_lag_passes_through(self):
-        assert _next()["lag"] == LAG
-        assert _next(lag=None)["lag"] is None
+        assert _plan()["lag"] == LAG
+        assert _plan(lag=None)["lag"] is None
 
 
 class TestGitiles:
@@ -143,19 +151,17 @@ class TestProjectionCoversTheNewSubviews:
 
     VIEW = {
         "chrome_stable": 154, "as_of": "2026-10-05", "rows": [],
-        "next_update": {
+        "plan": {
             "as_of": "2026-10-05",
-            "current": {"milestone": 155, "firefox": 159, "fastforward_bug": 1,
-                        "in_progress": False, "deadline": "2026-10-08",
-                        "missing": ["x"]},
-            "upcoming": [{"milestone": 156, "firefox": 160, "chrome_branch": None,
-                          "chrome_stable": None, "nightly_start": None,
-                          "merge_day": None, "sha": "f"}, None],
+            "rows": [{"milestone": 156, "firefox": 160, "chrome_branch": None,
+                      "chrome_stable": None, "nightly_start": None, "merge_day": None,
+                      "vendoring": False, "fastforward_bug": None, "in_progress": None,
+                      "sha": "f"}, None],
             "lag": {**LAG, "commits": ["c"]},
             "extra": 1,
         },
         "patch_stack": {"as_of": "2026-10-05",
-                        "releases": [{"label": "Nightly", "count": 1, "names": []}],
+                        "releases": [{"label": "Nightly", "count": 1}],
                         "history": [{"month": "2026-10", "count": 1,
                                      "sampled": "2026-10-05", "x": 1}],
                         "change": 3},
@@ -163,18 +169,17 @@ class TestProjectionCoversTheNewSubviews:
 
     def test_unknown_fields_are_dropped_everywhere(self):
         got = project_view(self.VIEW)
-        assert "missing" not in got["next_update"]["current"]
-        assert "sha" not in got["next_update"]["upcoming"][0]
-        assert "commits" not in got["next_update"]["lag"]
-        assert "extra" not in got["next_update"]
-        assert "names" not in got["patch_stack"]["releases"][0]
+        assert "sha" not in got["plan"]["rows"][0]
+        assert "commits" not in got["plan"]["lag"]
+        assert "extra" not in got["plan"]
+        assert "releases" not in got["patch_stack"]
         assert "x" not in got["patch_stack"]["history"][0]
         assert "change" not in got["patch_stack"]
 
     def test_null_list_entries_are_dropped(self):
         """A None entry would throw in the page's renderer."""
-        assert len(project_view(self.VIEW)["next_update"]["upcoming"]) == 1
+        assert len(project_view(self.VIEW)["plan"]["rows"]) == 1
 
     def test_sections_keep_their_own_as_of(self):
         got = project_view(self.VIEW)
-        assert got["next_update"]["as_of"] == got["patch_stack"]["as_of"] == "2026-10-05"
+        assert got["plan"]["as_of"] == got["patch_stack"]["as_of"] == "2026-10-05"

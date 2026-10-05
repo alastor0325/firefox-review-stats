@@ -10,9 +10,12 @@ keeps upstream commits; the only bug reference is the public fast-forward meta
 bug. `project_view` is the one whitelist every payload passes through, on write
 and on read.
 
-The Releases table is the core and fails the fetch if it can't be built. The
-Next-update and Patch-stack sections are optional: each falls back to last
-week's copy (keeping its own `as_of`) so one flaky host can't freeze the rest.
+The Releases table (with each release's patch count) is the core and fails the
+fetch if it can't be built; the patch counts are core because they come from
+the same GitHub API as the rest of it. The milestone plan and the patch-stack
+trend are optional: each falls back to last week's copy (keeping its own
+`as_of`) so one flaky host (chromiumdash, whattrainisitnow, Gitiles) can't
+freeze the rest.
 
 Everything except `collect_status` and its `_fetch_*` helpers is pure.
 """
@@ -37,7 +40,7 @@ FIREFOX_TRAIN_URL = "https://whattrainisitnow.com/api/release/schedule/?version=
 GITILES_LOG_URL = "https://webrtc.googlesource.com/src/+log/{}..{}?format=JSON&n=200"
 GITILES_HEAD_URL = "https://webrtc.googlesource.com/src/+log/refs/heads/main?format=JSON&n=1"
 GITILES_COMMIT_URL = "https://webrtc.googlesource.com/src/+/{}?format=JSON"
-UPCOMING = 3
+PLAN_ROWS = 4  # the update in flight plus the next three milestones
 HISTORY_MONTHS = 12
 
 _REPO = f"/repos/{_DEFAULT_REPO}"
@@ -58,13 +61,12 @@ _CHANNELS = (
 )
 _VIEW_FIELDS = ("chrome_stable", "as_of")
 _ROW_FIELDS = ("label", "firefox", "milestone", "branch_head", "branched",
-               "vs_chrome", "in_progress", "last_change")
+               "vs_chrome", "patches", "last_change")
 _LAST_CHANGE_FIELDS = ("date", "kind")
-_CURRENT_FIELDS = ("milestone", "firefox", "fastforward_bug", "in_progress", "deadline")
-_UPCOMING_FIELDS = ("milestone", "firefox", "chrome_branch", "chrome_stable",
-                    "nightly_start", "merge_day")
+_PLAN_FIELDS = ("milestone", "firefox", "chrome_branch", "chrome_stable",
+                "nightly_start", "merge_day", "vendoring", "fastforward_bug",
+                "in_progress")
 _LAG_FIELDS = ("last_vendored", "upstream_head", "behind")
-_STACK_RELEASE_FIELDS = ("label", "count")
 _STACK_HISTORY_FIELDS = ("month", "count", "sampled")
 
 
@@ -192,35 +194,35 @@ def _vs_chrome(milestone: int, chrome_stable: int) -> str:
     return f"{abs(delta)} {'ahead' if delta > 0 else 'behind'}"
 
 
-def build_next_update(*, milestone: int, rel_target: int, fastforward_bug: int | None,
-                      in_progress: bool, schedule: dict[int, tuple[str | None, str | None]],
-                      trains: dict[int, tuple[str | None, str | None]],
-                      lag: dict | None) -> dict:
-    """Nightly's current update, the next few, and its lag behind upstream.
+def build_plan(*, milestone: int, rel_target: int, fastforward_bug: int | None,
+               in_progress: bool | None,
+               schedule: dict[int, tuple[str | None, str | None]],
+               trains: dict[int, tuple[str | None, str | None]],
+               lag: dict | None) -> dict:
+    """Nightly's milestone plan — the update in flight, then the next few —
+    and its lag behind upstream.
 
     `schedule` maps Chrome milestone -> (branch date, stable date); `trains`
-    maps Firefox version -> (Nightly start, merge-to-Beta date). The current
-    target is read from the tree; later ones are projected one train per
+    maps Firefox version -> (Nightly start, merge-to-Beta date). The row
+    being vendored is marked `vendoring` and carries its own status; its
+    target is read from the tree. Later targets are projected one train per
     milestone (both ship every two weeks), and a projection is dropped when
     the milestone branches too late to land in that train.
     """
-    upcoming = []
-    for k in range(1, UPCOMING + 1):
+    rows = []
+    for k in range(PLAN_ROWS):
         m, f = milestone + k, rel_target + k
         branch, stable = schedule.get(m) or (None, None)
         nightly, merge = trains.get(f) or (None, None)
-        if branch and merge and branch >= merge:
+        vendoring = k == 0
+        if not vendoring and branch and merge and branch >= merge:
             f = nightly = merge = None
-        upcoming.append({"milestone": m, "firefox": f, "chrome_branch": branch,
-                         "chrome_stable": stable, "nightly_start": nightly,
-                         "merge_day": merge})
-    return {
-        "current": {"milestone": milestone, "firefox": rel_target,
-                    "fastforward_bug": fastforward_bug, "in_progress": in_progress,
-                    "deadline": (trains.get(rel_target) or (None, None))[1]},
-        "upcoming": upcoming,
-        "lag": lag,
-    }
+        rows.append({"milestone": m, "firefox": f, "chrome_branch": branch,
+                     "chrome_stable": stable, "nightly_start": nightly,
+                     "merge_day": merge, "vendoring": vendoring,
+                     "fastforward_bug": fastforward_bug if vendoring else None,
+                     "in_progress": in_progress if vendoring else None})
+    return {"rows": rows, "lag": lag}
 
 
 def count_patches(entries: list[dict]) -> int:
@@ -273,18 +275,16 @@ def project_view(view: dict) -> dict:
         out["last_change"] = pick(out["last_change"], _LAST_CHANGE_FIELDS)
         return out
 
-    nxt, stack = view.get("next_update"), view.get("patch_stack")
+    plan, stack = view.get("plan"), view.get("patch_stack")
     return {
         **{k: view.get(k) for k in _VIEW_FIELDS},
         "rows": [row(r) for r in view.get("rows") or [] if r],
-        "next_update": nxt and {
-            "as_of": nxt.get("as_of"),
-            "current": pick(nxt.get("current"), _CURRENT_FIELDS),
-            "upcoming": pick_all(nxt.get("upcoming"), _UPCOMING_FIELDS),
-            "lag": pick(nxt.get("lag"), _LAG_FIELDS)},
+        "plan": plan and {
+            "as_of": plan.get("as_of"),
+            "rows": pick_all(plan.get("rows"), _PLAN_FIELDS),
+            "lag": pick(plan.get("lag"), _LAG_FIELDS)},
         "patch_stack": stack and {
             "as_of": stack.get("as_of"),
-            "releases": pick_all(stack.get("releases"), _STACK_RELEASE_FIELDS),
             "history": pick_all(stack.get("history"), _STACK_HISTORY_FIELDS)},
     }
 
@@ -356,25 +356,24 @@ def _fetch_lag(get_text, last: str | None) -> dict | None:
             "behind": h - v if h is not None and v is not None else None}
 
 
-def _fetch_next_update(get_text, *, env: str, milestone: int, in_progress: bool,
-                       last: str | None) -> dict | None:
+def _fetch_plan(get_text, *, env: str, milestone: int,
+                in_progress: bool | None, last: str | None) -> dict | None:
     rel_target, ff_bug = parse_rel_target(env)
     if not rel_target:
         return None
-    return build_next_update(
+    return build_plan(
         milestone=milestone, rel_target=rel_target, fastforward_bug=ff_bug,
         in_progress=in_progress,
-        schedule=_fetch_schedules(get_text, milestone + 1, UPCOMING),
+        schedule=_fetch_schedules(get_text, milestone, PLAN_ROWS),
         trains={f: _fetch_train(get_text, f)
-                for f in range(rel_target, rel_target + UPCOMING + 1)},
+                for f in range(rel_target, rel_target + PLAN_ROWS)},
         lag=_fetch_lag(get_text, last))
 
 
-def _fetch_patch_stack(github_get, releases: list[Release], *, today: date,
+def _fetch_patch_stack(github_get, *, nightly_count: int | None, today: date,
                        known: dict[str, dict]) -> dict:
-    counts = [{"label": r.label, "count": count_patches(
-        github_get(f"{_REPO}/contents/{_PATCH_STACK}?ref={r.branch}"))}
-        for r in releases]
+    """Nightly's month-end patch counts. This month is the live count the
+    Releases table already fetched."""
     history, fetch = plan_history(today, known)
     for month, day in fetch:
         commits = github_get(f"{_REPO}/commits?sha=main&path={_PATCH_STACK}"
@@ -382,12 +381,11 @@ def _fetch_patch_stack(github_get, releases: list[Release], *, today: date,
         if commits:
             history[month] = {"month": month, "sampled": day, "count": count_patches(
                 github_get(f"{_REPO}/contents/{_PATCH_STACK}?ref={commits[0]['sha']}"))}
-    nightly = next((c["count"] for c in counts if c["label"] == "Nightly"), None)
-    current, _ = month_samples(today, 1)[0]
-    if nightly is not None:
+    if nightly_count is not None:
+        current, _ = month_samples(today, 1)[0]
         history[current] = {"month": current, "sampled": today.isoformat(),
-                            "count": nightly}
-    return {"releases": counts, "history": [history[k] for k in sorted(history)]}
+                            "count": nightly_count}
+    return {"history": [history[k] for k in sorted(history)]}
 
 
 def _optional(key: str, build, previous: dict | None, today: date, on_error):
@@ -414,7 +412,7 @@ def collect_status(github_get, get_text, *, today: date, previous: dict | None =
     dates = known_branch_dates(previous)
     releases = supported_releases(json.loads(get_text(PRODUCT_DETAILS_URL)))
     chrome_stable = json.loads(get_text(CHROME_STABLE_URL))[0]["milestone"]
-    rows, nightly = [], None
+    rows, nightly, nightly_count = [], None, None
     for rel in releases:
         env = _decode_content(
             github_get(f"{_REPO}/contents/{_CONFIG_ENV}?ref={rel.branch}"))
@@ -426,7 +424,8 @@ def collect_status(github_get, get_text, *, today: date, previous: dict | None =
         if milestone not in dates:
             dates[milestone] = (_fetch_schedules(get_text, milestone, 1)
                                 .get(milestone, (None, None))[0])
-        in_progress = False
+        patches = count_patches(
+            github_get(f"{_REPO}/contents/{_PATCH_STACK}?ref={rel.branch}"))
         # Only Nightly vendors a milestone incrementally; release branches
         # only ever take cherry-picks once they have it.
         if rel.branch == "main":
@@ -443,20 +442,22 @@ def collect_status(github_get, get_text, *, today: date, previous: dict | None =
                 in_progress = None
             nightly = dict(env=env, milestone=milestone, in_progress=in_progress,
                            last=last)
+            nightly_count = patches
         rows.append({
             "label": rel.label, "firefox": firefox, "milestone": milestone,
             "branch_head": branch_head, "branched": dates[milestone],
             "vs_chrome": _vs_chrome(milestone, chrome_stable),
+            "patches": patches,
             "last_change": last_libwebrtc_change(commits),
-            "in_progress": in_progress,
         })
     return project_view({
         "rows": rows, "chrome_stable": chrome_stable, "as_of": today.isoformat(),
-        "next_update": _optional(
-            "next_update", lambda: nightly and _fetch_next_update(get_text, **nightly),
+        "plan": _optional(
+            "plan", lambda: nightly and _fetch_plan(get_text, **nightly),
             previous, today, on_error),
         "patch_stack": _optional(
             "patch_stack", lambda: _fetch_patch_stack(
-                github_get, releases, today=today, known=known_history(previous)),
+                github_get, nightly_count=nightly_count, today=today,
+                known=known_history(previous)),
             previous, today, on_error),
     })

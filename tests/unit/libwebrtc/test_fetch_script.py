@@ -9,7 +9,7 @@ import fetch_libwebrtc_status as fls
 VIEW = {"chrome_stable": 154, "as_of": "2026-10-05",
         "rows": [{"label": "Release", "firefox": "157.0.1", "milestone": 153,
                   "branch_head": "branch-heads/8010", "branched": "2026-08-17",
-                  "age": "7 wk", "vs_chrome": "1 behind", "in_progress": False,
+                  "vs_chrome": "1 behind", "patches": 150,
                   "last_change": None}]}
 
 

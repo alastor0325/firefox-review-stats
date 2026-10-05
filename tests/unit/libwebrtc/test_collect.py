@@ -105,10 +105,10 @@ def _collect(up, **kw):
 
 def test_builds_one_row_per_supported_release():
     view = _collect(Upstream())
-    assert [(r["label"], r["firefox"], r["milestone"], r["branch_head"], r["vs_chrome"])
-            for r in view["rows"]] == [
-        ("Nightly", "159.0a1", 155, "branch-heads/8059", "1 ahead"),
-        ("ESR 140", "140.17.1", 135, "branch-heads/7049", "19 behind")]
+    assert [(r["label"], r["firefox"], r["milestone"], r["branch_head"], r["vs_chrome"],
+             r["patches"]) for r in view["rows"]] == [
+        ("Nightly", "159.0a1", 155, "branch-heads/8059", "1 ahead", 147),
+        ("ESR 140", "140.17.1", 135, "branch-heads/7049", "19 behind", 98)]
     assert view["chrome_stable"] == 154
 
 
@@ -127,34 +127,34 @@ def test_known_branch_dates_skip_the_schedule_lookup():
     assert not any("mstone=135" in c for c in up.calls)
 
 
-def test_next_update_wiring():
-    nxt = _collect(Upstream())["next_update"]
-    assert nxt["as_of"] == "2026-10-05"
-    assert (nxt["current"]["firefox"], nxt["current"]["fastforward_bug"]) == (159, 2072400)
-    assert [u["milestone"] for u in nxt["upcoming"]] == [156, 157, 158]
-    assert nxt["lag"] == {"last_vendored": "2026-09-18", "upstream_head": "2026-10-05",
-                          "behind": 201}
+def test_plan_wiring():
+    plan = _collect(Upstream())["plan"]
+    assert plan["as_of"] == "2026-10-05"
+    first = plan["rows"][0]
+    assert (first["vendoring"], first["firefox"], first["fastforward_bug"],
+            first["in_progress"]) == (True, 159, 2072400, False)
+    assert [r["milestone"] for r in plan["rows"]] == [155, 156, 157, 158]
+    assert plan["lag"] == {"last_vendored": "2026-09-18", "upstream_head": "2026-10-05",
+                           "behind": 201}
 
 
-def test_upcoming_milestones_are_one_schedule_call():
+def test_the_plan_is_one_schedule_call():
     up = Upstream()
     _collect(up)
-    assert [c for c in up.calls if "mstone=156" in c] == [
-        "https://chromiumdash.appspot.com/fetch_milestone_schedule?mstone=156&n=3"]
+    assert [c for c in up.calls if "&n=4" in c] == [
+        "https://chromiumdash.appspot.com/fetch_milestone_schedule?mstone=155&n=4"]
 
 
 def test_a_train_past_the_calendar_horizon_is_blank_not_a_failure():
     """whattrainisitnow answers 400 for versions it hasn't planned yet."""
-    nxt = _collect(Upstream(train_horizon=160))["next_update"]
-    assert nxt["upcoming"][0]["merge_day"] == "2026-10-22"
-    assert nxt["upcoming"][1]["merge_day"] is None
+    rows = _collect(Upstream(train_horizon=160))["plan"]["rows"]
+    assert rows[1]["merge_day"] == "2026-10-22"
+    assert rows[2]["merge_day"] is None
 
 
-def test_patch_stack_uses_nightlys_live_count_for_this_month():
+def test_patch_stack_trend_uses_nightlys_live_count_for_this_month():
     up = Upstream()
     stack = _collect(up)["patch_stack"]
-    assert stack["releases"] == [{"label": "Nightly", "count": 147},
-                                 {"label": "ESR 140", "count": 98}]
     assert len(stack["history"]) == 12
     assert stack["history"][-1] == {"month": "2026-10", "count": 147,
                                     "sampled": "2026-10-05"}
@@ -170,9 +170,8 @@ def test_a_warm_week_fetches_no_history():
 
 PREVIOUS = {
     "rows": [], "chrome_stable": 153, "as_of": "2026-09-28",
-    "next_update": {"as_of": "2026-09-28", "current": {"milestone": 154},
-                    "upcoming": [], "lag": None},
-    "patch_stack": {"as_of": "2026-09-28", "releases": [], "history": []},
+    "plan": {"as_of": "2026-09-28", "rows": [], "lag": None},
+    "patch_stack": {"as_of": "2026-09-28", "history": []},
 }
 
 
@@ -181,16 +180,15 @@ def test_a_failing_optional_host_keeps_last_weeks_section_only():
     errors = []
     view = _collect(Upstream(down={"googlesource"}), previous=PREVIOUS,
                     on_error=lambda key, exc: errors.append(key))
-    assert errors == ["in_progress", "next_update"]
+    assert errors == ["in_progress", "plan"]
     assert view["as_of"] == "2026-10-05" and len(view["rows"]) == 2
-    assert view["rows"][0]["in_progress"] is None
-    assert view["next_update"]["as_of"] == "2026-09-28"
+    assert view["plan"]["as_of"] == "2026-09-28"
     assert view["patch_stack"]["as_of"] == "2026-10-05"
 
 
 def test_an_optional_section_with_no_previous_copy_is_none():
     view = _collect(Upstream(down={"whattrainisitnow"}))
-    assert view["next_update"] is None and view["rows"]
+    assert view["plan"] is None and view["rows"]
 
 
 def test_the_core_still_fails_hard():
