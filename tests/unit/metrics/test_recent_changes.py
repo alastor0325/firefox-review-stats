@@ -198,6 +198,9 @@ class TestTranslationsAndAiPlatformFeatureLabels:
         "toolkit/components/ml/ipc",
         "toolkit/components/ml/actors",
         "toolkit/components/ml/vendor",
+        "toolkit/components/ml/eval",
+        "toolkit/components/ml/textgeneration",
+        "toolkit/components/translations/bergamot-translator",
         "toolkit/components/pageextractor",
     ])
     def test_new_team_bucket_has_a_curated_label(self, bucket):

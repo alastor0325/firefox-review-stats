@@ -3,12 +3,19 @@
 import re
 from dataclasses import dataclass
 
-_REVIEWER_BLOCK_RE = re.compile(r"r[=?]([A-Za-z0-9_\-,#.]+)")
+# One reviewer list: tokens joined by commas. A comma may follow spaces —
+# Lando writes "r=firefox-desktop-core-reviewers ,mossop" — and `!`
+# marks a blocking review (r=padenot!,alwu). Ending the list at either
+# would drop every reviewer after it. Only a comma continues the list,
+# so "r=padenot DONTBUILD" stops at padenot. A trailing comma is consumed
+# so `strip_reviewer_tag` doesn't leave one behind.
+_REVIEWER_TOKEN = r"[A-Za-z0-9_\-#.!]+"
+_REVIEWER_LIST = rf"{_REVIEWER_TOKEN}(?:[ \t]*,{_REVIEWER_TOKEN})*,?"
+_REVIEWER_BLOCK_RE = re.compile(rf"r[=?]({_REVIEWER_LIST})")
 # Strip a trailing reviewer tag for human-friendly display. Consumes the
 # leading whitespace too so "Fix something. r=padenot" collapses to
-# "Fix something." with no dangling space. `!` covers blocking reviews
-# (r=padenot!), which `_REVIEWER_BLOCK_RE` intentionally doesn't parse.
-_REVIEW_TAG_RE = re.compile(r"\s+r[=?][A-Za-z0-9_\-,#.!]+")
+# "Fix something." with no dangling space.
+_REVIEW_TAG_RE = re.compile(rf"\s+r[=?]{_REVIEWER_LIST}")
 _BUG_NUMBER_RE = re.compile(r"^Bug (\d+)")
 # Strip the leading "Bug NNNN - " / "Bug NNNN: " so a change reads as a
 # description, not a bug reference. A "Part N" marker (if any) is kept —
@@ -70,7 +77,9 @@ def parse_reviewers(subject: str) -> list[Reviewer]:
     seen: set[str] = set()
     for match in _REVIEWER_BLOCK_RE.finditer(subject):
         for raw in match.group(1).split(","):
-            token = raw.strip().lstrip("#").rstrip(".")
+            # `!` ends a name: "padenot!" and the typo "edenchuang!edenchuang"
+            # are both one blocking review by that handle.
+            token = raw.strip().lstrip("#").split("!")[0].rstrip(".")
             if not token:
                 continue
             group = canonical_group(token)

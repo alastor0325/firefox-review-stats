@@ -122,6 +122,8 @@ FEATURE_LABELS: dict[str, str] = {
     # nothing.
     "toolkit/components/translations": "Translations engine",
     "toolkit/components/translations/actors": "Translations actors",
+    "toolkit/components/translations/bergamot-translator":
+        "Bergamot translation engine (WASM)",
     "toolkit/components/translations/content":
         "Translations engine & about:translations",
     "browser/components/translations": "Translations UI",
@@ -132,6 +134,8 @@ FEATURE_LABELS: dict[str, str] = {
     "toolkit/components/ml/ipc": "ML IPC",
     "toolkit/components/ml/actors": "ML actors",
     "toolkit/components/ml/vendor": "ML vendored libraries",
+    "toolkit/components/ml/eval": "ML model evaluations",
+    "toolkit/components/ml/textgeneration": "Native text generation",
     "toolkit/components/pageextractor": "Page extractor",
     # Shared sentinel buckets emitted by primary_subdir / the classifier.
     "(top-level)": "General / top-level",

@@ -226,3 +226,50 @@ class TestSuffixlessGroupHashtags:
         that happens to look like a component name is still a person."""
         assert is_group_reviewer("emilio") is False
         assert is_group_reviewer("padenot") is False
+
+
+class TestReviewerListSeparators:
+    """A reviewer list used to end at the first character outside the
+    token set, silently dropping everyone after it. Two shapes in real
+    subjects hit that: Lando's "firefox-desktop-core-reviewers ,next"
+    and a blocking `!` mid-list."""
+
+    def test_space_before_comma_keeps_the_rest_of_the_list(self):
+        subject = (
+            "Bug 1 - fix. r=firefox-desktop-core-reviewers ,"
+            "ai-platform-reviewers,mossop"
+        )
+        assert parse_reviewers(subject) == [
+            Reviewer("firefox-desktop-core-reviewers", True),
+            Reviewer("ai-platform-reviewers", True),
+            Reviewer("mossop", False),
+        ]
+
+    def test_blocking_bang_mid_list_keeps_the_rest_of_the_list(self):
+        assert parse_reviewers(
+            "Bug 1 - fix. r?#home-newtab-reviewers!,maxx!"
+        ) == [
+            Reviewer("home-newtab-reviewers", True),
+            Reviewer("maxx", False),
+        ]
+
+    def test_text_after_a_bang_is_not_part_of_the_name(self):
+        assert parse_reviewers(
+            "Bug 1 - fix. r=valentin,edenchuang!edenchuang,emz"
+        ) == [
+            Reviewer("valentin", False),
+            Reviewer("edenchuang", False),
+            Reviewer("emz", False),
+        ]
+
+    def test_space_without_comma_still_ends_the_list(self):
+        """Only a comma continues the list — trailing words such as
+        DONTBUILD are not reviewers."""
+        assert parse_reviewers("Bug 1 - fix. r=padenot DONTBUILD") == [
+            Reviewer("padenot", False),
+        ]
+
+    def test_strip_reviewer_tag_removes_the_whole_spaced_list(self):
+        assert strip_reviewer_tag(
+            "Bug 1 - Fix the docs r=firefox-desktop-core-reviewers ,mossop"
+        ) == "Bug 1 - Fix the docs"
