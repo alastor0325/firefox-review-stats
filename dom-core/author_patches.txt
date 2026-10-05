@@ -1,8 +1,8 @@
 ==============================================================================
 DOM-CORE-REVIEWERS AUTHOR-PATCH LISTING (raw author %an, no aliasing)
-Source: github.com/mozilla-firefox/firefox   Paths: dom/base, dom/html, dom/events, dom/bindings, dom/webidl, dom/ipc, docshell, parser   Since: 2026-04-01T17:31:06Z
+Source: github.com/mozilla-firefox/firefox   Paths: dom/base, dom/html, dom/events, dom/bindings, dom/webidl, dom/ipc, docshell, parser   Since: 2026-04-08T18:04:07Z
 Excluded paths: (none)
-Authors: 188    Patches: 1899    (Lando-format / Lando-author / merge / Revert commits already excluded)
+Authors: 189    Patches: 1907    (Lando-format / Lando-author / merge / Revert commits already excluded)
 ==============================================================================
 
 Known aliases (applied in HTML report, NOT below):
@@ -11,8 +11,11 @@ Known aliases (applied in HTML report, NOT below):
 
 ==============================================================================
 
-[ 1] Emilio Cobos Álvarez  —  136 patch(es)
+[ 1] Emilio Cobos Álvarez  —  138 patch(es)
     ----------------------------------------------------------------------
+      2026-10-02  f7b4bd0e24a8  Bug 2077390 - Be a bit more conservative about whether directories are readable. r=edgar
+      2026-10-01  a7825fd3129f  Bug 2077170 - Remove legacy masonry syntax. r=layout-reviewers,firefox-style-system-reviewers,dholbert,dshin
+      2026-09-29  a6fb149f9a0d  Bug 2076263 - Support infallible typedefs in xpidl. r=xpcom-reviewers,dom-worker-reviewers,nika,asuth
       2026-09-23  da5ab723d4a0  Bug 2074356 - Remove some dead code and make AttrArray::Clear() properly preserve bloom filter. r=denispal,dom-core-reviewers,smaug
       2026-09-23  14dcbdd4a7e8  Bug 2074208. r=smaug,dom-core-reviewers
       2026-09-16  73f959f21589  Bug 2072302 - Avoid using ThinVec with a zero-size type in speculationrules. r=avandolder,dom-core-reviewers
@@ -148,10 +151,15 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-10  9440b797fb88  Bug 2025453 - Keep CSSStyleDeclaration concrete to restore @@iterator property. r=webidl,smaug
       2026-04-09  3f1228e02a3f  Bug 2014481 - Fix selection dragging when reframed. r=masayuki
       2026-04-09  6c9fd4f99258  Bug 2014481 - Fix selection dragging when reframed. r=masayuki
-      2026-04-03  bfa96865f35b  Bug 2029039 - Add a use counter for cases where the change initial value of grid-auto-flow would change. r=fantasai
 
-[ 2] Leo Tenenbaum  —  114 patch(es)
+[ 2] Leo Tenenbaum  —  116 patch(es)
     ----------------------------------------------------------------------
+      2026-10-02  e37d96eb8d95  Bug 2071974 - Implement window.pushManager for Declarative Web Push. r=saschanaz,webidl,tschuster
+      2026-10-02  a4e5ab76206b  Bug 2071974 - Implement window.pushManager for Declarative Web Push. r=saschanaz,webidl,tschuster
+      2026-10-02  0516bf56189e  Bug 2076675 - Don't reset image sizes=auto width when image is moved with moveBefore. r=dom-core-reviewers,smaug
+      2026-10-02  6caa7f8c3706  Bug 2071974 - Implement window.pushManager for Declarative Web Push. r=saschanaz,webidl,tschuster
+      2026-10-01  254bfc5af5a7  Bug 2076648 - Clear previously-focused content after blurring due to caret move. r=edgar
+      2026-10-01  471985ecd522  Bug 2076648 - Clear previously-focused content after blurring due to caret move. r=edgar
       2026-09-22  dbd6f24e1735  Bug 2074198 - Move EditContext initialization to separate Init() method. r=dom-core-reviewers,jjaschke
       2026-09-17  2a28223032af  Bug 2048704 - End composition when EditContext is deactivated. r=masayuki
       2026-09-14  5b7e5a4dfe77  Bug 2070941 - Compute active EditContext after updating the editable state. r=masayuki
@@ -262,12 +270,8 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-14  a537cb55dda0  Bug 1906555 - Fix getAttribute when value is set to non-canonical keyword. r=farre
       2026-04-09  1391137c7792  Bug 2017852 - Return isContentEditable = true for elements inside design mode document. r=dom-core,masayuki
       2026-04-08  8f287b2c8b47  Bug 1955857 - Treat popup invoker as a focus-navigation-scope owner. r=edgar
-      2026-04-08  676c2c091f1a  Bug 2026562 - Still fire change event if value is set while changing non-focused input. r=farre
-      2026-04-07  ecbb463cf7a7  Bug 1924919 - Add fully active document check to CheckPopoverValidity. r=keithamus
-      2026-04-06  4f45c623ee6e  Bug 462735 - Respect contenteditable=false in design mode document. r=masayuki
-      2026-04-01  e88365985897  Bug 1832869 - Only restore focus to previouslyFocusedElement if current focus is in dialog. r=dom-core,avandolder
 
-[ 3] Masayuki Nakano  —  114 patch(es)
+[ 3] Masayuki Nakano  —  113 patch(es)
     ----------------------------------------------------------------------
       2026-09-21  26694a6cbac7  Bug 2072095 - Make `nsRange::CharacterDataChanged` maintain selection state of new `Text` and its closest common inclusive ancestor at split correctly r=jjaschke
       2026-09-19  64bc200bd6f3  Bug 2068443 - Make `HTMLEditor` verify `Text` data after modifying it and abort for any errors r=smaug,m_kato
@@ -382,10 +386,10 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-24  7bd60d230144  Bug 2023902 - part 2 - Make `BrowserParent::SendRealMouseEvent()` do not use the copy constructor of `WidgetMouseEvent` r=smaug
       2026-04-22  9e68b78abd4f  Bug 1899486 - Disable `test_auxclick_autoscroll_off.html` in the xorig mode on Android r=dom-core,smaug
       2026-04-13  ad61492d2b47  Bug 1826272 - Make `TextControlState::mTextListener` live longer r=emilio
-      2026-04-06  5881044ab7a9  Bug 2029538 - Remove `MOZ_CAN_RUN_SCRIPT` from `IMEContentObserver::InitWithEditor` and some its callers r=m_kato
 
 [ 4] Keith Cirkel  —  100 patch(es)
     ----------------------------------------------------------------------
+      2026-10-01  00f863ad7091  Bug 1960845 - Parse <noscript> with scripting disabled in Document.parseHTML() and parseHTMLUnsafe() r=tschuster
       2026-09-25  bbfed19d1044  Bug 2075656 - Skip the scoped registry lookup for documents that have none. r=dom-core-reviewers,jjaschke
       2026-09-25  92fcd9a8d19f  Bug 2071398 - Redirect replaced elements into the adoption agency's next kept clone r=hsivonen
       2026-09-23  e7c729e6e354  Bug 2074551 - Mark setHTMLUnsafe() and ShadowRoot.setHTML() as [CEReactions] r=webidl,emilio
@@ -485,9 +489,87 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-15  e9a7c8c795cf  Bug 2031294 - Serialize shadowrootslotassignment before shadowrootclonable r=dom-core,farre
       2026-04-12  24f3550204ff  Bug 2027425 - Test insertion mode reset for select fragments with noInSelectMode r=hsivonen
       2026-04-11  edf216794113  Bug 2023824 - Implement shadowrootslotassignment r=webidl,emilio
-      2026-04-07  3fee12d5fe8a  Bug 2027425 - Set frameset for select fragments with noInSelectMode r=hsivonen
 
-[ 5] Edgar Chen  —  73 patch(es)
+[ 5] Nika Layzell  —  76 patch(es)
+    ----------------------------------------------------------------------
+      2026-09-29  3c9bb3a97509  Bug 2061857 - Part 3: Allow configuring synced field defaults, r=farre
+      2026-09-29  b7f5e2788e8d  Bug 2061857 - Part 2: Migrate existing synced fields to use customization options, r=farre
+      2026-09-29  ed9c39703339  Bug 2061857 - Part 1: Add customization options to SyncedContext, r=farre
+      2026-09-29  5dbae29f1368  Bug 1564615 - Part 1: Make GeckoChildProcessHost refcounted, r=ipc-reviewers,necko-reviewers,media-playback-reviewers,mccr8,gfx-reviewers,kershaw,padenot,aosmond
+      2026-09-29  e82ba2163b26  Bug 2075623 - Back out SessionHistoryInfo ID checks, r=dom-core-reviewers,farre
+      2026-09-28  1c45b0c0b8c1  Bug 2073788 - Part 2: Directly look up ContentParent in WGP, r=dom-core-reviewers,mccr8
+      2026-09-28  c8c23be1d973  Bug 2073788 - Part 1: Keep exposing BrowserParent on discarded WindowGlobalParent, r=dom-core-reviewers,mccr8
+      2026-09-24  b07bdfc8364b  Bug 2056965 - Part 1: Add checks for validating process-specific ID origins, r=dom-core-reviewers,vhilla
+      2026-09-24  37028e838f26  Bug 2056965 - Part 2: Validate OuterWindowId in RecvNewWindowGlobal, r=dom-core-reviewers,smaug
+      2026-09-16  f7e3aeb234af  Bug 2071727 - Perform CustomFreeTransferHandler bounds checks outside of fuzzing, r=dom-core-reviewers,mccr8
+      2026-09-15  76b7efea67d7  Bug 2065236 - Remove EmbedderInnerWindowId field from BrowsingContext, r=dom-core-reviewers,smaug
+      2026-09-15  be9aa3fb3aaa  Bug 2050774 - Part 2: Trust PrincipalToInherit from HTTP(s) redirects, r=vhilla,necko-reviewers,valentin
+      2026-09-15  345b63016760  Bug 2050774 - Part 1: Consider precursor origin in ValidatePrincipal, r=asuth
+      2026-09-09  d3736930bdee  Bug 2068262 - Handle null principal RemoteTypes in RemoteType.cpp, r=dom-core-reviewers,mccr8
+      2026-08-31  c51090b13586  Bug 2052614 - Add a structured RemoteType representation. r=ipc-reviewers,necko-reviewers,geckoview-reviewers,extension-reviewers,media-playback-reviewers,webrtc-reviewers,places-reviewers,layout-reviewers,dom-worker-reviewers,ai-platform-reviewers,sandbox-reviewers,janerik,emilio,hiro,kershaw,bwc,asuth,mccr8,alwu,nordzilla,valentin,bobowen
+      2026-08-31  0577095daf71  Bug 2056965 - Part 2: Validate OuterWindowId in RecvNewWindowGlobal, r=dom-core-reviewers,smaug
+      2026-08-31  bf9b7e34e3a5  Bug 2056965 - Part 1: Add checks for validating process-specific ID origins, r=dom-core-reviewers,vhilla
+      2026-08-31  317f6f2c6783  Bug 2050774 - Part 2: Trust PrincipalToInherit from HTTP(s) redirects, r=vhilla,necko-reviewers,valentin
+      2026-08-31  20828199269d  Bug 2050774 - Part 1: Consider precursor origin in ValidatePrincipal, r=asuth
+      2026-08-26  a901d3ec0b6e  Bug 2061387 - Call MaybeBecomeUntrusted in CrossProcessRedirect, r=mccr8
+      2026-08-21  b1c11649010b  Bug 2065236 - Remove EmbedderInnerWindowId field from BrowsingContext, r=dom-core-reviewers,smaug
+      2026-08-20  c732a358c1bf  Bug 2063905 - Validate PostMessage source against innerWindowId, r=dom-core-reviewers,farre
+      2026-08-18  c1d4320c3431  Bug 2056357 - Part 4: Use ActorCast in more places, r=ipc-reviewers,media-playback-reviewers,cookie-reviewers,dom-worker-reviewers,padenot,baku,edenchuang,mccr8
+      2026-08-18  bba02ee0e47d  Bug 2056357 - Part 1: Unify IPDL actor devirutalization logic, and require types to be fully qualified, r=ipc-reviewers,necko-reviewers,dom-storage-reviewers,jesup,mccr8
+      2026-08-18  4b90b5487866  Bug 2056357 - Part 3: Use ActorDynCast instead of manual downcasting, r=ipc-reviewers,media-playback-reviewers,padenot,mccr8
+      2026-08-13  c044e5943d66  Bug 2056357 - Part 4: Use ActorCast in more places, r=ipc-reviewers,media-playback-reviewers,cookie-reviewers,dom-worker-reviewers,padenot,baku,edenchuang,mccr8
+      2026-08-13  0e8f5138c64e  Bug 2056357 - Part 3: Use ActorDynCast instead of manual downcasting, r=ipc-reviewers,media-playback-reviewers,padenot,mccr8
+      2026-08-13  858573a9f98f  Bug 2056357 - Part 1: Unify IPDL actor devirutalization logic, and require types to be fully qualified, r=ipc-reviewers,necko-reviewers,dom-storage-reviewers,jesup,mccr8
+      2026-08-07  35013f27632c  Bug 2055554 - Part 3: Check loaded sites in ValidatePrincipal, r=necko-reviewers,dom-storage-reviewers,dom-worker-reviewers,vhilla,jesup,asuth
+      2026-08-07  ef4f6e06d630  Bug 2055554 - Part 2: Track loaded origins in content processes, r=necko-reviewers,dom-worker-reviewers,ai-platform-reviewers,vhilla,asuth,permissions-reviewers,valentin,timhuang
+      2026-08-07  6b387a34455d  Bug 2055554 - Part 1: Add stripping OriginAttributes comparators, r=vhilla
+      2026-07-22  e1dc6c205d6d  Bug 2053095 - Move untrusted marking back to document-element-inserted, r=dom-core-reviewers,jjaschke
+      2026-07-13  e2b0dec0fc3e  Bug 2030806 - Expose PartitionedPrincipal on WindowGlobalParent, r=smaug,emz
+      2026-07-03  cd3ea2c86c26  Bug 2049981 - Check subtree in NewWindowGlobal, r=smaug
+      2026-06-29  12dece120f68  Bug 2048423 - Part 2: Simplify RunnableMethod and InvokeAsync method handling, r=xpcom-reviewers,necko-reviewers,extension-reviewers,media-playback-reviewers,webrtc-reviewers,win-reviewers,layout-reviewers,dom-worker-reviewers,alwu,asuth,pehrsons,valentin,emilio,robwu,sandbox-reviewers,gstoll,bobowen
+      2026-06-29  b6abc3ec8a2b  Bug 2048423 - Part 1: Unify MozPromise then handles, r=xpcom-reviewers,emilio
+      2026-06-25  ec9837a9f1ff  Bug 2049046 - Add a unified mechanism for determining when a content process becomes untrusted, r=dom-core-reviewers,necko-reviewers,dom-worker-reviewers,valentin,edenchuang,mccr8
+      2026-06-25  d978773b24a3  Bug 1800120 - Part 2: Remove now-dead parameters in CommonCreateWindow, r=vhilla
+      2026-06-25  3d7bd2f93154  Bug 1800120 - Part 1: Remove CreateWindowInDifferentProcess, r=vhilla
+      2026-06-25  66dc534442aa  Bug 2006467 - Part 2: Remove allowSystem for blobs, r=asuth,necko-reviewers
+      2026-06-24  60516f24a64e  Bug 2049046 - Add a unified mechanism for determining when a content process becomes untrusted, r=dom-core-reviewers,necko-reviewers,dom-worker-reviewers,valentin,edenchuang,mccr8
+      2026-06-24  91ea8e8fc078  Bug 2039990 - Part 1: Add threadsafe CurrentRemoteType getter, r=smaug
+      2026-06-23  2bc512e38104  Bug 2006467 - Part 2: Remove allowSystem for blobs, r=asuth,necko-reviewers
+      2026-06-23  8e6c31c9cb62  Bug 2039990 - Part 1: Add threadsafe CurrentRemoteType getter, r=smaug
+      2026-06-11  2cc40506ae78  Bug 2022249 - Part 2: Pull nsITransportSecurityInfo directly from channel in WindowGlobalParent, r=keeler
+      2026-06-11  8f3953537161  Bug 2022249 - Part 1: Track the parent process channel as passed to WindowGlobalParent, r=smaug,ipc-reviewers,necko-reviewers,valentin,mccr8
+      2026-06-02  4919155043a5  Bug 2043001 - Simplify speculative load handling, r=smaug
+      2026-05-29  bdbafe55998d  Bug 2042870 - Add more validation for the new blob URL syntax, r=asuth
+      2026-05-28  8a226195d99f  Bug 2042870 - Add more validation for the new blob URL syntax, r=asuth
+      2026-05-27  c9d81296d751  Bug 2038695 - Part 1: Validate IsKnownForChildID in more places, r=smaug
+      2026-05-26  257ff9dc2a0f  Bug 2042245 - Drop support for privilegedabout loading system shared workers, r=dom-worker-reviewers,asuth
+      2026-05-26  822123cadf3c  Bug 2042245 - Drop support for privilegedabout loading system shared workers, r=dom-worker-reviewers,asuth
+      2026-05-21  a77c97abcb8d  Bug 1729352 - Isolate standard web processes by OA, r=smaug,tabbrowser-reviewers,dom-worker-reviewers,asuth,sthompson,dao,sfoster
+      2026-05-21  d147446fc76a  Bug 2011326 - Part 2: Predict remote types with ProcessIsolation, r=whimboo,geckoview-reviewers,extension-reviewers,tabbrowser-reviewers,omc-reviewers,layout-reviewers,tcampbell,robwu,sthompson,emilio,mimi
+      2026-05-21  c7c574c60154  Bug 2011307 - Remove test-only support for marking chrome:// URI as needing to be loaded remotely, r=smaug,tabbrowser-reviewers,nsharpley
+      2026-05-20  ba92fe5024f2  Bug 1729352 - Isolate standard web processes by OA, r=smaug,tabbrowser-reviewers,dom-worker-reviewers,asuth,sthompson,dao,sfoster
+      2026-05-20  df59bd116ee4  Bug 2011326 - Part 2: Predict remote types with ProcessIsolation, r=whimboo,geckoview-reviewers,extension-reviewers,tabbrowser-reviewers,omc-reviewers,layout-reviewers,tcampbell,robwu,sthompson,emilio,mimi
+      2026-05-20  2d20aa53d94d  Bug 2011307 - Remove test-only support for marking chrome:// URI as needing to be loaded remotely, r=smaug,tabbrowser-reviewers,nsharpley
+      2026-05-12  c5e04a6dad47  Bug 2038678 - Clean up unnecessary object traversal for remoteType, r=extension-reviewers,credential-management-reviewers,omc-reviewers,migration-reviewers,home-newtab-reviewers,mtigley,mossop,mconley,aminomancer,robwu
+      2026-05-08  52f62a20fa79  Bug 2027207 - Part 3: Return IPC_FAIL when principal validation fails, r=smaug
+      2026-05-08  20c349335d3a  Bug 2027207 - Part 2: Handle schemes better in ValidatePrincipalCouldPotentiallyBeLoadedBy, r=smaug
+      2026-05-08  800b6c20e481  Bug 2027207 - Part 1: Align validation in TriggerRedirectToRealChannel and RecvNewWindowGlobal better, r=smaug,necko-reviewers,valentin
+      2026-05-06  2e13daa55184  Bug 1729352 - Isolate standard web processes by OA, r=smaug,tabbrowser-reviewers,dom-worker-reviewers,asuth,sthompson,dao,sfoster
+      2026-05-06  b0d8bab44685  Bug 2011326 - Part 2: Predict remote types with ProcessIsolation, r=whimboo,geckoview-reviewers,extension-reviewers,tabbrowser-reviewers,omc-reviewers,layout-reviewers,tcampbell,robwu,sthompson,emilio,mimi
+      2026-05-06  7a352d248098  Bug 2011307 - Remove test-only support for marking chrome:// URI as needing to be loaded remotely, r=smaug,tabbrowser-reviewers,nsharpley
+      2026-05-04  1a5ddbaaec38  Bug 1800120 - Part 2: Remove now-dead parameters in CommonCreateWindow, r=vhilla
+      2026-05-04  018ac8687357  Bug 1800120 - Part 1: Remove CreateWindowInDifferentProcess, r=vhilla
+      2026-04-27  cb527df820e5  Bug 2028579 - Part 1: Remove IProtocol::CanRecv, r=ipc-reviewers,necko-reviewers,media-playback-reviewers,aosmond,valentin,mccr8
+      2026-04-24  a1d2e3773709  Bug 2005247 - Part 4: Stop sending BlobImpl data to content processes, r=asuth
+      2026-04-24  8970f43dd429  Bug 2005247 - Part 1: Get the BlobImpl from the BlobURLChannel, r=asuth,media-playback-reviewers,padenot
+      2026-04-24  23c46617b0f0  Bug 2005002 - Part 2: Infer Blob URL principal from URL when possible, r=asuth,extension-reviewers,necko-reviewers,home-newtab-reviewers,robwu,mconley,kershaw,bvandersloot
+      2026-04-20  47367770c3af  Bug 2005247 - Part 4: Stop sending BlobImpl data to content processes, r=asuth
+      2026-04-20  440a33211b95  Bug 2005247 - Part 1: Get the BlobImpl from the BlobURLChannel, r=asuth,media-playback-reviewers,padenot
+      2026-04-20  d3022ec4705b  Bug 2005002 - Part 2: Infer Blob URL principal from URL when possible, r=asuth,extension-reviewers,necko-reviewers,home-newtab-reviewers,robwu,mconley,kershaw,bvandersloot
+      2026-04-10  2449aaccea37  Bug 2030458 - Dynamically determine the basis table size for perfecthash.py, r=xpcom-reviewers,chutten,mccr8
+      2026-04-10  300814e10bf6  Bug 2030458 - Dynamically determine the basis table size for perfecthash.py, r=xpcom-reviewers,chutten,mccr8
+
+[ 6] Edgar Chen  —  73 patch(es)
     ----------------------------------------------------------------------
       2026-09-23  3d4fb7a1cf19  Bug 2071024 - Part 3: Propagate mMovement to the coalesced pointer event; r=smaug
       2026-09-23  df43b134c3da  Bug 2071024 - Part 4: Allow mousemove events that carry movement deltas to be coalesced; r=smaug
@@ -563,83 +645,9 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-13  a5b20b2d6cd1  Bug 2025346 - Create RemoteObjectProxy properly; r=smaug
       2026-04-10  e896afd4b8ae  Bug 2029071 - Handle foster parenting properly; r=smaug
 
-[ 6] Nika Layzell  —  72 patch(es)
-    ----------------------------------------------------------------------
-      2026-09-24  b07bdfc8364b  Bug 2056965 - Part 1: Add checks for validating process-specific ID origins, r=dom-core-reviewers,vhilla
-      2026-09-24  37028e838f26  Bug 2056965 - Part 2: Validate OuterWindowId in RecvNewWindowGlobal, r=dom-core-reviewers,smaug
-      2026-09-16  f7e3aeb234af  Bug 2071727 - Perform CustomFreeTransferHandler bounds checks outside of fuzzing, r=dom-core-reviewers,mccr8
-      2026-09-15  76b7efea67d7  Bug 2065236 - Remove EmbedderInnerWindowId field from BrowsingContext, r=dom-core-reviewers,smaug
-      2026-09-15  be9aa3fb3aaa  Bug 2050774 - Part 2: Trust PrincipalToInherit from HTTP(s) redirects, r=vhilla,necko-reviewers,valentin
-      2026-09-15  345b63016760  Bug 2050774 - Part 1: Consider precursor origin in ValidatePrincipal, r=asuth
-      2026-09-09  d3736930bdee  Bug 2068262 - Handle null principal RemoteTypes in RemoteType.cpp, r=dom-core-reviewers,mccr8
-      2026-08-31  c51090b13586  Bug 2052614 - Add a structured RemoteType representation. r=ipc-reviewers,necko-reviewers,geckoview-reviewers,extension-reviewers,media-playback-reviewers,webrtc-reviewers,places-reviewers,layout-reviewers,dom-worker-reviewers,ai-platform-reviewers,sandbox-reviewers,janerik,emilio,hiro,kershaw,bwc,asuth,mccr8,alwu,nordzilla,valentin,bobowen
-      2026-08-31  0577095daf71  Bug 2056965 - Part 2: Validate OuterWindowId in RecvNewWindowGlobal, r=dom-core-reviewers,smaug
-      2026-08-31  bf9b7e34e3a5  Bug 2056965 - Part 1: Add checks for validating process-specific ID origins, r=dom-core-reviewers,vhilla
-      2026-08-31  317f6f2c6783  Bug 2050774 - Part 2: Trust PrincipalToInherit from HTTP(s) redirects, r=vhilla,necko-reviewers,valentin
-      2026-08-31  20828199269d  Bug 2050774 - Part 1: Consider precursor origin in ValidatePrincipal, r=asuth
-      2026-08-26  a901d3ec0b6e  Bug 2061387 - Call MaybeBecomeUntrusted in CrossProcessRedirect, r=mccr8
-      2026-08-21  b1c11649010b  Bug 2065236 - Remove EmbedderInnerWindowId field from BrowsingContext, r=dom-core-reviewers,smaug
-      2026-08-20  c732a358c1bf  Bug 2063905 - Validate PostMessage source against innerWindowId, r=dom-core-reviewers,farre
-      2026-08-18  c1d4320c3431  Bug 2056357 - Part 4: Use ActorCast in more places, r=ipc-reviewers,media-playback-reviewers,cookie-reviewers,dom-worker-reviewers,padenot,baku,edenchuang,mccr8
-      2026-08-18  bba02ee0e47d  Bug 2056357 - Part 1: Unify IPDL actor devirutalization logic, and require types to be fully qualified, r=ipc-reviewers,necko-reviewers,dom-storage-reviewers,jesup,mccr8
-      2026-08-18  4b90b5487866  Bug 2056357 - Part 3: Use ActorDynCast instead of manual downcasting, r=ipc-reviewers,media-playback-reviewers,padenot,mccr8
-      2026-08-13  c044e5943d66  Bug 2056357 - Part 4: Use ActorCast in more places, r=ipc-reviewers,media-playback-reviewers,cookie-reviewers,dom-worker-reviewers,padenot,baku,edenchuang,mccr8
-      2026-08-13  0e8f5138c64e  Bug 2056357 - Part 3: Use ActorDynCast instead of manual downcasting, r=ipc-reviewers,media-playback-reviewers,padenot,mccr8
-      2026-08-13  858573a9f98f  Bug 2056357 - Part 1: Unify IPDL actor devirutalization logic, and require types to be fully qualified, r=ipc-reviewers,necko-reviewers,dom-storage-reviewers,jesup,mccr8
-      2026-08-07  35013f27632c  Bug 2055554 - Part 3: Check loaded sites in ValidatePrincipal, r=necko-reviewers,dom-storage-reviewers,dom-worker-reviewers,vhilla,jesup,asuth
-      2026-08-07  ef4f6e06d630  Bug 2055554 - Part 2: Track loaded origins in content processes, r=necko-reviewers,dom-worker-reviewers,ai-platform-reviewers,vhilla,asuth,permissions-reviewers,valentin,timhuang
-      2026-08-07  6b387a34455d  Bug 2055554 - Part 1: Add stripping OriginAttributes comparators, r=vhilla
-      2026-07-22  e1dc6c205d6d  Bug 2053095 - Move untrusted marking back to document-element-inserted, r=dom-core-reviewers,jjaschke
-      2026-07-13  e2b0dec0fc3e  Bug 2030806 - Expose PartitionedPrincipal on WindowGlobalParent, r=smaug,emz
-      2026-07-03  cd3ea2c86c26  Bug 2049981 - Check subtree in NewWindowGlobal, r=smaug
-      2026-06-29  12dece120f68  Bug 2048423 - Part 2: Simplify RunnableMethod and InvokeAsync method handling, r=xpcom-reviewers,necko-reviewers,extension-reviewers,media-playback-reviewers,webrtc-reviewers,win-reviewers,layout-reviewers,dom-worker-reviewers,alwu,asuth,pehrsons,valentin,emilio,robwu,sandbox-reviewers,gstoll,bobowen
-      2026-06-29  b6abc3ec8a2b  Bug 2048423 - Part 1: Unify MozPromise then handles, r=xpcom-reviewers,emilio
-      2026-06-25  ec9837a9f1ff  Bug 2049046 - Add a unified mechanism for determining when a content process becomes untrusted, r=dom-core-reviewers,necko-reviewers,dom-worker-reviewers,valentin,edenchuang,mccr8
-      2026-06-25  d978773b24a3  Bug 1800120 - Part 2: Remove now-dead parameters in CommonCreateWindow, r=vhilla
-      2026-06-25  3d7bd2f93154  Bug 1800120 - Part 1: Remove CreateWindowInDifferentProcess, r=vhilla
-      2026-06-25  66dc534442aa  Bug 2006467 - Part 2: Remove allowSystem for blobs, r=asuth,necko-reviewers
-      2026-06-24  60516f24a64e  Bug 2049046 - Add a unified mechanism for determining when a content process becomes untrusted, r=dom-core-reviewers,necko-reviewers,dom-worker-reviewers,valentin,edenchuang,mccr8
-      2026-06-24  91ea8e8fc078  Bug 2039990 - Part 1: Add threadsafe CurrentRemoteType getter, r=smaug
-      2026-06-23  2bc512e38104  Bug 2006467 - Part 2: Remove allowSystem for blobs, r=asuth,necko-reviewers
-      2026-06-23  8e6c31c9cb62  Bug 2039990 - Part 1: Add threadsafe CurrentRemoteType getter, r=smaug
-      2026-06-11  2cc40506ae78  Bug 2022249 - Part 2: Pull nsITransportSecurityInfo directly from channel in WindowGlobalParent, r=keeler
-      2026-06-11  8f3953537161  Bug 2022249 - Part 1: Track the parent process channel as passed to WindowGlobalParent, r=smaug,ipc-reviewers,necko-reviewers,valentin,mccr8
-      2026-06-02  4919155043a5  Bug 2043001 - Simplify speculative load handling, r=smaug
-      2026-05-29  bdbafe55998d  Bug 2042870 - Add more validation for the new blob URL syntax, r=asuth
-      2026-05-28  8a226195d99f  Bug 2042870 - Add more validation for the new blob URL syntax, r=asuth
-      2026-05-27  c9d81296d751  Bug 2038695 - Part 1: Validate IsKnownForChildID in more places, r=smaug
-      2026-05-26  257ff9dc2a0f  Bug 2042245 - Drop support for privilegedabout loading system shared workers, r=dom-worker-reviewers,asuth
-      2026-05-26  822123cadf3c  Bug 2042245 - Drop support for privilegedabout loading system shared workers, r=dom-worker-reviewers,asuth
-      2026-05-21  a77c97abcb8d  Bug 1729352 - Isolate standard web processes by OA, r=smaug,tabbrowser-reviewers,dom-worker-reviewers,asuth,sthompson,dao,sfoster
-      2026-05-21  d147446fc76a  Bug 2011326 - Part 2: Predict remote types with ProcessIsolation, r=whimboo,geckoview-reviewers,extension-reviewers,tabbrowser-reviewers,omc-reviewers,layout-reviewers,tcampbell,robwu,sthompson,emilio,mimi
-      2026-05-21  c7c574c60154  Bug 2011307 - Remove test-only support for marking chrome:// URI as needing to be loaded remotely, r=smaug,tabbrowser-reviewers,nsharpley
-      2026-05-20  ba92fe5024f2  Bug 1729352 - Isolate standard web processes by OA, r=smaug,tabbrowser-reviewers,dom-worker-reviewers,asuth,sthompson,dao,sfoster
-      2026-05-20  df59bd116ee4  Bug 2011326 - Part 2: Predict remote types with ProcessIsolation, r=whimboo,geckoview-reviewers,extension-reviewers,tabbrowser-reviewers,omc-reviewers,layout-reviewers,tcampbell,robwu,sthompson,emilio,mimi
-      2026-05-20  2d20aa53d94d  Bug 2011307 - Remove test-only support for marking chrome:// URI as needing to be loaded remotely, r=smaug,tabbrowser-reviewers,nsharpley
-      2026-05-12  c5e04a6dad47  Bug 2038678 - Clean up unnecessary object traversal for remoteType, r=extension-reviewers,credential-management-reviewers,omc-reviewers,migration-reviewers,home-newtab-reviewers,mtigley,mossop,mconley,aminomancer,robwu
-      2026-05-08  52f62a20fa79  Bug 2027207 - Part 3: Return IPC_FAIL when principal validation fails, r=smaug
-      2026-05-08  20c349335d3a  Bug 2027207 - Part 2: Handle schemes better in ValidatePrincipalCouldPotentiallyBeLoadedBy, r=smaug
-      2026-05-08  800b6c20e481  Bug 2027207 - Part 1: Align validation in TriggerRedirectToRealChannel and RecvNewWindowGlobal better, r=smaug,necko-reviewers,valentin
-      2026-05-06  2e13daa55184  Bug 1729352 - Isolate standard web processes by OA, r=smaug,tabbrowser-reviewers,dom-worker-reviewers,asuth,sthompson,dao,sfoster
-      2026-05-06  b0d8bab44685  Bug 2011326 - Part 2: Predict remote types with ProcessIsolation, r=whimboo,geckoview-reviewers,extension-reviewers,tabbrowser-reviewers,omc-reviewers,layout-reviewers,tcampbell,robwu,sthompson,emilio,mimi
-      2026-05-06  7a352d248098  Bug 2011307 - Remove test-only support for marking chrome:// URI as needing to be loaded remotely, r=smaug,tabbrowser-reviewers,nsharpley
-      2026-05-04  1a5ddbaaec38  Bug 1800120 - Part 2: Remove now-dead parameters in CommonCreateWindow, r=vhilla
-      2026-05-04  018ac8687357  Bug 1800120 - Part 1: Remove CreateWindowInDifferentProcess, r=vhilla
-      2026-04-27  cb527df820e5  Bug 2028579 - Part 1: Remove IProtocol::CanRecv, r=ipc-reviewers,necko-reviewers,media-playback-reviewers,aosmond,valentin,mccr8
-      2026-04-24  a1d2e3773709  Bug 2005247 - Part 4: Stop sending BlobImpl data to content processes, r=asuth
-      2026-04-24  8970f43dd429  Bug 2005247 - Part 1: Get the BlobImpl from the BlobURLChannel, r=asuth,media-playback-reviewers,padenot
-      2026-04-24  23c46617b0f0  Bug 2005002 - Part 2: Infer Blob URL principal from URL when possible, r=asuth,extension-reviewers,necko-reviewers,home-newtab-reviewers,robwu,mconley,kershaw,bvandersloot
-      2026-04-20  47367770c3af  Bug 2005247 - Part 4: Stop sending BlobImpl data to content processes, r=asuth
-      2026-04-20  440a33211b95  Bug 2005247 - Part 1: Get the BlobImpl from the BlobURLChannel, r=asuth,media-playback-reviewers,padenot
-      2026-04-20  d3022ec4705b  Bug 2005002 - Part 2: Infer Blob URL principal from URL when possible, r=asuth,extension-reviewers,necko-reviewers,home-newtab-reviewers,robwu,mconley,kershaw,bvandersloot
-      2026-04-10  2449aaccea37  Bug 2030458 - Dynamically determine the basis table size for perfecthash.py, r=xpcom-reviewers,chutten,mccr8
-      2026-04-10  300814e10bf6  Bug 2030458 - Dynamically determine the basis table size for perfecthash.py, r=xpcom-reviewers,chutten,mccr8
-      2026-04-06  7b5bfb143afa  Bug 2005005 - Update pushState URL rewriting limits to more accurately reflect the spec, r=smaug
-      2026-04-02  c277bde3e401  Bug 2023670 - Part 2: Clear transferred state in WriteIPCParams, r=ipc-reviewers,mccr8
-      2026-04-02  21b5c843375b  Bug 2023670 - Part 1: Only allow sending nsIInputStream for transferrable StruturedCloneHolders, r=ipc-reviewers,mccr8
-
 [ 7] Tom Schuster  —  67 patch(es)
     ----------------------------------------------------------------------
+      2026-10-05  996b2e2f7f29  Bug 2042058 - Test for is. r=emilio
       2026-09-25  188de83ff360  Bug 2074026 - Remove legacy_constructor for nsContentPolicy. r=emilio,layout-reviewers
       2026-09-25  93e47c6712e9  Bug 2074026 - Always handle CSP before MixedContentBlocker. r=emilio,layout-reviewers,nalexander
       2026-09-24  63e2eab9e72e  Bug 2074026 - Remove legacy_constructor for nsContentPolicy. r=emilio,layout-reviewers
@@ -706,9 +714,68 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-16  14d1a3af3904  Bug 2031064 - Use ClientInfo when creating EventSource. r=asuth,dom-worker-reviewers
       2026-04-09  c802e213bdc2  Bug 2027045 - Sanitizer: Prevent the creation of custom elements using is= (in the default config). r=emilio
       2026-04-09  136d2bc84d45  Bug 2029840 - nsTreeSanitizer remove more attributes. r=emilio
-      2026-04-08  3c4908151d3c  Bug 2027045 - Sanitizer: Prevent the creation of custom elements using is= (in the default config). r=emilio
 
-[ 8] Vincent Hilla  —  57 patch(es)
+[ 8] Jan-Niklas Jaeschke  —  57 patch(es)
+    ----------------------------------------------------------------------
+      2026-10-01  2335ef39b6a4  Bug 2053240 - Derive initial synced field values in the parent process r=nika
+      2026-10-01  a3f0f2c9388d  Bug 2045402 - Testcase. r=smaug
+      2026-10-01  482ee76bf031  Bug 2053240 - Derive initial synced field values in the parent process r=nika
+      2026-09-25  4c2be1029aab  Bug 1998353 - Store SIMD strides directly into strBuf in the HTML tokenizer. r=hsivonen
+      2026-09-23  7dfd273d8e21  Bug 2048943 - Part 3: Rename nsRange to mozilla::dom::Range. r=dom-core-reviewers,media-playback-reviewers,layout-reviewers,padenot,dholbert,smaug
+      2026-09-23  24f92fdedcb0  Bug 2048943 - Part 1: Rename nsRange.{h,cpp} to mozilla/dom/Range.{h,cpp}. r=dom-core-reviewers,media-playback-reviewers,layout-reviewers,padenot,avandolder,dholbert
+      2026-09-23  cefc29af1b67  Bug 2071777 - Make LoadHistoryEntry MOZ_CAN_RUN_SCRIPT. r=dom-core-reviewers,necko-reviewers,saschanaz,win-reviewers,dom-worker-reviewers,smaug,gstoll,valentin,asuth,geckoview-reviewers,tcampbell
+      2026-09-23  4b890d456026  Bug 2071777 - Make LoadHistoryEntry MOZ_CAN_RUN_SCRIPT. r=dom-core-reviewers,necko-reviewers,saschanaz,win-reviewers,dom-worker-reviewers,smaug,gstoll,valentin,asuth,geckoview-reviewers,tcampbell
+      2026-09-22  6deacd2c33c2  Bug 2071777 - Make LoadHistoryEntry MOZ_CAN_RUN_SCRIPT. r=dom-core-reviewers,necko-reviewers,saschanaz,win-reviewers,dom-worker-reviewers,smaug,gstoll,valentin,asuth
+      2026-09-22  61852e714016  Bug 2058417 - Testcase. r=edgar
+      2026-09-21  b1fbee40ce37  Bug 2058417 - Testcase. r=edgar
+      2026-09-21  fc441a90e612  Bug 2071783 - Remove unused HTML editor beforeinput and mutation observer telemetry probes. r=masayuki,webidl,smaug,TravisLong
+      2026-09-21  75ee7c59a0d3  Bug 2071783 - Remove unused HTML editor beforeinput and mutation observer telemetry probes. r=masayuki,webidl,smaug,TravisLong
+      2026-09-14  edadb6d10bb1  Bug 1988776, part 5 - Retain single-object node storage when unbinding. r=smaug
+      2026-09-14  78ad85001bdd  Bug 1988776, part 3 - Inline small observer attribute filters. r=smaug
+      2026-09-14  c3ff76070416  Bug 1988776, part 2 - Check the observer telemetry flag first. r=smaug
+      2026-09-14  7b7d92fcff24  Bug 1988776, part 4 - Preallocate WebIDL sequences from arrays. r=smaug,spidermonkey-reviewers,jandem
+      2026-09-14  e7bc47e55ddb  Bug 1988776, part 1 - Use main-thread atomization for observer filters. r=smaug
+      2026-09-14  ddb5a3c0706b  Bug 2070928 - Guard the HTML parser's LinkStyle lookup with the already-available tag atom, so only link and style elements perform the secondary element-name lookup and type checks. r=hsivonen
+      2026-09-04  bdcd41c5cd7e  Bug 2069242 - Ignore native anonymous content when finding and creating text directives. r=emilio
+      2026-08-25  16d354aa4f96  Bug 2066113 - Inherit QueryInterface from StaticRange in CrossShadowBoundaryRange. r=dom-core-reviewers,smaug
+      2026-08-21  7e7e9f9c1a4b  Bug 2059205 - Use the origin of the final URL for EventSource message events. r=dom-core-reviewers,smaug
+      2026-08-21  5f6d0d470030  Bug 2059196 - Set the ongoing navigation to the navigation ID also for javascript: URLs. r=farre
+      2026-08-21  079a730afd38  Bug 2058417 - Use the normalized format consistently in DataTransfer::SetDataAtInternal. r=edgar
+      2026-08-19  7d2a196be4c7  Bug 2061960 - Fall back to exact matching if a too-long range contains only one word. r=dom-core-reviewers,smaug
+      2026-07-30  c9637487c155  Bug 2059121 - Hold strong reference to Document in HidePopoverInternal. r=keithamus
+      2026-07-30  698326402c5b  Bug 2059400 - Consolidate ScheduleSelectedContentUpdate into a single function with a mode enum. r=emilio
+      2026-07-30  2cb8dfd1631c  Bug 2045023 - Synchronously update descendant selectedcontent elements when option.selected changes. r=emilio
+      2026-07-08  41e0157ad3e7  Bug 2052859 - Use mozilla::Array for EventDispatcher chain cache queue. r=smaug
+      2026-07-06  87b14300784b  Bug 2052570 - ChildIndexCache::ComputeIndexOf should return Nothing() for disconnected children. r=smaug
+      2026-06-23  f2278f6a6e2d  Bug 2049404 - Remove unused method from nsINode, add mainthread checks. r=smaug
+      2026-06-17  cb88281726cb  Bug 2048006 - Use subtree bloom filter to short-circuit AttrArray::SetAndSwapAttr scan. r=emilio
+      2026-06-16  01ee16866bb8  Bug 2047481 - Skip redundant scans and atomize the lookup name in setAttribute. r=smaug,emilio
+      2026-06-16  db451b1b24a9  Bug 2047481 - Skip redundant scans and atomize the lookup name in setAttribute. r=smaug,emilio
+      2026-06-15  7e33c0fa59a1  Bug 2045402 - Refactor CrossShadowBoundaryRange::DoSetRange. r=smaug
+      2026-06-14  847361924322  Bug 2046334 - Make ChildIndexCache invalidation position-aware. r=smaug
+      2026-06-12  7ec01c733529  Bug 2046334 - Make ChildIndexCache invalidation position-aware. r=smaug
+      2026-06-11  3db4104a5f08  Bug 2043329 - Text Fragments: Treat <br> as a block boundary for text directives. r=dom-core-reviewers,smaug
+      2026-06-11  46e074ac39e1  Bug 2043324 - Order native anonymous content correctly in ComparePoints. r=emilio
+      2026-06-11  c76424fb7b76  Bug 2043347 - Text Fragments: Follow spec when searching for end terms in case of range-based matching. r=dom-core-reviewers,smaug
+      2026-06-04  4382eb11a8d0  Bug 2044990 - Lazily initialize `Document::mFeaturePolicy`. r=sfarre
+      2026-06-04  f6d95fd6e8c5  Bug 2044987 - Lazily initialize `Document::mOnloadBlocker`. r=dom-core-reviewers,smaug
+      2026-06-03  64079ed7abad  Bug 1974784 - Customizable Select: Support options inside wrapper elements. r=emilio
+      2026-06-03  03b7ff43b309  Bug 2038588 - Customizable Select: Implement selectedcontent update machinery. r=emilio
+      2026-06-01  f8f965189623  Bug 1974784 - Customizable Select: Support options inside wrapper elements. r=emilio
+      2026-06-01  0d1eba0a108d  Bug 2038588 - Customizable Select: Implement selectedcontent update machinery. r=emilio
+      2026-05-28  852877283051  Bug 2042623 - Text fragments: Scroll to the first matched directive in multi-directive URLs. r=dom-core,smaug
+      2026-05-21  3c1894623720  Bug 2040653 - Clear `ChildIndexCache` when the node's child count is below the threshold. r=smaug
+      2026-05-14  4ad66d8a49ad  Bug 2039471 - Fix AssertedCast crash in HTMLSelectElement::GetCurrentOption. r=keithamus
+      2026-05-11  10781ef5fa27  Bug 1974276 - Customizable Select: Implement stub for the selectedcontent element. r=keithamus,emilio,dom-core,webidl,hsivonen
+      2026-05-05  2ab73e6e9589  Bug 2035083 - Fix CSS highlights not rendering on inserted text nodes. r=layout-reviewers,emilio
+      2026-05-04  d1b810192cf3  Bug 2036657 - Skip ChildIndexCache on non-main threads. r=dom-core,smaug
+      2026-05-01  b3bb828b78d3  Bug 2034699 - Cache child array for O(1) GetChildAt and ComputeIndexOf on large child lists. r=masayuki
+      2026-05-01  64693c0b565d  Bug 2034699 - Cache child array for O(1) GetChildAt and ComputeIndexOf on large child lists. r=masayuki
+      2026-04-27  56551a3877ee  Bug 2031820 - Set custom element namespace prefix after construction per spec. r=edgar,smaug
+      2026-04-10  0b2d03008725  Bug 2030660 - Remove `dom.shadowdom.selection_across_boundary.enabled` pref. r=masayuki,webidl
+      2026-04-09  6dc725ce279e  Bug 2022043 - Fire PermissionStatus.onchange when Windows OS geolocation permission changes. r=saschanaz,win-reviewers,handyman,emilio
+
+[ 9] Vincent Hilla  —  57 patch(es)
     ----------------------------------------------------------------------
       2026-09-23  097875cf577d  Bug 2074373 - Don't crash in nsSHistory::Reload if mIndex = -1. r=farre
       2026-09-23  27c23d91c881  Bug 2074373 - Don't crash in nsSHistory::Reload if mIndex = -1. r=farre
@@ -768,66 +835,10 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-13  414a0bef7b98  Bug 2020432 - Use nsIURI::GetQuery for location.search. r=dom-core,edgar
       2026-04-13  cced3864f351  Bug 2015010 - Reset dir=auto elements if a slot descendant is removed. r=dom-core,smaug
 
-[ 9] Jan-Niklas Jaeschke  —  55 patch(es)
+[10] Adam Vandolder  —  54 patch(es)
     ----------------------------------------------------------------------
-      2026-09-25  4c2be1029aab  Bug 1998353 - Store SIMD strides directly into strBuf in the HTML tokenizer. r=hsivonen
-      2026-09-23  7dfd273d8e21  Bug 2048943 - Part 3: Rename nsRange to mozilla::dom::Range. r=dom-core-reviewers,media-playback-reviewers,layout-reviewers,padenot,dholbert,smaug
-      2026-09-23  24f92fdedcb0  Bug 2048943 - Part 1: Rename nsRange.{h,cpp} to mozilla/dom/Range.{h,cpp}. r=dom-core-reviewers,media-playback-reviewers,layout-reviewers,padenot,avandolder,dholbert
-      2026-09-23  cefc29af1b67  Bug 2071777 - Make LoadHistoryEntry MOZ_CAN_RUN_SCRIPT. r=dom-core-reviewers,necko-reviewers,saschanaz,win-reviewers,dom-worker-reviewers,smaug,gstoll,valentin,asuth,geckoview-reviewers,tcampbell
-      2026-09-23  4b890d456026  Bug 2071777 - Make LoadHistoryEntry MOZ_CAN_RUN_SCRIPT. r=dom-core-reviewers,necko-reviewers,saschanaz,win-reviewers,dom-worker-reviewers,smaug,gstoll,valentin,asuth,geckoview-reviewers,tcampbell
-      2026-09-22  6deacd2c33c2  Bug 2071777 - Make LoadHistoryEntry MOZ_CAN_RUN_SCRIPT. r=dom-core-reviewers,necko-reviewers,saschanaz,win-reviewers,dom-worker-reviewers,smaug,gstoll,valentin,asuth
-      2026-09-22  61852e714016  Bug 2058417 - Testcase. r=edgar
-      2026-09-21  b1fbee40ce37  Bug 2058417 - Testcase. r=edgar
-      2026-09-21  fc441a90e612  Bug 2071783 - Remove unused HTML editor beforeinput and mutation observer telemetry probes. r=masayuki,webidl,smaug,TravisLong
-      2026-09-21  75ee7c59a0d3  Bug 2071783 - Remove unused HTML editor beforeinput and mutation observer telemetry probes. r=masayuki,webidl,smaug,TravisLong
-      2026-09-14  edadb6d10bb1  Bug 1988776, part 5 - Retain single-object node storage when unbinding. r=smaug
-      2026-09-14  78ad85001bdd  Bug 1988776, part 3 - Inline small observer attribute filters. r=smaug
-      2026-09-14  c3ff76070416  Bug 1988776, part 2 - Check the observer telemetry flag first. r=smaug
-      2026-09-14  7b7d92fcff24  Bug 1988776, part 4 - Preallocate WebIDL sequences from arrays. r=smaug,spidermonkey-reviewers,jandem
-      2026-09-14  e7bc47e55ddb  Bug 1988776, part 1 - Use main-thread atomization for observer filters. r=smaug
-      2026-09-14  ddb5a3c0706b  Bug 2070928 - Guard the HTML parser's LinkStyle lookup with the already-available tag atom, so only link and style elements perform the secondary element-name lookup and type checks. r=hsivonen
-      2026-09-04  bdcd41c5cd7e  Bug 2069242 - Ignore native anonymous content when finding and creating text directives. r=emilio
-      2026-08-25  16d354aa4f96  Bug 2066113 - Inherit QueryInterface from StaticRange in CrossShadowBoundaryRange. r=dom-core-reviewers,smaug
-      2026-08-21  7e7e9f9c1a4b  Bug 2059205 - Use the origin of the final URL for EventSource message events. r=dom-core-reviewers,smaug
-      2026-08-21  5f6d0d470030  Bug 2059196 - Set the ongoing navigation to the navigation ID also for javascript: URLs. r=farre
-      2026-08-21  079a730afd38  Bug 2058417 - Use the normalized format consistently in DataTransfer::SetDataAtInternal. r=edgar
-      2026-08-19  7d2a196be4c7  Bug 2061960 - Fall back to exact matching if a too-long range contains only one word. r=dom-core-reviewers,smaug
-      2026-07-30  c9637487c155  Bug 2059121 - Hold strong reference to Document in HidePopoverInternal. r=keithamus
-      2026-07-30  698326402c5b  Bug 2059400 - Consolidate ScheduleSelectedContentUpdate into a single function with a mode enum. r=emilio
-      2026-07-30  2cb8dfd1631c  Bug 2045023 - Synchronously update descendant selectedcontent elements when option.selected changes. r=emilio
-      2026-07-08  41e0157ad3e7  Bug 2052859 - Use mozilla::Array for EventDispatcher chain cache queue. r=smaug
-      2026-07-06  87b14300784b  Bug 2052570 - ChildIndexCache::ComputeIndexOf should return Nothing() for disconnected children. r=smaug
-      2026-06-23  f2278f6a6e2d  Bug 2049404 - Remove unused method from nsINode, add mainthread checks. r=smaug
-      2026-06-17  cb88281726cb  Bug 2048006 - Use subtree bloom filter to short-circuit AttrArray::SetAndSwapAttr scan. r=emilio
-      2026-06-16  01ee16866bb8  Bug 2047481 - Skip redundant scans and atomize the lookup name in setAttribute. r=smaug,emilio
-      2026-06-16  db451b1b24a9  Bug 2047481 - Skip redundant scans and atomize the lookup name in setAttribute. r=smaug,emilio
-      2026-06-15  7e33c0fa59a1  Bug 2045402 - Refactor CrossShadowBoundaryRange::DoSetRange. r=smaug
-      2026-06-14  847361924322  Bug 2046334 - Make ChildIndexCache invalidation position-aware. r=smaug
-      2026-06-12  7ec01c733529  Bug 2046334 - Make ChildIndexCache invalidation position-aware. r=smaug
-      2026-06-11  3db4104a5f08  Bug 2043329 - Text Fragments: Treat <br> as a block boundary for text directives. r=dom-core-reviewers,smaug
-      2026-06-11  46e074ac39e1  Bug 2043324 - Order native anonymous content correctly in ComparePoints. r=emilio
-      2026-06-11  c76424fb7b76  Bug 2043347 - Text Fragments: Follow spec when searching for end terms in case of range-based matching. r=dom-core-reviewers,smaug
-      2026-06-04  4382eb11a8d0  Bug 2044990 - Lazily initialize `Document::mFeaturePolicy`. r=sfarre
-      2026-06-04  f6d95fd6e8c5  Bug 2044987 - Lazily initialize `Document::mOnloadBlocker`. r=dom-core-reviewers,smaug
-      2026-06-03  64079ed7abad  Bug 1974784 - Customizable Select: Support options inside wrapper elements. r=emilio
-      2026-06-03  03b7ff43b309  Bug 2038588 - Customizable Select: Implement selectedcontent update machinery. r=emilio
-      2026-06-01  f8f965189623  Bug 1974784 - Customizable Select: Support options inside wrapper elements. r=emilio
-      2026-06-01  0d1eba0a108d  Bug 2038588 - Customizable Select: Implement selectedcontent update machinery. r=emilio
-      2026-05-28  852877283051  Bug 2042623 - Text fragments: Scroll to the first matched directive in multi-directive URLs. r=dom-core,smaug
-      2026-05-21  3c1894623720  Bug 2040653 - Clear `ChildIndexCache` when the node's child count is below the threshold. r=smaug
-      2026-05-14  4ad66d8a49ad  Bug 2039471 - Fix AssertedCast crash in HTMLSelectElement::GetCurrentOption. r=keithamus
-      2026-05-11  10781ef5fa27  Bug 1974276 - Customizable Select: Implement stub for the selectedcontent element. r=keithamus,emilio,dom-core,webidl,hsivonen
-      2026-05-05  2ab73e6e9589  Bug 2035083 - Fix CSS highlights not rendering on inserted text nodes. r=layout-reviewers,emilio
-      2026-05-04  d1b810192cf3  Bug 2036657 - Skip ChildIndexCache on non-main threads. r=dom-core,smaug
-      2026-05-01  b3bb828b78d3  Bug 2034699 - Cache child array for O(1) GetChildAt and ComputeIndexOf on large child lists. r=masayuki
-      2026-05-01  64693c0b565d  Bug 2034699 - Cache child array for O(1) GetChildAt and ComputeIndexOf on large child lists. r=masayuki
-      2026-04-27  56551a3877ee  Bug 2031820 - Set custom element namespace prefix after construction per spec. r=edgar,smaug
-      2026-04-10  0b2d03008725  Bug 2030660 - Remove `dom.shadowdom.selection_across_boundary.enabled` pref. r=masayuki,webidl
-      2026-04-09  6dc725ce279e  Bug 2022043 - Fire PermissionStatus.onchange when Windows OS geolocation permission changes. r=saschanaz,win-reviewers,handyman,emilio
-      2026-04-07  b59a9cf04615  Bug 2014551 - Added test case. r=smaug.
-
-[10] Adam Vandolder  —  52 patch(es)
-    ----------------------------------------------------------------------
+      2026-10-02  d0a922ca450b  Bug 2070879 - Wait for frame construction before considering document speculation rules. r=smaug,dom-core-reviewers
+      2026-10-01  9c6a2d132543  Bug 2074819 - Don't consider speculative loads on link changes when there are no rulesets. r=dom-core-reviewers,jjaschke
       2026-09-23  6543439deea5  Bug 2074478 - Don't prefetch for speculative candidate whose URI differs from the current document only by the fragment. r=dom-core-reviewers,jjaschke
       2026-09-18  49008f12963a  Bug 2071501 - Fire eager speculation rules on hover after a shorter timeout then moderate. r=dom-core-reviewers,jjaschke
       2026-09-18  1934478e3cae  Bug 2072050 - Fire prefetches for conservative eagerness speculation rules on pointerdown. r=dom-core-reviewers,smaug,keithamus
@@ -883,6 +894,8 @@ Known aliases (applied in HTML report, NOT below):
 
 [11] Andreas Farre  —  45 patch(es)
     ----------------------------------------------------------------------
+      2026-10-05  6dcb6d9d85fa  Bug 2075579 - #process-scroll-behavior should not restore scroll for "reload". r=sfarre
+      2026-09-30  f501ef1617e8  Bug 2075579 - #process-scroll-behavior should not restore scroll for "reload". r=sfarre
       2026-09-23  377a7e870f40  Bug 2069288 - Make tests using XSLT flip the pref on. r=dom-core-reviewers,layout-reviewers,dom-worker-reviewers,emilio,smaug,edenchuang
       2026-09-17  164755da5c04  Bug 2069288 - Make tests using XSLT flip the pref on. r=dom-core-reviewers,layout-reviewers,dom-worker-reviewers,emilio,smaug,edenchuang
       2026-09-16  6e0998406503  Bug 2069288 - Make tests using XSLT flip the pref on. r=dom-core-reviewers,layout-reviewers,dom-worker-reviewers,emilio,smaug,edenchuang
@@ -926,97 +939,11 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-30  ef410d3477a8  Bug 2011921 - Abort BFCache if browsing context has been replaced. r=dom-core,smaug
       2026-04-09  864117093d25  Bug 2030199 - Disallow rewriting to null URL. r=jjaschke
       2026-04-09  a875ecebb7f1  Bug 2027655 - Add support for considering webidl code generation for compiler caching. r=firefox-build-system-reviewers,glandium,sergesanspaille
-      2026-04-08  eaeaf6e58f91  Bug 2027655 - Add support for considering webidl code generation for compiler caching. r=firefox-build-system-reviewers,glandium,sergesanspaille
-      2026-04-02  477bab48edb9  Bug 2024044 - Don't run #navigate-event-intercept-commit-handler-steps from document.open r=dom-core,jjaschke
 
-[12] Randell Jesup  —  40 patch(es)
+[12] smayya  —  40 patch(es)
     ----------------------------------------------------------------------
-      2026-09-18  0f2b12dfb6a2  Bug 2065319 - Retry HTTP/2 and HTTP/3 requests after an unclean session shutdown r=necko-reviewers,valentin,kershaw,chumphreys
-      2026-09-11  dd81880e2985  Bug 2007783: Add support for WebTransport supportsReliableOnly attribute r=dom-core-reviewers,webidl,smaug
-      2026-09-11  903617b6e0fa  Bug 2007202: Implement WebTransport getStats() r=saschanaz,necko-reviewers,webidl,kershaw,smaug,valentin
-      2026-09-07  8ac382cce323  Bug 1985030 - Name the redirect target's scheme on the unknownProtocolFound error page. r=necko-reviewers,valentin
-      2026-09-07  6c361a9eeee0  Bug 2065319 - Retry HTTP/2 and HTTP/3 requests after an unclean session shutdown r=necko-reviewers,valentin,kershaw
-      2026-08-27  0bc40eb0438a  Bug 2056051: Don't cancel the ImageDecoder read request from cycle-collection unlink r=dom-core-reviewers,media-playback-reviewers,smaug,aosmond
-      2026-08-19  e8ff0efe95ed  Bug 2056051: Don't cancel the ImageDecoder read request from cycle-collection unlink r=dom-core-reviewers,media-playback-reviewers,smaug,aosmond
-      2026-07-29  6d58b4f42a86  Bug 2007174: Add createWritable() to WebTransportDatagramDuplexStream r=saschanaz,webidl
-      2026-07-29  6fe877216144  Bug 2007174: Implement WebTransportDatagramsWritable interface r=saschanaz,webidl,smaug
-      2026-07-29  cf9c3d3d1e4e  Bug 2007165: Hook up DOM WebTransport sendGroup support to necko & neqo implementation (early) r=necko-reviewers,webidl,kershaw,tschuster
-      2026-07-29  cbd4a4287a05  Bug 2007165: Implement WebTransportSendGroup interface r=saschanaz,necko-reviewers,webidl,smaug,valentin
-      2026-07-29  c24c6397a056  Bug 2007160: Add draining promise attribute to WebTranport r=necko-reviewers,webidl,saschanaz,kershaw
-      2026-07-29  9cddc6771da5  Bug 2007150: Add protocols option to WebTransportOptions - partial DOM-only impl r=webidl,saschanaz,necko-reviewers,kershaw
-      2026-07-29  22e400921107  Bug 2007206: Make WebTransportHash members required r=saschanaz,webidl,necko-reviewers,kershaw
-      2026-07-29  3d334d3b1723  Bug 2007174: Add createWritable() to WebTransportDatagramDuplexStream r=saschanaz,webidl
-      2026-07-29  4dc01fb8be98  Bug 2007174: Implement WebTransportDatagramsWritable interface r=saschanaz,webidl,smaug
-      2026-07-29  ae9004a4a2b2  Bug 2007165: Hook up DOM WebTransport sendGroup support to necko & neqo implementation (early) r=necko-reviewers,webidl,kershaw,tschuster
-      2026-07-29  8e9c58616a60  Bug 2007165: Implement WebTransportSendGroup interface r=saschanaz,necko-reviewers,webidl,smaug,valentin
-      2026-07-29  e336c3b62c71  Bug 2007160: Add draining promise attribute to WebTranport r=necko-reviewers,webidl,saschanaz,kershaw
-      2026-07-29  061cafdb376a  Bug 2007150: Add protocols option to WebTransportOptions - partial DOM-only impl r=webidl,saschanaz,necko-reviewers,kershaw
-      2026-07-29  a1a9e3128b22  Bug 2007206: Make WebTransportHash members required r=saschanaz,webidl,necko-reviewers,kershaw
-      2026-07-23  d0fc4b94fb7e  Bug 2007200: Implement exportKeyingMaterial() method r=saschanaz,webidl,tschuster,smaug
-      2026-07-23  f882f45e3103  Bug 2007200: Implement exportKeyingMaterial() method r=saschanaz,webidl,tschuster,smaug
-      2026-07-23  3c5fbcec3043  Bug 2007206: Make WebTransportHash members required r=saschanaz,webidl
-      2026-07-21  bccde97888d6  Bug 2045721: Add IPCClientInfo type checking r=necko-reviewers,ipc-reviewers,dom-worker-reviewers,nika,asuth,valentin
-      2026-07-03  bfcda2c53789  Bug 2022382: Fix cookie handling r=cookie-reviewers,baku,valentin
-      2026-06-26  4009a0409be3  Bug 1788109: Clean up cookie authorization r=necko-reviewers,cookie-reviewers,valentin
-      2026-06-24  8bdff4950be3  Bug 1788109: Clean up cookie authorization r=necko-reviewers,cookie-reviewers,valentin
-      2026-04-29  8fd7383628ad  Bug 1505389: Don't make navigation block XHR and call onerror/abort r=necko-reviewers,valentin,smaug
-      2026-04-29  b59d39283fb8  Bug 1505389: Don't make navigation block XHR and call onerror/abort r=necko-reviewers,valentin,smaug
-      2026-04-16  586809eed03a  Bug 2013178: Add tests for ValidateCookieJarSettings r=cookie-reviewers,timhuang
-      2026-04-16  80634ccb3d04  Bug 2013178: Add ValidatePrincipal calls r=cookie-reviewers,necko-reviewers,nika,timhuang,sunil
-      2026-04-16  418e13f62279  Bug 2013178: Validate CookieJarSettings r=cookie-reviewers,timhuang
-      2026-04-16  9b86859a0345  Bug 2013178: Add ValidatePrincipal calls r=cookie-reviewers,necko-reviewers,nika,timhuang,sunil
-      2026-04-16  cc32d4506347  Bug 2013178: Validate CookieJarSettings r=cookie-reviewers,timhuang
-      2026-04-16  3bc48a741749  Bug 2031124: Add a null-check in cookie notification r=cookie-reviewers,bvandersloot
-      2026-04-14  42be1ff328e7  Bug 2022382: Fix cookie handling r=cookie-reviewers,baku
-      2026-04-07  d6b4fc1141ac  Bug 2025043: Remove unused aFromHttp parameter from SetCookies r=cookie-reviewers,valentin
-      2026-04-07  11d8846f4b4d  Bug 2025420: Clean up MessageBodyService r=dom-core,smaug
-      2026-04-07  448fd754e750  Bug 2024242: clean up VSyncParent r=smaug
-
-[13] serge-sans-paille  —  40 patch(es)
-    ----------------------------------------------------------------------
-      2026-09-25  aec2c9f315e3  Bug 2075404 - Make nsRect, IntMarginTyped, IntRectTyped and RectTyped default constructor trivial r=layout-reviewers,emilio
-      2026-09-25  c3e43bd65e5f  Bug 2073482 - Lint all parser/ headers through clang-tidy r=hsivonen
-      2026-09-25  12ec1ec1e2be  Bug 2073144 - Lint all dom/html headers through clang-tidy r=dom-core-reviewers,smaug
-      2026-09-24  2e743fb437cd  Bug 2073144 - Lint all dom/html headers through clang-tidy r=dom-core-reviewers,smaug
-      2026-09-24  f75c0ff97fb8  Bug 2073080 - Lint all dom/base headers through clang-tidy r=jjaschke
-      2026-09-24  d280a68ca683  Bug 2073144 - Lint all dom/ipc  headers through clang-tidy r=dom-core-reviewers,smaug
-      2026-09-23  4a0dc587291b  Bug 2073144 - Lint all dom/events headers through clang-tidy r=dom-core-reviewers,smaug
-      2026-09-22  14ef8c098f19  Bug 2073144 - Lint all dom/bindings headers through clang-tidy r=dom-core-reviewers,smaug
-      2026-09-22  35a3165eba5a  Bug 2073144 - Lint all dom/{fs,html,quota,serializers} headers through clang-tidy r=dom-core-reviewers,smaug
-      2026-09-22  f5b7d712b0dd  Bug 2073144 - Lint all dom/events headers through clang-tidy r=dom-core-reviewers,smaug
-      2026-09-21  4d74a390ba6b  Bug 2073058 - Lint all docshell headers through clang-tidy r=emilio
-      2026-09-20  8abc0ada929d  Bug 2010520 - Use .inc extension for header file that are actually X macro files r=valentin,fluent-reviewers,ipc-reviewers,sandbox-reviewers,crashreporting-reviewers,TravisLong,gsvelto,bolsson,nika,bobowen
-      2026-09-08  548593160bab  Bug 2068585 - Get rid of collections.OrderedDict r=media-playback-reviewers,padenot
-      2026-09-01  e68e3aea285e  Bug 2065399 - Do not specify inequality operator when not needed r=ipc-reviewers,media-playback-reviewers,profiler-reviewers,win-reviewers,dom-storage-reviewers,gtk-reviewers,emilio,gstoll,nika,asuth,canova,padenot
-      2026-08-27  ae7a934674ca  Bug 2064119 - Use default operator equal implementation when possible r=necko-reviewers,ipc-reviewers,layout-reviewers,nika,dshin
-      2026-08-21  469d3a2a2495  Bug 2065029 - Use NOLINTNEXTLINE instead of NOLINT r=ahochheiden
-      2026-08-17  37b1e5467618  Bug 2063976 - Fix performance-unnecessary-copy-initialization warning in dom r=media-playback-reviewers,padenot
-      2026-08-14  39fba6dc6156  Bug 2053404 - Cleanup default state for static-analysis on Windows / docshell part r=emilio
-      2026-08-09  d80b662fa54f  Bug 2053404 - Cleanup default state for static-analysis on Windows / dom part r=media-playback-reviewers,webrtc-reviewers,dom-worker-reviewers,bwc,alwu,edenchuang
-      2026-08-08  7aac0605d3db  Bug 2053404 - Cleanup default state for static-analysis on Windows / parser part r=hsivonen
-      2026-07-07  400a2309dafe  Bug 2052893 - Turn on modernize-use-std-numbers clang tidy's pass r=emilio,necko-reviewers,media-playback-reviewers,layout-reviewers,alwu,kershaw,win-reviewers,gstoll
-      2026-06-18  5bd2bdf96845  Bug 2047510 - Activate clang-tidy's modernize-type-traits check r=sylvestre,media-playback-reviewers,webrtc-reviewers,firefox-style-system-reviewers,layout-reviewers,janerik,aosmond,TYLin,bwc,emilio
-      2026-06-17  5ca354175b07  Bug 2041298 - Comply with clang-tidy's modernize-use-nullptr check for dom/ r=media-playback-reviewers,webrtc-reviewers,pehrsons,aosmond,firefox-animation-reviewers,mccr8,hiro
-      2026-06-15  d31d6c18b11e  Bug 2031348 - Use f-string instead of percent format in python/mach/mach/logging.py
-      2026-06-10  53e5242f30d0  Bug 2041298 - Comply with clang-tidy's modernize-use-nullptr check for parser/ r=hsivonen
-      2026-05-25  03b0f2574ced  Bug 2040876 - Activate modernize-use-bool-literals clang-tidy check r=emilio,webrtc-reviewers,cookie-reviewers,places-reviewers,layout-reviewers,mak,bwc
-      2026-05-20  c7033d0d67d6  Bug 2030936 - Activate clang-tidy's performance-for-range-copy check r=sylvestre,tschuster,media-playback-reviewers,webrtc-reviewers,firefox-style-system-reviewers,layout-reviewers,janerik,padenot,bwc,emilio,alwu
-      2026-05-14  a55c1eb7b8de  Bug 2039238 - Enforce usage of MOZ_EMPTY_BASES r=tsmith
-      2026-05-13  5efc6c9f8aba  Bug 2039238 - Enforce usage of MOZ_EMPTY_BASES r=tsmith
-      2026-05-10  ac25ab3f88e0  Bug 2037920 - Use explicit namespace to prevent ambiguous references during unified builds r=firefox-style-system-reviewers,firefox-svg-reviewers,layout-reviewers,longsonr,emilio
-      2026-05-09  7317446ee3b6  Bug 2037460 - Consolidate all definitions of kRadToDegree ins a single place r=smaug,firefox-svg-reviewers
-      2026-05-08  437d2a1d023a  Bug 2037460 - Consolidate all definitions of kRadToDegree ins a single place r=smaug,firefox-svg-reviewers
-      2026-04-30  8c77b8ef8d25  Bug 2034846 - Make dom/ headers compatible with current static analysis r=dom-core,smaug
-      2026-04-29  f61ddf531da5  Bug 2034832 - Make parser/ headers compatible with current static analysis r=hsivonen
-      2026-04-28  96dbf5790672  Bug 2034832 - Make docshell/ headers compatible with current static analysis r=emilio
-      2026-04-09  d58c18b09a92  Bug 2030235 - Decouple ServoStyleConsts from nsGkAtoms.h r=emilio,necko-reviewers,geckoview-reviewers,firefox-style-system-reviewers,firefox-svg-reviewers,layout-reviewers,kershaw,m_kato
-      2026-04-09  b97e69b59010  Bug 2030235 - Decouple ServoStyleConsts from nsGkAtoms.h r=emilio,necko-reviewers,geckoview-reviewers,firefox-style-system-reviewers,firefox-svg-reviewers,layout-reviewers,kershaw,m_kato
-      2026-04-04  eccc9787f47b  Bug 2029001 - Remove or guard inclusion of fmt/format.h when possible r=emilio,layout-reviewers
-      2026-04-02  43f9567997ac  Bug 2028388 - Fix miscellaneous loop range conversion in DEBUG mode r=emilio,layout-reviewers
-      2026-04-01  f52700103506  Bug 2027741 - Avoid calling InitGraphicsDeviceData on a moved object r=dom-core,mccr8
-
-[14] smayya  —  38 patch(es)
-    ----------------------------------------------------------------------
+      2026-10-05  3ea5a61f6b67  Bug 2070841 - Skip cache validation when serving a navigation activated from a speculation-rules prefetch record. r=necko-reviewers,valentin
+      2026-10-05  9f025da9d59e  Bug 2070841 - Discard a speculation-rules prefetch record whose final response is not an ok status. r=necko-reviewers,valentin
       2026-08-05  b2c421ce28f2  Bug 2056993 - Give speculation-rules prefetch channels a BrowsingContext-aware LoadInfo so DevTools can attribute them. r=valentin,bomsy
       2026-08-04  0d8b5ee3d4b9  Bug 2053432 - Surface OS-level Local Network Protection failures to GeckoView's onLoadError. r=dom-core-reviewers,smaug
       2026-07-30  2f0546f9f8d8  Bug 2041381 - [speculation-rules] Part 6: Integrate DOM speculation rules parser with PrefetchRecord Actors and SpeculationRules manager. r=dom-core-reviewers,necko-reviewers,avandolder,kershaw
@@ -1056,8 +983,90 @@ Known aliases (applied in HTML report, NOT below):
       2026-05-02  2675a4020023  Bug 833462 - suppress NS_BINDING_ABORTED errors for SSE. r=necko-reviewers,valentin
       2026-04-24  0d35f4d1fd63  Bug 833462 - suppress NS_BINDING_ABORTED errors for SSE. r=necko-reviewers,valentin
 
-[15] Simon Farre  —  31 patch(es)
+[13] serge-sans-paille  —  38 patch(es)
     ----------------------------------------------------------------------
+      2026-09-30  9b9c3b939af1  Bug 2034831 - Fix leftover header static analysis incompatibilities r=ipc-reviewers,firefox-svg-reviewers,emilio,profiler-reviewers,canova
+      2026-09-25  aec2c9f315e3  Bug 2075404 - Make nsRect, IntMarginTyped, IntRectTyped and RectTyped default constructor trivial r=layout-reviewers,emilio
+      2026-09-25  c3e43bd65e5f  Bug 2073482 - Lint all parser/ headers through clang-tidy r=hsivonen
+      2026-09-25  12ec1ec1e2be  Bug 2073144 - Lint all dom/html headers through clang-tidy r=dom-core-reviewers,smaug
+      2026-09-24  2e743fb437cd  Bug 2073144 - Lint all dom/html headers through clang-tidy r=dom-core-reviewers,smaug
+      2026-09-24  f75c0ff97fb8  Bug 2073080 - Lint all dom/base headers through clang-tidy r=jjaschke
+      2026-09-24  d280a68ca683  Bug 2073144 - Lint all dom/ipc  headers through clang-tidy r=dom-core-reviewers,smaug
+      2026-09-23  4a0dc587291b  Bug 2073144 - Lint all dom/events headers through clang-tidy r=dom-core-reviewers,smaug
+      2026-09-22  14ef8c098f19  Bug 2073144 - Lint all dom/bindings headers through clang-tidy r=dom-core-reviewers,smaug
+      2026-09-22  35a3165eba5a  Bug 2073144 - Lint all dom/{fs,html,quota,serializers} headers through clang-tidy r=dom-core-reviewers,smaug
+      2026-09-22  f5b7d712b0dd  Bug 2073144 - Lint all dom/events headers through clang-tidy r=dom-core-reviewers,smaug
+      2026-09-21  4d74a390ba6b  Bug 2073058 - Lint all docshell headers through clang-tidy r=emilio
+      2026-09-20  8abc0ada929d  Bug 2010520 - Use .inc extension for header file that are actually X macro files r=valentin,fluent-reviewers,ipc-reviewers,sandbox-reviewers,crashreporting-reviewers,TravisLong,gsvelto,bolsson,nika,bobowen
+      2026-09-08  548593160bab  Bug 2068585 - Get rid of collections.OrderedDict r=media-playback-reviewers,padenot
+      2026-09-01  e68e3aea285e  Bug 2065399 - Do not specify inequality operator when not needed r=ipc-reviewers,media-playback-reviewers,profiler-reviewers,win-reviewers,dom-storage-reviewers,gtk-reviewers,emilio,gstoll,nika,asuth,canova,padenot
+      2026-08-27  ae7a934674ca  Bug 2064119 - Use default operator equal implementation when possible r=necko-reviewers,ipc-reviewers,layout-reviewers,nika,dshin
+      2026-08-21  469d3a2a2495  Bug 2065029 - Use NOLINTNEXTLINE instead of NOLINT r=ahochheiden
+      2026-08-17  37b1e5467618  Bug 2063976 - Fix performance-unnecessary-copy-initialization warning in dom r=media-playback-reviewers,padenot
+      2026-08-14  39fba6dc6156  Bug 2053404 - Cleanup default state for static-analysis on Windows / docshell part r=emilio
+      2026-08-09  d80b662fa54f  Bug 2053404 - Cleanup default state for static-analysis on Windows / dom part r=media-playback-reviewers,webrtc-reviewers,dom-worker-reviewers,bwc,alwu,edenchuang
+      2026-08-08  7aac0605d3db  Bug 2053404 - Cleanup default state for static-analysis on Windows / parser part r=hsivonen
+      2026-07-07  400a2309dafe  Bug 2052893 - Turn on modernize-use-std-numbers clang tidy's pass r=emilio,necko-reviewers,media-playback-reviewers,layout-reviewers,alwu,kershaw,win-reviewers,gstoll
+      2026-06-18  5bd2bdf96845  Bug 2047510 - Activate clang-tidy's modernize-type-traits check r=sylvestre,media-playback-reviewers,webrtc-reviewers,firefox-style-system-reviewers,layout-reviewers,janerik,aosmond,TYLin,bwc,emilio
+      2026-06-17  5ca354175b07  Bug 2041298 - Comply with clang-tidy's modernize-use-nullptr check for dom/ r=media-playback-reviewers,webrtc-reviewers,pehrsons,aosmond,firefox-animation-reviewers,mccr8,hiro
+      2026-06-15  d31d6c18b11e  Bug 2031348 - Use f-string instead of percent format in python/mach/mach/logging.py
+      2026-06-10  53e5242f30d0  Bug 2041298 - Comply with clang-tidy's modernize-use-nullptr check for parser/ r=hsivonen
+      2026-05-25  03b0f2574ced  Bug 2040876 - Activate modernize-use-bool-literals clang-tidy check r=emilio,webrtc-reviewers,cookie-reviewers,places-reviewers,layout-reviewers,mak,bwc
+      2026-05-20  c7033d0d67d6  Bug 2030936 - Activate clang-tidy's performance-for-range-copy check r=sylvestre,tschuster,media-playback-reviewers,webrtc-reviewers,firefox-style-system-reviewers,layout-reviewers,janerik,padenot,bwc,emilio,alwu
+      2026-05-14  a55c1eb7b8de  Bug 2039238 - Enforce usage of MOZ_EMPTY_BASES r=tsmith
+      2026-05-13  5efc6c9f8aba  Bug 2039238 - Enforce usage of MOZ_EMPTY_BASES r=tsmith
+      2026-05-10  ac25ab3f88e0  Bug 2037920 - Use explicit namespace to prevent ambiguous references during unified builds r=firefox-style-system-reviewers,firefox-svg-reviewers,layout-reviewers,longsonr,emilio
+      2026-05-09  7317446ee3b6  Bug 2037460 - Consolidate all definitions of kRadToDegree ins a single place r=smaug,firefox-svg-reviewers
+      2026-05-08  437d2a1d023a  Bug 2037460 - Consolidate all definitions of kRadToDegree ins a single place r=smaug,firefox-svg-reviewers
+      2026-04-30  8c77b8ef8d25  Bug 2034846 - Make dom/ headers compatible with current static analysis r=dom-core,smaug
+      2026-04-29  f61ddf531da5  Bug 2034832 - Make parser/ headers compatible with current static analysis r=hsivonen
+      2026-04-28  96dbf5790672  Bug 2034832 - Make docshell/ headers compatible with current static analysis r=emilio
+      2026-04-09  d58c18b09a92  Bug 2030235 - Decouple ServoStyleConsts from nsGkAtoms.h r=emilio,necko-reviewers,geckoview-reviewers,firefox-style-system-reviewers,firefox-svg-reviewers,layout-reviewers,kershaw,m_kato
+      2026-04-09  b97e69b59010  Bug 2030235 - Decouple ServoStyleConsts from nsGkAtoms.h r=emilio,necko-reviewers,geckoview-reviewers,firefox-style-system-reviewers,firefox-svg-reviewers,layout-reviewers,kershaw,m_kato
+
+[14] Randell Jesup  —  37 patch(es)
+    ----------------------------------------------------------------------
+      2026-09-18  0f2b12dfb6a2  Bug 2065319 - Retry HTTP/2 and HTTP/3 requests after an unclean session shutdown r=necko-reviewers,valentin,kershaw,chumphreys
+      2026-09-11  dd81880e2985  Bug 2007783: Add support for WebTransport supportsReliableOnly attribute r=dom-core-reviewers,webidl,smaug
+      2026-09-11  903617b6e0fa  Bug 2007202: Implement WebTransport getStats() r=saschanaz,necko-reviewers,webidl,kershaw,smaug,valentin
+      2026-09-07  8ac382cce323  Bug 1985030 - Name the redirect target's scheme on the unknownProtocolFound error page. r=necko-reviewers,valentin
+      2026-09-07  6c361a9eeee0  Bug 2065319 - Retry HTTP/2 and HTTP/3 requests after an unclean session shutdown r=necko-reviewers,valentin,kershaw
+      2026-08-27  0bc40eb0438a  Bug 2056051: Don't cancel the ImageDecoder read request from cycle-collection unlink r=dom-core-reviewers,media-playback-reviewers,smaug,aosmond
+      2026-08-19  e8ff0efe95ed  Bug 2056051: Don't cancel the ImageDecoder read request from cycle-collection unlink r=dom-core-reviewers,media-playback-reviewers,smaug,aosmond
+      2026-07-29  6d58b4f42a86  Bug 2007174: Add createWritable() to WebTransportDatagramDuplexStream r=saschanaz,webidl
+      2026-07-29  6fe877216144  Bug 2007174: Implement WebTransportDatagramsWritable interface r=saschanaz,webidl,smaug
+      2026-07-29  cf9c3d3d1e4e  Bug 2007165: Hook up DOM WebTransport sendGroup support to necko & neqo implementation (early) r=necko-reviewers,webidl,kershaw,tschuster
+      2026-07-29  cbd4a4287a05  Bug 2007165: Implement WebTransportSendGroup interface r=saschanaz,necko-reviewers,webidl,smaug,valentin
+      2026-07-29  c24c6397a056  Bug 2007160: Add draining promise attribute to WebTranport r=necko-reviewers,webidl,saschanaz,kershaw
+      2026-07-29  9cddc6771da5  Bug 2007150: Add protocols option to WebTransportOptions - partial DOM-only impl r=webidl,saschanaz,necko-reviewers,kershaw
+      2026-07-29  22e400921107  Bug 2007206: Make WebTransportHash members required r=saschanaz,webidl,necko-reviewers,kershaw
+      2026-07-29  3d334d3b1723  Bug 2007174: Add createWritable() to WebTransportDatagramDuplexStream r=saschanaz,webidl
+      2026-07-29  4dc01fb8be98  Bug 2007174: Implement WebTransportDatagramsWritable interface r=saschanaz,webidl,smaug
+      2026-07-29  ae9004a4a2b2  Bug 2007165: Hook up DOM WebTransport sendGroup support to necko & neqo implementation (early) r=necko-reviewers,webidl,kershaw,tschuster
+      2026-07-29  8e9c58616a60  Bug 2007165: Implement WebTransportSendGroup interface r=saschanaz,necko-reviewers,webidl,smaug,valentin
+      2026-07-29  e336c3b62c71  Bug 2007160: Add draining promise attribute to WebTranport r=necko-reviewers,webidl,saschanaz,kershaw
+      2026-07-29  061cafdb376a  Bug 2007150: Add protocols option to WebTransportOptions - partial DOM-only impl r=webidl,saschanaz,necko-reviewers,kershaw
+      2026-07-29  a1a9e3128b22  Bug 2007206: Make WebTransportHash members required r=saschanaz,webidl,necko-reviewers,kershaw
+      2026-07-23  d0fc4b94fb7e  Bug 2007200: Implement exportKeyingMaterial() method r=saschanaz,webidl,tschuster,smaug
+      2026-07-23  f882f45e3103  Bug 2007200: Implement exportKeyingMaterial() method r=saschanaz,webidl,tschuster,smaug
+      2026-07-23  3c5fbcec3043  Bug 2007206: Make WebTransportHash members required r=saschanaz,webidl
+      2026-07-21  bccde97888d6  Bug 2045721: Add IPCClientInfo type checking r=necko-reviewers,ipc-reviewers,dom-worker-reviewers,nika,asuth,valentin
+      2026-07-03  bfcda2c53789  Bug 2022382: Fix cookie handling r=cookie-reviewers,baku,valentin
+      2026-06-26  4009a0409be3  Bug 1788109: Clean up cookie authorization r=necko-reviewers,cookie-reviewers,valentin
+      2026-06-24  8bdff4950be3  Bug 1788109: Clean up cookie authorization r=necko-reviewers,cookie-reviewers,valentin
+      2026-04-29  8fd7383628ad  Bug 1505389: Don't make navigation block XHR and call onerror/abort r=necko-reviewers,valentin,smaug
+      2026-04-29  b59d39283fb8  Bug 1505389: Don't make navigation block XHR and call onerror/abort r=necko-reviewers,valentin,smaug
+      2026-04-16  586809eed03a  Bug 2013178: Add tests for ValidateCookieJarSettings r=cookie-reviewers,timhuang
+      2026-04-16  80634ccb3d04  Bug 2013178: Add ValidatePrincipal calls r=cookie-reviewers,necko-reviewers,nika,timhuang,sunil
+      2026-04-16  418e13f62279  Bug 2013178: Validate CookieJarSettings r=cookie-reviewers,timhuang
+      2026-04-16  9b86859a0345  Bug 2013178: Add ValidatePrincipal calls r=cookie-reviewers,necko-reviewers,nika,timhuang,sunil
+      2026-04-16  cc32d4506347  Bug 2013178: Validate CookieJarSettings r=cookie-reviewers,timhuang
+      2026-04-16  3bc48a741749  Bug 2031124: Add a null-check in cookie notification r=cookie-reviewers,bvandersloot
+      2026-04-14  42be1ff328e7  Bug 2022382: Fix cookie handling r=cookie-reviewers,baku
+
+[15] Simon Farre  —  32 patch(es)
+    ----------------------------------------------------------------------
+      2026-10-04  e1b83791c015  Bug 2076816 - Make BrowsingContext::HistoryID synced field CanSet::ParentOnly r=dom-core-reviewers,smaug
       2026-08-31  af04d340f5a8  Bug 2063284 - Prevent doc element created notification for documents loaded as data r=dom-core-reviewers,smaug
       2026-08-24  d9f285988cae  Bug 2040037 - Guard against null current entry in NavigationTraverse r=farre,smaug
       2026-08-12  b1e642e86e9f  Bug 2059180 - Perform cleanup for Reporting API properly r=dom-core-reviewers,dom-worker-reviewers,smaug,edenchuang
@@ -1158,6 +1167,10 @@ Known aliases (applied in HTML report, NOT below):
 
 [18] Olli Pettay  —  29 patch(es)
     ----------------------------------------------------------------------
+      2026-10-02  fa1277c79cf8  Bug 1524251 - [Pointer Event] pointermove will only be detected for one finger with multiple touches when preventDefault is used, r=edgar
+      2026-10-01  5652fa431b54  Bug 2075738 - Remove the unused content notification code from nsContentSink. r=hsivonen,emilio
+      2026-10-01  5b8348b013c7  Bug 2075738 - Remove the unused aDoFlush argument from ContentList. r=hsivonen,emilio
+      2026-10-01  af6c53b867d9  Bug 2075738 - Remove FlushType::Content and FlushType::ContentAndNotify. r=hsivonen,emilio
       2026-09-25  3928a900e31a  Bug 2074193 - HTMLOptionsCollection could use similar setup to SetAttr when it comes to script blockers, r=farre
       2026-09-24  e2a53ef342d1  Bug 2074193 - HTMLOptionsCollection could use similar setup to SetAttr when it comes to script blockers, r=farre
       2026-09-17  caed6fbebca0  Bug 2072433, don't leak elements with animated classes, r=emilio
@@ -1183,10 +1196,6 @@ Known aliases (applied in HTML report, NOT below):
       2026-05-18  6f932631ebde  Bug 2039701 - Consider to cache an ElementQueue instance, r=edgar
       2026-05-15  b43a29ace9d4  Bug 2039696 - avoid calling nsNameSpaceManager::GetInstance()->GetNameSpaceURI in Element::SetAttrAndNotify when namespace is the default one, and avoid calling IsInObservedAttributeList second time, r=emilio
       2026-05-14  62e0fbd49af9  Bug 2039632 - optimize out one extra Addref/Release from event dispatch, r=emilio
-      2026-04-08  58320a7b8069  Bug 2024655, tweak reflector updating, r=jonco,sfink
-      2026-04-08  a0970ec83722  Bug 2029690 - handle fullscreen request on correct docs, r=edgar
-      2026-04-07  1331fe5d74a4  Bug 2029450 - Always unblock onload in nsFrameLoaderOwner, r=mccr8
-      2026-04-02  e6a80f9d051e  Bug 2028524, avoid leaking a document, r=farre
 
 [19] Hiroyuki Ikezoe  —  25 patch(es)
     ----------------------------------------------------------------------
@@ -1270,7 +1279,30 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-27  64f26d1d05a5  Bug 1350457. Add DOM ScrollTimeline interface. r=webidl,layout-scroll-driven-animation-reviewers,emilio,smaug,boris
       2026-04-14  017557984b94  Bug 2030928. Rename mozilla::ScrollAxis to mozilla::AxisScrollParams. r=credential-management-reviewers,layout-reviewers,emilio,dimi
 
-[22] Greg Stoll  —  20 patch(es)
+[22] Bas Schouten  —  20 patch(es)
+    ----------------------------------------------------------------------
+      2026-09-29  07b051c5a7fd  Bug 2064072 - Report pageload metrics for documents replaced before their load event fires. r=denispal
+      2026-09-29  019c104d5230  Bug 2064064 - Submit pageload telemetry when the document is hidden rather than when it is destroyed. r=denispal
+      2026-09-29  bb5dd6a42af8  Bug 2064052 - Report pageload events for background loads, flagged as such, instead of dropping them. r=denispal
+      2026-09-23  e893294272b2  Bug 2068341: Ensure container timing records are always dropped when their root element might go away. r=smaug
+      2026-08-19  b777c7aaae9f  Bug 2063750: Add a signal to the pageload domain event whether a client is active. r=acreskey
+      2026-08-13  ee7499308379  Bug 1940240 - Part 3: Implement the Container Timing API behind a pref. r=smaug,webidl,saschanaz
+      2026-08-13  51568e3f5415  Bug 1940240 - Part 3: Implement the Container Timing API behind a pref. r=smaug,webidl,saschanaz
+      2026-08-03  8ed794028e9a  Bug 2058980 - Part 2: Add a codepath that works on GeckoView to determine first visit status. r=denispal
+      2026-07-23  0fe805af7a19  Bug 2056070: Add a field to the eTLD+1 pageload event to distinguish the first daily visit. r=denispal
+      2026-06-07  a7628a666be5  Bug 2042784: Add interaction data to pageload event. r=denispal,canova
+      2026-05-28  f005018d64ec  Bug 2042702: Move pageload event to page destruction. r=denispal
+      2026-05-25  0688a6c6699a  Bug 2040243: Remove legacy mirrors for a large set of probes primarily used for performance monitoring. r=chutten,perftest-reviewers,geckoview-reviewers,home-newtab-reviewers,layout-reviewers,jwatt,sparky,mconley,ohall
+      2026-05-23  07c887df831a  Bug 2040243: Remove legacy mirrors for a large set of probes primarily used for performance monitoring. r=chutten,perftest-reviewers,geckoview-reviewers,home-newtab-reviewers,layout-reviewers,jwatt,sparky,mconley,ohall
+      2026-05-21  67bb8ceb9e43  Bug 2040243: Remove legacy mirrors for a large set of probes primarily used for performance monitoring. r=chutten,perftest-reviewers,geckoview-reviewers,home-newtab-reviewers,layout-reviewers,jwatt,sparky,mconley,ohall
+      2026-05-20  b7c2b5722f4c  Bug 2040243: Remove legacy mirrors for a large set of probes primarily used for performance monitoring. r=chutten,perftest-reviewers,geckoview-reviewers,home-newtab-reviewers,layout-reviewers,jwatt,sparky,mconley,ohall
+      2026-05-01  802d95988ead  Bug 2035873: Ensure significantly more GC/CC probes report process-specific data. r=smaug,TravisLong
+      2026-04-30  3703d9cebb7b  Bug 2033454: Move critical parts of PerfStats into mozglue and make lockless. r=acreskey
+      2026-04-29  fc695cc03532  Bug 2034654: Add profiler marker for pages not going into the bfcache. r=smaug
+      2026-04-29  648b1c307563  Bug 2034654: Add profiler marker for pages not going into the bfcache. r=smaug
+      2026-04-24  98bda4db3bdb  Bug 2034654: Add profiler marker for pages not going into the bfcache. r=smaug
+
+[23] Greg Stoll  —  20 patch(es)
     ----------------------------------------------------------------------
       2026-08-21  d6c462e584c3  Bug 2036153 part 1 - add bluetooth service class ID information to WebSerial interfaces r=cmartin,webidl,smaug
       2026-07-24  1b417fd15b4f  Bug 2040379 part 1 - add WebSerial module to errors and a new NS_ERROR_DOM_SERIAL_PARITY_ERROR r=cmartin
@@ -1293,7 +1325,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-09  e7d44898a19f  Bug 2010930 part 3 - WebSerial IPC code r=nika
       2026-04-09  dc5154c06773  Bug 2010930 part 1 - add WebSerial interfaces to .webidl files r=cmartin,webidl,smaug,emilio
 
-[23] Paul Adenot  —  20 patch(es)
+[24] Paul Adenot  —  20 patch(es)
     ----------------------------------------------------------------------
       2026-09-18  ccfc862609a4  Bug 1456885 - Rename SpeechGrammarList.addFromURI to SpeechGrammarList.addFromUri to match Chrome r=webidl,media-webspeech-reviewers,pehrsons,smaug
       2026-09-18  2c724d0b3d0c  Bug 1456885 - Rename SpeechGrammarList.addFromURI to SpeechGrammarList.addFromUri to match Chrome r=webidl,media-webspeech-reviewers,pehrsons,smaug
@@ -1316,7 +1348,29 @@ Known aliases (applied in HTML report, NOT below):
       2026-08-18  8cdea25f49e5  Bug 2051970 - Let consumers decide the HWInference process lifetime. r=ipc-reviewers,ai-platform-reviewers,valentinp,nika
       2026-08-18  3c981492fc46  Bug 2051970 - Introduce the HWInference utility process. r=gerard-majax,ipc-reviewers,fluent-reviewers,nika,ai-platform-reviewers,flod,sandbox-reviewers,gregtatum
 
-[24] Yoshi Cheng-Hao Huang  —  20 patch(es)
+[25] Daniel Holbert  —  19 patch(es)
+    ----------------------------------------------------------------------
+      2026-10-02  b6c152c0f6f6  Bug 2052914 part 3: Density-correct image width/height attributes' return values, regardless of whether image is rendered. r=kye
+      2026-10-02  c3b0688af50a  Bug 2052914 part 2: Skip density correction for images' fallback intrinsic height (and update documentation). r=kye
+      2026-10-02  dbd8236b3157  Bug 2052914 part 1: Simplify our code that tracks whether an image's height came from fallback size. r=kye
+      2026-06-05  cb1c37d98ea1  Bug 2044510: Pass already_AddRefed types by-value instead of by rvalue reference, in parser/. r=dom-core-reviewers,smaug
+      2026-06-05  648f3a95c5a0  Bug 2044510: Pass already_AddRefed types by-value instead of by rvalue reference, in dom/html. r=dom-core-reviewers,smaug
+      2026-06-05  3a33cc1c12ef  Bug 2044510: Pass already_AddRefed types by-value instead of by rvalue reference, in dom/{ipc,mathml,media,notification,streams}. r=dom-core-reviewers,media-playback-reviewers,webrtc-reviewers,smaug,pehrsons,aosmond
+      2026-06-05  b9c26953f1e2  Bug 2044510: Pass already_AddRefed types by-value instead of by rvalue reference, in dom/base/. r=dom-core-reviewers,smaug
+      2026-06-05  654bbc1057ba  Bug 2044510: Pass already_AddRefed types by-value instead of by rvalue reference, in dom/{bindings,filesystem,fs}. r=dom-core-reviewers,smaug
+      2026-06-05  fbc22c18f3d0  Bug 2044510: Pass already_AddRefed types by-value instead of by rvalue reference, in docshell/. r=dom-core-reviewers,smaug
+      2026-05-30  76469db34c8c  Bug 2043771: Minor cleanups to management of uniquely-owned resources in nsGlobalWindowInner. r=dom-core,jjaschke
+      2026-05-30  73a31091227b  Bug 2043771: Use MakeRefPtr to replace "new T()" for refcounted types in nsGlobalWindowInner. r=dom-core,smaug
+      2026-05-28  fb91da1c5209  Bug 2042995: Use MakeUnique to do allocation for some UniquePtr-typed variables in docshell/. r=dom-core,farre
+      2026-05-28  3942e62d83eb  Bug 2042995: Use MakeRefPtr to do allocation for various RefPtr variables in docshell/. r=dom-core,smaug
+      2026-05-11  edd61684e616  Bug 2037700: Use MakeRefPtr and MakeAndAddRef instead of 'new' to allocate gfxDrawable instances. r=media-playback-reviewers,layout-reviewers,emilio,padenot
+      2026-05-07  a88c0883b9fe  Bug 2037761: Change RegisterStrongMemoryReporter to take already_AddRefed instead of a raw pointer, and update callsites. r=dom-core,smaug
+      2026-05-07  abac30ec45b5  Bug 2037752: Use StaticAutoPtr/StaticRefPtr to manage static data in nsTreeSanitizer. r=dom-core,smaug
+      2026-05-07  2e187ddbc803  Bug 2037761: Change RegisterStrongMemoryReporter to take already_AddRefed instead of a raw pointer, and update callsites. r=dom-core,smaug
+      2026-05-07  10725540f638  Bug 2037754: Use 'MakeAndAddRef' instead of 'new' when allocating runnable for nsContentUtils::AddScriptRunner. r=dom-core,smaug
+      2026-05-04  965e74ab68d4  Bug 2036250: Make HTMLCanvasElement smarter about avoiding redundant mozPrintCallback invocations. r=smaug
+
+[26] Yoshi Cheng-Hao Huang  —  19 patch(es)
     ----------------------------------------------------------------------
       2026-09-17  56f7c2706378  Bug 2014283 - Part 5: A mochitest-plain test to call import() in a relazifiable function script. r=jonco,arai
       2026-09-07  28e5b605facd  Bug 2067200 - Return an empty WebAssembly binary module if scripting is disabled. r=spidermonkey-reviewers,frontend-codestyle-reviewers,dminor
@@ -1337,31 +1391,8 @@ Known aliases (applied in HTML report, NOT below):
       2026-07-19  dcbef1e53f13  Bug 2054848 - Part 5: Stop mozJSModuleLoader.h from including ModuleLoaderBase.h. r=arai
       2026-07-19  f2f9097132b4  Bug 2054848 - Part 3: Stop dom/script and dom/workers ScriptLoader.h from including ModuleLoaderBase.h. r=dom-worker-reviewers,dom-core-reviewers,jjaschke,edenchuang
       2026-07-19  c46250149aaa  Bug 2054848 - Part 2: Stop WorkerPrivate.h and WorkerScope.h from including ModuleLoaderBase.h. r=dom-worker-reviewers,media-playback-reviewers,bvandersloot,edenchuang,padenot
-      2026-04-02  6164ea4bacae  Bug 2027541 - mochitest-plain test. r=jonco
 
-[25] Jan Varga  —  19 patch(es)
-    ----------------------------------------------------------------------
-      2026-09-24  68fd3a4c02b8  Bug 2075135 - Complete the CSSTransformValue implementation; r=emilio,firefox-style-system-reviewers
-      2026-09-08  c0128c647a04  Bug 2057579 - Complete the CSSPerspective implementation; r=firefox-style-system-reviewers,dshin
-      2026-09-06  cb4ffbfbe3e0  Bug 2057579 - Complete the CSSSkew implementation; r=emilio,firefox-style-system-reviewers
-      2026-06-29  c6e5d67755d6  Bug 2051105 - Gate CSS Typed OM color interfaces behind a separate pref; r=emilio,webidl,firefox-style-system-reviewers
-      2026-06-06  c36c6f6c4231  Bug 2044096 - Add missing pieces for CSSMathProduct; r=emilio,webidl,firefox-style-system-reviewers
-      2026-06-06  f25af4aca18f  Bug 2044096 - Add missing pieces for CSSMathInvert; r=emilio,webidl,firefox-style-system-reviewers
-      2026-06-06  0266d34f9e32  Bug 2044096 - Add missing pieces for CSSMathNegate; r=emilio,webidl,firefox-style-system-reviewers
-      2026-06-06  1f1e044e308e  Bug 2044096 - Add missing pieces for CSSMathClamp; r=emilio,webidl,firefox-style-system-reviewers
-      2026-06-06  d9102c650e5c  Bug 2044096 - Add missing pieces for CSSMathMax; r=emilio,webidl,firefox-style-system-reviewers
-      2026-06-06  0666876e3904  Bug 2044096 - Add missing pieces for CSSMathMin; r=emilio,webidl,firefox-style-system-reviewers
-      2026-05-23  23ede296c348  Bug 2038579 - Add some missing pieces to CSSMatrixComponent for Typed OM reification; r=emilio,webidl,firefox-style-system-reviewers
-      2026-05-22  4ebc4e96f9a0  Bug 2038579 - Change DOMMatrix serialization to UTF-8 output; r=emilio,webidl
-      2026-05-21  00878b660859  Bug 2038579 - Add some missing pieces to CSSSkewY for Typed OM reification; r=emilio,webidl,firefox-style-system-reviewers
-      2026-05-21  a1f0c27b132d  Bug 2038579 - Add some missing pieces to CSSSkewX for Typed OM reification; r=emilio,webidl,firefox-style-system-reviewers
-      2026-05-21  01726cb87a92  Bug 2038579 - Add some missing pieces to CSSSkew for Typed OM reification; r=emilio,webidl,firefox-style-system-reviewers
-      2026-05-21  1cca68da992b  Bug 2038579 - Add some missing pieces to CSSRotate for Typed OM reification; r=emilio,webidl,firefox-style-system-reviewers
-      2026-05-20  53c8235c2b4b  Bug 2038579 - Add some missing pieces to CSSTranslate for Typed OM reification; r=emilio,webidl,firefox-style-system-reviewers
-      2026-04-05  6a9d9a26da0a  Bug 2024009 - Introduce mStyledElement in StylePropertyMapReadOnly::Declarations; r=firefox-style-system-reviewers,dshin
-      2026-04-03  7c71a689fcb8  Bug 2024021 - Expose helper to get extant document from window global; r=dshin,firefox-style-system-reviewers
-
-[26] Ayoub hedri  —  17 patch(es)
+[27] Ayoub hedri  —  17 patch(es)
     ----------------------------------------------------------------------
       2026-09-18  a78632b81255  Bug 2069931 - Add Permissions Policy WebIDL bindings and enable related WPTs r=webidl,simonf,smaug
       2026-09-17  8b5b57fc78ad  Bug 2069931 - Created a binding for document.permissionsPolicy and iframe.permissionsPolicy and added tests r=webidl,smaug,simonf
@@ -1380,26 +1411,6 @@ Known aliases (applied in HTML report, NOT below):
       2026-09-02  1b7e05a0278f  Bug 2068035 - Rename policy methods used for iframe allow attributes. r=simonf
       2026-09-01  b4a236a8943b  Bug 2066074 - Removed telemetry probes for mixed_content_page_load r=freddyb,chutten
       2026-08-26  2ccc12c84a77  Bug 2066060 - Removed telemetry probes for mixed_content_unblock_counter r=freddyb,chutten
-
-[27] Bas Schouten  —  17 patch(es)
-    ----------------------------------------------------------------------
-      2026-09-23  e893294272b2  Bug 2068341: Ensure container timing records are always dropped when their root element might go away. r=smaug
-      2026-08-19  b777c7aaae9f  Bug 2063750: Add a signal to the pageload domain event whether a client is active. r=acreskey
-      2026-08-13  ee7499308379  Bug 1940240 - Part 3: Implement the Container Timing API behind a pref. r=smaug,webidl,saschanaz
-      2026-08-13  51568e3f5415  Bug 1940240 - Part 3: Implement the Container Timing API behind a pref. r=smaug,webidl,saschanaz
-      2026-08-03  8ed794028e9a  Bug 2058980 - Part 2: Add a codepath that works on GeckoView to determine first visit status. r=denispal
-      2026-07-23  0fe805af7a19  Bug 2056070: Add a field to the eTLD+1 pageload event to distinguish the first daily visit. r=denispal
-      2026-06-07  a7628a666be5  Bug 2042784: Add interaction data to pageload event. r=denispal,canova
-      2026-05-28  f005018d64ec  Bug 2042702: Move pageload event to page destruction. r=denispal
-      2026-05-25  0688a6c6699a  Bug 2040243: Remove legacy mirrors for a large set of probes primarily used for performance monitoring. r=chutten,perftest-reviewers,geckoview-reviewers,home-newtab-reviewers,layout-reviewers,jwatt,sparky,mconley,ohall
-      2026-05-23  07c887df831a  Bug 2040243: Remove legacy mirrors for a large set of probes primarily used for performance monitoring. r=chutten,perftest-reviewers,geckoview-reviewers,home-newtab-reviewers,layout-reviewers,jwatt,sparky,mconley,ohall
-      2026-05-21  67bb8ceb9e43  Bug 2040243: Remove legacy mirrors for a large set of probes primarily used for performance monitoring. r=chutten,perftest-reviewers,geckoview-reviewers,home-newtab-reviewers,layout-reviewers,jwatt,sparky,mconley,ohall
-      2026-05-20  b7c2b5722f4c  Bug 2040243: Remove legacy mirrors for a large set of probes primarily used for performance monitoring. r=chutten,perftest-reviewers,geckoview-reviewers,home-newtab-reviewers,layout-reviewers,jwatt,sparky,mconley,ohall
-      2026-05-01  802d95988ead  Bug 2035873: Ensure significantly more GC/CC probes report process-specific data. r=smaug,TravisLong
-      2026-04-30  3703d9cebb7b  Bug 2033454: Move critical parts of PerfStats into mozglue and make lockless. r=acreskey
-      2026-04-29  fc695cc03532  Bug 2034654: Add profiler marker for pages not going into the bfcache. r=smaug
-      2026-04-29  648b1c307563  Bug 2034654: Add profiler marker for pages not going into the bfcache. r=smaug
-      2026-04-24  98bda4db3bdb  Bug 2034654: Add profiler marker for pages not going into the bfcache. r=smaug
 
 [28] Byron Campen  —  17 patch(es)
     ----------------------------------------------------------------------
@@ -1421,25 +1432,25 @@ Known aliases (applied in HTML report, NOT below):
       2026-07-09  753d5b225c1f  Bug 1805447: Implement RTCError for DTLS. r=jib,nkulatova,webidl,smaug
       2026-04-22  23069fce80d6  Bug 1339203: Update RTCRtcpMuxPolicy enum to match what browsers currently do. r=dbaker,webidl,smaug
 
-[29] Henri Sivonen  —  17 patch(es)
+[29] Jan Varga  —  17 patch(es)
     ----------------------------------------------------------------------
-      2026-08-13  47db5ffd25bf  Bug 1758288 - Stop generating speculative loads inside the template element. r=dom-core-reviewers,smaug
-      2026-08-04  cd3f9dea827e  Bug 2015199 test - Add crashtest. r=smaug
-      2026-08-04  937eecc494ff  Bug 2053153 - Only check for high surrogates when intending to avoid split pair. r=mccr8
-      2026-06-26  e78b04b8ca35  Bug 2048944 - Restore ISO-2022-JP detection for plain text. r=emk
-      2026-06-17  b8c2ada414bf  Bug 2045417. r=avandolder
-      2026-06-02  0124daca5104  Bug 2038124 addendum - Simplify the attribute holder in the HTML parser. r=smaug
-      2026-06-02  d13776d32131  Bug 2038124 - Optimize setting attributes on non-custom HTML elements from parser. r=smaug
-      2026-06-02  ea04eba8aa60  Bug 2041856. r=smaug,edgar
-      2026-06-02  82b2e13b45de  Bug 2038124 addendum - Simplify the attribute holder in the HTML parser. r=smaug
-      2026-06-02  2d1ee1cd6982  Bug 2038124 - Optimize setting attributes on non-custom HTML elements from parser. r=smaug
-      2026-06-01  9dd3f6b595b0  Bug 2038124 addendum - Simplify the attribute holder in the HTML parser. r=smaug
-      2026-06-01  b1774ce65e52  Bug 2038124 - Optimize setting attributes on non-custom HTML elements from parser. r=smaug
-      2026-05-27  9ec57df41d46  Bug 2038800 - Check that the parser does not insert a node into its own descendant. r=dom-core,smaug
-      2026-05-27  63f49b4b9b1e  Bug 2041676 - Use if-else for mutually-exclusive pointer comparisons in HTMLInputElement::AfterSetAttr. r=smaug
-      2026-05-27  9986518e260f  Bug 2037935 - Special-case the most common element and attribute names in Speedometer3 innerHTML/DOMParser parsing. r=smaug
-      2026-04-07  5e2f9d0c14b2  Bug 2028289. r=avandolder
-      2026-04-02  5f33bf94d058  Bug 1362365 - Stop autodetecting ISO-2022-JP. r=supply-chain-reviewers,emk
+      2026-09-24  68fd3a4c02b8  Bug 2075135 - Complete the CSSTransformValue implementation; r=emilio,firefox-style-system-reviewers
+      2026-09-08  c0128c647a04  Bug 2057579 - Complete the CSSPerspective implementation; r=firefox-style-system-reviewers,dshin
+      2026-09-06  cb4ffbfbe3e0  Bug 2057579 - Complete the CSSSkew implementation; r=emilio,firefox-style-system-reviewers
+      2026-06-29  c6e5d67755d6  Bug 2051105 - Gate CSS Typed OM color interfaces behind a separate pref; r=emilio,webidl,firefox-style-system-reviewers
+      2026-06-06  c36c6f6c4231  Bug 2044096 - Add missing pieces for CSSMathProduct; r=emilio,webidl,firefox-style-system-reviewers
+      2026-06-06  f25af4aca18f  Bug 2044096 - Add missing pieces for CSSMathInvert; r=emilio,webidl,firefox-style-system-reviewers
+      2026-06-06  0266d34f9e32  Bug 2044096 - Add missing pieces for CSSMathNegate; r=emilio,webidl,firefox-style-system-reviewers
+      2026-06-06  1f1e044e308e  Bug 2044096 - Add missing pieces for CSSMathClamp; r=emilio,webidl,firefox-style-system-reviewers
+      2026-06-06  d9102c650e5c  Bug 2044096 - Add missing pieces for CSSMathMax; r=emilio,webidl,firefox-style-system-reviewers
+      2026-06-06  0666876e3904  Bug 2044096 - Add missing pieces for CSSMathMin; r=emilio,webidl,firefox-style-system-reviewers
+      2026-05-23  23ede296c348  Bug 2038579 - Add some missing pieces to CSSMatrixComponent for Typed OM reification; r=emilio,webidl,firefox-style-system-reviewers
+      2026-05-22  4ebc4e96f9a0  Bug 2038579 - Change DOMMatrix serialization to UTF-8 output; r=emilio,webidl
+      2026-05-21  00878b660859  Bug 2038579 - Add some missing pieces to CSSSkewY for Typed OM reification; r=emilio,webidl,firefox-style-system-reviewers
+      2026-05-21  a1f0c27b132d  Bug 2038579 - Add some missing pieces to CSSSkewX for Typed OM reification; r=emilio,webidl,firefox-style-system-reviewers
+      2026-05-21  01726cb87a92  Bug 2038579 - Add some missing pieces to CSSSkew for Typed OM reification; r=emilio,webidl,firefox-style-system-reviewers
+      2026-05-21  1cca68da992b  Bug 2038579 - Add some missing pieces to CSSRotate for Typed OM reification; r=emilio,webidl,firefox-style-system-reviewers
+      2026-05-20  53c8235c2b4b  Bug 2038579 - Add some missing pieces to CSSTranslate for Typed OM reification; r=emilio,webidl,firefox-style-system-reviewers
 
 [30] Alastor Wu  —  16 patch(es)
     ----------------------------------------------------------------------
@@ -1460,26 +1471,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-05-18  60b5568c78ab  Bug 2039121 - Part 1: Land the AudioSession WebIDL surface and Navigator.audioSession getter. r=webidl,media-playback-reviewers,smaug,padenot
       2026-05-11  8bd97ba57b9c  Bug 2037715 - Add uncontrollable audio source tracking to MediaController. r=padenot
 
-[31] Daniel Holbert  —  16 patch(es)
-    ----------------------------------------------------------------------
-      2026-06-05  cb1c37d98ea1  Bug 2044510: Pass already_AddRefed types by-value instead of by rvalue reference, in parser/. r=dom-core-reviewers,smaug
-      2026-06-05  648f3a95c5a0  Bug 2044510: Pass already_AddRefed types by-value instead of by rvalue reference, in dom/html. r=dom-core-reviewers,smaug
-      2026-06-05  3a33cc1c12ef  Bug 2044510: Pass already_AddRefed types by-value instead of by rvalue reference, in dom/{ipc,mathml,media,notification,streams}. r=dom-core-reviewers,media-playback-reviewers,webrtc-reviewers,smaug,pehrsons,aosmond
-      2026-06-05  b9c26953f1e2  Bug 2044510: Pass already_AddRefed types by-value instead of by rvalue reference, in dom/base/. r=dom-core-reviewers,smaug
-      2026-06-05  654bbc1057ba  Bug 2044510: Pass already_AddRefed types by-value instead of by rvalue reference, in dom/{bindings,filesystem,fs}. r=dom-core-reviewers,smaug
-      2026-06-05  fbc22c18f3d0  Bug 2044510: Pass already_AddRefed types by-value instead of by rvalue reference, in docshell/. r=dom-core-reviewers,smaug
-      2026-05-30  76469db34c8c  Bug 2043771: Minor cleanups to management of uniquely-owned resources in nsGlobalWindowInner. r=dom-core,jjaschke
-      2026-05-30  73a31091227b  Bug 2043771: Use MakeRefPtr to replace "new T()" for refcounted types in nsGlobalWindowInner. r=dom-core,smaug
-      2026-05-28  fb91da1c5209  Bug 2042995: Use MakeUnique to do allocation for some UniquePtr-typed variables in docshell/. r=dom-core,farre
-      2026-05-28  3942e62d83eb  Bug 2042995: Use MakeRefPtr to do allocation for various RefPtr variables in docshell/. r=dom-core,smaug
-      2026-05-11  edd61684e616  Bug 2037700: Use MakeRefPtr and MakeAndAddRef instead of 'new' to allocate gfxDrawable instances. r=media-playback-reviewers,layout-reviewers,emilio,padenot
-      2026-05-07  a88c0883b9fe  Bug 2037761: Change RegisterStrongMemoryReporter to take already_AddRefed instead of a raw pointer, and update callsites. r=dom-core,smaug
-      2026-05-07  abac30ec45b5  Bug 2037752: Use StaticAutoPtr/StaticRefPtr to manage static data in nsTreeSanitizer. r=dom-core,smaug
-      2026-05-07  2e187ddbc803  Bug 2037761: Change RegisterStrongMemoryReporter to take already_AddRefed instead of a raw pointer, and update callsites. r=dom-core,smaug
-      2026-05-07  10725540f638  Bug 2037754: Use 'MakeAndAddRef' instead of 'new' when allocating runnable for nsContentUtils::AddScriptRunner. r=dom-core,smaug
-      2026-05-04  965e74ab68d4  Bug 2036250: Make HTMLCanvasElement smarter about avoiding redundant mozPrintCallback invocations. r=smaug
-
-[32] Ryan VanderMeulen  —  16 patch(es)
+[31] Ryan VanderMeulen  —  16 patch(es)
     ----------------------------------------------------------------------
       2026-09-10  f09cc8bec51a  Bug 2062690 - Update to Expat 2.8.4. r=mccr8
       2026-09-10  a5566dd1d197  Bug 2062690 - Refresh Expat local patches for 2.8.4. r=mccr8
@@ -1498,25 +1490,25 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-21  d63c510f15a0  Bug 1979253 - Skip DocAccessible for the transient about:blank in printing BCs. r=accessibility-platform-reviewers,eeejay,dom-core,Jamie,jjaschke
       2026-04-13  6533ad405c87  Bug 2031093 - Fix various "supress" typos in the codebase. r=necko-reviewers,geckoview-reviewers,Gijs,hiro,nalexander
 
-[33] Florian Quèze  —  15 patch(es)
+[32] Henri Sivonen  —  15 patch(es)
     ----------------------------------------------------------------------
-      2026-09-25  998fe2058fc7  Bug 2075369 - Wait for the paste popup dismissal clicks before ending each subtest of browser_document_command_paste_contextmenu_suppression_key.js, r=dom-core-reviewers,edgar.
-      2026-09-25  14c617668e8d  Bug 2075369 - Wait for the paste popup dismissal clicks before ending each subtest of browser_document_command_paste_contextmenu_suppression_key.js, r=dom-core-reviewers,edgar.
-      2026-09-05  a2ae8bedb33c  Bug 2069345 - Remove test.wait300msAfterTabSwitch from tests fixed by waiting for the tab to be reflowed. r=firefox-desktop-core-reviewers ,search-reviewers,tabbrowser-reviewers,layout-reviewers,nsharpley,dshin,scunnane,Gijs
-      2026-09-05  4ec29ad67988  Bug 2069345 - Remove test.wait300msAfterTabSwitch from remaining tests that already pass without it. r=firefox-desktop-core-reviewers ,necko-reviewers,media-playback-reviewers,layout-reviewers,padenot,valentin,dshin,Gijs
-      2026-08-31  53d52da7f267  Bug 1934436 - Flag the current session history entry as interacted with in the parent process, r=smaug.
-      2026-06-16  c9d73836a07e  Bug 2047913 - Add profiler markers for AsyncShutdown blockers to help diagnose shutdown hangs, r=xpcom-reviewers,jstutte.
-      2026-06-02  69092574242e  Bug 2042711 - Handle cross-realm plain objects in ChromeUtils.addProfilerMarker data argument, r=profiler-reviewers,jandem,canova.
-      2026-04-21  9cbf569d5b5f  Bug 2033491 - Handle non-plain objects in ChromeUtils.addProfilerMarker data argument, r=profiler-reviewers,canaltinova.
-      2026-04-10  13c785e9e6bf  Bug 1945658 - Skip tests that permafail on Linux debug artifact builds, r=Gijs.
-      2026-04-03  e4cccf1a14c0  Bug 2029094 - Resume suspended channel on failed non-HTTP object/embed loads to avoid leak, r=necko-reviewers,jesup.
-      2026-04-03  b0e7e3682f28  Bug 2026600 - Skip known standalone perma-failures for mochitest-plain and mochitest-chrome, r=aryx,extension-reviewers,taskgraph-reviewers,ahal,robwu.
-      2026-04-03  55c0ac8506b5  Bug 2026600 - Skip known standalone perma-failures for mochitest-plain and mochitest-chrome, r=aryx,extension-reviewers,taskgraph-reviewers,ahal,robwu.
-      2026-04-03  596741077004  Bug 2028839 - Split large mochitest-plain manifests in dom/ to avoid standalone job timeouts, r=aryx.
-      2026-04-02  2df354a1bfea  Bug 2028839 - Split large mochitest-plain manifests in dom/ to avoid standalone job timeouts, r=aryx.
-      2026-04-02  2cb675286037  Bug 2010766 - skip-if the browser-chrome standalone perma-fails, r=ai-frontend-reviewers,jcristau,aryx.
+      2026-08-13  47db5ffd25bf  Bug 1758288 - Stop generating speculative loads inside the template element. r=dom-core-reviewers,smaug
+      2026-08-04  cd3f9dea827e  Bug 2015199 test - Add crashtest. r=smaug
+      2026-08-04  937eecc494ff  Bug 2053153 - Only check for high surrogates when intending to avoid split pair. r=mccr8
+      2026-06-26  e78b04b8ca35  Bug 2048944 - Restore ISO-2022-JP detection for plain text. r=emk
+      2026-06-17  b8c2ada414bf  Bug 2045417. r=avandolder
+      2026-06-02  0124daca5104  Bug 2038124 addendum - Simplify the attribute holder in the HTML parser. r=smaug
+      2026-06-02  d13776d32131  Bug 2038124 - Optimize setting attributes on non-custom HTML elements from parser. r=smaug
+      2026-06-02  ea04eba8aa60  Bug 2041856. r=smaug,edgar
+      2026-06-02  82b2e13b45de  Bug 2038124 addendum - Simplify the attribute holder in the HTML parser. r=smaug
+      2026-06-02  2d1ee1cd6982  Bug 2038124 - Optimize setting attributes on non-custom HTML elements from parser. r=smaug
+      2026-06-01  9dd3f6b595b0  Bug 2038124 addendum - Simplify the attribute holder in the HTML parser. r=smaug
+      2026-06-01  b1774ce65e52  Bug 2038124 - Optimize setting attributes on non-custom HTML elements from parser. r=smaug
+      2026-05-27  9ec57df41d46  Bug 2038800 - Check that the parser does not insert a node into its own descendant. r=dom-core,smaug
+      2026-05-27  63f49b4b9b1e  Bug 2041676 - Use if-else for mutually-exclusive pointer comparisons in HTMLInputElement::AfterSetAttr. r=smaug
+      2026-05-27  9986518e260f  Bug 2037935 - Special-case the most common element and attribute names in Speedometer3 innerHTML/DOMParser parsing. r=smaug
 
-[34] Valentin Gosu  —  15 patch(es)
+[33] Valentin Gosu  —  15 patch(es)
     ----------------------------------------------------------------------
       2026-09-16  c50227a777c3  Bug 1594633 - Part 14: Defer Request stream consumption until the body is used r=necko-reviewers,kershaw
       2026-09-16  c98056bddfd3  Bug 1594633 - Part 11: Expose Request.body as a ReadableStream r=necko-reviewers,webidl,emilio,jesup
@@ -1534,7 +1526,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-14  09284f8b854e  Bug 2027973 - Avoid using NS_DeserializeObject in ParamTraits<nsIReferrerInfo> r=tschuster
       2026-04-13  ee74b7a3897b  Bug 2027973 - Avoid using NS_DeserializeObject in ParamTraits<nsIReferrerInfo> r=tschuster
 
-[35] Mark Banner  —  14 patch(es)
+[34] Mark Banner  —  14 patch(es)
     ----------------------------------------------------------------------
       2026-09-18  c9739388e01b  Bug 2069131 - Rename remaining browser/base/content/test browser-chrome directories to match eslint-test-paths conventions r=frontend-codestyle-reviewers,webcompat-reviewers,fxview-reviewers,places-reviewers,android-reviewers,urlbar-reviewers,layout-reviewers,device-api-reviewers,timhuang,mossop,dshin,gstoll,jteow,twisniewski,daisuke,nsharpley
       2026-09-17  e8bb2745fa7f  Bug 2069131 - Rename browser/base/content/test general, about, webrtc, popups and tabPrompts directories to match eslint-test-paths conventions r=frontend-codestyle-reviewers,webcompat-reviewers,fxview-reviewers,tabbrowser-reviewers,places-reviewers,urlbar-reviewers,ai-platform-reviewers,timhuang,dao,mossop,twisniewski,nsharpley,mak
@@ -1551,7 +1543,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-05-20  f572e490267d  Bug 1924775 - Remove some cases of ESLint rule no-undef being disabled. r=devtools-reviewers,hsohaney,nchevobbe
       2026-05-19  1a90fee5f3c2  Bug 1924775 - Remove some cases of ESLint rule no-undef being disabled. r=devtools-reviewers,hsohaney,nchevobbe
 
-[36] Tooru Fujisawa  —  14 patch(es)
+[35] Tooru Fujisawa  —  14 patch(es)
     ----------------------------------------------------------------------
       2026-09-17  6c4485450b59  Bug 2056134 - Part 7: Add tests. r=bthrall,perftest-reviewers,sparky
       2026-09-17  5654b1cdee7d  Bug 2056134 - Part 2: Include the hint charset into the cache key string for the ChromeUtils.getCachedJavaScriptSource. r=bthrall,devtools-reviewers,jdescottes
@@ -1568,23 +1560,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-21  0011dfbdccf2  Bug 2031200 - Part 7: Use ScriptFetchInfo for the script private and module private instead of LoadedScript. r=bthrall,allstarschh,dom-worker-reviewers,asuth
       2026-04-16  887029b44ecf  Bug 2030623 - Delay the disk cache save to avoid overlapping with performance-sensitive timing. r=nbp
 
-[37] Philipp Hancke  —  13 patch(es)
-    ----------------------------------------------------------------------
-      2026-08-18  ca4fce5c5859  Bug 2022715: implement RTCConfiguration.alwaysNegotiateDataChannels r=bwc,webidl,saschanaz,smaug
-      2026-07-17  9e4231190d2c  Bug 2048521: implement webrtc rtxSsrc and retransmission stats r=bwc,webidl,smaug
-      2026-06-18  8c6cf37262aa  Bug 2047693: implement candidate-pair packetsSent/packetsReceived r=bwc,webidl,emilio
-      2026-06-17  09dbf44d8bc6  Bug 2048150: implement webrtc outbound-rtp keyFramesEncoded stats r=pehrsons,webidl,smaug
-      2026-06-15  631e1d9fefbd  Bug 2019349: Implement RTCTransportStats (bytes|packets)(Sent|Received) r=bwc,smaug,webidl
-      2026-06-03  22ef5960cc46  Bug 1225723: fix webrtc-stats transportId references r=bwc,smaug,webidl,pehrsons
-      2026-06-01  6c012f4fa6f7  Bug 1225723: implement (some of) RTCTransportStats r=bwc,webidl,smaug
-      2026-05-21  49d888791d7d  Bug 2036578: Implement the usernameFragment, foundation and tcpType fields of RTCIceCandidateStats r=bwc,webidl,smaug
-      2026-05-13  14ac95285577  Bug 2036578: Implement the usernameFragment, foundation and tcpType fields of RTCIceCandidateStats r=bwc,webidl,smaug
-      2026-05-07  274d9561a154  Bug 2036578: Implement the usernameFragment, foundation and tcpType fields of RTCIceCandidateStats r=bwc,webidl,smaug
-      2026-05-06  b734f76ece07  Bug 2036578: Implement the usernameFragment, foundation and tcpType fields of RTCIceCandidateStats r=bwc,webidl,smaug
-      2026-04-02  7a808178dcc9  Bug 2028060: add audioLevel to RTCEncodedAudioFrameMetadata r=bwc,smaug,webidl
-      2026-04-02  007182b76d1c  Bug 2028060: add rtpTimestamp to RTCEncodedFrameMetadata r=bwc,smaug,webidl
-
-[38] longsonr  —  13 patch(es)
+[36] longsonr  —  13 patch(es)
     ----------------------------------------------------------------------
       2026-09-11  cdabea1dc908  Bug 2071205 - Fix SVGPathSegment API r=emilio,webidl
       2026-09-05  4ab32d2ad4f6  Bug 2069550 - Parse referrerPolicy attribute properly r=emilio
@@ -1600,7 +1576,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-05-05  2139953f2d6c  Bug 2037148 - Refactor HTMLHyperlinkElementUtils r=emilio,webidl,smaug
       2026-04-24  171a376723b9  Bug 2034371 - Add textPath side attribute to SVGTextPathElement webidl r=webidl,jwatt,smaug
 
-[39] mayankleoboy1  —  12 patch(es)
+[37] mayankleoboy1  —  12 patch(es)
     ----------------------------------------------------------------------
       2026-09-06  869fc80031f8  Bug 1997529 - Make CancelIdleCallback() O(1) by indexing idle requests by handle. r=smaug
       2026-09-01  de09a5f0cc77  Bug 2068156 - Bug 2067000 - Skip parsing a URI to look for a password the spec cannot hold. r=necko-reviewers,valentin
@@ -1614,6 +1590,34 @@ Known aliases (applied in HTML report, NOT below):
       2026-08-05  9a41420b537d  Bug 2051002 - Add nsILoadGroup::visitRequests and use it for the bfcache request check. r=smaug
       2026-08-05  636d432e442a  Bug 2051002 - Break out of the bfcache request scan once a blocker is found. r=smaug
       2026-08-05  bb03981b64cd  Bug 1958702 - Use a hash set for DocGroup::mDocuments. r=smaug
+
+[38] Florian Quèze  —  11 patch(es)
+    ----------------------------------------------------------------------
+      2026-10-02  ab9464e8f597  Bug 2075521 - Consider the mouse button released when a drag session ends, r=dom-core-reviewers,smaug.
+      2026-09-29  fe46b2cfe466  Bug 2076017 - Re-enable tests disabled on macOS 15 AArch64 that pass there on try. r=aryx,necko-reviewers,webcompat-reviewers,extension-reviewers,settings-reviewers,media-playback-reviewers,credential-management-reviewers,devtools-reviewers,places-reviewers,dom-storage-reviewers,firefox-style-system-reviewers,layout-reviewers,crashreporting-reviewers,mkennedy,emz,Mardak,aosmond,twisniewski,tnikkel,jdescottes,gsvelto,dimi,valentin,jari,dshin,robwu
+      2026-09-25  998fe2058fc7  Bug 2075369 - Wait for the paste popup dismissal clicks before ending each subtest of browser_document_command_paste_contextmenu_suppression_key.js, r=dom-core-reviewers,edgar.
+      2026-09-25  14c617668e8d  Bug 2075369 - Wait for the paste popup dismissal clicks before ending each subtest of browser_document_command_paste_contextmenu_suppression_key.js, r=dom-core-reviewers,edgar.
+      2026-09-05  a2ae8bedb33c  Bug 2069345 - Remove test.wait300msAfterTabSwitch from tests fixed by waiting for the tab to be reflowed. r=firefox-desktop-core-reviewers ,search-reviewers,tabbrowser-reviewers,layout-reviewers,nsharpley,dshin,scunnane,Gijs
+      2026-09-05  4ec29ad67988  Bug 2069345 - Remove test.wait300msAfterTabSwitch from remaining tests that already pass without it. r=firefox-desktop-core-reviewers ,necko-reviewers,media-playback-reviewers,layout-reviewers,padenot,valentin,dshin,Gijs
+      2026-08-31  53d52da7f267  Bug 1934436 - Flag the current session history entry as interacted with in the parent process, r=smaug.
+      2026-06-16  c9d73836a07e  Bug 2047913 - Add profiler markers for AsyncShutdown blockers to help diagnose shutdown hangs, r=xpcom-reviewers,jstutte.
+      2026-06-02  69092574242e  Bug 2042711 - Handle cross-realm plain objects in ChromeUtils.addProfilerMarker data argument, r=profiler-reviewers,jandem,canova.
+      2026-04-21  9cbf569d5b5f  Bug 2033491 - Handle non-plain objects in ChromeUtils.addProfilerMarker data argument, r=profiler-reviewers,canaltinova.
+      2026-04-10  13c785e9e6bf  Bug 1945658 - Skip tests that permafail on Linux debug artifact builds, r=Gijs.
+
+[39] Philipp Hancke  —  11 patch(es)
+    ----------------------------------------------------------------------
+      2026-08-18  ca4fce5c5859  Bug 2022715: implement RTCConfiguration.alwaysNegotiateDataChannels r=bwc,webidl,saschanaz,smaug
+      2026-07-17  9e4231190d2c  Bug 2048521: implement webrtc rtxSsrc and retransmission stats r=bwc,webidl,smaug
+      2026-06-18  8c6cf37262aa  Bug 2047693: implement candidate-pair packetsSent/packetsReceived r=bwc,webidl,emilio
+      2026-06-17  09dbf44d8bc6  Bug 2048150: implement webrtc outbound-rtp keyFramesEncoded stats r=pehrsons,webidl,smaug
+      2026-06-15  631e1d9fefbd  Bug 2019349: Implement RTCTransportStats (bytes|packets)(Sent|Received) r=bwc,smaug,webidl
+      2026-06-03  22ef5960cc46  Bug 1225723: fix webrtc-stats transportId references r=bwc,smaug,webidl,pehrsons
+      2026-06-01  6c012f4fa6f7  Bug 1225723: implement (some of) RTCTransportStats r=bwc,webidl,smaug
+      2026-05-21  49d888791d7d  Bug 2036578: Implement the usernameFragment, foundation and tcpType fields of RTCIceCandidateStats r=bwc,webidl,smaug
+      2026-05-13  14ac95285577  Bug 2036578: Implement the usernameFragment, foundation and tcpType fields of RTCIceCandidateStats r=bwc,webidl,smaug
+      2026-05-07  274d9561a154  Bug 2036578: Implement the usernameFragment, foundation and tcpType fields of RTCIceCandidateStats r=bwc,webidl,smaug
+      2026-05-06  b734f76ece07  Bug 2036578: Implement the usernameFragment, foundation and tcpType fields of RTCIceCandidateStats r=bwc,webidl,smaug
 
 [40] Jan de Mooij  —  10 patch(es)
     ----------------------------------------------------------------------
@@ -1676,18 +1680,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-06-08  477b74694ee6  Bug 1805446 - Implement getRemoteCertificates r=webidl,webrtc-reviewers,smaug,bwc
       2026-06-01  3dff814f6a32  Bug 2019389 - Implement RTCTransportStats.tlsVersion/dtlsCipher/srtpCipher r=webidl,webrtc-reviewers,bwc,smaug
 
-[45] Arnaud Bienner  —  8 patch(es)
-    ----------------------------------------------------------------------
-      2026-08-24  21827d4ae2c6  Bug 2063557 - IndexedDB: Object store retrieval operations shall throw "NotReadableError" in case of data corruption r=dom-storage-reviewers,asuth,extension-reviewers,robwu
-      2026-07-24  b0c152522985  Bug 1577227 - Add stats counters for IDB mozGetAll/mozGetAllKeys, and mark them as deprecated. r=dom-storage-reviewers,webidl,saschanaz,jari
-      2026-06-30  859dbf2ade6c  Bug 2040696 - Revert bug 2025350 now bug 2027871 has been shipped r=nika
-      2026-05-28  946c8bf896ef  Bug 1927945 - Implement getAllRecords for IDBIndex and IDBObjectStore. r=janv,webidl,smaug,jari,dom-worker-reviewers,dom-storage-reviewers,asuth,edgar
-      2026-05-28  7fad6f6f6476  Bug 1927945 - Add IDBGetAllOptions and getAllRecords definitions to WebIDL and add support for IDBGetAllOptions.query in IDBObjectStore.getAll/getAllKeys. r=webidl,dom-storage-reviewers,smaug,janv
-      2026-04-15  bd5a5ed0997f  Bug 2031091 - Object.h: make GetReservedSlot take a const JSObject* obj, and update caller places as well r=jandem
-      2026-04-08  c8de248a9422  Bug 2029088 - Update Blob::Create to return RefPtr instead of a raw pointer r=smaug
-      2026-04-02  769b34051d54  Bug 2025350 - Use CheckedInt to validate size when writing StructuredCloneBlob and ClonedErrorHolder. r=nika
-
-[46] Frederik Braun  —  8 patch(es)
+[45] Frederik Braun  —  8 patch(es)
     ----------------------------------------------------------------------
       2026-09-24  50013e62049f  Bug 2071767 - remove telemetry mirroring for the page_load_error probe r=tschuster,chutten
       2026-09-21  64bcee60617c  Bug 2069258 - Restrict about:reader's url parameter to schemes reader can load. r=dom-core-reviewers,smaug
@@ -1698,7 +1691,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-08-24  6198b93e9d53  Bug 2054929 - additional usecounters for Sanitizer entry points r=emilio,webidl
       2026-08-21  2891790e3ebc  Bug 2054929 - additional usecounters for Sanitizer entry points r=emilio,webidl
 
-[47] Sam Johnson  —  8 patch(es)
+[46] Sam Johnson  —  8 patch(es)
     ----------------------------------------------------------------------
       2026-06-21  5574ad5c693c  Bug 1726107 - Enable time picker UI for time and datetime-local inputs. r=layout-reviewers,emilio
       2026-06-20  f3a818c5118e  Bug 1726107 - Enable time picker UI for time and datetime-local inputs. r=layout-reviewers,emilio
@@ -1709,7 +1702,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-06-02  7e21de9eb450  Bug 1812669 - Add picker button to <input type="time"> fields when time picker enabled. r=fluent-reviewers,mkennedy,flod
       2026-05-01  16e0adf958d2  Bug 2021084 - Use new helper instead of prefs for native context menu tests. r=mstange
 
-[48] Alexandre Poirot  —  7 patch(es)
+[47] Alexandre Poirot  —  7 patch(es)
     ----------------------------------------------------------------------
       2026-09-16  87cc1393dbb1  Bug 1709529 - Only allow toggling the `watchedByDevTools` flag from the parent process. r=devtools-reviewers,nchevobbe,farre
       2026-09-16  9ec420fcbf62  Bug 1709529 - [devtools] Set `watchedByDevTools` from the parent process. r=devtools-reviewers,nchevobbe
@@ -1719,7 +1712,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-07-15  cc9abf6c7e22  Bug 2044741 - [devtools] Avoid crashing when unregistering an actor in a destroying process. r=nika
       2026-05-11  63c6ebf2aa3b  Bug 2037827 - Expose Console.createInstance to WorkerDebugger scopes. r=webidl,dom-worker-reviewers,smaug,edenchuang
 
-[49] Dão Gottwald  —  7 patch(es)
+[48] Dão Gottwald  —  7 patch(es)
     ----------------------------------------------------------------------
       2026-09-22  1e59f0c34214  Bug 2071626 - Carry layer state over a frameloader replacement and report the change in the browser's layers. r=dom-core-reviewers,tabbrowser-reviewers,jsudiaman,smaug
       2026-09-10  e5354bed290f  Bug 2066396 - Let a caller force keyword fixup regardless of keyword.enabled. r=mak
@@ -1729,7 +1722,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-08-12  479acac11e9f  Bug 2062743 - Let a scroll container say how far one line scrolls it. r=layout-reviewers,firefox-style-system-reviewers,emilio
       2026-07-10  0a38854bce65  Bug 2052789 - Search dropped multi-line text in full instead of only one line. r=mak,tabbrowser-reviewers,nsharpley
 
-[50] Eemeli Aro  —  7 patch(es)
+[49] Eemeli Aro  —  7 patch(es)
     ----------------------------------------------------------------------
       2026-09-11  662ff4754442  Bug 2064983 - Remove Glean metrics for urlfixup.suffix. r=aryx,urlbar-reviewers,daleharvey
       2026-05-06  fb1dfdf048ba  Bug 2024854 Part 6 - Account for preloads of text imports. r=dminor,necko-reviewers,devtools-reviewers,bomsy
@@ -1739,7 +1732,27 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-29  e1746ab8a290  Bug 2024854 Part 1 - Add content policies for text modules. r=extension-reviewers,dom-worker-reviewers,tschuster,asuth,robwu
       2026-04-29  10d0e76a4f4c  Bug 2024854 Part 2 - Add "text" fetch destination. r=necko-reviewers,webidl,smaug
 
-[51] Alexandra Borovova  —  6 patch(es)
+[50] Katherine Ye  —  7 patch(es)
+    ----------------------------------------------------------------------
+      2026-10-02  4840fdcfe70b  Bug 2033633 - Skip density correction for fallback intrinsic height. r=dholbert
+      2026-10-02  3425aadd3da9  Bug 2044192 - Remove image.natural-size-fallback.enabled. r=dholbert
+      2026-09-21  c27fe2149791  Bug 2033633 - Skip density correction for fallback intrinsic height. r=dholbert
+      2026-09-21  897c709f2d9a  Bug 2044192 - Remove image.natural-size-fallback.enabled. r=dholbert
+      2026-09-16  da9b26b4440a  Bug 2033633 - Skip density correction for fallback intrinsic height. r=dholbert
+      2026-09-16  24c53e55deb2  Bug 2044192 - Remove image.natural-size-fallback.enabled. r=dholbert
+      2026-07-14  dc7f1346c1e9  Bug 2042986 - Add pref-gated parsing for line-clamp longhand. r=dshin,firefox-style-system-reviewers,layout-reviewers,emilio
+
+[51] tannal  —  7 patch(es)
+    ----------------------------------------------------------------------
+      2026-09-28  fdc1e3eb487f  Bug 2064612 - Add download, ping, rel, relList and referrerPolicy attributes to MathMLAnchorElement r=emilio,webidl,smaug
+      2026-09-15  55c2874c6973  Bug 2068934 - Support javascriptURLs in the configuration of sanitizer. r=tschuster,webidl,smaug,keithamus
+      2026-09-14  b590a088bc73  Bug 2068934 - Support javascriptURLs in the configuration of sanitizer. r=tschuster,webidl,smaug,keithamus
+      2026-08-11  15734edd64bf  Bug 2059312 - Part 2: Add MathMLAnchorElement class and WebIDL bindings r=emilio,webidl,firefox-svg-reviewers
+      2026-08-07  196a701b28e5  Bug 2059312 - Part 2: Add MathMLAnchorElement class and WebIDL bindings r=emilio,webidl,firefox-svg-reviewers
+      2026-08-06  b66939a7ec70  Bug 2059312 - Part 1: Push down GetURIAttr logic to mozilla/dom/Element.h r=emilio
+      2026-06-06  48e3900e2f9a  Bug 2039500 - Move hreflang and type to HyperlinkElementUtils r=emilio,webidl,smaug
+
+[52] Alexandra Borovova  —  6 patch(es)
     ----------------------------------------------------------------------
       2026-08-10  c3d73b534270  Bug 2062052 - Do not sync screenOrientation for discarded iframes. r=smaug
       2026-06-11  293c4aff415a  Bug 2015657 - Override timezone in web and shared workers when "browsingContext.timezoneOverride" is set in related browsing contexts. r=edenchuang
@@ -1748,7 +1761,25 @@ Known aliases (applied in HTML report, NOT below):
       2026-05-05  4776e412dc9a  Bug 2036774 - Do not assert for top browsing context to avoid causing the crash. r=dom-core,smaug
       2026-04-24  5643304a44b4  Bug 2017252 - Add "DownloadFolderOverride" field to BrowsingContext to override the default download folder per browsing context. r=dom-core,smaug
 
-[52] Jens Stutte  —  6 patch(es)
+[53] Arnaud Bienner  —  6 patch(es)
+    ----------------------------------------------------------------------
+      2026-08-24  21827d4ae2c6  Bug 2063557 - IndexedDB: Object store retrieval operations shall throw "NotReadableError" in case of data corruption r=dom-storage-reviewers,asuth,extension-reviewers,robwu
+      2026-07-24  b0c152522985  Bug 1577227 - Add stats counters for IDB mozGetAll/mozGetAllKeys, and mark them as deprecated. r=dom-storage-reviewers,webidl,saschanaz,jari
+      2026-06-30  859dbf2ade6c  Bug 2040696 - Revert bug 2025350 now bug 2027871 has been shipped r=nika
+      2026-05-28  946c8bf896ef  Bug 1927945 - Implement getAllRecords for IDBIndex and IDBObjectStore. r=janv,webidl,smaug,jari,dom-worker-reviewers,dom-storage-reviewers,asuth,edgar
+      2026-05-28  7fad6f6f6476  Bug 1927945 - Add IDBGetAllOptions and getAllRecords definitions to WebIDL and add support for IDBGetAllOptions.query in IDBObjectStore.getAll/getAllKeys. r=webidl,dom-storage-reviewers,smaug,janv
+      2026-04-15  bd5a5ed0997f  Bug 2031091 - Object.h: make GetReservedSlot take a const JSObject* obj, and update caller places as well r=jandem
+
+[54] Dale Harvey  —  6 patch(es)
+    ----------------------------------------------------------------------
+      2026-09-30  a98c3772d2fb  Bug 2076807 - Use moz-src for dom/base r=saschanaz
+      2026-08-20  05d579ece18a  Bug 2062783 - Use moz-src for sessionstore. r=Gijs,omc-reviewers,migration-reviewers,firefox-desktop-core-reviewers ,jswinarton,hsohaney,sclements,aminomancer,perftest-reviewers,kshampur
+      2026-08-18  adc7fd1ba540  Bug 2062783 - Use moz-src for sessionstore. r=Gijs,omc-reviewers,migration-reviewers,firefox-desktop-core-reviewers ,jswinarton,hsohaney,sclements,aminomancer,perftest-reviewers,kshampur
+      2026-08-18  02b638832f75  Bug 2062783 - Use moz-src for sessionstore. r=Gijs,omc-reviewers,migration-reviewers,firefox-desktop-core-reviewers ,jswinarton,hsohaney,sclements,aminomancer,perftest-reviewers,kshampur
+      2026-07-02  53643bfcb058  Bug 2051429 - Use moz-src for dom/manifest. r=Gijs,geckoview-reviewers,m_kato
+      2026-06-24  9f0ac9b0f5e5  Bug 2049868 - Use moz-src for dom/ipc. r=Gijs
+
+[55] Jens Stutte  —  6 patch(es)
     ----------------------------------------------------------------------
       2026-09-24  e51c2dd834a1  Bug 2075171 - Use fallible allocation in nsContentUtils::GetSurfaceData. r=dom-core-reviewers,smaug
       2026-09-21  3494f833873d  Bug 2074047 - Measure AsyncShutdown's crash countdown against a clock that stops while the system is suspended. r=webidl,smaug
@@ -1757,7 +1788,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-06-23  f1bb9c612738  Bug 2049195 - Use an intrusive LinkedList for the Document resize and intersection observer lists. r=emilio
       2026-04-10  99ba1720681e  Bug 2027238 - Use promise-based SendRequestMemoryReport instead of callback overload. r=xpcom-reviewers,necko-reviewers,media-playback-reviewers,kershaw,padenot,nika
 
-[53] Jon Coppeard  —  6 patch(es)
+[56] Jon Coppeard  —  6 patch(es)
     ----------------------------------------------------------------------
       2026-07-30  93cd68558652  Bug 2051882 - Part 4: Remove SliceBudget APIs that deal in an integer number of milliseconds r=sfink
       2026-07-30  f9e1e71bc862  Bug 2051882 - Part 3: Set idle flag in budget on creation r=sfink
@@ -1766,7 +1797,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-05-28  d77c0757f8a6  Bug 2042662 - Push bool return value down to CallbackTracer users to reduce stack usage slightly r=jandem
       2026-05-13  64195251523d  Bug 2038125 - Part 4: Use designated initializer lists for JSClassOps in the browser r=mccr8,chutten
 
-[54] Jonathan Kew  —  6 patch(es)
+[57] Jonathan Kew  —  6 patch(es)
     ----------------------------------------------------------------------
       2026-09-23  dc247697da5b  Bug 2074920 - Explicitly use mozilla/dom/Link.h in #include statements to avoid ambiguity with link.h on case-insensitive filesystem. r=firefox-svg-reviewers,dholbert
       2026-07-31  653481b7acb7  Bug 1872781 - Remove the layout.css.font-variations.enabled pref. r=layout-reviewers,webidl,devtools-reviewers,firefox-style-system-reviewers,emilio,nchevobbe
@@ -1775,7 +1806,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-07-31  46136c0ae173  Bug 1872782 - Remove the layout.css.font-palette.enabled pref. r=layout-reviewers,webidl,firefox-style-system-reviewers,emilio
       2026-06-19  3be3d86f3878  Bug 2045612 - Take ownership of the state in RestoreFormControlState. r=layout-reviewers,emilio
 
-[55] Tiaan Louw  —  6 patch(es)
+[58] Tiaan Louw  —  6 patch(es)
     ----------------------------------------------------------------------
       2026-07-15  56471e37aa56  Bug 2051239 - Parse and serialize the `margin-trim` property r=layout-reviewers,firefox-style-system-reviewers,emilio,devtools-reviewers,bomsy,nchevobbe
       2026-07-13  0d8c9b125cf6  Bug 2051239 - Parse and serialize the `margin-trim` property r=layout-reviewers,firefox-style-system-reviewers,emilio
@@ -1784,24 +1815,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-06-01  498b28b9e5d7  Bug 1974792 - Implement ::checkmark pseudo selector for customizable select r=layout-reviewers,devtools-reviewers,firefox-style-system-reviewers,emilio,nchevobbe
       2026-04-14  4f27c308e5ec  Bug 2014897 - Add UseCounters for Serial/SerialPort APIs r=gstoll,webidl,smaug,emilio
 
-[56] tannal  —  6 patch(es)
-    ----------------------------------------------------------------------
-      2026-09-15  55c2874c6973  Bug 2068934 - Support javascriptURLs in the configuration of sanitizer. r=tschuster,webidl,smaug,keithamus
-      2026-09-14  b590a088bc73  Bug 2068934 - Support javascriptURLs in the configuration of sanitizer. r=tschuster,webidl,smaug,keithamus
-      2026-08-11  15734edd64bf  Bug 2059312 - Part 2: Add MathMLAnchorElement class and WebIDL bindings r=emilio,webidl,firefox-svg-reviewers
-      2026-08-07  196a701b28e5  Bug 2059312 - Part 2: Add MathMLAnchorElement class and WebIDL bindings r=emilio,webidl,firefox-svg-reviewers
-      2026-08-06  b66939a7ec70  Bug 2059312 - Part 1: Push down GetURIAttr logic to mozilla/dom/Element.h r=emilio
-      2026-06-06  48e3900e2f9a  Bug 2039500 - Move hreflang and type to HyperlinkElementUtils r=emilio,webidl,smaug
-
-[57] Dale Harvey  —  5 patch(es)
-    ----------------------------------------------------------------------
-      2026-08-20  05d579ece18a  Bug 2062783 - Use moz-src for sessionstore. r=Gijs,omc-reviewers,migration-reviewers,firefox-desktop-core-reviewers ,jswinarton,hsohaney,sclements,aminomancer,perftest-reviewers,kshampur
-      2026-08-18  adc7fd1ba540  Bug 2062783 - Use moz-src for sessionstore. r=Gijs,omc-reviewers,migration-reviewers,firefox-desktop-core-reviewers ,jswinarton,hsohaney,sclements,aminomancer,perftest-reviewers,kshampur
-      2026-08-18  02b638832f75  Bug 2062783 - Use moz-src for sessionstore. r=Gijs,omc-reviewers,migration-reviewers,firefox-desktop-core-reviewers ,jswinarton,hsohaney,sclements,aminomancer,perftest-reviewers,kshampur
-      2026-07-02  53643bfcb058  Bug 2051429 - Use moz-src for dom/manifest. r=Gijs,geckoview-reviewers,m_kato
-      2026-06-24  9f0ac9b0f5e5  Bug 2049868 - Use moz-src for dom/ipc. r=Gijs
-
-[58] Dan Mehic  —  5 patch(es)
+[59] Dan Mehic  —  5 patch(es)
     ----------------------------------------------------------------------
       2026-09-09  5599bbb01aa2  Bug 1983296 - Unship privacy.globalprivacycontrol.functionality.enabled r=necko-reviewers,geckoview-reviewers,webidl,dom-worker-reviewers,mstriemer,smaug,valentin,edenchuang,tcampbell
       2026-09-02  453945f2a523  Bug 2006309 - Remove privacy.clearSiteDataHeader.cache.bfcache.enabled r=manuel
@@ -1809,7 +1823,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-08-30  d8a5f87dbd07  Bug 1850239 - Unship the Firefox plugin blocklist r=manuel
       2026-08-17  8097706c0e0c  Bug 1853263 - Remove the privacy.partition.serviceWorkers pref r=timhuang,dom-worker-reviewers,asuth
 
-[59] David Shin  —  5 patch(es)
+[60] David Shin  —  5 patch(es)
     ----------------------------------------------------------------------
       2026-09-24  a9b68b366716  Bug 2068441: Make browsing context under printing browsing context not targetable. r=dom-core-reviewers,smaug
       2026-08-07  338a85af904c  Bug 2059098: Make ViewTimeline's subject argument required. r=layout-scroll-driven-animation-reviewers,webidl,smaug,boris
@@ -1817,7 +1831,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-05-27  22c4bedb5685  Bug 2036423: Implement inactive timeline. r=layout-scroll-driven-animation-reviewers,webidl,firefox-style-system-reviewers,smaug,boris
       2026-05-26  12f24969a892  Bug 2036423: Implement inactive timeline. r=layout-scroll-driven-animation-reviewers,webidl,firefox-style-system-reviewers,smaug,boris
 
-[60] Eden Chuang  —  5 patch(es)
+[61] Eden Chuang  —  5 patch(es)
     ----------------------------------------------------------------------
       2026-09-09  4104747738ba  Bug 2063488 - Only allow the parent process to set the service worker BrowsingContext flags. r=farre
       2026-07-08  8ffbbe98cc32  Bug 1956304 - P1 Update Async Clipboard API implementation. r=edgar
@@ -1825,7 +1839,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-07-07  81fff21b0088  Bug 1944240 - Update worker-debugging tests for the default-on RemoteWorkerDebugger. r=jdescottes,asuth,extension-reviewers,devtools-reviewers,dom-worker-reviewers,robwu,ochameau
       2026-07-07  316eca53042e  Bug 1956304 - P1 Update Async Clipboard API implementation. r=edgar
 
-[61] Emma Zuehlcke  —  5 patch(es)
+[62] Emma Zuehlcke  —  5 patch(es)
     ----------------------------------------------------------------------
       2026-07-29  8fb766fb5e96  Bug 299116 - Require user activation for opening mailto without prompt. r=Gijs,dom-core-reviewers,edgar
       2026-07-27  f86be70ef2f7  Bug 299116 - Require user activation for opening mailto without prompt. r=Gijs,dom-core-reviewers,edgar
@@ -1833,21 +1847,13 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-14  707c62baaa75  Bug 2012116 - Remove OnInitialStorageAccess IPC and MaybeNotifyStorageKeyUsed call chain. r=dom-worker-reviewers,timhuang,asuth
       2026-04-13  2af4e921f722  Bug 2021626 - Forward browser-scoped permissions to new content processes on navigation. r=timhuang
 
-[62] Katherine Ye  —  5 patch(es)
+[63] Exploding-Joysticks  —  5 patch(es)
     ----------------------------------------------------------------------
-      2026-09-21  c27fe2149791  Bug 2033633 - Skip density correction for fallback intrinsic height. r=dholbert
-      2026-09-21  897c709f2d9a  Bug 2044192 - Remove image.natural-size-fallback.enabled. r=dholbert
-      2026-09-16  da9b26b4440a  Bug 2033633 - Skip density correction for fallback intrinsic height. r=dholbert
-      2026-09-16  24c53e55deb2  Bug 2044192 - Remove image.natural-size-fallback.enabled. r=dholbert
-      2026-07-14  dc7f1346c1e9  Bug 2042986 - Add pref-gated parsing for line-clamp longhand. r=dshin,firefox-style-system-reviewers,layout-reviewers,emilio
-
-[63] Makoto Kato  —  5 patch(es)
-    ----------------------------------------------------------------------
-      2026-07-30  c7ebb59cdcef  Bug 2058356 - Use mozilla::Span for LineBreaker. r=TYLin
-      2026-07-21  59edc7365444  Bug 2049904 - Add File.createFromNsIInputStream to avoid I/O on main thread. r=dom-core-reviewers,geckoview-reviewers,webidl,smaug,dom-storage-reviewers,owlish,jari,saschanaz
-      2026-07-08  e2f3a5d81ced  Bug 2052410 - Add a threshold for deviceorientation events to avoid firing too many events. r=dom-core-reviewers,smaug
-      2026-06-30  5a3bbd04aa4c  Bug 2046280 - Don't enable the rotation vector for deviceorientation event. r=dom-core-reviewers,geckoview-reviewers,smaug,owlish
-      2026-04-07  4d1f25a0ef81  Bug 1869732 - Part 2. Get rid of legacy segmenter. r=TYLin
+      2026-09-30  a9474f0dc7b2  Bug 1842111 - Rename CPOW timeout code in ContentParent.cpp and ProcessHangMonitor.{cpp/h} r=ipc-reviewers,mccr8
+      2026-09-15  882029839452  Bug 1640971 - Rename the dom.ipc.cpow.timeout pref r=ipc-reviewers,geckoview-reviewers,mccr8,m_kato
+      2026-08-31  0be12f331872  Bug 2004869 - Remove the media.rvfc.enable pref r=webidl,smaug
+      2026-08-30  0b88bd09cfb9  Bug 1610671 - Remove the media.eme.encrypted-media-encryption-scheme.enabled pref r=webidl,smaug
+      2026-08-30  e49a1b2b27be  Bug 2004869 - Remove the media.rvfc.enable pref r=webidl,smaug
 
 [64] Matthew Gaudet  —  5 patch(es)
     ----------------------------------------------------------------------
@@ -1865,13 +1871,13 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-30  8f4d580c7039  Bug 2017220 - Improve cross-process framebusting checks, r=sfarre,maltejur
       2026-04-29  13a448ae48f6  Bug 2017220 - Improve cross-process framebusting checks, r=sfarre,maltejur
 
-[66] Nicolas Chevobbe  —  5 patch(es)
+[66] acreskeyMoz  —  5 patch(es)
     ----------------------------------------------------------------------
-      2026-08-17  c7974295848d  Bug 2055445 - [devtools] Display higher precision width and height in ViewportSize highlighter. r=emilio,devtools-reviewers,layout-reviewers,webidl,ochameau,jdescottes
-      2026-08-14  e640c9ef2147  Bug 2055445 - [devtools] Display higher precision width and height in ViewportSize highlighter. r=emilio,devtools-reviewers,layout-reviewers,webidl,ochameau
-      2026-08-13  8d40e7107733  Bug 2055445 - [devtools] Display higher precision width and height in ViewportSize highlighter. r=emilio,devtools-reviewers,layout-reviewers,webidl,ochameau
-      2026-04-13  eb5d6789adf4  Bug 2030693 - [devtools] Add chrome-only CSSContainerRule#queryConditionMatchesElement. r=layout-reviewers,webidl,firefox-style-system-reviewers,emilio.
-      2026-04-01  442027bd9b08  Bug 2028155 - Add conditionIndex parameter to CSSContainerRule queryContainerFor. r=AlaskanEmily,webidl,firefox-style-system-reviewers,smaug.
+      2026-10-05  ae626d8a0148  Bug 2071477 - Re-apply Sec-Purpose on redirected speculation rules prefetch channels r=necko-reviewers,sunil,valentin
+      2026-09-16  b33d077e4384  Bug 2071913 - Report deliveryType "cache" for responses served from the HTTP cache r=avandolder,webidl,smaug
+      2026-07-23  3bb63336ddd6  Bug 2056999 - Don't record http_ver in the pageload event for revalidated responses r=necko-reviewers,kershaw
+      2026-06-30  aa0f14678b65  Bug 2050993 - Only fire the prefetch load event from cache when the channel succeeded. r=necko-reviewers,valentin
+      2026-06-26  f798cf6f07bd  Bug 2046524 - WPT: <link rel=prefetch> should fire the error event for CORS-mode network failures r=sunil,necko-reviewers,valentin
 
 [67] canalun  —  5 patch(es)
     ----------------------------------------------------------------------
@@ -1881,103 +1887,104 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-27  5b0bd23c7d00  Bug 1929118 - Add animation property to AnimationEvent and TransitionEvent. r=birtles,webidl,smaug
       2026-04-22  9f590b3a13d0  Bug 1935557 - Add a pseudoElement option to GetAnimationsOptions. r=webidl,smaug,emilio
 
-[68] Andrea Marchesini  —  4 patch(es)
+[68] delan azabani  —  5 patch(es)
+    ----------------------------------------------------------------------
+      2026-10-01  2c786e89d088  Bug 2070868 - Invalidate `<input>.labels` when `<label for>` changes. r=edgar
+      2026-09-25  083ea1b66b13  Bug 2070868 - Invalidate `<input>.labels` when `<label for>` changes. r=edgar
+      2026-09-17  d50c9066af37  Bug 2070869 - Invalidate `<input>.labels` when `<input id>` changes. r=dom-core-reviewers,keithamus
+      2026-09-08  ba997ad41b1b  Bug 2068830 - Element array getters reflect host even if reference target is invalid. r=dom-core-reviewers,smaug
+      2026-09-03  e301b58c4e4f  Bug 2068464 - Element getters reflect host even if reference target is invalid. r=dom-core-reviewers,keithamus,jjaschke
+
+[69] Andrea Marchesini  —  4 patch(es)
     ----------------------------------------------------------------------
       2026-09-22  cba00f906693  Bug 1994449 - Cookie expiration checks - part 1 - introduce Cookie::IsExpired(), r=valentin,cookie-reviewers
       2026-08-10  907d613967eb  Bug 2052136 - Containers: implement per-site association - part 4 - plumbing r=necko-reviewers,tabbrowser-reviewers,akulyk,nika,kershaw,sclements,ipc-reviewers
       2026-08-10  b261e82b2f4b  Bug 2052136 - Containers: implement per-site association - part 4 - plumbing r=necko-reviewers,tabbrowser-reviewers,akulyk,nika,kershaw,sclements,ipc-reviewers
       2026-07-29  2374635d65b0  Bug 2055761 - Remove dead code: nsDocShell::INTERNAL_LOAD_FLAGS_FORCE_ALLOW_COOKIES & nsIWebNavigation::LOAD_FLAGS_FORCE_ALLOW_COOKIES r=smaug
 
-[69] Andrew Osmond  —  4 patch(es)
+[70] Andrew Osmond  —  4 patch(es)
     ----------------------------------------------------------------------
       2026-08-17  00265aa8d42a  Bug 2046609 - Part 1. Add support for exposing encoder information for testing purposes. r=media-playback-reviewers,webidl,smaug,alwu
       2026-05-14  3891ea710968  Bug 2036470 - Make PAPZ and PAPZTreeManager actors refcounted. r=hiro
       2026-04-28  742b9c431709  Bug 2032515 - Part 3. Remove WebGL prefs to allow running in the content process. r=lsalzman
       2026-04-14  bddb59f59f0c  Bug 2022390. r=media-playback-reviewers,padenot
 
-[70] Benjamin VanderSloot  —  4 patch(es)
+[71] Benjamin VanderSloot  —  4 patch(es)
     ----------------------------------------------------------------------
       2026-05-01  ef79f85b0b33  Bug 2027745, part 1 - Remove the storage access unpartitioning of non-cookie Storage - r=timhuang,dom-worker-reviewers,asuth
       2026-04-30  9b3e76dd2f9c  Bug 2027833, part 2 - Use unpartitionedTestingChannel for BroadcastChannel in dom/html tests - r=smaug
       2026-04-30  486fa0c0bcca  Bug 2027833, part 4 - Use unpartitionedTestingChannel for BroadcastChannel in dom/ipc tests - r=nika
       2026-04-30  5b6e440db659  Bug 2027833, part 1 - Use unpartitionedTestingChannel for BroadcastChannel in docshell tests - r=smaug
 
-[71] Chris Peterson  —  4 patch(es)
+[72] Chris Peterson  —  4 patch(es)
     ----------------------------------------------------------------------
       2026-05-10  9df75ae8c1a6  Bug 2038115 - Replace MOZ_LIKELY/MOZ_UNLIKELY with C++20's [[likely]]/[[unlikely]] in dom/bindings. r=webidl,smaug
       2026-04-14  3700b61d35d1  Bug 2030578 - ipc: Remove unused RemoteBrowser::GetLoadContext() functions. r=nika
       2026-04-14  d6c65375acc2  Bug 2030578 - ipc: Reorder PageUserCounters class definition in WindowGlobalParent.cpp. r=ipc-reviewers,mccr8
       2026-04-14  d093e9eed845  Bug 2030578 - ipc: Replace implicit nsCOMPtr and RefPtr conversion to pointer with already_AddRefed. r=ipc-reviewers,dom-core,nika,smaug
 
-[72] Daniel Minor  —  4 patch(es)
+[73] Daniel Minor  —  4 patch(es)
     ----------------------------------------------------------------------
       2026-09-04  3373604e7d46  Bug 2067391 - Only run test_wasm_offthread_compile on Nightly; r=arai
       2026-08-27  012bce19000e  Bug 2007696 - Use WasmCompileTask for source phase modules; r=arai,frontend-codestyle-reviewers
       2026-08-24  49ebc83dbd3f  Bug 2007696 - Use WasmCompileTask for source phase modules; r=arai,frontend-codestyle-reviewers
       2026-05-25  ac552dd28413  Bug 1944683 - Add use counters for generators; r=mgaudet
 
-[73] David Parks  —  4 patch(es)
+[74] David Parks  —  4 patch(es)
     ----------------------------------------------------------------------
       2026-09-11  476da53d95d8  Bug 2057112: Part 2 - Pass child process's module list by section handle r=win-reviewers,gstoll
       2026-09-11  75b4e31ffc30  Bug 2057112: Part 1 - Rename ModulePaths to ModuleIdentifiers r=win-reviewers,necko-reviewers,media-playback-reviewers,padenot,gstoll
       2026-09-09  8a44e36853be  Bug 2061144: Part 1 - Bring browser to front when opening URL file while a file picker is open r=win-reviewers,dom-core-reviewers,smaug,gstoll
       2026-07-06  cb447ed89ad8  Bug 2052565: Sanity check WindowContext in PContent::GetClipboardDataInternal r=dom-core-reviewers,smaug
 
-[74] Exploding-Joysticks  —  4 patch(es)
+[75] Makoto Kato  —  4 patch(es)
     ----------------------------------------------------------------------
-      2026-09-15  882029839452  Bug 1640971 - Rename the dom.ipc.cpow.timeout pref r=ipc-reviewers,geckoview-reviewers,mccr8,m_kato
-      2026-08-31  0be12f331872  Bug 2004869 - Remove the media.rvfc.enable pref r=webidl,smaug
-      2026-08-30  0b88bd09cfb9  Bug 1610671 - Remove the media.eme.encrypted-media-encryption-scheme.enabled pref r=webidl,smaug
-      2026-08-30  e49a1b2b27be  Bug 2004869 - Remove the media.rvfc.enable pref r=webidl,smaug
+      2026-07-30  c7ebb59cdcef  Bug 2058356 - Use mozilla::Span for LineBreaker. r=TYLin
+      2026-07-21  59edc7365444  Bug 2049904 - Add File.createFromNsIInputStream to avoid I/O on main thread. r=dom-core-reviewers,geckoview-reviewers,webidl,smaug,dom-storage-reviewers,owlish,jari,saschanaz
+      2026-07-08  e2f3a5d81ced  Bug 2052410 - Add a threshold for deviceorientation events to avoid firing too many events. r=dom-core-reviewers,smaug
+      2026-06-30  5a3bbd04aa4c  Bug 2046280 - Don't enable the rotation vector for deviceorientation event. r=dom-core-reviewers,geckoview-reviewers,smaug,owlish
 
-[75] Nazım Can Altınova  —  4 patch(es)
+[76] Nazım Can Altınova  —  4 patch(es)
     ----------------------------------------------------------------------
       2026-07-03  b4d7a6bbc7b3  Bug 2052200 - Convert some potentially problematic log strings inside nsSHistory.cpp to UTF-8 r=farre
       2026-04-21  fdbfe2ece229  Bug 2032439 - Propagate profile additional info when collecting shutdown profiles r=mstange,profiler-reviewers
       2026-04-16  def2f3a549ff  Bug 2025357 - Refactor LCP profiler marker state into SharedLcpMarkerState r=mstange
       2026-04-13  59815dd3d4cd  Bug 2025357 - Refactor LCP profiler marker state into SharedLcpMarkerState r=mstange
 
-[76] Pier Angelo Vendrame  —  4 patch(es)
+[77] Nicolas Chevobbe  —  4 patch(es)
+    ----------------------------------------------------------------------
+      2026-08-17  c7974295848d  Bug 2055445 - [devtools] Display higher precision width and height in ViewportSize highlighter. r=emilio,devtools-reviewers,layout-reviewers,webidl,ochameau,jdescottes
+      2026-08-14  e640c9ef2147  Bug 2055445 - [devtools] Display higher precision width and height in ViewportSize highlighter. r=emilio,devtools-reviewers,layout-reviewers,webidl,ochameau
+      2026-08-13  8d40e7107733  Bug 2055445 - [devtools] Display higher precision width and height in ViewportSize highlighter. r=emilio,devtools-reviewers,layout-reviewers,webidl,ochameau
+      2026-04-13  eb5d6789adf4  Bug 2030693 - [devtools] Add chrome-only CSSContainerRule#queryConditionMatchesElement. r=layout-reviewers,webidl,firefox-style-system-reviewers,emilio.
+
+[78] Pier Angelo Vendrame  —  4 patch(es)
     ----------------------------------------------------------------------
       2026-08-20  98f8d2303f1f  Bug 2059471: Do not spoof screen orientation when it is locked. r=tjr
       2026-08-17  6db14e838b98  Bug 2059465 - Disable screen orientation locking on Windows with RFP on. r=timhuang
       2026-07-23  98f20887ea32  Bug 2039206 - Wire WindowDevicePixelRatio to image-set. r=firefox-style-system-reviewers,emilio,layout-reviewers
       2026-05-26  70eb62f661d2  Bug 2038357 - Consider zoom when spoofing img srcset scaling. r=tjr
 
-[77] Stephen A Pohl  —  4 patch(es)
+[79] Stephen A Pohl  —  4 patch(es)
     ----------------------------------------------------------------------
       2026-08-04  f9d85c89f016  Bug 2051788: Clamp content-initiated window resizes to the screen in the parent process. r=emilio,dom-core-reviewers,smaug
       2026-08-04  e30801fa1ccd  Bug 2051788: Clamp content-initiated window resizes to the screen in the parent process. r=emilio,dom-core-reviewers,smaug
       2026-05-28  5c406a73413d  Bug 2038491: Claim orphaned last-mouse state in PresShell::SynthesizeMouseMove so cursor/:hover restyles take effect after a top-level navigation without a fresh mouse move. r=masayuki
       2026-05-27  1e646d58817d  Bug 2038491: Claim orphaned last-mouse state in PresShell::SynthesizeMouseMove so cursor/:hover restyles take effect after a top-level navigation without a fresh mouse move. r=masayuki
 
-[78] Steve Fink  —  4 patch(es)
+[80] Steve Fink  —  4 patch(es)
     ----------------------------------------------------------------------
       2026-07-21  f80daedb17c1  Bug 2052472 - Remove some detailed error diagnosis since it isn't finding much anymore. r=dom-core-reviewers,jjaschke
       2026-07-20  3e9110371851  Bug 2044843 - In release builds, allow re-pinning an already-pinned ArrayBufferOrView. Safe because it will have been moved out of line. r=farre,smaug
       2026-04-23  3904e91f316b  Bug 2028870 - Un-duplicate cloned slot on OOM r=edgar
       2026-04-10  4143afd1a43c  Bug 2023294 - Restore expando object on error r=jandem,dom-core,smaug
 
-[79] Tyler B. Thrailkill  —  4 patch(es)
+[81] Tyler B. Thrailkill  —  4 patch(es)
     ----------------------------------------------------------------------
       2026-06-02  500f1618edf2  Bug 2022783 - Add link-parameter parsing and rendering for svg r=firefox-style-system-reviewers,layout-reviewers,emilio
       2026-06-02  120c6bb1acd7  Bug 2022783 - Add link-parameter parsing and rendering for svg r=firefox-style-system-reviewers,layout-reviewers,emilio
       2026-06-02  9df9602da078  Bug 2022783 - Add link-parameter parsing and rendering for svg r=firefox-style-system-reviewers,layout-reviewers,emilio
       2026-04-14  f607d44e5fdb  Bug 2022783 - Add link-parameter parsing and rendering for svg r=firefox-style-system-reviewers,layout-reviewers,emilio
-
-[80] acreskeyMoz  —  4 patch(es)
-    ----------------------------------------------------------------------
-      2026-09-16  b33d077e4384  Bug 2071913 - Report deliveryType "cache" for responses served from the HTTP cache r=avandolder,webidl,smaug
-      2026-07-23  3bb63336ddd6  Bug 2056999 - Don't record http_ver in the pageload event for revalidated responses r=necko-reviewers,kershaw
-      2026-06-30  aa0f14678b65  Bug 2050993 - Only fire the prefetch load event from cache when the channel succeeded. r=necko-reviewers,valentin
-      2026-06-26  f798cf6f07bd  Bug 2046524 - WPT: <link rel=prefetch> should fire the error event for CORS-mode network failures r=sunil,necko-reviewers,valentin
-
-[81] delan azabani  —  4 patch(es)
-    ----------------------------------------------------------------------
-      2026-09-25  083ea1b66b13  Bug 2070868 - Invalidate `<input>.labels` when `<label for>` changes. r=edgar
-      2026-09-17  d50c9066af37  Bug 2070869 - Invalidate `<input>.labels` when `<input id>` changes. r=dom-core-reviewers,keithamus
-      2026-09-08  ba997ad41b1b  Bug 2068830 - Element array getters reflect host even if reference target is invalid. r=dom-core-reviewers,smaug
-      2026-09-03  e301b58c4e4f  Bug 2068464 - Element getters reflect host even if reference target is invalid. r=dom-core-reviewers,keithamus,jjaschke
 
 [82] Alex Hochheiden  —  3 patch(es)
     ----------------------------------------------------------------------
@@ -2045,53 +2052,53 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-21  6d07b772d4ff  Bug 103422 - Add support for paragraph movement commands on macOS, including their selection variants. r=bradwerth,masayuki
       2026-04-12  af9bcc8b7360  Bug 103422 - Add support for paragraph movement commands on macOS, including their selection variants. r=bradwerth,masayuki
 
-[93] Manuel Bucher  —  3 patch(es)
+[93] Lee Salzman  —  3 patch(es)
+    ----------------------------------------------------------------------
+      2026-09-29  4aa629882d32  Bug 2076146 - Avoid ref'ing canvas when calling OnWindowDestroy. r=gfx-reviewers,gw,ahale
+      2026-09-27  c7215fb6f63a  Bug 2075910 - When an inner window is torn down (nsGlobalWindowInner::FreeInnerObjects), its 2D canvas contexts now release their buffer providers right away. Before, they kept them until the canvas objects were garbage- and cycle-collected. r=gfx-reviewers,gw
+      2026-09-11  df6bb4f2c80e  Bug 2068375. r=gfx-reviewers,bradwerth
+
+[94] Manuel Bucher  —  3 patch(es)
     ----------------------------------------------------------------------
       2026-09-15  06c01afeb060  Bug 2071965 - Remove unused triggeringStorageAccess from nsILoadInfo r=necko-reviewers,emz,dom-core-reviewers,ipc-reviewers,smaug
       2026-05-26  3a590321aa5a  Bug 2036773 - Don't persist ABA permission in permission manager r=bvandersloot
       2026-05-26  446ffade621a  Bug 1918337 - Rename cookieBehavior BEHAVIOR_REJECT_TRACKER_AND_PARTITION_FOREIGN to BEHAVIOR_PARTITION_FOREIGN r=mkaply,extension-reviewers,devtools-reviewers,cookie-reviewers,dom-worker-reviewers,Sasha,Gijs,farre,nchevobbe,robwu,asuth,timhuang
 
-[94] Marco Bonardo  —  3 patch(es)
+[95] Marco Bonardo  —  3 patch(es)
     ----------------------------------------------------------------------
       2026-09-17  8400c8b8d434  Bug 2070768 - quotation mark in host name should make URIFixup resolve the string as a possible search. r=jteow
       2026-07-09  a6ef1e0a5f73  Bug 2052799 - Move handling of POST visits from network to IHistory. Desktop Places now stores them. r=geckoview-reviewers,places-reviewers,tcampbell,Standard8
       2026-06-22  3b96b448eaf4  Bug 2030601 - Speed-up test_URIFixup_info.js by resetting FOG only when necessary. r=Gijs
 
-[95] Rob Wu  —  3 patch(es)
+[96] Rob Wu  —  3 patch(es)
     ----------------------------------------------------------------------
       2026-08-19  ad5db99e4d2e  Bug 2055827 - Avoid "Couldn't create child process." crash on debug at shutdown r=smaug
       2026-05-27  068ce8f31336  Bug 1751346 - Add support for ObservableArray in XrayWrapper r=edgar,jandem,smaug
       2026-05-05  b0f3671e754b  Bug 2036318 - Specify prototype for observable arrays r=jandem
 
-[96] Ryan Curran  —  3 patch(es)
+[97] Ryan Curran  —  3 patch(es)
     ----------------------------------------------------------------------
       2026-04-29  143b508425d4  Bug 2034604 - run macOS mochitests on AArch64 r=aryx,devtools-reviewers,jdescottes,media-playback-reviewers,padenot
       2026-04-10  b80f6299e99f  Bug 2023967 - disable multiple arm failures r=aryx,extension-reviewers,devtools-reviewers,sessionstore-reviewers,tabbrowser-reviewers,ai-frontend-reviewers,ai-platform-reviewers,jdescottes,robwu,sfoster,dao
       2026-04-10  de74fa751f83  Bug 2023967 - disable multiple arm failures r=aryx,extension-reviewers,devtools-reviewers,sessionstore-reviewers,tabbrowser-reviewers,ai-frontend-reviewers,ai-platform-reviewers,jdescottes,robwu,sfoster,dao
 
-[97] Sajid Anwar  —  3 patch(es)
+[98] Sajid Anwar  —  3 patch(es)
     ----------------------------------------------------------------------
       2026-06-08  814d1cc7f87a  Bug 2042063 - Part 2: Invalidate elements with tree-counting functions on sibling insertion/removal. r=firefox-style-system-reviewers,emilio
       2026-04-24  e9f3ef742a6c  Bug 2029867 - Use default fallback baseline synthesis for tables. r=layout-reviewers,dshin
       2026-04-23  cc6c0c90999f  Bug 2029867 - Use default fallback baseline synthesis for tables. r=layout-reviewers,dshin
 
-[98] Sandor Molnar  —  3 patch(es)
+[99] Sandor Molnar  —  3 patch(es)
     ----------------------------------------------------------------------
       2026-05-01  c39f630ea92d  Bug 2017993 - Disable test_coalesce_touchmove.html for frequent failures. r=intermittent-reviewers,aryx DONTBUILD
       2026-04-15  fadbe2268d45  Bug 1976484 - Disable browser_layers_unloaded_while_interruptingJS.js on linux tsan for frequent failures. r=intermittent-reviewers,aryx DONTBUILD
       2026-04-09  83ab259f687b  Bug 1802904 - Update disable for test_drag_image_file.html to include win10_64_2009 debug too.
 
-[99] Sebastian Hengst  —  3 patch(es)
+[100] Sebastian Hengst  —  3 patch(es)
     ----------------------------------------------------------------------
       2026-09-21  36791814a9f2  Bug 2073167 - re-enable tests disable on macOS AArch64. r=rcurran,devtools-reviewers,nchevobbe
       2026-08-11  18de0f819dc6  Bug 2062465 - disable tests which fail permanently or frequently on macOS 15 AArch64. r=florian,credential-management-reviewers,urlbar-reviewers,dao,dimi
       2026-07-27  1cd5155da24e  Bug 2057902 - skip tests with Nova design enabled if they fail permanently or frequently. r=webcompat-reviewers,twisniewski
-
-[100] Tom Ritter  —  3 patch(es)
-    ----------------------------------------------------------------------
-      2026-08-17  f1ac5f7e58a1  Bug 2063382 - Reduce a site-keyed first-party domain or partition key to its base domain before matching exemptedDomains. r=timhuang
-      2026-04-06  5dca5dba2f2f  Bug 2022615: Fix canvas randomization for HTMLCanvasElement with transferControlToOffscreen() r=tnikkel
-      2026-04-06  7b20ac523260  Bug 2022615: Fix canvas randomization for HTMLCanvasElement with transferControlToOffscreen() r=tnikkel
 
 [101] akizu matsuo  —  3 patch(es)
     ----------------------------------------------------------------------
@@ -2174,15 +2181,15 @@ Known aliases (applied in HTML report, NOT below):
       2026-08-10  546b6eb4118a  Bug 2053743 - Add use counters for FileSystemHandle::move. r=smaug,webidl,edgar,saschanaz
       2026-04-10  8bceff72514e  Bug 2029047 - Add anonymized crash annotation for rejected path traversals. r=afranchuk
 
-[117] Lee Salzman  —  2 patch(es)
-    ----------------------------------------------------------------------
-      2026-09-27  c7215fb6f63a  Bug 2075910 - When an inner window is torn down (nsGlobalWindowInner::FreeInnerObjects), its 2D canvas contexts now release their buffer providers right away. Before, they kept them until the canvas objects were garbage- and cycle-collected. r=gfx-reviewers,gw
-      2026-09-11  df6bb4f2c80e  Bug 2068375. r=gfx-reviewers,bradwerth
-
-[118] Magnus Melin  —  2 patch(es)
+[117] Magnus Melin  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-05-21  fe3158a73072  Bug 2040964 - xul:key should use html style boolean disabled attribute. r=emilio
       2026-04-14  b49c803b4ccc  Bug 2030601 - Increase timeout for slow docshell/test/unit/test_URIFixup_info.js. r=Gijs DONTBUILD
+
+[118] Martin Sirringhaus  —  2 patch(es)
+    ----------------------------------------------------------------------
+      2026-09-30  a7482b1babe9  Bug 1797270 - Make WebRTC work with FIPS enabled r=keeler,webrtc-reviewers,kershaw,bwc,webidl,smaug,ipc-reviewers
+      2026-09-25  b42e262b3431  Bug 1797270 - Make WebRTC work with FIPS enabled r=keeler,webrtc-reviewers,kershaw,bwc,webidl,smaug,ipc-reviewers
 
 [119] Michael Hynson  —  2 patch(es)
     ----------------------------------------------------------------------
@@ -2278,49 +2285,49 @@ Known aliases (applied in HTML report, NOT below):
     ----------------------------------------------------------------------
       2026-05-25  31e276101e9d  Bug 1874203: Introduce nsIClipboard.getDataIfSmallerThan() r=mak,win-reviewers,geckoview-reviewers,nalexander,gstoll
 
-[140] Dominik Bay  —  1 patch(es)
+[140] Dmitry Gozman  —  1 patch(es)
+    ----------------------------------------------------------------------
+      2026-10-02  da1688c62468  Bug 2076389 - Set the target of coalesced PointerEvents only after duplicating their private data. r=dom-core-reviewers,masayuki
+
+[141] Dominik Bay  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-08-26  c06fc27a7571  Bug 2066736 - Validate filter array lengths in FilePickerParent::RecvOpen. r=dom-core-reviewers,smaug
 
-[141] Drew Willcoxon  —  1 patch(es)
+[142] Drew Willcoxon  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-09-10  3e7c069ee0d5  Bug 2035971 - Make the moz-remote-image protocol preserve the instrinsic aspect ratio by default and add a stretch param. r=mak,urlbar-reviewers,tnikkel
 
-[142] Eleanor Dicharry  —  1 patch(es)
+[143] Eleanor Dicharry  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-04-13  32e673a1902e  Bug 2018995 - Add new x-moz-graph custom protocol to support Microsoft Graph in Thunderbird. r=emilio
 
-[143] Erich Gubler  —  1 patch(es)
+[144] Erich Gubler  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-07-30  09a90e0260da  Bug 2059417 - chore(webgpu): document reliance on `enum` discriminants matching for blend factors r=webidl,saschanaz DONTBUILD
 
-[144] Francis McKenzie  —  1 patch(es)
+[145] Francis McKenzie  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-06-04  ad0bfcf7bc08  Bug 1315558 - Add publicSuffix extension API. 1/4 - scaffolding. r=robwu,webidl,smaug
 
-[145] Gabriele Svelto  —  1 patch(es)
+[146] Gabriele Svelto  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-08-27  881de96cacc2  Bug 2066464 - Remove the thread id hack when initializing the crash reporter on macOS r=jld,necko-reviewers,ipc-reviewers,media-playback-reviewers,padenot
 
-[146] Greg Tatum  —  1 patch(es)
+[147] Greg Tatum  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-08-25  2534cbb3208c  Bug 2063103 - Add a ChromeUtils.addProfilerCounter() to hook up counters to JS r=canova,profiler-reviewers
 
-[147] Harveer Singh  —  1 patch(es)
+[148] Harveer Singh  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-06-16  e29aad050d44  Bug 2025417: Capping a max size on SharedMap value that could be stored/broadcasted.r=ipc-reviewers,mccr8
 
-[148] Helmut Januschka  —  1 patch(es)
+[149] Helmut Januschka  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-04-28  ceb343c444f6  Bug 2006340 - Implement Resource Timing Level 3 interim response timestamps r=necko-reviewers,webidl,smaug,valentin
 
-[149] James Han  —  1 patch(es)
+[150] James Han  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-05-12  14716cb80c5f  Bug 2030052 - Flush live ContentBlockingLogs on anti-tracking DB query r=emz
-
-[150] Jamie Nicol  —  1 patch(es)
-    ----------------------------------------------------------------------
-      2026-04-02  8e9905173118  Bug 2028516 - Ensure WebRenderLayerManager's mWrChild cannot be null. r=gfx-reviewers,lsalzman
 
 [151] John M. Schanck  —  1 patch(es)
     ----------------------------------------------------------------------
@@ -2358,49 +2365,49 @@ Known aliases (applied in HTML report, NOT below):
     ----------------------------------------------------------------------
       2026-09-23  2f48e2754b47  Bug 2064392 - Fix opener-after-user-interaction heuristic being run inconsistently r=timhuang
 
-[160] Martin Sirringhaus  —  1 patch(es)
-    ----------------------------------------------------------------------
-      2026-09-25  b42e262b3431  Bug 1797270 - Make WebRTC work with FIPS enabled r=keeler,webrtc-reviewers,kershaw,bwc,webidl,smaug,ipc-reviewers
-
-[161] Maryam  —  1 patch(es)
+[160] Maryam  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-09-04  c36c839b1040  Bug 2062077 - Deduplicate storage access promise resolve/reject logic in Document r=timhuang
 
-[162] Matthew Gregan  —  1 patch(es)
+[161] Matthew Gregan  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-05-08  3a16c481f09e  Bug 2034274 - Pass trusted client PID to AudioIPC server. r=cubeb-reviewers,pehrsons
 
-[163] Max Emig  —  1 patch(es)
+[162] Max Emig  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-08-09  111b07e67e80  Bug 2019456 - Expose nsISocketTransport connection flags in TCPSocket SocketOptions. r=necko-reviewers,webidl,smaug,jesup
 
-[164] Mike Conley  —  1 patch(es)
+[163] Mike Conley  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-09-03  662fdb47c3b8  Bug 1844148 - Provide a mechanism for using center cropping on HTML labels in privileged documents and syntactic sugar to use it with moz-label. r=emilio,mstriemer,desktop-theme-reviewers,layout-reviewers
 
-[165] Mike Hommey  —  1 patch(es)
+[164] Mike Hommey  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-09-08  38946f6f1f52  Bug 2069193 - Reformat Python files that lost `ruff-format` coverage. r=linter-reviewers,perftest-reviewers,geckoview-reviewers,devtools-reviewers,firefox-style-system-reviewers,layout-reviewers,whimboo,sergesanspaille,dshin,sparky,m_kato
 
-[166] Mr. M  —  1 patch(es)
+[165] Mr. M  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-05-29  5f837dd775a3  Bug 2005007 - Add parsing for CSS corner-shape support r=firefox-style-system-reviewers,emilio,dshin
 
-[167] Nicolas Guichard  —  1 patch(es)
+[166] Nicolas Guichard  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-09-15  2e70387e03ff  Bug 2070387 - Skip tests skipped on android-em-14-x86_64/opt on android-em-14-x86_64-ccov/opt as well. r=intermittent-reviewers,ahal
 
-[168] Nishu Sheth  —  1 patch(es)
+[167] Nishu Sheth  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-06-16  6da0d7899689  Bug 2000683 - Enable "Copy" in right click menu when window is inactive on macOS. r=spohl,dom-core-reviewers,smaug
 
-[169] Perf AI Bot  —  1 patch(es)
+[168] Perf AI Bot  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-09-15  05924a8db751  Bug 2066583 - Add compile-time-length overloads for HTML parser ASCII literal comparisons, using an exact-length check and bounded character comparison. r=hsivonen
 
-[170] Robbendebiene  —  1 patch(es)
+[169] Robbendebiene  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-07-07  bfa5336c0905  Bug 1685123 - Implement manifest sandbox support r=robwu
+
+[170] Rong Bao  —  1 patch(es)
+    ----------------------------------------------------------------------
+      2026-10-02  9c72e81acde2  Bug 2077173 - Implement htmlaccel on LoongArch64 platforms with LSX intrinsics. r=dom-core-reviewers,hsivonen
 
 [171] Sammy Khamis  —  1 patch(es)
     ----------------------------------------------------------------------
@@ -2426,50 +2433,54 @@ Known aliases (applied in HTML report, NOT below):
     ----------------------------------------------------------------------
       2026-04-17  902def36332a  Bug 2031993 - Update `wgpu` to revision 0b4bdaf9cea213ce614405a834ff049b9dfba103. r=webgpu-reviewers,supply-chain-reviewers,webidl,smaug,aleiserson
 
-[177] Tomislav Jovanovic  —  1 patch(es)
+[177] Tom Ritter  —  1 patch(es)
+    ----------------------------------------------------------------------
+      2026-08-17  f1ac5f7e58a1  Bug 2063382 - Reduce a site-keyed first-party domain or partition key to its base domain before matching exemptedDomains. r=timhuang
+
+[178] Tomislav Jovanovic  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-05-13  59cbd9177c72  Bug 1745823 - Add ExtensionGuardSet WebIDL type r=frontend-codestyle-reviewers,robwu
 
-[178] Travis Long  —  1 patch(es)
+[179] Travis Long  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-06-30  9736f955ddac  Bug 2050081 - Record corrected active tick limited to non-synthesized events. r=edgar,chumphreys
 
-[179] Valentin Pollet  —  1 patch(es)
+[180] Valentin Pollet  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-09-25  96d1247815db  Bug 2070199 - Part 3: Add HWInferenceProcess and the browser HWInference process r=nika,gregtatum,ai-platform-reviewers
 
-[180] Vignesh B  —  1 patch(es)
+[181] Vignesh B  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-05-16  88b911b72c63  Bug 1966844 - Make -moz-element work inside shadow dom / webcomponents. r=emilio,firefox-style-system-reviewers,layout-reviewers
 
-[181] Yury Delendik  —  1 patch(es)
+[182] Yury Delendik  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-06-29  c040d15e2851  Bug 2002637 - Remove asm.js from JS public API and embedder integration. r=jandem,devtools-reviewers,ochameau
 
-[182] Yuxiao Zhu  —  1 patch(es)
+[183] Yuxiao Zhu  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-08-03  32731ace5f16  Bug 1861034 - Apply text range offsets before CSS transforms in query content events. r=masayuki
 
-[183] any1here  —  1 patch(es)
+[184] any1here  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-06-18  c119369d4216  Bug 2046933 - Fix canvas.captureStream() permission prompting r=tjr
 
-[184] celenity  —  1 patch(es)
+[185] celenity  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-09-21  d30f3b512615  Bug 1961408 - Mock navigator.sendBeacon when Beacon is disabled r=webidl,emilio,emz
 
-[185] chariri  —  1 patch(es)
+[186] chariri  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-05-12  eff14c5ad10f  Bug 2031427 - Refresh IME observer when designMode editor root changes. r=masayuki
 
-[186] hannajones  —  1 patch(es)
+[187] hannajones  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-09-01  cd003d027f70  Bug 1945032 - Perform visibility checks on HTML elements with accesskeys in the chrome r=masayuki,mkennedy
 
-[187] scottdowne  —  1 patch(es)
+[188] scottdowne  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-07-23  6b76f1879571  Bug 2056650 - Mark moz-newtab-wallpaper as known-cacheable so newtab custom wallpapers stop flashing r=desktop-theme-reviewers,mconley,emilio
 
-[188] unknown  —  1 patch(es)
+[189] unknown  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-04-24  6102d967f68b  Bug 2034120: Tell content permissions to ignore an ALLOW SitePermission if geolocation is not available r=saschanaz
