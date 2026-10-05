@@ -3,25 +3,34 @@
     "path": "toolkit/components/ml",
     "paths": [
       "toolkit/components/ml",
-      "toolkit/components/pageextractor"
+      "toolkit/components/pageextractor",
+      "toolkit/components/aboutinference",
+      "dom/onnx",
+      "third_party/llama.cpp",
+      "config/external/mozinference",
+      "browser/components/aiwindow/services"
     ],
     "group": "ai-platform-reviewers",
     "excludes": [],
     "window_start": "2026-04-09",
     "window_end": "2026-09-30",
-    "generated_at": "2026-10-05T21:27:28.093994+00:00",
-    "generated_at_display": "Oct 5, 2026, 2:27 PM PDT"
+    "generated_at": "2026-10-05T21:47:14.690901+00:00",
+    "generated_at_display": "Oct 5, 2026, 2:47 PM PDT"
   },
   "summary": {
-    "total_patches": 220,
-    "group_tagged_patches": 202,
-    "group_tagged_pct": 0.9181818181818182,
-    "landed_without_team_review": 17,
-    "landed_without_team_review_pct": 0.07727272727272727,
+    "total_patches": 259,
+    "group_tagged_patches": 214,
+    "group_tagged_pct": 0.8262548262548263,
+    "landed_without_team_review": 28,
+    "landed_without_team_review_pct": 0.10810810810810811,
     "landed_without_team_review_by_subdir": {
       "toolkit/components/pageextractor": 3,
       "toolkit/components/ml": 8,
-      "(unknown)": 6
+      "third_party/llama.cpp": 8,
+      "config/external/mozinference": 1,
+      "browser/components/aiwindow/services": 1,
+      "(unknown)": 6,
+      "dom/onnx": 1
     },
     "landed_without_team_review_list": [
       {
@@ -345,6 +354,73 @@
         "primary_subdir": "toolkit/components/ml"
       },
       {
+        "sha": "51cea4cf34af9054eb0dc7e33b52227ee2976dc1",
+        "short_sha": "51cea4cf34af",
+        "date": "2026-09-02",
+        "author": "Paul Adenot",
+        "subject": "Bug 1940906 - Make parakeet.cpp/llama.cpp reproduce when re-vendored, and add it to that job.",
+        "reviewers": [],
+        "differential_revision": "D322902",
+        "primary_subdir": "third_party/llama.cpp"
+      },
+      {
+        "sha": "44a01fe93b3961b4f845656c104dc3cf4d5edef7",
+        "short_sha": "44a01fe93b39",
+        "date": "2026-09-02",
+        "author": "Paul Adenot",
+        "subject": "Bug 1940906 - Vendor mudler/parakeet.cpp for cache-aware streaming speech recognition. r=firefox-build-system-reviewers,glandium,media-playback-reviewers,alwu",
+        "reviewers": [
+          {
+            "name": "firefox-build-system-reviewers",
+            "is_group": true
+          },
+          {
+            "name": "glandium",
+            "is_group": false
+          },
+          {
+            "name": "media-playback-reviewers",
+            "is_group": true
+          },
+          {
+            "name": "alwu",
+            "is_group": false
+          }
+        ],
+        "differential_revision": "D268402",
+        "primary_subdir": "config/external/mozinference"
+      },
+      {
+        "sha": "e3bfebe1ae03efc05b4f8f4528d59cb9526445f4",
+        "short_sha": "e3bfebe1ae03",
+        "date": "2026-08-17",
+        "author": "Timothy Nikkel",
+        "subject": "Bug 2063948. Make third_party/llama.cpp vendor again. r=padenot",
+        "reviewers": [
+          {
+            "name": "padenot",
+            "is_group": false
+          }
+        ],
+        "differential_revision": "D318988",
+        "primary_subdir": "third_party/llama.cpp"
+      },
+      {
+        "sha": "1f1514d1c2a8b04022742a30980a872a8c9ff444",
+        "short_sha": "1f1514d1c2a8",
+        "date": "2026-08-12",
+        "author": "Christopher DiPersio",
+        "subject": "Bug 2062278 - Memories Scheduler watermark is set to the timestamp of the session's last event r=cmurray",
+        "reviewers": [
+          {
+            "name": "cmurray",
+            "is_group": false
+          }
+        ],
+        "differential_revision": "D317669",
+        "primary_subdir": "browser/components/aiwindow/services"
+      },
+      {
         "sha": "44a4b924ba68e71ce1e0098ab90520b618f53818",
         "short_sha": "44a4b924ba68",
         "date": "2026-08-04",
@@ -455,6 +531,115 @@
         ],
         "differential_revision": "D291668",
         "primary_subdir": "toolkit/components/pageextractor"
+      },
+      {
+        "sha": "ccb30809039308bdab3ac9c3d4ee8962871b31e6",
+        "short_sha": "ccb308090393",
+        "date": "2026-06-26",
+        "author": "Valentin Pollet",
+        "subject": "Bug 2043658 - Update llama.cpp to 74ade527 - Improve performance of catch blocks redefined by moz-overrides.h r=padenot",
+        "reviewers": [
+          {
+            "name": "padenot",
+            "is_group": false
+          }
+        ],
+        "differential_revision": "D308369",
+        "primary_subdir": "third_party/llama.cpp"
+      },
+      {
+        "sha": "d1a2a4f7a80766590ccea74ba2b31b667435b791",
+        "short_sha": "d1a2a4f7a807",
+        "date": "2026-06-26",
+        "author": "Valentin Pollet",
+        "subject": "Bug 2043658 - Update llama.cpp to 74ade527 - New patch (skip metadata kv dump) r=padenot",
+        "reviewers": [
+          {
+            "name": "padenot",
+            "is_group": false
+          }
+        ],
+        "differential_revision": "D308368",
+        "primary_subdir": "third_party/llama.cpp"
+      },
+      {
+        "sha": "0c6da841191906547e03b75d188350e4169e2c86",
+        "short_sha": "0c6da8411919",
+        "date": "2026-06-26",
+        "author": "Valentin Pollet",
+        "subject": "Bug 2043658 - Update llama.cpp to 74ade527 - New patch (missing includes) r=padenot",
+        "reviewers": [
+          {
+            "name": "padenot",
+            "is_group": false
+          }
+        ],
+        "differential_revision": "D307369",
+        "primary_subdir": "third_party/llama.cpp"
+      },
+      {
+        "sha": "5c663af001e101fbd150f9cee625ba1f67f00d62",
+        "short_sha": "5c663af001e1",
+        "date": "2026-06-26",
+        "author": "Valentin Pollet",
+        "subject": "Bug 2043658 - Update llama.cpp to 74ade527 - Rebase patch 12 (profiler hooks) r=padenot",
+        "reviewers": [
+          {
+            "name": "padenot",
+            "is_group": false
+          }
+        ],
+        "differential_revision": "D307368",
+        "primary_subdir": "third_party/llama.cpp"
+      },
+      {
+        "sha": "5a7095ca5fbf4d8b77acae142bb8c7abd57723e8",
+        "short_sha": "5a7095ca5fbf",
+        "date": "2026-06-26",
+        "author": "Valentin Pollet",
+        "subject": "Bug 2043658 - Update llama.cpp to 74ade527 - Rebase patch 11 (missing includes) r=padenot",
+        "reviewers": [
+          {
+            "name": "padenot",
+            "is_group": false
+          }
+        ],
+        "differential_revision": "D307367",
+        "primary_subdir": "third_party/llama.cpp"
+      },
+      {
+        "sha": "7ddd989902620214a8426ecfd801d6b157329422",
+        "short_sha": "7ddd98990262",
+        "date": "2026-06-26",
+        "author": "Valentin Pollet",
+        "subject": "Bug 2043658 - Update llama.cpp to 74ade527 - Run mach vendor r=padenot",
+        "reviewers": [
+          {
+            "name": "padenot",
+            "is_group": false
+          }
+        ],
+        "differential_revision": "D307356",
+        "primary_subdir": "third_party/llama.cpp"
+      },
+      {
+        "sha": "4d969909ed7e05b4001babe02729342c68694d90",
+        "short_sha": "4d969909ed7e",
+        "date": "2026-06-11",
+        "author": "Keith Cirkel",
+        "subject": "Bug 2045043 - Part 20 - Fixup final classes using _FINAL cycle collecting isupports macro in dom/onnx r=dom-core-reviewers,edgar",
+        "reviewers": [
+          {
+            "name": "dom-core-reviewers",
+            "is_group": true
+          },
+          {
+            "name": "edgar",
+            "is_group": false
+          }
+        ],
+        "differential_revision": "D305299",
+        "primary_subdir": "dom/onnx"
       },
       {
         "sha": "e833a1757bf7bc72c6b7bcae77794b8fc3d5c9cf",
@@ -633,52 +818,57 @@
       }
     ],
     "unique_individuals": 6,
-    "avg_per_week": 7.769230769230769
+    "avg_per_week": 8.23076923076923
   },
   "within_group_total": [
     {
       "name": "gregtatum",
-      "count": 48,
-      "pct": 0.2696629213483146
+      "count": 49,
+      "pct": 0.2578947368421053
     },
     {
       "name": "valentinp",
-      "count": 42,
-      "pct": 0.23595505617977527
+      "count": 47,
+      "pct": 0.24736842105263157
     },
     {
       "name": "thasan",
-      "count": 35,
-      "pct": 0.19662921348314608
+      "count": 41,
+      "pct": 0.21578947368421053
     },
     {
       "name": "nordzilla",
       "count": 34,
-      "pct": 0.19101123595505617
+      "pct": 0.17894736842105263
     },
     {
       "name": "jbowser",
       "count": 15,
-      "pct": 0.08426966292134831
+      "pct": 0.07894736842105263
     },
     {
       "name": "npodgurski",
       "count": 4,
-      "pct": 0.02247191011235955
+      "pct": 0.021052631578947368
     }
   ],
   "concentration": {
-    "top1_share": 0.2696629213483146,
-    "top3_share": 0.702247191011236,
-    "top5_share": 0.9775280898876404,
-    "gini": 0.28277153558052426,
+    "top1_share": 0.2578947368421053,
+    "top3_share": 0.7210526315789474,
+    "top5_share": 0.9789473684210527,
+    "gini": 0.28771929824561404,
     "bus_factor": 2
   },
   "sole_reviewer": [
     {
       "name": "valentinp",
-      "count": 1,
-      "pct": 1.0
+      "count": 2,
+      "pct": 0.5
+    },
+    {
+      "name": "gregtatum",
+      "count": 2,
+      "pct": 0.5
     }
   ],
   "weekly_trend": {
@@ -718,62 +908,6 @@
       "jbowser"
     ],
     "all_members": {
-      "jbowser": [
-        0,
-        0,
-        0,
-        0,
-        0,
-        1,
-        0,
-        0,
-        0,
-        1,
-        2,
-        3,
-        2,
-        2,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        1,
-        0,
-        3,
-        0,
-        0
-      ],
-      "jgauf": [
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0
-      ],
       "nordzilla": [
         0,
         0,
@@ -802,7 +936,7 @@
         3,
         0
       ],
-      "txia": [
+      "jgauf": [
         0,
         0,
         0,
@@ -842,14 +976,14 @@
         3,
         2,
         0,
+        3,
+        0,
+        4,
+        1,
         2,
         0,
         2,
-        1,
-        1,
-        0,
-        2,
-        5,
+        7,
         3,
         0,
         2,
@@ -886,32 +1020,60 @@
         0,
         1
       ],
-      "valentinp": [
+      "txia": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "jbowser": [
+        0,
+        0,
         0,
         0,
         0,
         1,
         0,
+        0,
+        0,
+        1,
+        2,
+        3,
+        2,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
         1,
         0,
+        3,
         0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        2,
-        0,
-        2,
-        2,
-        5,
-        1,
-        4,
-        0,
-        8,
-        5,
-        6,
-        5,
         0
       ],
       "gregtatum": [
@@ -920,7 +1082,7 @@
         1,
         1,
         1,
-        1,
+        2,
         1,
         3,
         2,
@@ -941,6 +1103,34 @@
         0,
         13,
         1
+      ],
+      "valentinp": [
+        0,
+        0,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        0,
+        2,
+        2,
+        6,
+        1,
+        4,
+        0,
+        9,
+        7,
+        7,
+        5,
+        0
       ]
     },
     "authored_per_member": {
@@ -1032,15 +1222,15 @@
         0,
         0,
         0,
+        1,
+        0,
+        1,
+        1,
+        1,
         0,
         0,
         1,
-        1,
-        1,
-        0,
-        0,
-        1,
-        1,
+        18,
         0,
         1,
         0,
@@ -1146,7 +1336,7 @@
         0,
         0,
         0,
-        0,
+        1,
         0,
         0,
         0,
@@ -1173,21 +1363,21 @@
   "total_reviews_per_member": [
     {
       "name": "gregtatum",
-      "in_group": 48,
-      "out_of_group": 0,
-      "total": 48
+      "in_group": 49,
+      "out_of_group": 2,
+      "total": 51
     },
     {
       "name": "valentinp",
-      "in_group": 42,
-      "out_of_group": 1,
-      "total": 43
+      "in_group": 47,
+      "out_of_group": 3,
+      "total": 50
     },
     {
       "name": "thasan",
-      "in_group": 35,
+      "in_group": 41,
       "out_of_group": 0,
-      "total": 35
+      "total": 41
     },
     {
       "name": "nordzilla",
@@ -1198,14 +1388,14 @@
     {
       "name": "jbowser",
       "in_group": 15,
-      "out_of_group": 0,
-      "total": 15
+      "out_of_group": 11,
+      "total": 26
     },
     {
       "name": "npodgurski",
       "in_group": 4,
-      "out_of_group": 0,
-      "total": 4
+      "out_of_group": 1,
+      "total": 5
     }
   ],
   "members": {
@@ -1222,90 +1412,90 @@
     "top_total": [
       {
         "name": "Valentin Pollet",
-        "count": 38,
-        "pct": 0.24050632911392406
+        "count": 56,
+        "pct": 0.2994652406417112
       },
       {
         "name": "Paul Adenot",
-        "count": 25,
-        "pct": 0.15822784810126583
+        "count": 32,
+        "pct": 0.1711229946524064
       },
       {
         "name": "Taimur Hasan",
         "count": 21,
-        "pct": 0.13291139240506328
+        "pct": 0.11229946524064172
       },
       {
         "name": "Joe Bowser",
         "count": 16,
-        "pct": 0.10126582278481013
+        "pct": 0.0855614973262032
       },
       {
         "name": "Rolf Rando",
         "count": 10,
-        "pct": 0.06329113924050633
+        "pct": 0.053475935828877004
       },
       {
         "name": "Sylvestre Ledru",
         "count": 9,
-        "pct": 0.056962025316455694
+        "pct": 0.0481283422459893
       },
       {
         "name": "Erik Nordin",
         "count": 7,
-        "pct": 0.04430379746835443
+        "pct": 0.0374331550802139
       },
       {
         "name": "Greg Tatum",
         "count": 7,
-        "pct": 0.04430379746835443
+        "pct": 0.0374331550802139
+      },
+      {
+        "name": "Christopher DiPersio",
+        "count": 6,
+        "pct": 0.03208556149732621
       },
       {
         "name": "Bryan Johns",
         "count": 5,
-        "pct": 0.03164556962025317
+        "pct": 0.026737967914438502
       },
       {
         "name": "Florian Qu\u00e8ze",
         "count": 5,
-        "pct": 0.03164556962025317
+        "pct": 0.026737967914438502
       },
       {
         "name": "Tyler Etchart",
         "count": 4,
-        "pct": 0.02531645569620253
+        "pct": 0.0213903743315508
       },
       {
         "name": "Nika Layzell",
         "count": 3,
-        "pct": 0.0189873417721519
+        "pct": 0.016042780748663103
       },
       {
         "name": "Vasish Baungally",
         "count": 3,
-        "pct": 0.0189873417721519
+        "pct": 0.016042780748663103
       },
       {
         "name": "Matthew Tighe",
         "count": 3,
-        "pct": 0.0189873417721519
-      },
-      {
-        "name": "Mark Banner",
-        "count": 2,
-        "pct": 0.012658227848101266
+        "pct": 0.016042780748663103
       }
     ],
     "reviewer_matrix": {
       "Valentin Pollet": {
-        "gregtatum": 25,
+        "gregtatum": 26,
         "nordzilla": 15,
-        "jbowser": 5
+        "jbowser": 16
       },
       "Paul Adenot": {
-        "valentinp": 17,
+        "valentinp": 22,
         "nordzilla": 1,
-        "gregtatum": 5
+        "gregtatum": 6
       },
       "Taimur Hasan": {
         "nordzilla": 11,
@@ -1337,6 +1527,10 @@
         "thasan": 6,
         "valentinp": 1
       },
+      "Christopher DiPersio": {
+        "thasan": 5,
+        "valentinp": 1
+      },
       "Bryan Johns": {
         "npodgurski": 1,
         "valentinp": 2,
@@ -1361,8 +1555,7 @@
       },
       "Matthew Tighe": {
         "thasan": 4
-      },
-      "Mark Banner": {}
+      }
     }
   },
   "per_member_authors": {
@@ -1382,20 +1575,24 @@
       {
         "name": "Tyler Etchart",
         "count": 1
+      },
+      {
+        "name": "Yubin Jamora",
+        "count": 1
       }
     ],
     "gregtatum": [
       {
         "name": "Valentin Pollet",
-        "count": 25
+        "count": 26
+      },
+      {
+        "name": "Paul Adenot",
+        "count": 6
       },
       {
         "name": "Taimur Hasan",
         "count": 6
-      },
-      {
-        "name": "Paul Adenot",
-        "count": 5
       },
       {
         "name": "Joe Bowser",
@@ -1428,6 +1625,10 @@
       {
         "name": "Florian Qu\u00e8ze",
         "count": 1
+      },
+      {
+        "name": "Tim Xia",
+        "count": 1
       }
     ],
     "nordzilla": [
@@ -1459,7 +1660,7 @@
     "valentinp": [
       {
         "name": "Paul Adenot",
-        "count": 17
+        "count": 22
       },
       {
         "name": "Joe Bowser",
@@ -1478,15 +1679,15 @@
         "count": 2
       },
       {
+        "name": "Ryan VanderMeulen",
+        "count": 2
+      },
+      {
         "name": "Bryan Johns",
         "count": 2
       },
       {
         "name": "Tyler Etchart",
-        "count": 1
-      },
-      {
-        "name": "Ryan VanderMeulen",
         "count": 1
       },
       {
@@ -1500,12 +1701,16 @@
       {
         "name": "serge-sans-paille",
         "count": 1
+      },
+      {
+        "name": "Christopher DiPersio",
+        "count": 1
       }
     ],
     "jbowser": [
       {
         "name": "Valentin Pollet",
-        "count": 5
+        "count": 16
       },
       {
         "name": "Taimur Hasan",
@@ -1542,6 +1747,10 @@
         "count": 6
       },
       {
+        "name": "Christopher DiPersio",
+        "count": 5
+      },
+      {
         "name": "Matthew Tighe",
         "count": 4
       },
@@ -1572,6 +1781,10 @@
       {
         "name": "Erik Nordin",
         "count": 1
+      },
+      {
+        "name": "Chidam Gopal",
+        "count": 1
       }
     ]
   },
@@ -1579,25 +1792,27 @@
     "gregtatum": 7,
     "nordzilla": 7,
     "thasan": 0,
-    "valentinp": 38,
+    "valentinp": 56,
     "jbowser": 16,
     "npodgurski": 0,
     "jgauf": 0,
-    "txia": 0
+    "txia": 1
   },
   "team_views": {
     "1m": {
       "window_start": "2026-08-31",
       "window_end": "2026-09-30",
       "summary": {
-        "total_patches": 76,
-        "group_tagged_patches": 67,
-        "group_tagged_pct": 0.881578947368421,
-        "landed_without_team_review": 8,
-        "landed_without_team_review_pct": 0.10526315789473684,
+        "total_patches": 84,
+        "group_tagged_patches": 71,
+        "group_tagged_pct": 0.8452380952380952,
+        "landed_without_team_review": 10,
+        "landed_without_team_review_pct": 0.11904761904761904,
         "landed_without_team_review_by_subdir": {
           "toolkit/components/pageextractor": 1,
-          "toolkit/components/ml": 7
+          "toolkit/components/ml": 7,
+          "third_party/llama.cpp": 1,
+          "config/external/mozinference": 1
         },
         "landed_without_team_review_list": [
           {
@@ -1919,63 +2134,100 @@
             ],
             "differential_revision": "D320282",
             "primary_subdir": "toolkit/components/ml"
+          },
+          {
+            "sha": "51cea4cf34af9054eb0dc7e33b52227ee2976dc1",
+            "short_sha": "51cea4cf34af",
+            "date": "2026-09-02",
+            "author": "Paul Adenot",
+            "subject": "Bug 1940906 - Make parakeet.cpp/llama.cpp reproduce when re-vendored, and add it to that job.",
+            "reviewers": [],
+            "differential_revision": "D322902",
+            "primary_subdir": "third_party/llama.cpp"
+          },
+          {
+            "sha": "44a01fe93b3961b4f845656c104dc3cf4d5edef7",
+            "short_sha": "44a01fe93b39",
+            "date": "2026-09-02",
+            "author": "Paul Adenot",
+            "subject": "Bug 1940906 - Vendor mudler/parakeet.cpp for cache-aware streaming speech recognition. r=firefox-build-system-reviewers,glandium,media-playback-reviewers,alwu",
+            "reviewers": [
+              {
+                "name": "firefox-build-system-reviewers",
+                "is_group": true
+              },
+              {
+                "name": "glandium",
+                "is_group": false
+              },
+              {
+                "name": "media-playback-reviewers",
+                "is_group": true
+              },
+              {
+                "name": "alwu",
+                "is_group": false
+              }
+            ],
+            "differential_revision": "D268402",
+            "primary_subdir": "config/external/mozinference"
           }
         ],
         "unique_individuals": 6,
-        "avg_per_week": 13.4
+        "avg_per_week": 14.2
       },
       "within_group_total": [
         {
           "name": "valentinp",
-          "count": 24,
-          "pct": 0.4067796610169492
+          "count": 28,
+          "pct": 0.4444444444444444
         },
         {
           "name": "gregtatum",
           "count": 14,
-          "pct": 0.23728813559322035
+          "pct": 0.2222222222222222
         },
         {
           "name": "nordzilla",
           "count": 14,
-          "pct": 0.23728813559322035
+          "pct": 0.2222222222222222
         },
         {
           "name": "jbowser",
           "count": 4,
-          "pct": 0.06779661016949153
+          "pct": 0.06349206349206349
         },
         {
           "name": "thasan",
           "count": 2,
-          "pct": 0.03389830508474576
+          "pct": 0.031746031746031744
         },
         {
           "name": "npodgurski",
           "count": 1,
-          "pct": 0.01694915254237288
+          "pct": 0.015873015873015872
         }
       ],
       "concentration": {
-        "top1_share": 0.4067796610169492,
-        "top3_share": 0.8813559322033898,
-        "top5_share": 0.9830508474576272,
-        "gini": 0.4548022598870056,
+        "top1_share": 0.4444444444444444,
+        "top3_share": 0.8888888888888888,
+        "top5_share": 0.9841269841269841,
+        "gini": 0.47883597883597884,
         "bus_factor": 2
       },
       "sole_reviewer": [
         {
           "name": "valentinp",
-          "count": 1,
+          "count": 2,
           "pct": 1.0
         }
       ],
       "total_reviews_per_member": [
         {
           "name": "valentinp",
-          "in_group": 24,
-          "out_of_group": 1,
-          "total": 25
+          "in_group": 28,
+          "out_of_group": 3,
+          "total": 31
         },
         {
           "name": "nordzilla",
@@ -2011,85 +2263,90 @@
       "authors": {
         "top_total": [
           {
-            "name": "Valentin Pollet",
-            "count": 19,
-            "pct": 0.2835820895522388
+            "name": "Paul Adenot",
+            "count": 22,
+            "pct": 0.2972972972972973
           },
           {
-            "name": "Paul Adenot",
-            "count": 16,
-            "pct": 0.23880597014925373
+            "name": "Valentin Pollet",
+            "count": 19,
+            "pct": 0.25675675675675674
           },
           {
             "name": "Taimur Hasan",
             "count": 8,
-            "pct": 0.11940298507462686
+            "pct": 0.10810810810810811
           },
           {
             "name": "Joe Bowser",
             "count": 5,
-            "pct": 0.07462686567164178
+            "pct": 0.06756756756756757
           },
           {
             "name": "Erik Nordin",
             "count": 5,
-            "pct": 0.07462686567164178
+            "pct": 0.06756756756756757
           },
           {
             "name": "Bryan Johns",
             "count": 2,
-            "pct": 0.029850746268656716
+            "pct": 0.02702702702702703
           },
           {
             "name": "Sylvestre Ledru",
             "count": 2,
-            "pct": 0.029850746268656716
+            "pct": 0.02702702702702703
           },
           {
             "name": "Tyler Etchart",
             "count": 2,
-            "pct": 0.029850746268656716
+            "pct": 0.02702702702702703
           },
           {
             "name": "Florian Qu\u00e8ze",
             "count": 2,
-            "pct": 0.029850746268656716
+            "pct": 0.02702702702702703
           },
           {
             "name": "Greg Tatum",
             "count": 2,
-            "pct": 0.029850746268656716
+            "pct": 0.02702702702702703
           },
           {
             "name": "Alex Hochheiden",
             "count": 1,
-            "pct": 0.014925373134328358
+            "pct": 0.013513513513513514
           },
           {
             "name": "Rolf Rando",
             "count": 1,
-            "pct": 0.014925373134328358
+            "pct": 0.013513513513513514
           },
           {
             "name": "Nika Layzell",
             "count": 1,
-            "pct": 0.014925373134328358
+            "pct": 0.013513513513513514
           },
           {
             "name": "Mark Banner",
             "count": 1,
-            "pct": 0.014925373134328358
+            "pct": 0.013513513513513514
+          },
+          {
+            "name": "Ryan VanderMeulen",
+            "count": 1,
+            "pct": 0.013513513513513514
           }
         ],
         "reviewer_matrix": {
+          "Paul Adenot": {
+            "valentinp": 19,
+            "nordzilla": 1
+          },
           "Valentin Pollet": {
             "gregtatum": 13,
             "nordzilla": 5,
             "jbowser": 1
-          },
-          "Paul Adenot": {
-            "valentinp": 14,
-            "nordzilla": 1
           },
           "Taimur Hasan": {
             "nordzilla": 7,
@@ -2121,7 +2378,10 @@
           "Nika Layzell": {
             "nordzilla": 1
           },
-          "Mark Banner": {}
+          "Mark Banner": {},
+          "Ryan VanderMeulen": {
+            "valentinp": 1
+          }
         }
       }
     },
@@ -2129,14 +2389,17 @@
       "window_start": "2026-07-02",
       "window_end": "2026-09-30",
       "summary": {
-        "total_patches": 154,
-        "group_tagged_patches": 142,
-        "group_tagged_pct": 0.922077922077922,
-        "landed_without_team_review": 11,
-        "landed_without_team_review_pct": 0.07142857142857142,
+        "total_patches": 170,
+        "group_tagged_patches": 152,
+        "group_tagged_pct": 0.8941176470588236,
+        "landed_without_team_review": 15,
+        "landed_without_team_review_pct": 0.08823529411764706,
         "landed_without_team_review_by_subdir": {
           "toolkit/components/pageextractor": 1,
           "toolkit/components/ml": 8,
+          "third_party/llama.cpp": 2,
+          "config/external/mozinference": 1,
+          "browser/components/aiwindow/services": 1,
           "(unknown)": 2
         },
         "landed_without_team_review_list": [
@@ -2461,6 +2724,73 @@
             "primary_subdir": "toolkit/components/ml"
           },
           {
+            "sha": "51cea4cf34af9054eb0dc7e33b52227ee2976dc1",
+            "short_sha": "51cea4cf34af",
+            "date": "2026-09-02",
+            "author": "Paul Adenot",
+            "subject": "Bug 1940906 - Make parakeet.cpp/llama.cpp reproduce when re-vendored, and add it to that job.",
+            "reviewers": [],
+            "differential_revision": "D322902",
+            "primary_subdir": "third_party/llama.cpp"
+          },
+          {
+            "sha": "44a01fe93b3961b4f845656c104dc3cf4d5edef7",
+            "short_sha": "44a01fe93b39",
+            "date": "2026-09-02",
+            "author": "Paul Adenot",
+            "subject": "Bug 1940906 - Vendor mudler/parakeet.cpp for cache-aware streaming speech recognition. r=firefox-build-system-reviewers,glandium,media-playback-reviewers,alwu",
+            "reviewers": [
+              {
+                "name": "firefox-build-system-reviewers",
+                "is_group": true
+              },
+              {
+                "name": "glandium",
+                "is_group": false
+              },
+              {
+                "name": "media-playback-reviewers",
+                "is_group": true
+              },
+              {
+                "name": "alwu",
+                "is_group": false
+              }
+            ],
+            "differential_revision": "D268402",
+            "primary_subdir": "config/external/mozinference"
+          },
+          {
+            "sha": "e3bfebe1ae03efc05b4f8f4528d59cb9526445f4",
+            "short_sha": "e3bfebe1ae03",
+            "date": "2026-08-17",
+            "author": "Timothy Nikkel",
+            "subject": "Bug 2063948. Make third_party/llama.cpp vendor again. r=padenot",
+            "reviewers": [
+              {
+                "name": "padenot",
+                "is_group": false
+              }
+            ],
+            "differential_revision": "D318988",
+            "primary_subdir": "third_party/llama.cpp"
+          },
+          {
+            "sha": "1f1514d1c2a8b04022742a30980a872a8c9ff444",
+            "short_sha": "1f1514d1c2a8",
+            "date": "2026-08-12",
+            "author": "Christopher DiPersio",
+            "subject": "Bug 2062278 - Memories Scheduler watermark is set to the timestamp of the session's last event r=cmurray",
+            "reviewers": [
+              {
+                "name": "cmurray",
+                "is_group": false
+              }
+            ],
+            "differential_revision": "D317669",
+            "primary_subdir": "browser/components/aiwindow/services"
+          },
+          {
             "sha": "44a4b924ba68e71ce1e0098ab90520b618f53818",
             "short_sha": "44a4b924ba68",
             "date": "2026-08-04",
@@ -2535,60 +2865,60 @@
           }
         ],
         "unique_individuals": 6,
-        "avg_per_week": 10.142857142857142
+        "avg_per_week": 10.857142857142858
       },
       "within_group_total": [
         {
           "name": "valentinp",
-          "count": 40,
-          "pct": 0.3007518796992481
+          "count": 45,
+          "pct": 0.3146853146853147
         },
         {
           "name": "gregtatum",
           "count": 34,
-          "pct": 0.2556390977443609
+          "pct": 0.23776223776223776
         },
         {
           "name": "nordzilla",
           "count": 34,
-          "pct": 0.2556390977443609
+          "pct": 0.23776223776223776
         },
         {
           "name": "thasan",
-          "count": 16,
-          "pct": 0.12030075187969924
+          "count": 21,
+          "pct": 0.14685314685314685
         },
         {
           "name": "jbowser",
           "count": 6,
-          "pct": 0.045112781954887216
+          "pct": 0.04195804195804196
         },
         {
           "name": "npodgurski",
           "count": 3,
-          "pct": 0.022556390977443608
+          "pct": 0.02097902097902098
         }
       ],
       "concentration": {
-        "top1_share": 0.3007518796992481,
-        "top3_share": 0.8120300751879699,
-        "top5_share": 0.9774436090225563,
-        "gini": 0.35964912280701755,
+        "top1_share": 0.3146853146853147,
+        "top3_share": 0.7902097902097902,
+        "top5_share": 0.9790209790209791,
+        "gini": 0.3578088578088576,
         "bus_factor": 2
       },
       "sole_reviewer": [
         {
           "name": "valentinp",
-          "count": 1,
+          "count": 2,
           "pct": 1.0
         }
       ],
       "total_reviews_per_member": [
         {
           "name": "valentinp",
-          "in_group": 40,
-          "out_of_group": 1,
-          "total": 41
+          "in_group": 45,
+          "out_of_group": 3,
+          "total": 48
         },
         {
           "name": "nordzilla",
@@ -2604,9 +2934,9 @@
         },
         {
           "name": "thasan",
-          "in_group": 16,
+          "in_group": 21,
           "out_of_group": 0,
-          "total": 16
+          "total": 21
         },
         {
           "name": "jbowser",
@@ -2626,77 +2956,77 @@
           {
             "name": "Valentin Pollet",
             "count": 33,
-            "pct": 0.2727272727272727
+            "pct": 0.25190839694656486
           },
           {
             "name": "Paul Adenot",
-            "count": 25,
-            "pct": 0.2066115702479339
+            "count": 31,
+            "pct": 0.2366412213740458
           },
           {
             "name": "Taimur Hasan",
             "count": 15,
-            "pct": 0.12396694214876033
+            "pct": 0.11450381679389313
           },
           {
             "name": "Joe Bowser",
             "count": 12,
-            "pct": 0.09917355371900827
+            "pct": 0.0916030534351145
           },
           {
             "name": "Erik Nordin",
             "count": 6,
-            "pct": 0.049586776859504134
+            "pct": 0.04580152671755725
           },
           {
             "name": "Rolf Rando",
             "count": 6,
-            "pct": 0.049586776859504134
+            "pct": 0.04580152671755725
+          },
+          {
+            "name": "Christopher DiPersio",
+            "count": 6,
+            "pct": 0.04580152671755725
           },
           {
             "name": "Sylvestre Ledru",
             "count": 4,
-            "pct": 0.03305785123966942
+            "pct": 0.030534351145038167
           },
           {
             "name": "Bryan Johns",
             "count": 3,
-            "pct": 0.024793388429752067
+            "pct": 0.022900763358778626
           },
           {
             "name": "Tyler Etchart",
             "count": 3,
-            "pct": 0.024793388429752067
+            "pct": 0.022900763358778626
           },
           {
             "name": "Florian Qu\u00e8ze",
             "count": 3,
-            "pct": 0.024793388429752067
+            "pct": 0.022900763358778626
           },
           {
             "name": "Vasish Baungally",
             "count": 3,
-            "pct": 0.024793388429752067
+            "pct": 0.022900763358778626
           },
           {
             "name": "Nika Layzell",
             "count": 2,
-            "pct": 0.01652892561983471
+            "pct": 0.015267175572519083
           },
           {
             "name": "Greg Tatum",
             "count": 2,
-            "pct": 0.01652892561983471
+            "pct": 0.015267175572519083
           },
           {
-            "name": "Mark Banner",
+            "name": "Ryan VanderMeulen",
             "count": 2,
-            "pct": 0.01652892561983471
-          },
-          {
-            "name": "Matthew Tighe",
-            "count": 2,
-            "pct": 0.01652892561983471
+            "pct": 0.015267175572519083
           }
         ],
         "reviewer_matrix": {
@@ -2706,7 +3036,7 @@
             "jbowser": 3
           },
           "Paul Adenot": {
-            "valentinp": 17,
+            "valentinp": 22,
             "nordzilla": 1,
             "gregtatum": 5
           },
@@ -2731,6 +3061,10 @@
             "nordzilla": 2,
             "thasan": 4
           },
+          "Christopher DiPersio": {
+            "thasan": 5,
+            "valentinp": 1
+          },
           "Sylvestre Ledru": {},
           "Bryan Johns": {
             "npodgurski": 1,
@@ -2752,9 +3086,8 @@
           "Greg Tatum": {
             "thasan": 2
           },
-          "Mark Banner": {},
-          "Matthew Tighe": {
-            "thasan": 2
+          "Ryan VanderMeulen": {
+            "valentinp": 2
           }
         }
       }
@@ -2763,15 +3096,19 @@
       "window_start": "2026-04-09",
       "window_end": "2026-09-30",
       "summary": {
-        "total_patches": 220,
-        "group_tagged_patches": 202,
-        "group_tagged_pct": 0.9181818181818182,
-        "landed_without_team_review": 17,
-        "landed_without_team_review_pct": 0.07727272727272727,
+        "total_patches": 259,
+        "group_tagged_patches": 214,
+        "group_tagged_pct": 0.8262548262548263,
+        "landed_without_team_review": 28,
+        "landed_without_team_review_pct": 0.10810810810810811,
         "landed_without_team_review_by_subdir": {
           "toolkit/components/pageextractor": 3,
           "toolkit/components/ml": 8,
-          "(unknown)": 6
+          "third_party/llama.cpp": 8,
+          "config/external/mozinference": 1,
+          "browser/components/aiwindow/services": 1,
+          "(unknown)": 6,
+          "dom/onnx": 1
         },
         "landed_without_team_review_list": [
           {
@@ -3095,6 +3432,73 @@
             "primary_subdir": "toolkit/components/ml"
           },
           {
+            "sha": "51cea4cf34af9054eb0dc7e33b52227ee2976dc1",
+            "short_sha": "51cea4cf34af",
+            "date": "2026-09-02",
+            "author": "Paul Adenot",
+            "subject": "Bug 1940906 - Make parakeet.cpp/llama.cpp reproduce when re-vendored, and add it to that job.",
+            "reviewers": [],
+            "differential_revision": "D322902",
+            "primary_subdir": "third_party/llama.cpp"
+          },
+          {
+            "sha": "44a01fe93b3961b4f845656c104dc3cf4d5edef7",
+            "short_sha": "44a01fe93b39",
+            "date": "2026-09-02",
+            "author": "Paul Adenot",
+            "subject": "Bug 1940906 - Vendor mudler/parakeet.cpp for cache-aware streaming speech recognition. r=firefox-build-system-reviewers,glandium,media-playback-reviewers,alwu",
+            "reviewers": [
+              {
+                "name": "firefox-build-system-reviewers",
+                "is_group": true
+              },
+              {
+                "name": "glandium",
+                "is_group": false
+              },
+              {
+                "name": "media-playback-reviewers",
+                "is_group": true
+              },
+              {
+                "name": "alwu",
+                "is_group": false
+              }
+            ],
+            "differential_revision": "D268402",
+            "primary_subdir": "config/external/mozinference"
+          },
+          {
+            "sha": "e3bfebe1ae03efc05b4f8f4528d59cb9526445f4",
+            "short_sha": "e3bfebe1ae03",
+            "date": "2026-08-17",
+            "author": "Timothy Nikkel",
+            "subject": "Bug 2063948. Make third_party/llama.cpp vendor again. r=padenot",
+            "reviewers": [
+              {
+                "name": "padenot",
+                "is_group": false
+              }
+            ],
+            "differential_revision": "D318988",
+            "primary_subdir": "third_party/llama.cpp"
+          },
+          {
+            "sha": "1f1514d1c2a8b04022742a30980a872a8c9ff444",
+            "short_sha": "1f1514d1c2a8",
+            "date": "2026-08-12",
+            "author": "Christopher DiPersio",
+            "subject": "Bug 2062278 - Memories Scheduler watermark is set to the timestamp of the session's last event r=cmurray",
+            "reviewers": [
+              {
+                "name": "cmurray",
+                "is_group": false
+              }
+            ],
+            "differential_revision": "D317669",
+            "primary_subdir": "browser/components/aiwindow/services"
+          },
+          {
             "sha": "44a4b924ba68e71ce1e0098ab90520b618f53818",
             "short_sha": "44a4b924ba68",
             "date": "2026-08-04",
@@ -3205,6 +3609,115 @@
             ],
             "differential_revision": "D291668",
             "primary_subdir": "toolkit/components/pageextractor"
+          },
+          {
+            "sha": "ccb30809039308bdab3ac9c3d4ee8962871b31e6",
+            "short_sha": "ccb308090393",
+            "date": "2026-06-26",
+            "author": "Valentin Pollet",
+            "subject": "Bug 2043658 - Update llama.cpp to 74ade527 - Improve performance of catch blocks redefined by moz-overrides.h r=padenot",
+            "reviewers": [
+              {
+                "name": "padenot",
+                "is_group": false
+              }
+            ],
+            "differential_revision": "D308369",
+            "primary_subdir": "third_party/llama.cpp"
+          },
+          {
+            "sha": "d1a2a4f7a80766590ccea74ba2b31b667435b791",
+            "short_sha": "d1a2a4f7a807",
+            "date": "2026-06-26",
+            "author": "Valentin Pollet",
+            "subject": "Bug 2043658 - Update llama.cpp to 74ade527 - New patch (skip metadata kv dump) r=padenot",
+            "reviewers": [
+              {
+                "name": "padenot",
+                "is_group": false
+              }
+            ],
+            "differential_revision": "D308368",
+            "primary_subdir": "third_party/llama.cpp"
+          },
+          {
+            "sha": "0c6da841191906547e03b75d188350e4169e2c86",
+            "short_sha": "0c6da8411919",
+            "date": "2026-06-26",
+            "author": "Valentin Pollet",
+            "subject": "Bug 2043658 - Update llama.cpp to 74ade527 - New patch (missing includes) r=padenot",
+            "reviewers": [
+              {
+                "name": "padenot",
+                "is_group": false
+              }
+            ],
+            "differential_revision": "D307369",
+            "primary_subdir": "third_party/llama.cpp"
+          },
+          {
+            "sha": "5c663af001e101fbd150f9cee625ba1f67f00d62",
+            "short_sha": "5c663af001e1",
+            "date": "2026-06-26",
+            "author": "Valentin Pollet",
+            "subject": "Bug 2043658 - Update llama.cpp to 74ade527 - Rebase patch 12 (profiler hooks) r=padenot",
+            "reviewers": [
+              {
+                "name": "padenot",
+                "is_group": false
+              }
+            ],
+            "differential_revision": "D307368",
+            "primary_subdir": "third_party/llama.cpp"
+          },
+          {
+            "sha": "5a7095ca5fbf4d8b77acae142bb8c7abd57723e8",
+            "short_sha": "5a7095ca5fbf",
+            "date": "2026-06-26",
+            "author": "Valentin Pollet",
+            "subject": "Bug 2043658 - Update llama.cpp to 74ade527 - Rebase patch 11 (missing includes) r=padenot",
+            "reviewers": [
+              {
+                "name": "padenot",
+                "is_group": false
+              }
+            ],
+            "differential_revision": "D307367",
+            "primary_subdir": "third_party/llama.cpp"
+          },
+          {
+            "sha": "7ddd989902620214a8426ecfd801d6b157329422",
+            "short_sha": "7ddd98990262",
+            "date": "2026-06-26",
+            "author": "Valentin Pollet",
+            "subject": "Bug 2043658 - Update llama.cpp to 74ade527 - Run mach vendor r=padenot",
+            "reviewers": [
+              {
+                "name": "padenot",
+                "is_group": false
+              }
+            ],
+            "differential_revision": "D307356",
+            "primary_subdir": "third_party/llama.cpp"
+          },
+          {
+            "sha": "4d969909ed7e05b4001babe02729342c68694d90",
+            "short_sha": "4d969909ed7e",
+            "date": "2026-06-11",
+            "author": "Keith Cirkel",
+            "subject": "Bug 2045043 - Part 20 - Fixup final classes using _FINAL cycle collecting isupports macro in dom/onnx r=dom-core-reviewers,edgar",
+            "reviewers": [
+              {
+                "name": "dom-core-reviewers",
+                "is_group": true
+              },
+              {
+                "name": "edgar",
+                "is_group": false
+              }
+            ],
+            "differential_revision": "D305299",
+            "primary_subdir": "dom/onnx"
           },
           {
             "sha": "e833a1757bf7bc72c6b7bcae77794b8fc3d5c9cf",
@@ -3383,72 +3896,77 @@
           }
         ],
         "unique_individuals": 6,
-        "avg_per_week": 7.769230769230769
+        "avg_per_week": 8.23076923076923
       },
       "within_group_total": [
         {
           "name": "gregtatum",
-          "count": 48,
-          "pct": 0.2696629213483146
+          "count": 49,
+          "pct": 0.2578947368421053
         },
         {
           "name": "valentinp",
-          "count": 42,
-          "pct": 0.23595505617977527
+          "count": 47,
+          "pct": 0.24736842105263157
         },
         {
           "name": "thasan",
-          "count": 35,
-          "pct": 0.19662921348314608
+          "count": 41,
+          "pct": 0.21578947368421053
         },
         {
           "name": "nordzilla",
           "count": 34,
-          "pct": 0.19101123595505617
+          "pct": 0.17894736842105263
         },
         {
           "name": "jbowser",
           "count": 15,
-          "pct": 0.08426966292134831
+          "pct": 0.07894736842105263
         },
         {
           "name": "npodgurski",
           "count": 4,
-          "pct": 0.02247191011235955
+          "pct": 0.021052631578947368
         }
       ],
       "concentration": {
-        "top1_share": 0.2696629213483146,
-        "top3_share": 0.702247191011236,
-        "top5_share": 0.9775280898876404,
-        "gini": 0.28277153558052426,
+        "top1_share": 0.2578947368421053,
+        "top3_share": 0.7210526315789474,
+        "top5_share": 0.9789473684210527,
+        "gini": 0.28771929824561404,
         "bus_factor": 2
       },
       "sole_reviewer": [
         {
           "name": "valentinp",
-          "count": 1,
-          "pct": 1.0
+          "count": 2,
+          "pct": 0.5
+        },
+        {
+          "name": "gregtatum",
+          "count": 2,
+          "pct": 0.5
         }
       ],
       "total_reviews_per_member": [
         {
           "name": "gregtatum",
-          "in_group": 48,
-          "out_of_group": 0,
-          "total": 48
+          "in_group": 49,
+          "out_of_group": 2,
+          "total": 51
         },
         {
           "name": "valentinp",
-          "in_group": 42,
-          "out_of_group": 1,
-          "total": 43
+          "in_group": 47,
+          "out_of_group": 3,
+          "total": 50
         },
         {
           "name": "thasan",
-          "in_group": 35,
+          "in_group": 41,
           "out_of_group": 0,
-          "total": 35
+          "total": 41
         },
         {
           "name": "nordzilla",
@@ -3459,104 +3977,104 @@
         {
           "name": "jbowser",
           "in_group": 15,
-          "out_of_group": 0,
-          "total": 15
+          "out_of_group": 11,
+          "total": 26
         },
         {
           "name": "npodgurski",
           "in_group": 4,
-          "out_of_group": 0,
-          "total": 4
+          "out_of_group": 1,
+          "total": 5
         }
       ],
       "authors": {
         "top_total": [
           {
             "name": "Valentin Pollet",
-            "count": 38,
-            "pct": 0.24050632911392406
+            "count": 56,
+            "pct": 0.2994652406417112
           },
           {
             "name": "Paul Adenot",
-            "count": 25,
-            "pct": 0.15822784810126583
+            "count": 32,
+            "pct": 0.1711229946524064
           },
           {
             "name": "Taimur Hasan",
             "count": 21,
-            "pct": 0.13291139240506328
+            "pct": 0.11229946524064172
           },
           {
             "name": "Joe Bowser",
             "count": 16,
-            "pct": 0.10126582278481013
+            "pct": 0.0855614973262032
           },
           {
             "name": "Rolf Rando",
             "count": 10,
-            "pct": 0.06329113924050633
+            "pct": 0.053475935828877004
           },
           {
             "name": "Sylvestre Ledru",
             "count": 9,
-            "pct": 0.056962025316455694
+            "pct": 0.0481283422459893
           },
           {
             "name": "Erik Nordin",
             "count": 7,
-            "pct": 0.04430379746835443
+            "pct": 0.0374331550802139
           },
           {
             "name": "Greg Tatum",
             "count": 7,
-            "pct": 0.04430379746835443
+            "pct": 0.0374331550802139
+          },
+          {
+            "name": "Christopher DiPersio",
+            "count": 6,
+            "pct": 0.03208556149732621
           },
           {
             "name": "Bryan Johns",
             "count": 5,
-            "pct": 0.03164556962025317
+            "pct": 0.026737967914438502
           },
           {
             "name": "Florian Qu\u00e8ze",
             "count": 5,
-            "pct": 0.03164556962025317
+            "pct": 0.026737967914438502
           },
           {
             "name": "Tyler Etchart",
             "count": 4,
-            "pct": 0.02531645569620253
+            "pct": 0.0213903743315508
           },
           {
             "name": "Nika Layzell",
             "count": 3,
-            "pct": 0.0189873417721519
+            "pct": 0.016042780748663103
           },
           {
             "name": "Vasish Baungally",
             "count": 3,
-            "pct": 0.0189873417721519
+            "pct": 0.016042780748663103
           },
           {
             "name": "Matthew Tighe",
             "count": 3,
-            "pct": 0.0189873417721519
-          },
-          {
-            "name": "Mark Banner",
-            "count": 2,
-            "pct": 0.012658227848101266
+            "pct": 0.016042780748663103
           }
         ],
         "reviewer_matrix": {
           "Valentin Pollet": {
-            "gregtatum": 25,
+            "gregtatum": 26,
             "nordzilla": 15,
-            "jbowser": 5
+            "jbowser": 16
           },
           "Paul Adenot": {
-            "valentinp": 17,
+            "valentinp": 22,
             "nordzilla": 1,
-            "gregtatum": 5
+            "gregtatum": 6
           },
           "Taimur Hasan": {
             "nordzilla": 11,
@@ -3588,6 +4106,10 @@
             "thasan": 6,
             "valentinp": 1
           },
+          "Christopher DiPersio": {
+            "thasan": 5,
+            "valentinp": 1
+          },
           "Bryan Johns": {
             "npodgurski": 1,
             "valentinp": 2,
@@ -3612,8 +4134,7 @@
           },
           "Matthew Tighe": {
             "thasan": 4
-          },
-          "Mark Banner": {}
+          }
         }
       }
     }
@@ -3901,24 +4422,6 @@
           "summary": "The web-search pipeline now includes an `/answer` path, allowing it to provide an answer as part of its search flow. This extends the pipeline beyond simply finding and returning web results."
         },
         {
-          "feature": "toolkit/components/ml",
-          "label": "ML inference engine",
-          "count": 1,
-          "patches": [
-            {
-              "sha": "23ac933ec4f973ef716bad36adf8ce43cab6e480",
-              "short_sha": "23ac933ec4f9",
-              "date": "2026-09-23",
-              "author": "Sylvestre Ledru",
-              "subject": "Declare every about:license notice in moz.build",
-              "bug": "2070824",
-              "differential_revision": "D325284",
-              "primary_subdir": "toolkit/components/ml"
-            }
-          ],
-          "summary": "The machine-learning inference engine\u2019s build configuration now explicitly declares each license notice shown on Firefox\u2019s about:license page. This helps keep third-party license information accounted for as the engine is built."
-        },
-        {
           "feature": "toolkit/components/pageextractor",
           "label": "Page extractor",
           "count": 1,
@@ -3953,13 +4456,31 @@
             }
           ],
           "summary": "New developer documentation explains how to use Firefox\u2019s Page Extractor. It gives developers guidance for working with the feature without needing to piece together its behavior from the code."
+        },
+        {
+          "feature": "third_party/llama.cpp",
+          "label": "llama.cpp (vendored)",
+          "count": 1,
+          "patches": [
+            {
+              "sha": "23ac933ec4f973ef716bad36adf8ce43cab6e480",
+              "short_sha": "23ac933ec4f9",
+              "date": "2026-09-23",
+              "author": "Sylvestre Ledru",
+              "subject": "Declare every about:license notice in moz.build",
+              "bug": "2070824",
+              "differential_revision": "D325284",
+              "primary_subdir": "third_party/llama.cpp"
+            }
+          ],
+          "summary": "Firefox now explicitly includes every license notice for the vendored llama.cpp library in its about:license page, making the software\u2019s licensing information easier to find and keeping the notices complete."
         }
       ]
     },
     "1m": {
       "window_start": "2026-08-31",
       "window_end": "2026-09-30",
-      "total": 67,
+      "total": 74,
       "features": [
         {
           "feature": "toolkit/components/ml/tests",
@@ -4200,134 +4721,6 @@
           "summary": "The machine-learning test suite now covers text generation through both inference paths, including concurrency, cancellation, and generator abandonment. It also adds smoke tests for autofill and smart window intent models, and shared end-to-end performance tools that track engine activity and measure runs without tearing down engines before warm-up samples. The suite was also cleaned up to make ONNX backend selection and availability more consistent and to remove unused security-layer plumbing."
         },
         {
-          "feature": "toolkit/components/ml/backends",
-          "label": "ML inference backends",
-          "count": 12,
-          "patches": [
-            {
-              "sha": "a59a3866ac8409cb747646c2af942950f3bc1994",
-              "short_sha": "a59a3866ac84",
-              "date": "2026-09-25",
-              "author": "Valentin Pollet",
-              "subject": "Part 1: Make LlamaRuntimeLinker::Init thread-safe",
-              "bug": "2046986",
-              "differential_revision": "D324723",
-              "primary_subdir": "toolkit/components/ml/backends"
-            },
-            {
-              "sha": "f28dc10b657e0992f5eeffd50a050da1cb4ec23b",
-              "short_sha": "f28dc10b657e",
-              "date": "2026-09-24",
-              "author": "Joe Bowser",
-              "subject": "Report when a cancelled llama.cpp generation has released the backend",
-              "bug": "2066288",
-              "differential_revision": "D327982",
-              "primary_subdir": "toolkit/components/ml/backends"
-            },
-            {
-              "sha": "8a3a6fe4c52420597cdf72221959a6d542b2d7d3",
-              "short_sha": "8a3a6fe4c524",
-              "date": "2026-09-15",
-              "author": "Paul Adenot",
-              "subject": "End an utterance when the decoder stops emitting tokens.",
-              "bug": "2069285",
-              "differential_revision": "D325454",
-              "primary_subdir": "toolkit/components/ml/backends"
-            },
-            {
-              "sha": "5a47dd23f8ec7fb4fb38c42795585c1a396da1e1",
-              "short_sha": "5a47dd23f8ec",
-              "date": "2026-09-15",
-              "author": "Paul Adenot",
-              "subject": "Emit one SpeechRecognition final result per utterance.",
-              "bug": "2069285",
-              "differential_revision": "D323664",
-              "primary_subdir": "toolkit/components/ml/backends"
-            },
-            {
-              "sha": "17557ef36304f0f7da6511291b4e4d47b26ee49e",
-              "short_sha": "17557ef36304",
-              "date": "2026-09-11",
-              "author": "Valentin Pollet",
-              "subject": "Fixed LlamaGenerateTask state update to happen before it notifies stream consumer",
-              "bug": "2071288",
-              "differential_revision": "D325375",
-              "primary_subdir": "toolkit/components/ml/backends"
-            },
-            {
-              "sha": "6c31aafac73663169d636096210108264a1f3f1c",
-              "short_sha": "6c31aafac736",
-              "date": "2026-09-10",
-              "author": "Paul Adenot",
-              "subject": "Report the speech recognition model's memory in about:memory.",
-              "bug": "2069895",
-              "differential_revision": "D324040",
-              "primary_subdir": "toolkit/components/ml/backends"
-            },
-            {
-              "sha": "500af56f0ad8bfbaa9b69031549d73a7ba9d9419",
-              "short_sha": "500af56f0ad8",
-              "date": "2026-09-10",
-              "author": "Paul Adenot",
-              "subject": "Don't attempt to use Metal in the Inference content process.",
-              "bug": "2068758",
-              "differential_revision": "D324021",
-              "primary_subdir": "toolkit/components/ml/backends"
-            },
-            {
-              "sha": "7b22e8e2daa926ef51e29237e9aceac674975392",
-              "short_sha": "7b22e8e2daa9",
-              "date": "2026-09-04",
-              "author": "Valentin Pollet",
-              "subject": "Fixed hang in LlamaGenerateTask",
-              "bug": "2049666",
-              "differential_revision": "D322897",
-              "primary_subdir": "toolkit/components/ml/backends"
-            },
-            {
-              "sha": "6dd4292914349fb93738c2cb333af3c64f7bab40",
-              "short_sha": "6dd429291434",
-              "date": "2026-09-02",
-              "author": "Paul Adenot",
-              "subject": "Expose a typed per-word drain in vendored parakeet.cpp.",
-              "bug": "1940906",
-              "differential_revision": "D311107",
-              "primary_subdir": "toolkit/components/ml/backends"
-            },
-            {
-              "sha": "86c8530595d3840aa6e1b8df84a1f43d6c98f5c8",
-              "short_sha": "86c8530595d3",
-              "date": "2026-09-02",
-              "author": "Paul Adenot",
-              "subject": "Fetch the function we need for speech recognition from the mozinference library.",
-              "bug": "1940906",
-              "differential_revision": "D268413",
-              "primary_subdir": "toolkit/components/ml/backends"
-            },
-            {
-              "sha": "c4618016af72b49ad070aa9f012f120e1ce4fbc8",
-              "short_sha": "c4618016af72",
-              "date": "2026-09-02",
-              "author": "Paul Adenot",
-              "subject": "Fall back to CPU when the GPU backend fails to initialize.",
-              "bug": "2051973",
-              "differential_revision": "D315685",
-              "primary_subdir": "toolkit/components/ml/backends"
-            },
-            {
-              "sha": "c51090b135867f08b4e7a41047e12f67c8ced9e4",
-              "short_sha": "c51090b13586",
-              "date": "2026-08-31",
-              "author": "Nika Layzell",
-              "subject": "Add a structured RemoteType representation.",
-              "bug": "2052614",
-              "differential_revision": "D310442",
-              "primary_subdir": "toolkit/components/ml/backends"
-            }
-          ],
-          "summary": "The inference backends received reliability and resource-reporting improvements: llama.cpp initialization is now thread-safe, cancelled runs report when they release the backend, and GPU initialization can fall back to CPU. Speech recognition now ends an utterance when token output stops, emits one final result per utterance, and reports model memory in about:memory; related fixes also address hangs, streaming updates, and access to speech-recognition functions. Firefox also avoids trying to use Metal in the content process and improves how inference process types are represented."
-        },
-        {
           "feature": "toolkit/components/ml/ipc",
           "label": "ML IPC",
           "count": 6,
@@ -4394,6 +4787,74 @@
             }
           ],
           "summary": "Firefox added the behind-the-scenes messaging needed for text generation and speech recognition to work with machine-learning models, including checking whether a speech model is available and reporting when a model install is refused or fails. It also introduced a separate hardware-inference process for running supported AI tasks, helping keep that work organized outside the main browser process."
+        },
+        {
+          "feature": "toolkit/components/ml/backends",
+          "label": "ML inference backends",
+          "count": 6,
+          "patches": [
+            {
+              "sha": "a59a3866ac8409cb747646c2af942950f3bc1994",
+              "short_sha": "a59a3866ac84",
+              "date": "2026-09-25",
+              "author": "Valentin Pollet",
+              "subject": "Part 1: Make LlamaRuntimeLinker::Init thread-safe",
+              "bug": "2046986",
+              "differential_revision": "D324723",
+              "primary_subdir": "toolkit/components/ml/backends"
+            },
+            {
+              "sha": "f28dc10b657e0992f5eeffd50a050da1cb4ec23b",
+              "short_sha": "f28dc10b657e",
+              "date": "2026-09-24",
+              "author": "Joe Bowser",
+              "subject": "Report when a cancelled llama.cpp generation has released the backend",
+              "bug": "2066288",
+              "differential_revision": "D327982",
+              "primary_subdir": "toolkit/components/ml/backends"
+            },
+            {
+              "sha": "17557ef36304f0f7da6511291b4e4d47b26ee49e",
+              "short_sha": "17557ef36304",
+              "date": "2026-09-11",
+              "author": "Valentin Pollet",
+              "subject": "Fixed LlamaGenerateTask state update to happen before it notifies stream consumer",
+              "bug": "2071288",
+              "differential_revision": "D325375",
+              "primary_subdir": "toolkit/components/ml/backends"
+            },
+            {
+              "sha": "7b22e8e2daa926ef51e29237e9aceac674975392",
+              "short_sha": "7b22e8e2daa9",
+              "date": "2026-09-04",
+              "author": "Valentin Pollet",
+              "subject": "Fixed hang in LlamaGenerateTask",
+              "bug": "2049666",
+              "differential_revision": "D322897",
+              "primary_subdir": "toolkit/components/ml/backends"
+            },
+            {
+              "sha": "86c8530595d3840aa6e1b8df84a1f43d6c98f5c8",
+              "short_sha": "86c8530595d3",
+              "date": "2026-09-02",
+              "author": "Paul Adenot",
+              "subject": "Fetch the function we need for speech recognition from the mozinference library.",
+              "bug": "1940906",
+              "differential_revision": "D268413",
+              "primary_subdir": "toolkit/components/ml/backends"
+            },
+            {
+              "sha": "c4618016af72b49ad070aa9f012f120e1ce4fbc8",
+              "short_sha": "c4618016af72",
+              "date": "2026-09-02",
+              "author": "Paul Adenot",
+              "subject": "Fall back to CPU when the GPU backend fails to initialize.",
+              "bug": "2051973",
+              "differential_revision": "D315685",
+              "primary_subdir": "toolkit/components/ml/backends"
+            }
+          ],
+          "summary": "The ML inference backends\u2014the components that run AI models\u2014are more reliable when starting, stopping, or streaming results from llama.cpp, fixing hangs and timing issues and falling back to the CPU if GPU setup fails. The updates also connect the inference library to the speech-recognition functionality it needs."
         },
         {
           "feature": "toolkit/components/pageextractor",
@@ -4464,6 +4925,132 @@
           "summary": "PageExtractor, Firefox\u2019s tool for collecting information from web pages, can now extract YouTube transcripts by default and avoids waiting twice for a page to be ready. It also records clearer timing and performance data, sends telemetry with client details without using Oblivious HTTP (OHTTP, a privacy-protecting relay), and distinguishes an off-site redirect blocked during a headless load from a generic timeout."
         },
         {
+          "feature": "third_party/llama.cpp",
+          "label": "llama.cpp (vendored)",
+          "count": 6,
+          "patches": [
+            {
+              "sha": "23ac933ec4f973ef716bad36adf8ce43cab6e480",
+              "short_sha": "23ac933ec4f9",
+              "date": "2026-09-23",
+              "author": "Sylvestre Ledru",
+              "subject": "Declare every about:license notice in moz.build",
+              "bug": "2070824",
+              "differential_revision": "D325284",
+              "primary_subdir": "third_party/llama.cpp"
+            },
+            {
+              "sha": "500af56f0ad8bfbaa9b69031549d73a7ba9d9419",
+              "short_sha": "500af56f0ad8",
+              "date": "2026-09-10",
+              "author": "Paul Adenot",
+              "subject": "Don't attempt to use Metal in the Inference content process.",
+              "bug": "2068758",
+              "differential_revision": "D324021",
+              "primary_subdir": "third_party/llama.cpp"
+            },
+            {
+              "sha": "f8396e0da6dd093719b7dd268ca4b2c8c9028bfb",
+              "short_sha": "f8396e0da6dd",
+              "date": "2026-09-10",
+              "author": "Paul Adenot",
+              "subject": "Reassemble the embedded Metal shader when it changes.",
+              "bug": "2068580",
+              "differential_revision": "D324026",
+              "primary_subdir": "third_party/llama.cpp"
+            },
+            {
+              "sha": "153ac773b884c9a849519c470f48a58c6c9f44d8",
+              "short_sha": "153ac773b884",
+              "date": "2026-09-10",
+              "author": "Paul Adenot",
+              "subject": "Fall back to the general mat-vec kernel when Metal lacks the _short one.",
+              "bug": "2068580",
+              "differential_revision": "D324025",
+              "primary_subdir": "third_party/llama.cpp"
+            },
+            {
+              "sha": "51cea4cf34af9054eb0dc7e33b52227ee2976dc1",
+              "short_sha": "51cea4cf34af",
+              "date": "2026-09-02",
+              "author": "Paul Adenot",
+              "subject": "Make parakeet.cpp/llama.cpp reproduce when re-vendored, and add it to that job.",
+              "bug": "1940906",
+              "differential_revision": "D322902",
+              "primary_subdir": "third_party/llama.cpp"
+            },
+            {
+              "sha": "20d174c4e184cd9fcc7391c36c0dbc3be9bfc9a9",
+              "short_sha": "20d174c4e184",
+              "date": "2026-09-02",
+              "author": "Paul Adenot",
+              "subject": "Vendor and compile the Metal backend for libggml.",
+              "bug": "2051973",
+              "differential_revision": "D268401",
+              "primary_subdir": "third_party/llama.cpp"
+            }
+          ],
+          "summary": "Firefox now vendors and builds llama.cpp\u2019s Metal backend, enabling ML inference to use Apple GPUs. The changes also improve compatibility when a particular Metal math kernel is unavailable, avoid trying to use Metal in a process that cannot support it, and keep the bundled code reproducible when updated; license notices are also declared for about:license."
+        },
+        {
+          "feature": "config/external/mozinference",
+          "label": "Inference library build",
+          "count": 5,
+          "patches": [
+            {
+              "sha": "8a3a6fe4c52420597cdf72221959a6d542b2d7d3",
+              "short_sha": "8a3a6fe4c524",
+              "date": "2026-09-15",
+              "author": "Paul Adenot",
+              "subject": "End an utterance when the decoder stops emitting tokens.",
+              "bug": "2069285",
+              "differential_revision": "D325454",
+              "primary_subdir": "config/external/mozinference"
+            },
+            {
+              "sha": "5a47dd23f8ec7fb4fb38c42795585c1a396da1e1",
+              "short_sha": "5a47dd23f8ec",
+              "date": "2026-09-15",
+              "author": "Paul Adenot",
+              "subject": "Emit one SpeechRecognition final result per utterance.",
+              "bug": "2069285",
+              "differential_revision": "D323664",
+              "primary_subdir": "config/external/mozinference"
+            },
+            {
+              "sha": "6c31aafac73663169d636096210108264a1f3f1c",
+              "short_sha": "6c31aafac736",
+              "date": "2026-09-10",
+              "author": "Paul Adenot",
+              "subject": "Report the speech recognition model's memory in about:memory.",
+              "bug": "2069895",
+              "differential_revision": "D324040",
+              "primary_subdir": "config/external/mozinference"
+            },
+            {
+              "sha": "6dd4292914349fb93738c2cb333af3c64f7bab40",
+              "short_sha": "6dd429291434",
+              "date": "2026-09-02",
+              "author": "Paul Adenot",
+              "subject": "Expose a typed per-word drain in vendored parakeet.cpp.",
+              "bug": "1940906",
+              "differential_revision": "D311107",
+              "primary_subdir": "config/external/mozinference"
+            },
+            {
+              "sha": "44a01fe93b3961b4f845656c104dc3cf4d5edef7",
+              "short_sha": "44a01fe93b39",
+              "date": "2026-09-02",
+              "author": "Paul Adenot",
+              "subject": "Vendor mudler/parakeet.cpp for cache-aware streaming speech recognition.",
+              "bug": "1940906",
+              "differential_revision": "D268402",
+              "primary_subdir": "config/external/mozinference"
+            }
+          ],
+          "summary": "Firefox adds Parakeet, a speech-recognition library that can process speech as it arrives, and drains recognized words as they become available. Recognition results are now grouped and finalized once per spoken utterance, including when the decoder stops producing words, and the model\u2019s memory use appears in about:memory."
+        },
+        {
           "feature": "toolkit/components/ml/content",
           "label": "ML engine & pipelines",
           "count": 5,
@@ -4524,18 +5111,8 @@
         {
           "feature": "toolkit/components/ml",
           "label": "ML inference engine",
-          "count": 4,
+          "count": 3,
           "patches": [
-            {
-              "sha": "23ac933ec4f973ef716bad36adf8ce43cab6e480",
-              "short_sha": "23ac933ec4f9",
-              "date": "2026-09-23",
-              "author": "Sylvestre Ledru",
-              "subject": "Declare every about:license notice in moz.build",
-              "bug": "2070824",
-              "differential_revision": "D325284",
-              "primary_subdir": "toolkit/components/ml"
-            },
             {
               "sha": "8e24ac8fea44d233fc65cb6880615defb56bc3c2",
               "short_sha": "8e24ac8fea44",
@@ -4567,7 +5144,7 @@
               "primary_subdir": "toolkit/components/ml"
             }
           ],
-          "summary": "Firefox can now download machine-learning model files through ModelHub and show download progress in the speech-recognition permission prompt, so people can see when a required model is being fetched. Downloads are also attributed to the task that requested them, and the changes ensure required third-party license notices are included."
+          "summary": "Firefox can now download speech-recognition models through ModelHub, its model-download service, and show download progress in the speech-recognition permission prompt. Downloads are also attributed to the task that requested them, making it clearer which activity needs the model."
         },
         {
           "feature": "toolkit/components/ml/textgeneration",
@@ -4634,6 +5211,34 @@
             }
           ],
           "summary": "A text-generation run now ends if the consumer stops using its generator, rather than continuing work without anyone to receive the result. Firefox also records this abandoned run in its engine telemetry, making this behavior visible in diagnostics."
+        },
+        {
+          "feature": "dom/onnx",
+          "label": "ONNX inference DOM API",
+          "count": 2,
+          "patches": [
+            {
+              "sha": "28030c037bf16c2af597ca4ecb6d395d5766ba0c",
+              "short_sha": "28030c037bf1",
+              "date": "2026-09-17",
+              "author": "Ryan VanderMeulen",
+              "subject": "Update onnxruntime toolchain to v1.30.0.",
+              "bug": "2039862",
+              "differential_revision": "D300775",
+              "primary_subdir": "dom/onnx"
+            },
+            {
+              "sha": "c51090b135867f08b4e7a41047e12f67c8ced9e4",
+              "short_sha": "c51090b13586",
+              "date": "2026-08-31",
+              "author": "Nika Layzell",
+              "subject": "Add a structured RemoteType representation.",
+              "bug": "2052614",
+              "differential_revision": "D310442",
+              "primary_subdir": "dom/onnx"
+            }
+          ],
+          "summary": "The ONNX inference DOM API, which lets web features run machine-learning models using ONNX Runtime, is updated to ONNX Runtime 1.30. The changes also give remote-process types a structured representation, improving how this information is described within the API."
         },
         {
           "feature": "toolkit/components/pageextractor/tests",
@@ -4734,6 +5339,24 @@
             }
           ],
           "summary": "New developer documentation explains how to use Firefox\u2019s Page Extractor. It gives developers guidance for working with the feature without needing to piece together its behavior from the code."
+        },
+        {
+          "feature": "third_party/llama.cpp/ggml",
+          "label": "ggml tensor library",
+          "count": 1,
+          "patches": [
+            {
+              "sha": "a45275fb793f95e91e4ec119d2529d198dbb88aa",
+              "short_sha": "a45275fb793f",
+              "date": "2026-09-10",
+              "author": "Paul Adenot",
+              "subject": "Vendor the Metal backend at the pinned llama.cpp revision.",
+              "bug": "2068580",
+              "differential_revision": "D322929",
+              "primary_subdir": "third_party/llama.cpp/ggml"
+            }
+          ],
+          "summary": "The ggml tensor library now includes the Metal backend from the pinned llama.cpp revision, allowing compatible model calculations to run on Apple GPUs."
         }
       ]
     }
