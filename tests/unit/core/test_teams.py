@@ -18,11 +18,13 @@ import pytest
 
 from reviewstats.parse import _GROUP_ALIASES
 from reviewstats.teams import (
+    AI_PLATFORM_TEAM,
     DOM_CORE_TEAM,
     GFX_TEAM,
     LAYOUT_TEAM,
     PLAYBACK_TEAM,
     TEAMS,
+    TRANSLATIONS_TEAM,
     Team,
     WEBRTC_TEAM,
     get_team,
@@ -277,6 +279,64 @@ def test_dom_core_approved_reviewers_are_trusted_non_members():
 def test_dom_core_is_registered():
     assert TEAMS["dom-core"] is DOM_CORE_TEAM
     assert get_team("dom-core") is DOM_CORE_TEAM
+
+
+def test_translations_team_matches_user_spec():
+    """Pins the scope decided in teams.py — the toolkit engine and the
+    browser UI, nothing else. See the TRANSLATIONS_TEAM comment."""
+    assert TRANSLATIONS_TEAM.slug == "translations"
+    assert TRANSLATIONS_TEAM.group == "translations-reviewers"
+    assert TRANSLATIONS_TEAM.paths == (
+        "toolkit/components/translations",
+        "browser/components/translations",
+    )
+    assert TRANSLATIONS_TEAM.excludes == ()
+
+
+def test_translations_team_roster_matches_phab_project_192():
+    """3 members sourced from Phab project 192 via Conduit."""
+    assert TRANSLATIONS_TEAM.members == {
+        "gregtatum": "Greg Tatum",
+        "nordzilla": "Erik Nordin",
+        "ohall": "Olivia Hall",
+    }
+
+
+def test_translations_is_registered():
+    assert TEAMS["translations"] is TRANSLATIONS_TEAM
+    assert get_team("translations") is TRANSLATIONS_TEAM
+
+
+def test_ai_platform_team_matches_user_spec():
+    """Pins the scope decided in teams.py. `browser/components/aiwindow`
+    must stay out — it belongs to ai-frontend-reviewers-rotation. See
+    the AI_PLATFORM_TEAM comment."""
+    assert AI_PLATFORM_TEAM.slug == "ai-platform"
+    assert AI_PLATFORM_TEAM.group == "ai-platform-reviewers"
+    assert AI_PLATFORM_TEAM.paths == (
+        "toolkit/components/ml",
+        "toolkit/components/pageextractor",
+    )
+    assert AI_PLATFORM_TEAM.excludes == ()
+
+
+def test_ai_platform_team_roster_matches_phab_project_235():
+    """8 members sourced from Phab project 235 via Conduit."""
+    assert AI_PLATFORM_TEAM.members == {
+        "gregtatum": "Greg Tatum",
+        "nordzilla": "Erik Nordin",
+        "thasan": "Taimur",
+        "valentinp": "Valentin Pollet",
+        "jbowser": "Joe Bowser",
+        "npodgurski": "Noah Podgurski",
+        "jgauf": "John Gauf",
+        "txia": "Tim Xia",
+    }
+
+
+def test_ai_platform_is_registered():
+    assert TEAMS["ai-platform"] is AI_PLATFORM_TEAM
+    assert get_team("ai-platform") is AI_PLATFORM_TEAM
 
 
 def test_no_team_path_is_nested_under_another_teams_path():

@@ -11,6 +11,8 @@ Per-team dashboards for Mozilla — review-load distribution plus a digest of wh
 | [GFX](https://alastor0325.github.io/firefox-review-stats/gfx/) | `gfx-reviewers` | `gfx`, `image`, `dom/canvas`, `dom/webgpu` (excluding vendored upstreams) |
 | [Layout](https://alastor0325.github.io/firefox-review-stats/layout/) | `layout-reviewers` | `layout` (including `layout/style`; `servo/` out of scope) |
 | [DOM Core](https://alastor0325.github.io/firefox-review-stats/dom-core/) | `dom-core-reviewers` | `dom/base`, `dom/html`, `dom/events`, `dom/bindings`, `dom/webidl`, `dom/ipc`, `docshell`, `parser` |
+| [Translations](https://alastor0325.github.io/firefox-review-stats/translations/) | `translations-reviewers` | `toolkit/components/translations`, `browser/components/translations` |
+| [AI Platform](https://alastor0325.github.io/firefox-review-stats/ai-platform/) | `ai-platform-reviewers` | `toolkit/components/ml`, `toolkit/components/pageextractor` (`browser/components/aiwindow` out of scope — owned by `ai-frontend-reviewers-rotation`) |
 
 DOM Core is scoped by an allow-list rather than all of `dom/`: that tree is shared by ~10 review groups (`dom-storage-reviewers`, `dom-worker-reviewers`, `necko-reviewers`, `firefox-svg-reviewers`, `webgpu-reviewers`, …), and scoping to the whole thing measures 27% team review — the "landed without team review" metric would be noise. An allow-list also fails safe: a new `dom/` subdirectory owned by another group stays out of scope until someone opts it in.
 

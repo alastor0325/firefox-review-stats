@@ -229,12 +229,70 @@ DOM_CORE_TEAM = Team(
 )
 
 
+TRANSLATIONS_TEAM = Team(
+    slug="translations",
+    display_name="translations-reviewers",
+    group="translations-reviewers",
+    # The translations engine (toolkit) and its browser UI. 6 months of
+    # landings measure 70% team review over these two roots. The group
+    # also signs off on scattered UI touch points (preferences, urlbar,
+    # widgets), but at 3-5 patches each those trees belong to other
+    # groups and would only dilute the metric.
+    paths=(
+        "toolkit/components/translations",
+        "browser/components/translations",
+    ),
+    excludes=(),
+    # Source: https://phabricator.services.mozilla.com/project/members/192/
+    # gregtatum and nordzilla also appear in AI_PLATFORM_TEAM — same
+    # independent-roster arrangement as aosmond across playback/gfx.
+    members={
+        "gregtatum": "Greg Tatum",
+        "nordzilla": "Erik Nordin",
+        "ohall": "Olivia Hall",
+    },
+)
+
+
+AI_PLATFORM_TEAM = Team(
+    slug="ai-platform",
+    display_name="ai-platform-reviewers",
+    group="ai-platform-reviewers",
+    # The ML inference engine plus the page extractor that feeds it.
+    # Measures 86% team review (ml alone is 91%; pageextractor is
+    # half-reviewed by firefox-desktop-core but has no better owner).
+    # browser/components/aiwindow is deliberately out: it is where this
+    # group's tag most often appears outside ml, but its 830 patches
+    # over the same window are reviewed by ai-frontend-reviewers-rotation.
+    # toolkit/components/ml/vendor is kept in scope — the team reviews
+    # its vendor bumps itself rather than bulk-syncing them.
+    paths=(
+        "toolkit/components/ml",
+        "toolkit/components/pageextractor",
+    ),
+    excludes=(),
+    # Source: https://phabricator.services.mozilla.com/project/members/235/
+    members={
+        "gregtatum": "Greg Tatum",
+        "nordzilla": "Erik Nordin",
+        "thasan": "Taimur",
+        "valentinp": "Valentin Pollet",
+        "jbowser": "Joe Bowser",
+        "npodgurski": "Noah Podgurski",
+        "jgauf": "John Gauf",
+        "txia": "Tim Xia",
+    },
+)
+
+
 TEAMS: dict[str, Team] = {
     PLAYBACK_TEAM.slug: PLAYBACK_TEAM,
     WEBRTC_TEAM.slug: WEBRTC_TEAM,
     GFX_TEAM.slug: GFX_TEAM,
     LAYOUT_TEAM.slug: LAYOUT_TEAM,
     DOM_CORE_TEAM.slug: DOM_CORE_TEAM,
+    TRANSLATIONS_TEAM.slug: TRANSLATIONS_TEAM,
+    AI_PLATFORM_TEAM.slug: AI_PLATFORM_TEAM,
 }
 
 

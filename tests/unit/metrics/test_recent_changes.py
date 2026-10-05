@@ -8,6 +8,7 @@ from reviewstats.recent_changes import (
     group_by_feature,
     humanize_feature,
 )
+from reviewstats.teams import TEAMS
 
 
 class TestHumanizeFeature:
@@ -178,3 +179,62 @@ class TestLayoutAndDomCoreFeatureLabels:
         and playback's "ipc" key labelled gfx's IPC area "Media IPC"."""
         assert humanize_feature("gfx/ipc") == "Graphics IPC"
         assert humanize_feature("ipc") == "Media IPC"
+
+
+class TestTranslationsAndAiPlatformFeatureLabels:
+    """Both teams are multi-root, so `deep_feature_bucket` emits the
+    root or one level under it. These are the buckets whose leaf alone
+    would be an unhelpful heading."""
+
+    @pytest.mark.parametrize("bucket", [
+        "toolkit/components/translations",
+        "toolkit/components/translations/actors",
+        "toolkit/components/translations/content",
+        "browser/components/translations",
+        "browser/components/translations/content",
+        "toolkit/components/ml",
+        "toolkit/components/ml/content",
+        "toolkit/components/ml/backends",
+        "toolkit/components/ml/ipc",
+        "toolkit/components/ml/actors",
+        "toolkit/components/ml/vendor",
+        "toolkit/components/pageextractor",
+    ])
+    def test_new_team_bucket_has_a_curated_label(self, bucket):
+        assert humanize_feature(bucket) == FEATURE_LABELS[bucket]
+
+
+class TestPathBucketFallback:
+    """Path buckets (multi-root teams) must not inherit playback's bare
+    leaf labels. Previously "x/ipc" became "Media IPC" and every
+    "x/test" became the same "Tests" heading."""
+
+    def test_uncurated_path_ipc_is_not_media_ipc(self):
+        assert humanize_feature("dom/webgpu/ipc") == "Ipc"
+
+    def test_bare_leaf_still_uses_the_leaf_table(self):
+        assert humanize_feature("ipc") == "Media IPC"
+        assert humanize_feature("tests") == "Tests"
+
+    @pytest.mark.parametrize("bucket,label", [
+        ("dom/html/test", "HTML elements tests"),
+        ("dom/ipc/gtest", "DOM IPC (process model) gtests"),
+        ("toolkit/components/ml/tests", "ML inference engine tests"),
+        ("toolkit/components/ml/docs", "ML inference engine docs"),
+        ("browser/components/translations/tests", "Translations UI tests"),
+    ])
+    def test_generic_leaf_is_labelled_from_its_parent(self, bucket, label):
+        assert humanize_feature(bucket) == label
+
+    def test_generic_leaf_with_unlabelled_parent_title_cases(self):
+        assert humanize_feature("some/where/tests") == "Tests"
+
+    def test_test_buckets_are_distinguishable_across_team_roots(self):
+        """Every registered multi-root team root with a curated label
+        gets its own tests heading."""
+        roots = [
+            p for t in TEAMS.values() if len(t.paths) > 1
+            for p in t.paths if p in FEATURE_LABELS
+        ]
+        labels = [humanize_feature(f"{r}/tests") for r in roots]
+        assert len(set(labels)) == len(labels)

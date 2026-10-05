@@ -115,25 +115,64 @@ FEATURE_LABELS: dict[str, str] = {
     "parser/html": "HTML parser",
     "parser/htmlparser": "HTML parser (legacy)",
     "parser/expat": "XML parser (expat)",
+    # translations-reviewers and ai-platform-reviewers — multi-root, so
+    # root and one-level-deeper buckets. tests/ and docs/ under a root
+    # are labelled from the root by `humanize_feature`; the entries
+    # below are the areas whose leaf alone ("Content", "Ipc") says
+    # nothing.
+    "toolkit/components/translations": "Translations engine",
+    "toolkit/components/translations/actors": "Translations actors",
+    "toolkit/components/translations/content":
+        "Translations engine & about:translations",
+    "browser/components/translations": "Translations UI",
+    "browser/components/translations/content": "Translations panels",
+    "toolkit/components/ml": "ML inference engine",
+    "toolkit/components/ml/content": "ML engine & pipelines",
+    "toolkit/components/ml/backends": "ML inference backends",
+    "toolkit/components/ml/ipc": "ML IPC",
+    "toolkit/components/ml/actors": "ML actors",
+    "toolkit/components/ml/vendor": "ML vendored libraries",
+    "toolkit/components/pageextractor": "Page extractor",
     # Shared sentinel buckets emitted by primary_subdir / the classifier.
     "(top-level)": "General / top-level",
     "(unknown)": "Other",
 }
 
 
+# Leaves that name a kind of file rather than a feature. Under a
+# multi-root team's path bucket they are labelled from their parent
+# ("dom/html/test" -> "HTML elements tests"), so sibling trees don't all
+# collapse to one "Tests" heading.
+_GENERIC_LEAVES: dict[str, str] = {
+    "test": "tests",
+    "tests": "tests",
+    "gtest": "gtests",
+    "docs": "docs",
+}
+
+
+def _title_case(leaf: str) -> str:
+    words = [w for w in re.split(r"[-_/]+", leaf) if w]
+    return " ".join(w.capitalize() for w in words)
+
+
 def humanize_feature(subdir: str) -> str:
     """Map a `primary_subdir` bucket to a human-friendly feature label.
 
-    Exact `FEATURE_LABELS` match wins; otherwise the leaf segment is
-    looked up; otherwise the leaf is title-cased (splitting on `/ - _`).
+    Exact `FEATURE_LABELS` match wins. A bare leaf bucket (single-root
+    teams) is then looked up as-is, else title-cased. A path bucket
+    (multi-root teams) never consults the leaf keys — those are
+    playback's, and "gfx/ipc" is not "Media IPC" — so a generic leaf is
+    labelled from its parent and anything else is title-cased.
     """
     if subdir in FEATURE_LABELS:
         return FEATURE_LABELS[subdir]
-    leaf = subdir.rstrip("/").split("/")[-1]
-    if leaf in FEATURE_LABELS:
-        return FEATURE_LABELS[leaf]
-    words = [w for w in re.split(r"[-_/]+", leaf) if w]
-    return " ".join(w.capitalize() for w in words)
+    parent, _, leaf = subdir.rstrip("/").rpartition("/")
+    if not parent:
+        return FEATURE_LABELS.get(leaf) or _title_case(leaf)
+    if leaf in _GENERIC_LEAVES and parent in FEATURE_LABELS:
+        return f"{FEATURE_LABELS[parent]} {_GENERIC_LEAVES[leaf]}"
+    return _title_case(leaf)
 
 
 def deep_feature_bucket(files: list[str], paths: tuple[str, ...]) -> Optional[str]:
