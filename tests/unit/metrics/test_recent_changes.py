@@ -202,6 +202,14 @@ class TestTranslationsAndAiPlatformFeatureLabels:
         "toolkit/components/ml/textgeneration",
         "toolkit/components/translations/bergamot-translator",
         "toolkit/components/pageextractor",
+        "toolkit/components/aboutinference",
+        "toolkit/components/aboutinference/content",
+        "dom/onnx",
+        "third_party/llama.cpp",
+        "third_party/llama.cpp/src",
+        "third_party/llama.cpp/ggml",
+        "config/external/mozinference",
+        "browser/components/aiwindow/services",
     ])
     def test_new_team_bucket_has_a_curated_label(self, bucket):
         assert humanize_feature(bucket) == FEATURE_LABELS[bucket]

@@ -308,14 +308,19 @@ def test_translations_is_registered():
 
 
 def test_ai_platform_team_matches_user_spec():
-    """Pins the scope decided in teams.py. `browser/components/aiwindow`
-    must stay out — it belongs to ai-frontend-reviewers-rotation. See
-    the AI_PLATFORM_TEAM comment."""
+    """Pins the scope decided in teams.py. Of `browser/components/aiwindow`
+    only `services/` is in — the rest belongs to ai-frontend-reviewers
+    and the split `models/`. See the AI_PLATFORM_TEAM comment."""
     assert AI_PLATFORM_TEAM.slug == "ai-platform"
     assert AI_PLATFORM_TEAM.group == "ai-platform-reviewers"
     assert AI_PLATFORM_TEAM.paths == (
         "toolkit/components/ml",
         "toolkit/components/pageextractor",
+        "toolkit/components/aboutinference",
+        "dom/onnx",
+        "third_party/llama.cpp",
+        "config/external/mozinference",
+        "browser/components/aiwindow/services",
     )
     assert AI_PLATFORM_TEAM.excludes == ()
 

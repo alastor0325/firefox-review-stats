@@ -258,17 +258,24 @@ AI_PLATFORM_TEAM = Team(
     slug="ai-platform",
     display_name="ai-platform-reviewers",
     group="ai-platform-reviewers",
-    # The ML inference engine plus the page extractor that feeds it.
-    # Measures 86% team review (ml alone is 91%; pageextractor is
-    # half-reviewed by firefox-desktop-core but has no better owner).
-    # browser/components/aiwindow is deliberately out: it is where this
-    # group's tag most often appears outside ml, but its 830 patches
-    # over the same window are reviewed by ai-frontend-reviewers-rotation.
-    # toolkit/components/ml/vendor is kept in scope — the team reviews
-    # its vendor bumps itself rather than bulk-syncing them.
+    # The ML inference engine and everything built only for it. The
+    # first three paths are mots' "Machine Learning: Platform"
+    # submodule; the rest sit outside it, but this roster does 70-85% of
+    # their review (mots gives aiwindow/services to ai-models-reviewers).
+    # The scope measures 85% team review over 6 months to 2026-10-05.
+    # The rest of browser/components/aiwindow stays out — it belongs to
+    # ai-frontend-reviewers, and models/ is split four ways — so a future
+    # aiwindow team must exclude services/. llama.cpp and ml/vendor stay
+    # in: unlike skia or libwebrtc they carry in-tree patches this
+    # roster reviews.
     paths=(
         "toolkit/components/ml",
         "toolkit/components/pageextractor",
+        "toolkit/components/aboutinference",
+        "dom/onnx",
+        "third_party/llama.cpp",
+        "config/external/mozinference",
+        "browser/components/aiwindow/services",
     ),
     excludes=(),
     # Source: https://phabricator.services.mozilla.com/project/members/235/
