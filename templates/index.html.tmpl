@@ -415,6 +415,8 @@
   /* Short values: size columns to content and scroll on narrow screens. */
   table.lw-table { table-layout: auto; }
   table.lw-table td { white-space: nowrap; }
+  .lw-unvendored summary { cursor: pointer; font-weight: 600; }
+  .lw-unvendored ul { margin: 6px 0 0; padding-left: 16px; white-space: normal; }
 
   /* Tables */
   table {
@@ -1558,11 +1560,11 @@ __GH_CORNER__
   <div class="footer-note" id="libwebrtc-stale" style="display:none"></div>
 
   <section>
-    <h2>libwebrtc in Firefox releases <span class="info" data-tip="Which Chrome milestone of libwebrtc each supported Firefox release vendors (MOZ_NEXT_LIBWEBRTC_MILESTONE on its branch), and how many Mozilla patches it carries on top of upstream (third_party/libwebrtc/moz-patch-stack). Releases come from product-details, so ESRs appear and drop out automatically. Branched = when Chrome cut that milestone. The upstream branch links to upstream's commits that exist only on that milestone's branch, regardless of what Firefox has taken."></span></h2>
+    <h2>libwebrtc in Firefox releases <span class="info" data-tip="Which Chrome milestone of libwebrtc each supported Firefox release vendors (MOZ_NEXT_LIBWEBRTC_MILESTONE on its branch), and how many Mozilla patches it carries on top of upstream (third_party/libwebrtc/moz-patch-stack). Releases come from product-details, so ESRs appear and drop out automatically. Branched = when Chrome cut that milestone. The upstream branch links to every commit that exists only on that milestone's branch; Not vendored lists the ones Firefox hasn't taken, by the rules of check_missing_branch_head_commits.py. It is a triage list, not a verdict: matching is heuristic and some commits are deliberately not taken (Chrome-only code paths)."></span></h2>
     <div class="footer-note" id="libwebrtc-meta"></div>
     <div class="table-wrap"><table class="lw-table"><thead><tr>
       <th>Channel</th><th>Firefox</th><th>libwebrtc</th><th>Upstream branch</th>
-      <th>Branched</th><th>Milestones from Chrome stable</th><th>Mozilla patches</th><th>Last libwebrtc change</th>
+      <th>Branched</th><th>Milestones from Chrome stable</th><th>Mozilla patches</th><th>Last libwebrtc change</th><th>Not vendored (to triage)</th>
     </tr></thead><tbody id="libwebrtc-rows"></tbody></table></div>
   </section>
 
@@ -2126,7 +2128,8 @@ const escA = s => escAttr(s == null ? '' : s);
 const LIBWEBRTC_STALE_DAYS = 10;
 function renderLibwebrtcStale(view) {
   const stale = [['Release data', view], ['the milestone plan', view.plan],
-                 ['the patch-stack trend', view.patch_stack]]
+                 ['the patch-stack trend', view.patch_stack],
+                 ...view.rows.map(r => [`${r.label}'s not-vendored list`, r.unvendored])]
     .filter(([, part]) => part && -daysFromToday(part.as_of) >= LIBWEBRTC_STALE_DAYS)
     .map(([what, part]) => `${what} (as of ${part.as_of})`);
   const el = document.getElementById('libwebrtc-stale');
@@ -2144,6 +2147,15 @@ function branchLink(head) {
     + `<code>${esc(head)}</code></a>`;
 }
 
+// Upstream branch-head commits the release hasn't vendored, each linked.
+function unvendoredCell(u) {
+  if (!u.count) return '0';
+  return `<details class="lw-unvendored"><summary>${esc(u.count)}</summary><ul>`
+    + u.commits.map(c => `<li><a href="https://webrtc.googlesource.com/src/+/${escA(c.sha)}">`
+      + `<code>${esc(c.sha.slice(0, 10))}</code></a> ${esc(c.subject)}</li>`).join('')
+    + '</ul></details>';
+}
+
 function renderLibwebrtc(view) {
   document.getElementById('libwebrtc-meta').textContent =
     `Chrome stable: M${view.chrome_stable} · as of ${view.as_of}`;
@@ -2152,7 +2164,8 @@ function renderLibwebrtc(view) {
     const branched = r.branched ? `${esc(r.branched)} (${ageLabel(r.branched)})` : '—';
     return `<tr><td>${esc(r.label)}</td><td>${esc(r.firefox)}</td><td>M${esc(r.milestone)}</td>`
       + `<td>${branchLink(r.branch_head)}</td><td>${branched}</td>`
-      + `<td>${esc(r.vs_chrome)}</td><td>${esc(r.patches ?? '—')}</td><td>${lc}</td></tr>`;
+      + `<td>${esc(r.vs_chrome)}</td><td>${esc(r.patches ?? '—')}</td><td>${lc}</td>`
+      + `<td>${r.unvendored ? unvendoredCell(r.unvendored) : '—'}</td></tr>`;
   }).join('');
 }
 

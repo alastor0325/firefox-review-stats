@@ -56,8 +56,9 @@ class Upstream:
             if path.endswith(f"version.txt?ref={branch}"):
                 return _content(ver + "\n")
             if f"sha={branch}&path=third_party/libwebrtc" in path:
+                taken = f"{bh}0".ljust(40, "0")  # one branch-head fix vendored
                 return [{"commit": {"message": "Bug 1 - Vendor libwebrtc from cccc\n\n"
-                                    + UP + MAIN_LAST,
+                                    + UP + MAIN_LAST + "\n" + UP + taken,
                                     "committer": {"date": "2026-09-25T00:00:00Z"}}}]
         raise AssertionError(f"unexpected GitHub path {path}")
 
@@ -93,9 +94,13 @@ class Upstream:
                 "committer": {"time": "Fri Sep 18 09:00:00 2026 +0000"},
                 "message": "x\n\nCr-Commit-Position: refs/branch-heads/8059@{#1}\n"
                            "Cr-Branched-From: 8d2-refs/heads/main@{#48593}"})
+        if "refs/heads/main..refs/branch-heads/" in url:
+            bh = url.split("branch-heads/")[1].split("?")[0]
+            return ")]}'\n" + json.dumps({"log": [
+                {"commit": f"{bh}{i}".ljust(40, "0"), "message": f"[M] Fix {bh}-{i}\n"}
+                for i in range(4)]})
         if "googlesource.com" in url:
-            n = 3 if MAIN_LAST in url else 4
-            return ")]}'\n" + json.dumps({"log": [{}] * n})
+            return ")]}'\n" + json.dumps({"log": [{}] * 3})
         raise AssertionError(f"unexpected URL {url}")
 
 
@@ -180,7 +185,7 @@ def test_a_failing_optional_host_keeps_last_weeks_section_only():
     errors = []
     view = _collect(Upstream(down={"googlesource"}), previous=PREVIOUS,
                     on_error=lambda key, exc: errors.append(key))
-    assert errors == ["in_progress", "plan"]
+    assert {"in_progress", "plan"} <= set(errors)
     assert view["as_of"] == "2026-10-05" and len(view["rows"]) == 2
     assert view["plan"]["as_of"] == "2026-09-28"
     assert view["patch_stack"]["as_of"] == "2026-10-05"
@@ -196,3 +201,63 @@ def test_the_core_still_fails_hard():
     week's whole file."""
     with pytest.raises(OSError):
         _collect(Upstream(down={"product-details"}), previous=PREVIOUS)
+
+
+def test_each_release_lists_its_unvendored_branch_head_commits():
+    rows = _collect(Upstream())["rows"]
+    assert [(r["label"], r["unvendored"]["count"]) for r in rows] == [
+        ("Nightly", 3), ("ESR 140", 3)]
+    assert rows[0]["unvendored"]["commits"][0] == {
+        "sha": "80591".ljust(40, "0"), "subject": "[M] Fix 8059-1"}
+
+
+def test_firefox_history_is_read_from_the_branch_date_on():
+    up = Upstream()
+    _collect(up)
+    assert any("sha=esr140&path=third_party/libwebrtc&since=2025-03-03" in c
+               for c in up.calls)
+
+
+def test_unvendored_falls_back_to_last_weeks_list_per_release():
+    """Gitiles down: the table still refreshes, and each release keeps last
+    week's list (with its own as_of) instead of losing the column."""
+    previous = {"rows": [{"label": "Nightly", "milestone": 155, "branched": "2026-09-14",
+                          "branch_head": "branch-heads/8059",
+                          "unvendored": {"count": 2, "commits": [], "as_of": "2026-09-28"}}]}
+    errors = []
+    rows = _collect(Upstream(down={"googlesource"}), previous=previous,
+                    on_error=lambda key, exc: errors.append(key))["rows"]
+    assert "unvendored" in errors
+    assert rows[0]["unvendored"] == {"count": 2, "commits": [], "as_of": "2026-09-28"}
+    assert rows[1]["unvendored"] is None
+
+
+def test_last_weeks_list_is_not_reused_for_a_different_milestone():
+    """On a merge week Release moves milestone; last week's [M153] list must
+    not be shown next to M154."""
+    previous = {"rows": [{"label": "Nightly", "milestone": 154, "branched": "2026-08-31",
+                          "branch_head": "branch-heads/8037",
+                          "unvendored": {"count": 2, "commits": [], "as_of": "2026-09-28"}}]}
+    rows = _collect(Upstream(down={"googlesource"}), previous=previous)["rows"]
+    assert rows[0]["unvendored"] is None
+
+
+def test_fresh_lists_carry_this_weeks_date():
+    assert _collect(Upstream())["rows"][0]["unvendored"]["as_of"] == "2026-10-05"
+
+
+def test_a_host_that_failed_is_not_retried_for_the_rest_of_the_run():
+    """A hanging Gitiles would otherwise time out once per release and push
+    the CI step past its 5-minute limit, losing the whole refresh."""
+    up = Upstream(down={"googlesource"})
+    _collect(up)
+    assert sum("googlesource" in c for c in up.calls) == 1
+
+
+def test_identical_requests_are_made_once_per_run():
+    """Nightly's main..branch-head log feeds both its in-progress check and
+    its unvendored list."""
+    up = Upstream()
+    _collect(up)
+    log = [c for c in up.calls if "refs/heads/main..refs/branch-heads/8059" in c]
+    assert len(log) == 1

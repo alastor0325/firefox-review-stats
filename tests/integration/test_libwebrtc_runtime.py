@@ -82,6 +82,11 @@ def _run(tmp_path, view):
                     "() => { const e = document.getElementById('libwebrtc-stale');"
                     " return e.offsetParent ? e.innerText : ''; }"),
                 "chart": page.evaluate("() => !!Chart.getChart('chart-lw-stack')"),
+                "unvendored_header": page.evaluate(
+                    "() => [...document.querySelectorAll('#libwebrtc-section th')]"
+                    ".some(th => th.textContent === 'Not vendored (to triage)')"),
+                "unvendored_links": page.evaluate(
+                    "() => [...document.querySelectorAll('.lw-unvendored a')].map(a => a.href)"),
                 "branch_links": page.evaluate(
                     "() => [...document.querySelectorAll('#libwebrtc-rows a')]"
                     ".map(a => [a.textContent, a.href])"),
@@ -114,3 +119,30 @@ def test_old_data_is_named_as_stale(tmp_path):
     state, errors = _run(tmp_path, _view(as_of_days=-30))
     assert errors == []
     assert "Release data" in state["stale"] and "the milestone plan" in state["stale"]
+
+
+def test_rows_without_a_list_show_a_dash(tmp_path):
+    """Files written before the column existed."""
+    state, errors = _run(tmp_path, _view())
+    assert errors == [] and state["unvendored_header"] is True
+    assert state["releases"][0].endswith("—")
+
+
+def test_unvendored_column_lists_and_links_the_commits(tmp_path):
+    view = _view()
+    view["rows"][0]["unvendored"] = {"count": 2, "as_of": _iso(0), "commits": [
+        {"sha": "a" * 40, "subject": "[M155] Fix A"},
+        {"sha": "b" * 40, "subject": "[M155] Fix B"}]}
+    state, errors = _run(tmp_path, view)
+    assert errors == []
+    assert state["unvendored_header"] is True
+    assert state["unvendored_links"] == [
+        "https://webrtc.googlesource.com/src/+/" + "a" * 40,
+        "https://webrtc.googlesource.com/src/+/" + "b" * 40]
+
+
+def test_a_stale_not_vendored_list_is_named(tmp_path):
+    view = _view()
+    view["rows"][0]["unvendored"] = {"count": 0, "as_of": _iso(-30), "commits": []}
+    state, errors = _run(tmp_path, view)
+    assert errors == [] and "Nightly's not-vendored list" in state["stale"]

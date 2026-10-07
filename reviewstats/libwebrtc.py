@@ -1,20 +1,20 @@
-"""Which libwebrtc each supported Firefox release ships, what the next update
-is, and how big the Mozilla patch stack is — the WebRTC page's libwebrtc view,
-written by fetch_libwebrtc_status.py.
+"""Which libwebrtc each supported Firefox release ships, which upstream
+branch-head commits it hasn't vendored, what the next update is, and how big
+the Mozilla patch stack is — the WebRTC page's libwebrtc view, written by
+fetch_libwebrtc_status.py.
 
-Versions only. The in-tree check_missing_branch_head_commits.py also lists
-upstream branch-head commits a release has not vendored, but those are mostly
-security fixes Chrome merged to its release branches, so on this public page
-that list would be an index of unpatched bugs in shipping Firefox. Nothing here
-keeps upstream commits; the only bug reference is the public fast-forward meta
-bug. `project_view` is the one whitelist every payload passes through, on write
-and on read.
+The unvendored commits are mostly fixes Chrome merged to its release
+branches, many of them security fixes. Publishing them was a deliberate
+decision by the dashboard's owner (the data is all public upstream and in
+Firefox's history); it is the field to reconsider first if this page ever
+needs to say less. `project_view` is the one whitelist every payload passes
+through, on write and on read.
 
 The Releases table (with each release's patch count) is the core and fails the
 fetch if it can't be built; the patch counts are core because they come from
-the same GitHub API as the rest of it. The milestone plan and the patch-stack
-trend are optional: each falls back to last week's copy (keeping its own
-`as_of`) so one flaky host (chromiumdash, whattrainisitnow, Gitiles) can't
+the same GitHub API as the rest of it. Each release's unvendored list, the
+milestone plan and the patch-stack trend are optional: each falls back to last
+week's copy so one flaky host (chromiumdash, whattrainisitnow, Gitiles) can't
 freeze the rest.
 
 Everything except `collect_status` and its `_fetch_*` helpers is pure.
@@ -36,12 +36,18 @@ CHROME_STABLE_URL = (
 )
 CHROME_SCHEDULE_URL = "https://chromiumdash.appspot.com/fetch_milestone_schedule?mstone={}&n={}"
 FIREFOX_TRAIN_URL = "https://whattrainisitnow.com/api/release/schedule/?version={}"
-# Only counts are read, and an overflowing page already means "in progress".
+# A `next` key means the log ran past one page.
 GITILES_LOG_URL = "https://webrtc.googlesource.com/src/+log/{}..{}?format=JSON&n=200"
 GITILES_HEAD_URL = "https://webrtc.googlesource.com/src/+log/refs/heads/main?format=JSON&n=1"
 GITILES_COMMIT_URL = "https://webrtc.googlesource.com/src/+/{}?format=JSON"
 PLAN_ROWS = 4  # the update in flight plus the next three milestones
 HISTORY_MONTHS = 12
+# Firefox history pages per release; one milestone's libwebrtc commits on a
+# branch measure at most ~4 pages, so reaching this means something is off.
+MAX_PAGES = 10
+# A subject-only match needs this many words: vendoring commits embed whole
+# upstream messages, so "Fix crash" would match an unrelated line.
+MIN_SUBJECT_WORDS = 4
 
 _REPO = f"/repos/{_DEFAULT_REPO}"
 _CONFIG_ENV = "dom/media/webrtc/third_party_build/default_config_env"
@@ -50,6 +56,9 @@ _UPSTREAM_RE = re.compile(
     r"^Upstream commit: https://webrtc\.googlesource\.com/src/\+/([0-9a-f]{40})",
     re.MULTILINE,
 )
+# See unvendored_commits.
+_CHERRY_RE = re.compile(r"\(cherry picked from commit ([0-9a-f]{40})\)")
+_BRACKET_PREFIX_RE = re.compile(r"^(\[[^\]]*\]\s*)+")
 # A main commit records its own position; a branch-head commit records the
 # main position it branched from.
 _MAIN_POSITION_RE = re.compile(
@@ -68,6 +77,8 @@ _PLAN_FIELDS = ("milestone", "firefox", "chrome_branch", "chrome_stable",
                 "in_progress")
 _LAG_FIELDS = ("last_vendored", "upstream_head", "behind")
 _STACK_HISTORY_FIELDS = ("month", "count", "sampled")
+_UNVENDORED_FIELDS = ("count", "commits", "as_of")
+_UNVENDORED_COMMIT_FIELDS = ("sha", "subject")
 
 
 @dataclass(frozen=True)
@@ -261,6 +272,40 @@ def plan_history(today: date, known: dict[str, dict]) -> tuple[dict[str, dict], 
     return reuse, fetch
 
 
+def unvendored_commits(branch_log: list[dict], firefox_commits: list[dict]) -> list[dict]:
+    """Upstream branch-head commits a Firefox branch hasn't vendored — the
+    logic of check_missing_branch_head_commits.py.
+
+    `branch_log` is Gitiles' main..branch-head log (entries with `commit` and
+    `message`); `firefox_commits` are GitHub commit objects touching
+    third_party/libwebrtc on that branch. A commit counts as vendored if its
+    SHA is in an `Upstream commit:` footer or a `(cherry picked from commit)`
+    line, or if its subject, without [M153]-style prefixes, appears in any
+    of those messages (manual backports that dropped the SHA). Beyond the
+    script, the main commit a branch-head commit was cherry-picked from also
+    counts, since Firefox sometimes takes the original rather than the copy,
+    and a subject-only match needs MIN_SUBJECT_WORDS words so a generic one
+    can't hide a missing fix. The result is a list to triage, not a verdict:
+    some commits are deliberately not taken (Chrome-only code paths).
+    """
+    messages = [c["commit"]["message"] for c in firefox_commits]
+    vendored = set()
+    for m in messages:
+        vendored.update(_UPSTREAM_RE.findall(m))
+        vendored.update(_CHERRY_RE.findall(m))
+    text = "\n".join(messages)
+    out = []
+    for c in branch_log:
+        subject = c["message"].split("\n", 1)[0]
+        stripped = _BRACKET_PREFIX_RE.sub("", subject).strip()
+        original = _CHERRY_RE.findall(c["message"])
+        by_subject = len(stripped.split()) >= MIN_SUBJECT_WORDS and stripped in text
+        if c["commit"] in vendored or vendored.intersection(original) or by_subject:
+            continue
+        out.append({"sha": c["commit"], "subject": subject})
+    return out
+
+
 def project_view(view: dict) -> dict:
     """Keep only the whitelisted fields, nested ones included. Sections a
     payload lacks (files written before they existed) come back as None."""
@@ -273,6 +318,9 @@ def project_view(view: dict) -> dict:
     def row(r):
         out = pick(r, _ROW_FIELDS)
         out["last_change"] = pick(out["last_change"], _LAST_CHANGE_FIELDS)
+        u = r.get("unvendored")
+        out["unvendored"] = u and {**pick(u, _UNVENDORED_FIELDS), "commits": pick_all(
+            u.get("commits"), _UNVENDORED_COMMIT_FIELDS)}
         return out
 
     plan, stack = view.get("plan"), view.get("patch_stack")
@@ -338,9 +386,65 @@ def _fetch_train(get_text, version: int) -> tuple[str | None, str | None]:
     return _day(t.get("nightly_start")), _day(t.get("merge_day"))
 
 
+def _fetch_gitiles_log(get_text, frm: str, to: str) -> dict:
+    return parse_gitiles_json(get_text(GITILES_LOG_URL.format(frm, to)))
+
+
 def _fetch_gitiles_count(get_text, frm: str, to: str) -> int | None:
-    log = parse_gitiles_json(get_text(GITILES_LOG_URL.format(frm, to)))
+    log = _fetch_gitiles_log(get_text, frm, to)
     return None if log.get("next") else len(log.get("log", []))
+
+
+def _fetch_unvendored(github_get, get_text, *, branch: str, branch_head: str,
+                      branched: str | None, today: date) -> dict:
+    """A release's unvendored upstream branch-head commits.
+
+    Firefox history is read only from the milestone's branch date on: a
+    branch-head commit (or the main commit it copies) can't have been
+    vendored before the branch existed. Anything that would leave the input
+    incomplete raises, so the caller falls back to last week's list rather
+    than publishing a count from partial history.
+    """
+    if not branched:
+        raise RuntimeError(f"no branch date for {branch_head}")
+    log = _fetch_gitiles_log(get_text, "refs/heads/main", f"refs/{branch_head}")
+    if log.get("next"):
+        raise RuntimeError(f"{branch_head} has more branch-only commits than one page")
+    entries = log.get("log", [])
+    firefox = []
+    for page in range(1, MAX_PAGES + 1) if entries else ():
+        batch = github_get(f"{_REPO}/commits?sha={branch}&path=third_party/libwebrtc"
+                           f"&since={branched}T00:00:00Z&per_page=100&page={page}")
+        firefox += batch
+        if len(batch) < 100:
+            break
+    else:
+        if entries:
+            raise RuntimeError(f"{branch} history exceeds {MAX_PAGES} pages")
+    missing = unvendored_commits(entries, firefox)
+    return {"count": len(missing), "commits": missing, "as_of": today.isoformat()}
+
+
+def _guarded(get_text, on_error):
+    """`get_text` for one run: identical URLs are fetched once, and a host
+    that fails (other than "not scheduled yet" 4xx answers) is not asked
+    again, so one hanging host costs one timeout instead of one per row."""
+    cache, down = {}, set()
+
+    def get(url):
+        host = url.split("/")[2]
+        if url in cache:
+            return cache[url]
+        if host in down:
+            raise RuntimeError(f"{host} already failed this run")
+        try:
+            cache[url] = get_text(url)
+        except Exception as exc:  # noqa: BLE001
+            if not _not_scheduled(exc):
+                down.add(host)
+            raise
+        return cache[url]
+    return get
 
 
 def _fetch_lag(get_text, last: str | None) -> dict | None:
@@ -409,7 +513,12 @@ def collect_status(github_get, get_text, *, today: date, previous: dict | None =
     week's payload: settled values (branch dates, final trend points) are
     reused from it, and it backs the optional sections if they fail.
     """
+    get_text = _guarded(get_text, on_error)
     dates = known_branch_dates(previous)
+    # Last week's list is reusable only for the same branch-head: on a merge
+    # week a release moves milestone and the old list no longer applies.
+    last_unvendored = {(r.get("label"), r.get("branch_head")): r.get("unvendored")
+                       for r in (previous or {}).get("rows") or []}
     releases = supported_releases(json.loads(get_text(PRODUCT_DETAILS_URL)))
     chrome_stable = json.loads(get_text(CHROME_STABLE_URL))[0]["milestone"]
     rows, nightly, nightly_count = [], None, None
@@ -443,12 +552,20 @@ def collect_status(github_get, get_text, *, today: date, previous: dict | None =
             nightly = dict(env=env, milestone=milestone, in_progress=in_progress,
                            last=last)
             nightly_count = patches
+        try:
+            unvendored = _fetch_unvendored(github_get, get_text, branch=rel.branch,
+                                           branch_head=branch_head,
+                                           branched=dates[milestone], today=today)
+        except Exception as exc:  # noqa: BLE001 — keep last week's list
+            on_error("unvendored", exc)
+            unvendored = last_unvendored.get((rel.label, branch_head))
         rows.append({
             "label": rel.label, "firefox": firefox, "milestone": milestone,
             "branch_head": branch_head, "branched": dates[milestone],
             "vs_chrome": _vs_chrome(milestone, chrome_stable),
             "patches": patches,
             "last_change": last_libwebrtc_change(commits),
+            "unvendored": unvendored,
         })
     return project_view({
         "rows": rows, "chrome_stable": chrome_stable, "as_of": today.isoformat(),

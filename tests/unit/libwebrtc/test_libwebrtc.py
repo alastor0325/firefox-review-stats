@@ -130,17 +130,17 @@ class TestUpdateInProgress:
 
 
 class TestProjectView:
-    """The page is versions only: missing branch-head fixes are mostly
-    security fixes, and this site is public. `project_view` is the one
-    whitelist, applied when the data file is written AND when it is read,
-    so no extra field reaches the page by either path."""
+    """`project_view` is the one whitelist, applied when the data file is
+    written AND when it is read, so no extra field reaches the page by
+    either path."""
 
     VIEW = {
         "chrome_stable": 154, "as_of": "2026-10-05",
         "rows": [{"label": "Release", "firefox": "157.0.1", "milestone": 153,
                   "branch_head": "branch-heads/8010", "branched": "2026-08-17",
                   "vs_chrome": "1 behind", "patches": 150,
-                  "last_change": {"date": "2026-09-01", "kind": "cherry-pick"}}],
+                  "last_change": {"date": "2026-09-01", "kind": "cherry-pick"},
+                  "unvendored": None}],
     }
 
     def test_keeps_the_known_fields(self):
@@ -161,3 +161,12 @@ class TestProjectView:
 
     def test_drops_unknown_top_level_fields(self):
         assert "commits" not in project_view({**self.VIEW, "commits": [1]})
+
+    def test_unvendored_is_whitelisted_to_its_fields(self):
+        row = {**self.VIEW["rows"][0], "unvendored": {
+            "count": 1, "as_of": "2026-10-05", "x": 1,
+            "commits": [{"sha": "a" * 40, "subject": "Fix A", "extra": 1}]}}
+        assert project_view({**self.VIEW, "rows": [row]})["rows"][0]["unvendored"] == {
+            "count": 1, "as_of": "2026-10-05",
+            "commits": [{"sha": "a" * 40, "subject": "Fix A"}]}
+
