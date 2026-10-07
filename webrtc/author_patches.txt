@@ -1,8 +1,8 @@
 ==============================================================================
 WEBRTC-REVIEWERS AUTHOR-PATCH LISTING (raw author %an, no aliasing)
-Source: github.com/mozilla-firefox/firefox   Paths: dom/media/webrtc, dom/media/systemservices   Since: 2026-04-08T21:49:14Z
+Source: github.com/mozilla-firefox/firefox   Paths: dom/media/webrtc, dom/media/systemservices   Since: 2026-04-10T19:49:03Z
 Excluded paths: (none)
-Authors: 44    Patches: 430    (Lando-format / Lando-author / merge / Revert commits already excluded)
+Authors: 45    Patches: 432    (Lando-format / Lando-author / merge / Revert commits already excluded)
 ==============================================================================
 
 Known aliases (applied in HTML report, NOT below):
@@ -96,7 +96,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-14  aa8991180a35  Bug 2031683 - Hook up AudioProcessingTrack and WavDumper. r=padenot
       2026-04-14  4ca4cddc43a9  Bug 2031722 - Adjust test_setSinkId-echoCancellation.html silence threshold and re-enable. r=padenot
 
-[ 2] Byron Campen  —  68 patch(es)
+[ 2] Byron Campen  —  66 patch(es)
     ----------------------------------------------------------------------
       2026-09-22  8dcb9314583f  Bug 1004510: pranswer support r=mjf
       2026-09-22  9b6aa4de6459  Bug 2072358: Fix some cases where ICE could get stuck. r=mjf
@@ -164,8 +164,6 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-10  a995c8dfac0b  Bug 1529588: Stop allowing empty credential, and update tests to reflect latest spec. r=jib
       2026-04-10  ac2b5a21b97b  Bug 1529588: Replace NrIceStun/TurnServer with common type. r=mjf
       2026-04-10  092f1290ba36  Bug 1529588: Bring ICE server validation up-to-spec. r=jib,mjf
-      2026-04-10  1a97b77786bc  Bug 2029461: Remove the custom memory allocator. r=ng
-      2026-04-09  329724592784  Bug 2025950: Stop using ManualDealloc for these. r=mjf,kershaw,necko-reviewers,jesup,ipc-reviewers,nika
 
 [ 3] Michael Froman  —  46 patch(es)
     ----------------------------------------------------------------------
@@ -248,7 +246,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-06-01  5e9255499f12  Bug 2043860: Change SdpAttribute::Clone() to provide the clone in a UniquePtr. r=webrtc-reviewers,bwc
       2026-06-01  47dee9bf0986  Bug 2043860: In SdpAttributeList concrete classes, store attributes in UniquePtrs instead of raw pointers. r=webrtc-reviewers,bwc
 
-[ 5] Daniel Baker  —  26 patch(es)
+[ 5] Daniel Baker  —  25 patch(es)
     ----------------------------------------------------------------------
       2026-09-17  51a93e67c558  Bug 2072642 - Force-enable tab sharing pref in getUserMedia source telemetry test r=webrtc-reviewers,ng
       2026-09-16  9ee36181bbc2  Bug 2063642 - Record the actually granted getUserMedia source r=webrtc-reviewers,pehrsons
@@ -275,7 +273,6 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-27  1afd25d37317  Bug 2028182 - Clamp SVC spatial and temporal values we allow to be set through pref. r=ng
       2026-04-17  a16fc824f3fd  Bug 2025496 - Refactoring to move resizing up into EnsurePacketizer.r=pehrsons
       2026-04-13  69846cf91f35  Bug 2025517 - Clean up GmpPluginNotifier and VideoConduit shutdown ordering r=pehrsons
-      2026-04-09  d7cd7906ab03  Bug 2025496 - Refactoring to move resizing up into EnsurePacketizer.r=pehrsons
 
 [ 6] Nicolas Grunbaum  —  20 patch(es)
     ----------------------------------------------------------------------
@@ -300,28 +297,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-07-07  ef2936547b97  Bug 2000975 - report outbound-rtp stats in stable;r=dbaker,bwc
       2026-07-01  bac4e9ee6b48  Bug 2051003 - reject PT range 64-95 for RTCP MUX;r=dbaker
 
-[ 7] Philipp Hancke  —  18 patch(es)
-    ----------------------------------------------------------------------
-      2026-09-17  ed1f83e4ff90  Bug 2071008: suppress dtls error on ice failures r=bwc
-      2026-08-18  ca4fce5c5859  Bug 2022715: implement RTCConfiguration.alwaysNegotiateDataChannels r=bwc,webidl,saschanaz,smaug
-      2026-07-17  9e4231190d2c  Bug 2048521: implement webrtc rtxSsrc and retransmission stats r=bwc,webidl,smaug
-      2026-07-13  b8f869b898fb  Bug 2054208: don't send DTMF on a disabled sender r=bwc
-      2026-07-13  6f706ad9371a  Bug 2053510: (attempt to) deflake test_peerConnection_setParameters_audioActive.html r=bwc
-      2026-07-08  58c402846b98  Bug 1813848: wire up RTCRtpEncodingParameters.active for audio r=bwc
-      2026-06-18  8c6cf37262aa  Bug 2047693: implement candidate-pair packetsSent/packetsReceived r=bwc,webidl,emilio
-      2026-06-18  731e3a8c1875  Bug 2048150: add IPC serialization for keyFramesEncoded stats r=pehrsons
-      2026-06-17  09dbf44d8bc6  Bug 2048150: implement webrtc outbound-rtp keyFramesEncoded stats r=pehrsons,webidl,smaug
-      2026-06-15  631e1d9fefbd  Bug 2019349: Implement RTCTransportStats (bytes|packets)(Sent|Received) r=bwc,smaug,webidl
-      2026-06-03  22ef5960cc46  Bug 1225723: fix webrtc-stats transportId references r=bwc,smaug,webidl,pehrsons
-      2026-06-01  6c012f4fa6f7  Bug 1225723: implement (some of) RTCTransportStats r=bwc,webidl,smaug
-      2026-05-21  49d888791d7d  Bug 2036578: Implement the usernameFragment, foundation and tcpType fields of RTCIceCandidateStats r=bwc,webidl,smaug
-      2026-05-13  14ac95285577  Bug 2036578: Implement the usernameFragment, foundation and tcpType fields of RTCIceCandidateStats r=bwc,webidl,smaug
-      2026-05-07  274d9561a154  Bug 2036578: Implement the usernameFragment, foundation and tcpType fields of RTCIceCandidateStats r=bwc,webidl,smaug
-      2026-05-06  b734f76ece07  Bug 2036578: Implement the usernameFragment, foundation and tcpType fields of RTCIceCandidateStats r=bwc,webidl,smaug
-      2026-04-13  3878b06595d4  Bug 1056433: do not throw when calling getStats on a closed peerconnection r=webrtc-reviewers,bwc
-      2026-04-10  4c0a122007df  Bug 1056433: do not throw when calling getStats on a closed peerconnection r=webrtc-reviewers,bwc
-
-[ 8] Sylvestre Ledru  —  18 patch(es)
+[ 7] Sylvestre Ledru  —  18 patch(es)
     ----------------------------------------------------------------------
       2026-09-23  23ac933ec4f9  Bug 2070824 - Declare every about:license notice in moz.build r=firefox-build-system-reviewers,ipc-reviewers,application-update-reviewers,media-playback-reviewers,credential-management-reviewers,webrtc-reviewers,devtools-reviewers,cubeb-reviewers,profiler-reviewers,win-reviewers,frontend-codestyle-reviewers,ai-platform-reviewers,sandbox-reviewers,crashreporting-reviewers,media-webspeech-reviewers,bobowen,dimi,canova,padenot,nchevobbe,mccr8,yjuglaret,bwc,ahochheiden
       2026-09-22  8c79875a596a  Bug 2070824 - Declare every about:license notice in moz.build r=firefox-build-system-reviewers,ipc-reviewers,application-update-reviewers,media-playback-reviewers,credential-management-reviewers,webrtc-reviewers,devtools-reviewers,cubeb-reviewers,profiler-reviewers,win-reviewers,frontend-codestyle-reviewers,ai-platform-reviewers,sandbox-reviewers,crashreporting-reviewers,media-webspeech-reviewers,bobowen,dimi,canova,padenot,nchevobbe,mccr8,yjuglaret,bwc,ahochheiden
@@ -342,7 +318,27 @@ Known aliases (applied in HTML report, NOT below):
       2026-05-04  f20cc8e1168d  Bug 2036400 - Initialize uninitialized scalar fields in dom/media to fix Coverity uninitialized-scalar defects r=media-playback-reviewers,padenot
       2026-04-21  3baa4071fd2b  Bug 2023419 - Remove remaining Emacs/Vim modelines from the source tree r=emilio,necko-reviewers,geckoview-reviewers,media-playback-reviewers,webidl,webrtc-reviewers,devtools-reviewers,places-reviewers,win-reviewers,firefox-style-system-reviewers,layout-reviewers,mstriemer,dshin,nchevobbe,padenot,ohall,handyman,valentin,mjf
 
-[ 9] serge-sans-paille  —  18 patch(es)
+[ 8] Philipp Hancke  —  17 patch(es)
+    ----------------------------------------------------------------------
+      2026-09-17  ed1f83e4ff90  Bug 2071008: suppress dtls error on ice failures r=bwc
+      2026-08-18  ca4fce5c5859  Bug 2022715: implement RTCConfiguration.alwaysNegotiateDataChannels r=bwc,webidl,saschanaz,smaug
+      2026-07-17  9e4231190d2c  Bug 2048521: implement webrtc rtxSsrc and retransmission stats r=bwc,webidl,smaug
+      2026-07-13  b8f869b898fb  Bug 2054208: don't send DTMF on a disabled sender r=bwc
+      2026-07-13  6f706ad9371a  Bug 2053510: (attempt to) deflake test_peerConnection_setParameters_audioActive.html r=bwc
+      2026-07-08  58c402846b98  Bug 1813848: wire up RTCRtpEncodingParameters.active for audio r=bwc
+      2026-06-18  8c6cf37262aa  Bug 2047693: implement candidate-pair packetsSent/packetsReceived r=bwc,webidl,emilio
+      2026-06-18  731e3a8c1875  Bug 2048150: add IPC serialization for keyFramesEncoded stats r=pehrsons
+      2026-06-17  09dbf44d8bc6  Bug 2048150: implement webrtc outbound-rtp keyFramesEncoded stats r=pehrsons,webidl,smaug
+      2026-06-15  631e1d9fefbd  Bug 2019349: Implement RTCTransportStats (bytes|packets)(Sent|Received) r=bwc,smaug,webidl
+      2026-06-03  22ef5960cc46  Bug 1225723: fix webrtc-stats transportId references r=bwc,smaug,webidl,pehrsons
+      2026-06-01  6c012f4fa6f7  Bug 1225723: implement (some of) RTCTransportStats r=bwc,webidl,smaug
+      2026-05-21  49d888791d7d  Bug 2036578: Implement the usernameFragment, foundation and tcpType fields of RTCIceCandidateStats r=bwc,webidl,smaug
+      2026-05-13  14ac95285577  Bug 2036578: Implement the usernameFragment, foundation and tcpType fields of RTCIceCandidateStats r=bwc,webidl,smaug
+      2026-05-07  274d9561a154  Bug 2036578: Implement the usernameFragment, foundation and tcpType fields of RTCIceCandidateStats r=bwc,webidl,smaug
+      2026-05-06  b734f76ece07  Bug 2036578: Implement the usernameFragment, foundation and tcpType fields of RTCIceCandidateStats r=bwc,webidl,smaug
+      2026-04-13  3878b06595d4  Bug 1056433: do not throw when calling getStats on a closed peerconnection r=webrtc-reviewers,bwc
+
+[ 9] serge-sans-paille  —  17 patch(es)
     ----------------------------------------------------------------------
       2026-09-23  707eaad80251  Bug 2074859 - Replace std::string::find(...) == 0 by std::string::starts_with r=webrtc-reviewers,crashreporting-reviewers,TravisLong,pehrsons
       2026-09-22  7f47ed1b7d4e  Bug 2073144 - Lint all dom/media headers through clang-tidy r=webrtc-reviewers,ng,bwc
@@ -361,7 +357,6 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-24  17f53f29be87  Bug 2033992 - Remove unused include of <deque> r=emilio
       2026-04-24  7af9fd3d7bd2  Bug 2033986 - Remove unused include of <queue> r=media-playback-reviewers,webrtc-reviewers,anba,padenot,bwc
       2026-04-23  4bb4610739cb  Bug 2033982 - Remove unused include of <iostream> r=necko-reviewers,layout-reviewers,emilio,valentin
-      2026-04-09  6a8cd38a9198  Bug 2030019 - Remove unused inclusion of ostream, fstream and sstream r=webrtc-reviewers,profiler-reviewers,emilio,layout-reviewers,bwc,canaltinova,dshin
 
 [10] az  —  15 patch(es)
     ----------------------------------------------------------------------
@@ -381,7 +376,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-05-06  137d0ef31300  Bug 1825286 - Part 10: Add CodecInfo.{cpp,h} to parse and export WebRTC codec information for use with Media Capabilities support checks. r=pehrsons
       2026-05-06  8dcf681e2ead  Bug 1825286 - Part 9: Add functions to expose default WebRTC audio/video codecs. r=pehrsons
 
-[11] Anna Weine  —  11 patch(es)
+[11] Anna Weine  —  10 patch(es)
     ----------------------------------------------------------------------
       2026-09-25  2146b63ac3a0  Bug 2072206 - Reject local descriptions whose DTLS fingerprint was modified r=webrtc-reviewers,bwc
       2026-09-14  6ac277500440  Bug 2047968 - Don't send the ML-KEM key share for WebRTC DTLS by default r=bwc
@@ -393,7 +388,6 @@ Known aliases (applied in HTML report, NOT below):
       2026-06-08  477b74694ee6  Bug 1805446 - Implement getRemoteCertificates r=webidl,webrtc-reviewers,smaug,bwc
       2026-06-04  6a5aa130d8db  Bug 2041174 - Update webrtcdtls.KEA expiration to FF 158 r=webrtc-reviewers,bwc
       2026-06-01  3dff814f6a32  Bug 2019389 - Implement RTCTransportStats.tlsVersion/dtlsCipher/srtpCipher r=webidl,webrtc-reviewers,bwc,smaug
-      2026-04-09  d9013b0ec0df  Bug 2026449 - Update DTLS WebRTC KEA until 154 r=webrtc-reviewers,bwc
 
 [12] Alastor Wu  —  9 patch(es)
     ----------------------------------------------------------------------
@@ -425,7 +419,15 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-14  cbd064501f3f  Bug 2023271 p2 - Improve NrIceStunAddr serialization by unpacking nr_local_addr r=bwc,ipc-reviewers,nika
       2026-04-14  92f74ccdc927  Bug 2023271 - Improve NrIceStunAddr serialization by unpacking nr_local_addr r=bwc,ipc-reviewers,nika
 
-[15] Nico Grunbaum  —  5 patch(es)
+[15] Jens Stutte  —  5 patch(es)
+    ----------------------------------------------------------------------
+      2026-10-06  775ebad2ccf3  Bug 2077997 - Give dcsctp a real clock by implementing DcSctpSocketCallbacks::Now(). r=webrtc-reviewers,bwc
+      2026-10-06  26560438237f  Bug 2077997 - Use the WebIDL spelling of maxPacketLifeTime in the dcsctp interop test. r=webrtc-reviewers,bwc
+      2026-10-05  1bc3ef9fb160  Bug 2078004 - Skip polling a process for WebRTC stats history while its previous reply is outstanding. r=webrtc-reviewers,ng,jib
+      2026-09-18  7587ade26b11  Bug 1973646 - Use std::source_location in WebrtcLocation. r=webrtc-reviewers,pehrsons
+      2026-05-12  6fb81bc15d88  Bug 2038551 - Return already_AddRefed from CubebDeviceEnumerator::GetInstance. r=webrtc-reviewers,pehrsons
+
+[16] Nico Grunbaum  —  5 patch(es)
     ----------------------------------------------------------------------
       2026-06-16  64ee9356cd91  Bug 2047265 (MOZ) - switch from deprecated OnDroppedFrame to OnFrameDropped
       2026-06-12  28feeae34abb  Bug 2047265 - updated default_config_env for v150
@@ -433,142 +435,145 @@ Known aliases (applied in HTML report, NOT below):
       2026-05-12  c613ba11b287  Bug 2033939 - improve videoconduit logging;r=dbaker
       2026-04-16  45638b4b53af  Bug 2032188 - add reasonable frame limits;r=jib
 
-[16] Jeff Muizelaar  —  4 patch(es)
+[17] Chun-Min Chang  —  4 patch(es)
+    ----------------------------------------------------------------------
+      2026-10-06  48d9b1dd2acc  Bug 2066289 - Reject malformed planar image picture geometry r=media-playback-reviewers,webrtc-reviewers,gfx-reviewers,pehrsons,alwu,bradwerth
+      2026-07-10  356865dc0655  Bug 2045379 - Return nsresult from AudioPacketizer::Input and guard sample-count calculation r=media-playback-reviewers,webrtc-reviewers,bwc,alwu
+      2026-07-09  e98c0c450b40  Bug 2045379 - Return nsresult from AudioPacketizer::Input and guard sample-count calculation r=media-playback-reviewers,webrtc-reviewers,bwc,alwu
+      2026-05-29  b190420418d1  Bug 2040529 - Map webrtc::H264Level to H264_LEVEL by enumerator name r=webrtc-reviewers,dbaker
+
+[18] Jeff Muizelaar  —  4 patch(es)
     ----------------------------------------------------------------------
       2026-05-29  ae9b62d0a087  Bug 1654642 - Enable transport-cc for audio codecs; r=bwc,dbaker
       2026-05-28  6321f4d25838  Bug 2043413 - Avoid sending null data to NewArrayBufferWithUserOwnedContents() r=webrtc-reviewers,dbaker,pehrsons
       2026-05-28  0d5b7855478e  Bug 2042881 - Configure audio send stream bitrate range and BWE allocation. r=webrtc-reviewers,dbaker
       2026-05-26  60f9222ce5fa  Bug 1654642 - Enable transport-cc for audio codecs; r=bwc,dbaker
 
-[17] Nika Layzell  —  4 patch(es)
+[19] Nika Layzell  —  4 patch(es)
     ----------------------------------------------------------------------
       2026-08-31  c51090b13586  Bug 2052614 - Add a structured RemoteType representation. r=ipc-reviewers,necko-reviewers,geckoview-reviewers,extension-reviewers,media-playback-reviewers,webrtc-reviewers,places-reviewers,layout-reviewers,dom-worker-reviewers,ai-platform-reviewers,sandbox-reviewers,janerik,emilio,hiro,kershaw,bwc,asuth,mccr8,alwu,nordzilla,valentin,bobowen
       2026-08-18  bba02ee0e47d  Bug 2056357 - Part 1: Unify IPDL actor devirutalization logic, and require types to be fully qualified, r=ipc-reviewers,necko-reviewers,dom-storage-reviewers,jesup,mccr8
       2026-08-13  858573a9f98f  Bug 2056357 - Part 1: Unify IPDL actor devirutalization logic, and require types to be fully qualified, r=ipc-reviewers,necko-reviewers,dom-storage-reviewers,jesup,mccr8
       2026-06-29  12dece120f68  Bug 2048423 - Part 2: Simplify RunnableMethod and InvokeAsync method handling, r=xpcom-reviewers,necko-reviewers,extension-reviewers,media-playback-reviewers,webrtc-reviewers,win-reviewers,layout-reviewers,dom-worker-reviewers,alwu,asuth,pehrsons,valentin,emilio,robwu,sandbox-reviewers,gstoll,bobowen
 
-[18] Ryan VanderMeulen  —  4 patch(es)
+[20] Ryan VanderMeulen  —  4 patch(es)
     ----------------------------------------------------------------------
       2026-07-06  b8fd9b52c7e3  Bug 1965053 - suppress -Wcomma and -Wtautological-type-limit-compare spam from the abseil build. r=mjf
       2026-07-06  17c9305a6759  Bug 2051377 - update PeerConnectionCtx.cpp to new absl_nonnull attribute syntax. r=mjf
       2026-05-08  a4fd02222dd2  Bug 2038068 - Expose abseil-cpp as a Library so non-xul Programs can link it. r=firefox-build-system-reviewers,glandium,sergesanspaille
       2026-04-29  677c78906bc1  Bug 2026033 - Drive-by: convert test_setSinkId-stream-source.html to runTest. r=webrtc-reviewers,pehrsons
 
-[19] Chun-Min Chang  —  3 patch(es)
+[21] Andrew Osmond  —  3 patch(es)
     ----------------------------------------------------------------------
-      2026-07-10  356865dc0655  Bug 2045379 - Return nsresult from AudioPacketizer::Input and guard sample-count calculation r=media-playback-reviewers,webrtc-reviewers,bwc,alwu
-      2026-07-09  e98c0c450b40  Bug 2045379 - Return nsresult from AudioPacketizer::Input and guard sample-count calculation r=media-playback-reviewers,webrtc-reviewers,bwc,alwu
-      2026-05-29  b190420418d1  Bug 2040529 - Map webrtc::H264Level to H264_LEVEL by enumerator name r=webrtc-reviewers,dbaker
+      2026-10-06  f96310b45da2  Bug 2078605 - Don't create candidate pairs from binding responses on an obsolete ICE stream. r=webrtc-reviewers,bwc
+      2026-10-06  fa8ca72860ba  Bug 1988531 - Part 3. Update media test annotations for Android isolated process. r=media-playback-reviewers,webrtc-reviewers,pehrsons,padenot
+      2026-08-26  6c793c29341b  Bug 2066498 - Switch Android to new encoder creation strategy to only prefer platform for hardware encoders. r=webrtc-reviewers,pehrsons
 
-[20] Dan Baker  —  3 patch(es)
+[22] Dan Baker  —  3 patch(es)
     ----------------------------------------------------------------------
       2026-09-17  46654f4e465a  Bug 2072400 (MOZ) - Track RTP sources locally in AudioConduit/VideoConduit after libwebrtc removed call-layer GetSources();r=webrtc-reviewers,pehrsons
       2026-09-16  6de37f960413  Bug 2072400 - updated default_config_env for v155
       2026-09-08  76cbb5410ee4  Bug 2069067 - updated default_config_env for v154
 
-[21] Alexandra Borovova  —  2 patch(es)
+[23] Alexandra Borovova  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-06-23  eef67eea00ca  Bug 2041678 - Invalidate device cache when recording a browser window on desktop in the privileged context. r=webrtc-reviewers,pehrsons,jib
       2026-06-23  014a7422887a  Bug 2041678 - Allow capturing a browser in a priviliged context beyond Nighly. r=webrtc-reviewers,pehrsons
 
-[22] Andrew McCreight  —  2 patch(es)
+[24] Andrew McCreight  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-08-21  ebfe5a48e753  Bug 2063717, part 2 - Replace uses of services::GetAsyncShutdownService(). r=xpcom-reviewers,webrtc-reviewers,places-reviewers,media-playback-reviewers,emilio,padenot,pehrsons,Standard8
       2026-08-18  874a3483e357  Bug 2063717, part 2 - Replace uses of services::GetAsyncShutdownService(). r=xpcom-reviewers,webrtc-reviewers,places-reviewers,media-playback-reviewers,emilio,padenot,pehrsons,Standard8
 
-[23] Henrik Skupin  —  2 patch(es)
+[25] Florian Quèze  —  2 patch(es)
+    ----------------------------------------------------------------------
+      2026-10-07  5d6730069fc8  Bug 2078158 - Re-enable tests disabled on Linux that pass there on try. r=aryx,necko-reviewers,webdriver-reviewers,webcompat-reviewers,media-playback-reviewers,webrtc-reviewers,devtools-reviewers,dom-storage-reviewers,firefox-style-system-reviewers,layout-reviewers,device-api-reviewers,Sasha,Gijs,padenot,twisniewski,gstoll,dshin,jdescottes,bwc,masayuki,edgar,valentin,jesup
+      2026-10-07  c56d6aa21d08  Bug 2078158 - Re-enable tests disabled on Windows that pass there on try. r=aryx,necko-reviewers,mtigley,webcompat-reviewers,extension-reviewers,settings-reviewers,application-update-reviewers,credential-management-reviewers,search-reviewers,webrtc-reviewers,devtools-reviewers,tabbrowser-reviewers,profiler-reviewers,migration-reviewers,urlbar-reviewers,firefox-style-system-reviewers,layout-reviewers,sandbox-reviewers,crashreporting-reviewers,Gijs,Standard8,manuel,gcardieri,niklas,twisniewski,bobowen,dshin,canova,jdescottes,bwc,mconley,cdupuis,valentin,robwu
+
+[26] Henrik Skupin  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-05-18  0ba394a1ccb2  Bug 2033393 - Vendor upgraded http, hyper, warp crates and their dependencies. r=supply-chain-reviewers,webrtc-reviewers,geckodriver-reviewers,jdescottes,jgraham,bwc,valentin,afranchuk,gsvelto,gw,padenot
       2026-05-13  f9052e80e2c8  Bug 2033393 - Vendor upgraded http, hyper, warp crates and their dependencies. r=supply-chain-reviewers,webrtc-reviewers,geckodriver-reviewers,jdescottes,jgraham,bwc,valentin,afranchuk,gsvelto,gw,padenot
 
-[24] Jan-Ivar Bruaroey  —  2 patch(es)
+[27] Jan-Ivar Bruaroey  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-09-23  5e3436479eb7  Bug 2067816 - Store desktop capture sources in an nsTArray instead of a map. r=pehrsons
       2026-04-23  6387f69f8e06  Bug 2029899 - Use default string initialization r=webrtc-reviewers,bwc
 
-[25] Jens Stutte  —  2 patch(es)
-    ----------------------------------------------------------------------
-      2026-09-18  7587ade26b11  Bug 1973646 - Use std::source_location in WebrtcLocation. r=webrtc-reviewers,pehrsons
-      2026-05-12  6fb81bc15d88  Bug 2038551 - Return already_AddRefed from CubebDeviceEnumerator::GetInstance. r=webrtc-reviewers,pehrsons
-
-[26] Keith Cirkel  —  2 patch(es)
+[28] Keith Cirkel  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-08-12  0b8e483660a6  Bug 2045043 - Part 62 - Fixup final classes using _FINAL cycle collecting isupports macro in dom/media r=smaug
       2026-06-09  f72f3f6b870c  Bug 2045043 - Part 2 - Fixup final classes using _FINAL cycle collecting isupports macro in dom/media r=media-playback-reviewers,webrtc-reviewers,alwu,pehrsons
 
-[27] Martin Sirringhaus  —  2 patch(es)
+[29] Martin Sirringhaus  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-09-30  a7482b1babe9  Bug 1797270 - Make WebRTC work with FIPS enabled r=keeler,webrtc-reviewers,kershaw,bwc,webidl,smaug,ipc-reviewers
       2026-09-25  b42e262b3431  Bug 1797270 - Make WebRTC work with FIPS enabled r=keeler,webrtc-reviewers,kershaw,bwc,webidl,smaug,ipc-reviewers
 
-[28] Sebastian Hengst  —  2 patch(es)
+[30] Sebastian Hengst  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-04-15  44fef2c7e349  Bug 2030403 - disable another batch of webrtc tests on Android AArch64 debug for permanent failures.
       2026-04-13  3d474e20a703  Bug 2030403 - disable several webrtc tests on Android and Linux for permanent failures
 
-[29] Timothy Nikkel  —  2 patch(es)
+[31] Timothy Nikkel  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-08-06  78f289876b9c  Bug 2058388. Allow passing the DrawView flag to drawSnapshot so root scrollbars are painted, and so reftest's snapshot path matches its default one. r=dom-core-reviewers,webrtc-reviewers,devtools-reviewers,webcompat-reviewers,layout-reviewers,jdescottes,twisniewski,emilio,smaug,pehrsons
       2026-08-06  dd1773e2331e  Bug 2058388. Allow passing the DrawView flag to drawSnapshot so root scrollbars are painted, and so reftest's snapshot path matches its default one. r=dom-core-reviewers,webrtc-reviewers,devtools-reviewers,webcompat-reviewers,layout-reviewers,jdescottes,twisniewski,emilio,smaug,pehrsons
 
-[30] Tom Schuster  —  2 patch(es)
+[32] Tom Schuster  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-04-28  391bb5f4369e  Bug 2035452 - Use CaptureEngine type for CamerasParent::GetDeviceInfo and EnsureInitialized. r=webrtc-reviewers,mjf
       2026-04-21  9b1de3d3d560  Bug 2027690 - Cleanup MediaTransport IPC. r=bwc
 
-[31] stransky  —  2 patch(es)
+[33] stransky  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-09-30  91de7c72bcca  Bug 1922759 - Make nr_crypto_nss_hmac() work with FIPS enabled r=rrelyea,webrtc-reviewers,keeler,bwc
       2026-09-25  4b7468cc256a  Bug 1922759 - Make nr_crypto_nss_hmac() work with FIPS enabled r=rrelyea,webrtc-reviewers,keeler,bwc
 
-[32] Andrew Osmond  —  1 patch(es)
-    ----------------------------------------------------------------------
-      2026-08-26  6c793c29341b  Bug 2066498 - Switch Android to new encoder creation strategy to only prefer platform for hardware encoders. r=webrtc-reviewers,pehrsons
-
-[33] Christian Holler  —  1 patch(es)
+[34] Christian Holler  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-04-22  30206d36267f  Bug 2027154 - Remove FrameRelay callbacks. r=pehrsons,jesup
 
-[34] Jan-Niklas Jaeschke  —  1 patch(es)
+[35] Jan-Niklas Jaeschke  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-09-23  ea97a01126f9  Bug 2048943 - Part 2: Qualify mozilla::Range<T> ahead of nsRange rename. r=dom-core-reviewers,media-playback-reviewers,webrtc-reviewers,padenot,keithamus,mjf,ipc-reviewers
 
-[35] Kershaw Chang  —  1 patch(es)
+[36] Kershaw Chang  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-04-30  6104f2138b73  Bug 1978895 - Ensure CONNECT-only work with MASQUE proxy, r=necko-reviewers,webrtc-reviewers,valentin,bwc
 
-[36] Manuel Bucher  —  1 patch(es)
+[37] Manuel Bucher  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-06-01  385ca3a838f0  Bug 2035872 - Move originAttributes to socket base class nsASocketHandler r=necko-reviewers,webrtc-reviewers,bwc,kershaw
 
-[37] Masayuki Nakano  —  1 patch(es)
+[38] Masayuki Nakano  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-06-09  6388e5884115  Bug 2044523 - Make `nsPIDOMWindow.h` stop including `nsPIDOMWindowInlines.h` r=dom-core-reviewers,geckoview-reviewers,media-playback-reviewers,webrtc-reviewers,win-reviewers,layout-reviewers,manuel,aosmond,smaug,bwc,gstoll,dholbert,farre,m_kato
 
-[38] Paul Adenot  —  1 patch(es)
+[39] Paul Adenot  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-09-02  4691cfeac0ad  Bug 2058923 - Handle rejection of fire-and-forget play() calls in WebRTC mochitest helpers. r=webrtc-reviewers,bwc
 
-[39] Ryan Curran  —  1 patch(es)
+[40] Ryan Curran  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-05-29  d51f90c6573d  Bug 2037084 - Enable crashtest (opt) on macosx1500-aarch64-vms r=media-playback-reviewers,webrtc-reviewers,bwc,padenot
 
-[40] Sandor Molnar  —  1 patch(es)
+[41] Sandor Molnar  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-04-14  586be5758bd3  Bug 2030403 - Update disable to include test_peerConnection_simulcastAnswer_oldSetParameters.html
 
-[41] Vinit Jangir  —  1 patch(es)
+[42] Vinit Jangir  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-05-08  61c84c2e3eb2  Bug 790194 - Changed all instances in dom/media/webrtc to std::from_chars r=bwc
 
-[42] WSchmalstieg  —  1 patch(es)
+[43] WSchmalstieg  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-05-15  9f0213c204ae  Bug 2036515 - Fix comment spelling errors;r=ng
 
-[43] William McDonald  —  1 patch(es)
+[44] William McDonald  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-08-18  3789074e335c  Bug 1034964 - Use regular nomination with ICE-Lite peers. r=webrtc-reviewers,bwc
 
-[44] rnvannatta  —  1 patch(es)
+[45] rnvannatta  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-07-26  d6b3f25c2e04  Bug 2052617 - Fix off by one error in YuvStamper::WriteDigit. r=webrtc-reviewers,mjf
