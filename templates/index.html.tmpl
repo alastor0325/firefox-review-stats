@@ -1558,11 +1558,11 @@ __GH_CORNER__
   <div class="footer-note" id="libwebrtc-stale" style="display:none"></div>
 
   <section>
-    <h2>libwebrtc in Firefox releases <span class="info" data-tip="Which Chrome milestone of libwebrtc each supported Firefox release vendors (MOZ_NEXT_LIBWEBRTC_MILESTONE on its branch), and how many Mozilla patches it carries on top of upstream (third_party/libwebrtc/moz-patch-stack). Releases come from product-details, so ESRs appear and drop out automatically. Branched = when Chrome cut that milestone."></span></h2>
+    <h2>libwebrtc in Firefox releases <span class="info" data-tip="Which Chrome milestone of libwebrtc each supported Firefox release vendors (MOZ_NEXT_LIBWEBRTC_MILESTONE on its branch), and how many Mozilla patches it carries on top of upstream (third_party/libwebrtc/moz-patch-stack). Releases come from product-details, so ESRs appear and drop out automatically. Branched = when Chrome cut that milestone. The upstream branch links to upstream's commits that exist only on that milestone's branch, regardless of what Firefox has taken."></span></h2>
     <div class="footer-note" id="libwebrtc-meta"></div>
     <div class="table-wrap"><table class="lw-table"><thead><tr>
       <th>Channel</th><th>Firefox</th><th>libwebrtc</th><th>Upstream branch</th>
-      <th>Branched</th><th>vs Chrome stable</th><th>Mozilla patches</th><th>Last libwebrtc change</th>
+      <th>Branched</th><th>Milestones from Chrome stable</th><th>Mozilla patches</th><th>Last libwebrtc change</th>
     </tr></thead><tbody id="libwebrtc-rows"></tbody></table></div>
   </section>
 
@@ -2119,6 +2119,7 @@ function ageLabel(iso) {
   return days < 56 ? `${Math.round(days / 7)} wk` : `${Math.round(days / 30.44)} mo`;
 }
 const esc = s => escHtml(s == null ? '' : s);
+const escA = s => escAttr(s == null ? '' : s);
 
 // The weekly fetch keeps last week's copy of any part it can't refresh, so
 // say which parts are old instead of letting them look current.
@@ -2136,6 +2137,13 @@ function renderLibwebrtcStale(view) {
   el.style.display = stale.length ? 'block' : 'none';
 }
 
+// Upstream-only commits on a milestone's branch (Gitiles main..branch).
+function branchLink(head) {
+  if (!head) return '—';
+  return `<a href="https://webrtc.googlesource.com/src/+log/refs/heads/main..refs/${escA(head)}">`
+    + `<code>${esc(head)}</code></a>`;
+}
+
 function renderLibwebrtc(view) {
   document.getElementById('libwebrtc-meta').textContent =
     `Chrome stable: M${view.chrome_stable} · as of ${view.as_of}`;
@@ -2143,7 +2151,7 @@ function renderLibwebrtc(view) {
     const lc = r.last_change ? `${esc(r.last_change.date)} (${esc(r.last_change.kind)})` : '—';
     const branched = r.branched ? `${esc(r.branched)} (${ageLabel(r.branched)})` : '—';
     return `<tr><td>${esc(r.label)}</td><td>${esc(r.firefox)}</td><td>M${esc(r.milestone)}</td>`
-      + `<td><code>${esc(r.branch_head)}</code></td><td>${branched}</td>`
+      + `<td>${branchLink(r.branch_head)}</td><td>${branched}</td>`
       + `<td>${esc(r.vs_chrome)}</td><td>${esc(r.patches ?? '—')}</td><td>${lc}</td></tr>`;
   }).join('');
 }

@@ -82,6 +82,9 @@ def _run(tmp_path, view):
                     "() => { const e = document.getElementById('libwebrtc-stale');"
                     " return e.offsetParent ? e.innerText : ''; }"),
                 "chart": page.evaluate("() => !!Chart.getChart('chart-lw-stack')"),
+                "branch_links": page.evaluate(
+                    "() => [...document.querySelectorAll('#libwebrtc-rows a')]"
+                    ".map(a => [a.textContent, a.href])"),
             }
         finally:
             browser.close()
@@ -101,6 +104,9 @@ def test_the_view_runs_and_counts_from_today(tmp_path):
     assert "Branches in 7 days" in state["plan"][1]
     assert "branches too late for its train" in state["plan"][2]
     assert state["chart"] is True
+    assert state["branch_links"] == [[
+        "branch-heads/8059",
+        "https://webrtc.googlesource.com/src/+log/refs/heads/main..refs/branch-heads/8059"]]
     assert state["stale"] == ""
 
 
