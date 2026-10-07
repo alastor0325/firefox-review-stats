@@ -415,8 +415,18 @@
   /* Short values: size columns to content and scroll on narrow screens. */
   table.lw-table { table-layout: auto; }
   table.lw-table td { white-space: nowrap; }
-  .lw-unvendored summary { cursor: pointer; font-weight: 600; }
-  .lw-unvendored ul { margin: 6px 0 0; padding-left: 16px; white-space: normal; }
+  /* Not-vendored cards: .stat tiles in a wider grid, with the page's rating
+     colours as a status edge. */
+  .lw-nv-grid { display: grid; gap: 12px; align-items: start;
+                grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
+  .lw-nv-card { border: 1px solid var(--rule-soft); border-left: 3px solid var(--rate-mixed);
+                min-width: 0; }
+  .lw-nv-card.is-clear { border-left-color: var(--rate-good); }
+  .lw-nv-card.is-none { border-left-color: var(--rule); }
+  .lw-nv-summary { border: 1px solid var(--rule-soft); grid-column: 1 / -1; }
+  .lw-nv-head { display: flex; justify-content: space-between; gap: 8px; }
+  .lw-nv-list { margin: 8px 0 0; padding-left: 16px; font-size: 13px; line-height: 1.4; }
+  .lw-nv-list li { margin-bottom: 4px; }
 
   /* Tables */
   table {
@@ -1559,12 +1569,17 @@ __GH_CORNER__
 <div id="libwebrtc-section" class="libwebrtc-only">
   <div class="footer-note" id="libwebrtc-stale" style="display:none"></div>
 
+  <section id="lw-nv-section">
+    <h2>Not vendored (to triage) <span class="info" data-tip="Upstream libwebrtc commits on each release's milestone branch that Firefox hasn't vendored, by the rules of check_missing_branch_head_commits.py. A triage list, not a verdict: matching is heuristic and some commits are deliberately not taken (Chrome-only code paths)."></span></h2>
+    <div class="lw-nv-grid" id="lw-nv-cards"></div>
+  </section>
+
   <section>
-    <h2>libwebrtc in Firefox releases <span class="info" data-tip="Which Chrome milestone of libwebrtc each supported Firefox release vendors (MOZ_NEXT_LIBWEBRTC_MILESTONE on its branch), and how many Mozilla patches it carries on top of upstream (third_party/libwebrtc/moz-patch-stack). Releases come from product-details, so ESRs appear and drop out automatically. Branched = when Chrome cut that milestone. The upstream branch links to every commit that exists only on that milestone's branch; Not vendored lists the ones Firefox hasn't taken, by the rules of check_missing_branch_head_commits.py. It is a triage list, not a verdict: matching is heuristic and some commits are deliberately not taken (Chrome-only code paths)."></span></h2>
+    <h2>libwebrtc in Firefox releases <span class="info" data-tip="Which Chrome milestone of libwebrtc each supported Firefox release vendors (MOZ_NEXT_LIBWEBRTC_MILESTONE on its branch), and how many Mozilla patches it carries on top of upstream (third_party/libwebrtc/moz-patch-stack). Releases come from product-details, so ESRs appear and drop out automatically. Branched = when Chrome cut that milestone. The upstream branch links to every commit that exists only on that milestone's branch; the section above lists the ones Firefox hasn't taken."></span></h2>
     <div class="footer-note" id="libwebrtc-meta"></div>
     <div class="table-wrap"><table class="lw-table"><thead><tr>
       <th>Channel</th><th>Firefox</th><th>libwebrtc</th><th>Upstream branch</th>
-      <th>Branched</th><th>Milestones from Chrome stable</th><th>Mozilla patches</th><th>Last libwebrtc change</th><th>Not vendored (to triage)</th>
+      <th>Branched</th><th>Milestones from Chrome stable</th><th>Mozilla patches</th><th>Last libwebrtc change</th>
     </tr></thead><tbody id="libwebrtc-rows"></tbody></table></div>
   </section>
 
@@ -2147,13 +2162,47 @@ function branchLink(head) {
     + `<code>${esc(head)}</code></a>`;
 }
 
-// Upstream branch-head commits the release hasn't vendored, each linked.
-function unvendoredCell(u) {
-  if (!u.count) return '0';
-  return `<details class="lw-unvendored"><summary>${esc(u.count)}</summary><ul>`
-    + u.commits.map(c => `<li><a href="https://webrtc.googlesource.com/src/+/${escA(c.sha)}">`
-      + `<code>${esc(c.sha.slice(0, 10))}</code></a> ${esc(c.subject)}</li>`).join('')
-    + '</ul></details>';
+// The view's lead: a summary tile, then one card per release in table order
+// (trains sharing a fix sit together). Status is never colour alone: each
+// card carries an icon and a label, and text stays in ink.
+const subjectOf = s => s.replace(/^(\[[^\]]*\]\s*)+/, '');
+function renderLibwebrtcNotVendored(view) {
+  const cards = document.getElementById('lw-nv-cards');
+  const rows = view.rows.filter(r => r.unvendored);
+  if (!rows.length) {
+    cards.innerHTML = '<div class="stat" id="lw-nv-summary">No not-vendored data yet; '
+      + 'it appears after the next weekly refresh.</div>';
+    return;
+  }
+  const total = rows.reduce((n, r) => n + r.unvendored.count, 0);
+  const releases = rows.filter(r => r.unvendored.count).length;
+  // The same upstream fix lands on each train's branch under its own SHA;
+  // count it once for "how much is there to look at".
+  const distinct = new Set(rows.flatMap(r => r.unvendored.commits.map(c => subjectOf(c.subject)))).size;
+  const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+  const summary = `<div class="stat lw-nv-summary" id="lw-nv-summary"><div class="label">Not vendored</div>`
+    + `<div class="value">${total}</div><div class="sub">`
+    + (total ? `${plural(total, 'commit')} to triage across ${plural(releases, 'release')}`
+               + ` · ${distinct} distinct ${distinct === 1 ? 'fix' : 'fixes'}`
+             : 'every release has its branch-head commits')
+    + '</div></div>';
+  cards.innerHTML = summary + view.rows.map(r => {
+    const u = r.unvendored;
+    if (!u) {
+      return `<div class="stat lw-nv-card is-none"><div class="label lw-nv-head"><span class="lw-nv-label">${esc(r.label)}</span>`
+        + '<span class="lw-nv-status">— No data this week</span></div></div>';
+    }
+    const clear = u.count === 0;
+    const stale = u.as_of && -daysFromToday(u.as_of) >= LIBWEBRTC_STALE_DAYS ? ` · as of ${esc(u.as_of)}` : '';
+    const head = `<div class="label lw-nv-head"><span class="lw-nv-label">${esc(r.label)}</span>`
+      + `<span class="lw-nv-status">${clear ? '✓ Nothing to triage' : '⚠ To triage'}</span></div>`;
+    if (clear) return `<div class="stat lw-nv-card is-clear">${head}<div class="sub">${branchLink(r.branch_head)}${stale}</div></div>`;
+    return `<div class="stat lw-nv-card">${head}<div class="value">${esc(u.count)}</div>`
+      + `<div class="sub">${branchLink(r.branch_head)}${stale}</div><ul class="lw-nv-list">`
+      + u.commits.map(c => `<li><a href="https://webrtc.googlesource.com/src/+/${escA(c.sha)}">`
+        + `<code>${esc(c.sha.slice(0, 10))}</code></a> ${esc(c.subject)}</li>`).join('')
+      + '</ul></div>';
+  }).join('');
 }
 
 function renderLibwebrtc(view) {
@@ -2164,8 +2213,7 @@ function renderLibwebrtc(view) {
     const branched = r.branched ? `${esc(r.branched)} (${ageLabel(r.branched)})` : '—';
     return `<tr><td>${esc(r.label)}</td><td>${esc(r.firefox)}</td><td>M${esc(r.milestone)}</td>`
       + `<td>${branchLink(r.branch_head)}</td><td>${branched}</td>`
-      + `<td>${esc(r.vs_chrome)}</td><td>${esc(r.patches ?? '—')}</td><td>${lc}</td>`
-      + `<td>${r.unvendored ? unvendoredCell(r.unvendored) : '—'}</td></tr>`;
+      + `<td>${esc(r.vs_chrome)}</td><td>${esc(r.patches ?? '—')}</td><td>${lc}</td></tr>`;
   }).join('');
 }
 
@@ -2249,7 +2297,8 @@ function renderLibwebrtcStack(stack) {
 // Each part renders on its own: a malformed one must not stop the rest, nor
 // the tab-hiding code below.
 if (LIBWEBRTC) {
-  [[renderLibwebrtc, LIBWEBRTC], [renderLibwebrtcStale, LIBWEBRTC],
+  [[renderLibwebrtcNotVendored, LIBWEBRTC], [renderLibwebrtc, LIBWEBRTC],
+   [renderLibwebrtcStale, LIBWEBRTC],
    [renderLibwebrtcPlan, LIBWEBRTC.plan],
    [renderLibwebrtcStack, LIBWEBRTC.patch_stack]].forEach(([fn, data]) => {
     try { fn(data); } catch (e) { console.error(`${fn.name} failed`, e); }

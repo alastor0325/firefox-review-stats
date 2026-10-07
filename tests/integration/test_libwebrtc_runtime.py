@@ -6,6 +6,7 @@ here are relative to the real today, so countdowns can be asserted exactly.
 Skipped without Playwright or a browser, like test_page_runtime.py.
 """
 
+import json
 import pathlib
 from datetime import date, timedelta
 
@@ -46,7 +47,18 @@ def _view(as_of_days=0):
     }
 
 
+_RUNS = {}
+
+
 def _run(tmp_path, view):
+    """Render and run `view` in a browser; identical views share one run."""
+    key = json.dumps(view, sort_keys=True)
+    if key not in _RUNS:
+        _RUNS[key] = _run_uncached(tmp_path, view)
+    return _RUNS[key]
+
+
+def _run_uncached(tmp_path, view):
     pytest.importorskip("playwright", reason="playwright not installed")
     from playwright.sync_api import sync_playwright
 
@@ -82,11 +94,15 @@ def _run(tmp_path, view):
                     "() => { const e = document.getElementById('libwebrtc-stale');"
                     " return e.offsetParent ? e.innerText : ''; }"),
                 "chart": page.evaluate("() => !!Chart.getChart('chart-lw-stack')"),
-                "unvendored_header": page.evaluate(
-                    "() => [...document.querySelectorAll('#libwebrtc-section th')]"
-                    ".some(th => th.textContent === 'Not vendored (to triage)')"),
+                "nv_summary": text("#lw-nv-summary")[0],
+                "nv_cards": text(".lw-nv-card"),
+                # textContent: innerText would apply the CSS uppercase.
+                "nv_labels": page.evaluate("() => [...document.querySelectorAll("
+                                           "'.lw-nv-card .lw-nv-label')].map(e => e.textContent)"),
+                "nv_status": page.evaluate("() => [...document.querySelectorAll("
+                                           "'.lw-nv-card .lw-nv-status')].map(e => e.textContent)"),
                 "unvendored_links": page.evaluate(
-                    "() => [...document.querySelectorAll('.lw-unvendored a')].map(a => a.href)"),
+                    "() => [...document.querySelectorAll('.lw-nv-list a')].map(a => a.href)"),
                 "branch_links": page.evaluate(
                     "() => [...document.querySelectorAll('#libwebrtc-rows a')]"
                     ".map(a => [a.textContent, a.href])"),
@@ -121,28 +137,51 @@ def test_old_data_is_named_as_stale(tmp_path):
     assert "Release data" in state["stale"] and "the milestone plan" in state["stale"]
 
 
-def test_rows_without_a_list_show_a_dash(tmp_path):
-    """Files written before the column existed."""
-    state, errors = _run(tmp_path, _view())
-    assert errors == [] and state["unvendored_header"] is True
-    assert state["releases"][0].endswith("—")
-
-
-def test_unvendored_column_lists_and_links_the_commits(tmp_path):
-    view = _view()
-    view["rows"][0]["unvendored"] = {"count": 2, "as_of": _iso(0), "commits": [
-        {"sha": "a" * 40, "subject": "[M155] Fix A"},
-        {"sha": "b" * 40, "subject": "[M155] Fix B"}]}
-    state, errors = _run(tmp_path, view)
-    assert errors == []
-    assert state["unvendored_header"] is True
-    assert state["unvendored_links"] == [
-        "https://webrtc.googlesource.com/src/+/" + "a" * 40,
-        "https://webrtc.googlesource.com/src/+/" + "b" * 40]
-
-
 def test_a_stale_not_vendored_list_is_named(tmp_path):
     view = _view()
     view["rows"][0]["unvendored"] = {"count": 0, "as_of": _iso(-30), "commits": []}
     state, errors = _run(tmp_path, view)
     assert errors == [] and "Nightly's not-vendored list" in state["stale"]
+
+
+def _with_lists(view):
+    """Four releases: two share a fix, one is clear, one has no data."""
+    base = view["rows"][0]
+    shared = {"sha": "a" * 40, "subject": "[M155] Ensure stopped transceivers do not hold a channel"}
+    view["rows"] = [
+        {**base, "label": "Nightly", "unvendored": {"count": 1, "as_of": _iso(0),
+                                                     "commits": [shared]}},
+        {**base, "label": "Beta", "milestone": 154, "unvendored": {
+            "count": 2, "as_of": _iso(-30), "commits": [
+                {**shared, "sha": "b" * 40,
+                 "subject": "[M154] Ensure stopped transceivers do not hold a channel"},
+                {"sha": "c" * 40, "subject": "[M154] Harden payload capacity checks"}]}},
+        {**base, "label": "ESR 140", "milestone": 135, "unvendored": {
+            "count": 0, "as_of": _iso(0), "commits": []}},
+        {**base, "label": "ESR 115", "milestone": 120, "unvendored": None},
+    ]
+    return view
+
+
+def test_not_vendored_cards(tmp_path):
+    state, errors = _run(tmp_path, _with_lists(_view()))
+    assert errors == []
+    # Per-branch total, plus the distinct fixes behind it: the same upstream
+    # fix on two trains is one fix to look at.
+    assert state["nv_summary"].startswith("NOT VENDORED 3")
+    assert "3 commits to triage across 2 releases · 2 distinct fixes" in state["nv_summary"]
+    # Channel order, same as the Releases table.
+    assert state["nv_labels"] == ["Nightly", "Beta", "ESR 140", "ESR 115"]
+    # Status is an icon + label, never colour alone.
+    assert state["nv_status"] == ["⚠ To triage", "⚠ To triage",
+                                  "✓ Nothing to triage", "— No data this week"]
+    assert state["unvendored_links"] == [
+        "https://webrtc.googlesource.com/src/+/" + c * 40 for c in "abc"]
+    # A stale list says how old it is on its own card.
+    assert "as of " + _iso(-30) in state["nv_cards"][1]
+    assert "as of" not in state["nv_cards"][0]
+
+
+def test_without_lists_the_section_says_so(tmp_path):
+    state, errors = _run(tmp_path, _view())
+    assert errors == [] and "appears after the next weekly refresh" in state["nv_summary"]
