@@ -5,11 +5,14 @@ No network: every input is a literal shaped like the real payloads
 chromiumdash schedule).
 """
 
+from datetime import date
+
 import pytest
 
 from reviewstats.libwebrtc import (
     Release,
-    classify_libwebrtc_change,
+    full_stable,
+    is_libwebrtc_change,
     last_libwebrtc_change,
     last_vendored_upstream,
     parse_config_env,
@@ -78,16 +81,15 @@ def _commit(subject, body="", day="2026-09-01"):
 UP = "Upstream commit: https://webrtc.googlesource.com/src/+/"
 
 
-class TestClassifyLibwebrtcChange:
-    @pytest.mark.parametrize("subject,body,kind", [
-        ("Bug 1 - Vendor libwebrtc from c4f21b1f91", UP + "c" * 40, "vendor"),
-        ("Bug 1 - Cherry-pick upstream libwebrtc commit bb91915655 r=x",
-         UP + "b" * 40, "cherry-pick"),
-        ("Bug 1 - WebRTC backport: PipeWire mmap improvements a=x", "", "backport"),
-        ("Bug 1 - Declare every about:license notice in moz.build r=x", "", None),
+class TestIsLibwebrtcChange:
+    @pytest.mark.parametrize("subject,body,real", [
+        ("Bug 1 - Vendor libwebrtc from c4f21b1f91", UP + "c" * 40, True),
+        ("Bug 1 - Cherry-pick upstream libwebrtc commit bb91915655 r=x", "", True),
+        ("Bug 1 - WebRTC backport: PipeWire mmap improvements a=x", "", True),
+        ("Bug 1 - Declare every about:license notice in moz.build r=x", "", False),
     ])
-    def test_kinds(self, subject, body, kind):
-        assert classify_libwebrtc_change(_commit(subject, body)) == kind
+    def test_cases(self, subject, body, real):
+        assert is_libwebrtc_change(_commit(subject, body)) is real
 
 
 class TestLastLibwebrtcChange:
@@ -97,7 +99,7 @@ class TestLastLibwebrtcChange:
             _commit("Bug 1 - Vendor libwebrtc from c2b761bb73", UP + "c" * 40,
                     day="2026-09-14"),
         ]
-        assert last_libwebrtc_change(commits) == {"date": "2026-09-14", "kind": "vendor"}
+        assert last_libwebrtc_change(commits) == {"date": "2026-09-14"}
 
     def test_none_when_nothing_qualifies(self):
         assert last_libwebrtc_change([_commit("Bug 1 - lint fix")]) is None
@@ -139,7 +141,7 @@ class TestProjectView:
         "rows": [{"label": "Release", "firefox": "157.0.1", "milestone": 153,
                   "branch_head": "branch-heads/8010", "branched": "2026-08-17",
                   "vs_chrome": "1 behind", "patches": 150,
-                  "last_change": {"date": "2026-09-01", "kind": "cherry-pick"},
+                  "last_change": {"date": "2026-09-01"},
                   "unvendored": None}],
     }
 
@@ -154,10 +156,10 @@ class TestProjectView:
 
     def test_drops_unknown_last_change_fields(self):
         row = {**self.VIEW["rows"][0],
-               "last_change": {"date": "2026-09-01", "kind": "cherry-pick",
+               "last_change": {"date": "2026-09-01",
                                "sha": "f" * 40, "subject": "Fix UAF"}}
         got = project_view({**self.VIEW, "rows": [row]})["rows"][0]["last_change"]
-        assert got == {"date": "2026-09-01", "kind": "cherry-pick"}
+        assert got == {"date": "2026-09-01"}
 
     def test_drops_unknown_top_level_fields(self):
         assert "commits" not in project_view({**self.VIEW, "commits": [1]})
@@ -165,8 +167,23 @@ class TestProjectView:
     def test_unvendored_is_whitelisted_to_its_fields(self):
         row = {**self.VIEW["rows"][0], "unvendored": {
             "count": 1, "as_of": "2026-10-05", "x": 1,
-            "commits": [{"sha": "a" * 40, "subject": "Fix A", "extra": 1}]}}
+            "commits": [{"sha": "a" * 40, "subject": "Fix A", "fix": "Fix A",
+                         "role": "landed", "extra": 1}]}}
         assert project_view({**self.VIEW, "rows": [row]})["rows"][0]["unvendored"] == {
-            "count": 1, "as_of": "2026-10-05",
-            "commits": [{"sha": "a" * 40, "subject": "Fix A"}]}
+            "as_of": "2026-10-05",
+            "commits": [{"sha": "a" * 40, "subject": "Fix A", "fix": "Fix A",
+                         "role": "landed"}]}
 
+
+class TestFullStable:
+    """chromiumdash's newest "Stable" release can be a milestone still in its
+    early-stable rollout (M156 started 2026-10-07; full stable 2026-10-20).
+    The page compares against full stable."""
+
+    @pytest.mark.parametrize("stable_date,today,expected", [
+        ("2026-10-20", date(2026, 10, 7), 155),   # still early stable
+        ("2026-10-20", date(2026, 10, 20), 156),  # reached full stable
+        (None, date(2026, 10, 7), 156),           # unknown: trust the feed
+    ])
+    def test_cases(self, stable_date, today, expected):
+        assert full_stable(156, stable_date, today) == expected

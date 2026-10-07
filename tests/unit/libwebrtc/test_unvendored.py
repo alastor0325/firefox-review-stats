@@ -1,7 +1,9 @@
 """Which upstream branch-head commits a Firefox branch hasn't vendored —
 the logic of dom/media/webrtc/third_party_build/check_missing_branch_head_commits.py."""
 
-from reviewstats.libwebrtc import project_view, unvendored_commits
+import pytest
+
+from reviewstats.libwebrtc import fix_identity, project_view, unvendored_commits
 
 UP = "Upstream commit: https://webrtc.googlesource.com/src/+/"
 
@@ -50,10 +52,9 @@ class TestUnvendoredCommits:
 
     def test_nothing_vendored_returns_every_commit_in_order(self):
         missing = unvendored_commits(BRANCH, [])
-        assert missing == [{"sha": "a" * 40, "subject": "[M153] Fix A"},
-                           {"sha": "b" * 40, "subject": "[M153] Fix B"},
-                           {"sha": "c" * 40, "subject": "[M153] Fix C"},
-                           {"sha": "d" * 40, "subject": "[M153] Fix D"}]
+        assert [m["sha"] for m in missing] == ["a" * 40, "b" * 40, "c" * 40, "d" * 40]
+        assert missing[0] == {"sha": "a" * 40, "subject": "[M153] Fix A",
+                              "fix": "Fix A", "role": "landed"}
 
     def test_a_short_generic_subject_cannot_hide_a_fix(self):
         """Firefox vendoring commits embed whole upstream messages, so "Fix
@@ -109,4 +110,34 @@ class TestIncompleteInputFails:
         calls = []
         got = self._fetch(github_get=lambda p: calls.append(p) or [],
                           get_text=lambda u: ")]}'\n" + '{"log": []}')
-        assert got["count"] == 0 and calls == []
+        assert got["commits"] == [] and calls == []
+
+
+
+class TestFixIdentity:
+    """One definition of "the same fix", used both for matching and for the
+    page's grouping: Chrome merges one upstream fix to each branch under its
+    own SHA and [Mxxx] tag, and may revert and reland it."""
+
+    @pytest.mark.parametrize("subject,fix,role", [
+        ("[M155] Keep MID in sync", "Keep MID in sync", "landed"),
+        ("[M120-LTS] [Wayland] Fix crash", "[Wayland] Fix crash", "landed"),
+        ('Revert "[M120] Remove raw pointers"', "Remove raw pointers", "reverted"),
+        ('Revert^2 "[M120] Remove raw pointers"', "Remove raw pointers", "relanded"),
+        ('Revert^3 "[M120] Remove raw pointers"', "Remove raw pointers", "reverted"),
+        # The tag can sit outside the quotes too, the way Gerrit merges it.
+        ('[M155] Revert "Remove raw pointers"', "Remove raw pointers", "reverted"),
+        ('Reland "[M155] Remove raw pointers"', "Remove raw pointers", "relanded"),
+        ("Plain subject", "Plain subject", "landed"),
+    ])
+    def test_cases(self, subject, fix, role):
+        assert fix_identity(subject) == (fix, role)
+
+
+def test_files_written_before_fix_identity_are_upgraded_on_read():
+    """The page groups by `fix`; an older data file (kept when a weekly
+    fetch fails) has only subjects, so the projection fills them in."""
+    row = {"label": "ESR 115", "unvendored": {"as_of": "2026-10-01", "commits": [
+        {"sha": "g" * 40, "subject": 'Revert^2 "[M120] Remove raw pointers"'}]}}
+    commit = project_view({"rows": [row]})["rows"][0]["unvendored"]["commits"][0]
+    assert (commit["fix"], commit["role"]) == ("Remove raw pointers", "relanded")

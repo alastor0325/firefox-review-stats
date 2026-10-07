@@ -30,9 +30,10 @@ from datetime import date, datetime
 from reviewstats.github_commits import _DEFAULT_REPO
 
 PRODUCT_DETAILS_URL = "https://product-details.mozilla.org/1.0/firefox_versions.json"
+# The newest few Stable releases; their milestone may still be early stable.
 CHROME_STABLE_URL = (
     "https://chromiumdash.appspot.com/fetch_releases"
-    "?channel=Stable&platform=Windows&num=1"
+    "?channel=Stable&platform=Windows&num=3"
 )
 CHROME_SCHEDULE_URL = "https://chromiumdash.appspot.com/fetch_milestone_schedule?mstone={}&n={}"
 FIREFOX_TRAIN_URL = "https://whattrainisitnow.com/api/release/schedule/?version={}"
@@ -56,7 +57,11 @@ _UPSTREAM_RE = re.compile(
     r"^Upstream commit: https://webrtc\.googlesource\.com/src/\+/([0-9a-f]{40})",
     re.MULTILINE,
 )
-# See unvendored_commits.
+# See unvendored_commits and fix_identity.
+# Milestone tags only ([M155], [M120-LTS]); component tags like [Wayland] say
+# what a fix touches and stay in its name.
+_MILESTONE_TAG_RE = re.compile(r"^(\[M\d+[^\]]*\]\s*)+")
+_REVERT_RE = re.compile(r'^(?:Revert(?:\^(\d+))?|(Reland))\s+"(.*)"$')
 _CHERRY_RE = re.compile(r"\(cherry picked from commit ([0-9a-f]{40})\)")
 _BRACKET_PREFIX_RE = re.compile(r"^(\[[^\]]*\]\s*)+")
 # A main commit records its own position; a branch-head commit records the
@@ -71,14 +76,14 @@ _CHANNELS = (
 _VIEW_FIELDS = ("chrome_stable", "as_of")
 _ROW_FIELDS = ("label", "firefox", "milestone", "branch_head", "branched",
                "vs_chrome", "patches", "last_change")
-_LAST_CHANGE_FIELDS = ("date", "kind")
+_LAST_CHANGE_FIELDS = ("date",)
 _PLAN_FIELDS = ("milestone", "firefox", "chrome_branch", "chrome_stable",
                 "nightly_start", "merge_day", "vendoring", "fastforward_bug",
                 "in_progress")
 _LAG_FIELDS = ("last_vendored", "upstream_head", "behind")
 _STACK_HISTORY_FIELDS = ("month", "count", "sampled")
-_UNVENDORED_FIELDS = ("count", "commits", "as_of")
-_UNVENDORED_COMMIT_FIELDS = ("sha", "subject")
+_UNVENDORED_FIELDS = ("commits", "as_of")
+_UNVENDORED_COMMIT_FIELDS = ("sha", "subject", "fix", "role")
 
 
 @dataclass(frozen=True)
@@ -153,28 +158,22 @@ def main_position(message: str) -> int | None:
     return int(m.group(1)) if m else None
 
 
-def classify_libwebrtc_change(commit: dict) -> str | None:
-    """'vendor', 'cherry-pick', 'backport', or None for commits that touch
-    third_party/libwebrtc without changing its code (license metadata,
-    lint sweeps)."""
+def is_libwebrtc_change(commit: dict) -> bool:
+    """Whether a commit touching third_party/libwebrtc changes its code — a
+    vendor, cherry-pick or backport — rather than only its metadata
+    (license declarations, lint sweeps)."""
     message = commit["commit"]["message"]
     subject = message.split("\n", 1)[0]
-    if re.search(r"(?i)\bcherry-pick", subject):
-        return "cherry-pick"
-    if re.search(r"(?i)\bbackport", subject):
-        return "backport"
-    if _UPSTREAM_RE.search(message):
-        return "vendor"
-    return None
+    return bool(re.search(r"(?i)\b(cherry-pick|backport)", subject)
+                or _UPSTREAM_RE.search(message))
 
 
 def last_libwebrtc_change(commits: list[dict]) -> dict | None:
-    """Date and kind of the newest real libwebrtc change (GitHub commit
-    objects, newest first)."""
+    """Date of the newest real libwebrtc change (GitHub commit objects,
+    newest first)."""
     for c in commits:
-        kind = classify_libwebrtc_change(c)
-        if kind:
-            return {"date": c["commit"]["committer"]["date"][:10], "kind": kind}
+        if is_libwebrtc_change(c):
+            return {"date": c["commit"]["committer"]["date"][:10]}
     return None
 
 
@@ -196,6 +195,16 @@ def update_in_progress(*, remaining: int | None, branch_only: int) -> bool:
     means Gitiles had more than a page left.
     """
     return remaining is None or remaining > branch_only
+
+
+def full_stable(newest: int, stable_date: str | None, today: date) -> int:
+    """Chrome's full-stable milestone. The release feed's newest "Stable"
+    can still be in its early-stable rollout to a fraction of users; until
+    its scheduled stable date the previous milestone is the one most users
+    run."""
+    if stable_date and date.fromisoformat(stable_date) > today:
+        return newest - 1
+    return newest
 
 
 def _vs_chrome(milestone: int, chrome_stable: int) -> str:
@@ -272,6 +281,21 @@ def plan_history(today: date, known: dict[str, dict]) -> tuple[dict[str, dict], 
     return reuse, fetch
 
 
+def fix_identity(subject: str) -> tuple[str, str]:
+    """(fix, role) for an upstream branch commit: the same fix lands on each
+    milestone branch under its own SHA and [Mxxx] tag, and may be reverted and
+    relanded. `fix` is the subject without those tags or the Revert/Reland
+    wrapper; `role` is landed, reverted or relanded (Revert^N alternates)."""
+    stripped = _MILESTONE_TAG_RE.sub("", subject).strip()
+    m = _REVERT_RE.match(stripped)
+    if not m:
+        return stripped, "landed"
+    inner = _MILESTONE_TAG_RE.sub("", m.group(3)).strip()
+    if m.group(2):
+        return inner, "relanded"
+    return inner, "reverted" if int(m.group(1) or 1) % 2 else "relanded"
+
+
 def unvendored_commits(branch_log: list[dict], firefox_commits: list[dict]) -> list[dict]:
     """Upstream branch-head commits a Firefox branch hasn't vendored — the
     logic of check_missing_branch_head_commits.py.
@@ -285,8 +309,10 @@ def unvendored_commits(branch_log: list[dict], firefox_commits: list[dict]) -> l
     script, the main commit a branch-head commit was cherry-picked from also
     counts, since Firefox sometimes takes the original rather than the copy,
     and a subject-only match needs MIN_SUBJECT_WORDS words so a generic one
-    can't hide a missing fix. The result is a list to triage, not a verdict:
-    some commits are deliberately not taken (Chrome-only code paths).
+    can't hide a missing fix. Matching is heuristic, so some results are false
+    positives and some fixes are skipped on purpose (Chrome-only code). Each
+    result carries its `fix_identity`, the one definition of "same fix" the
+    page groups by.
     """
     messages = [c["commit"]["message"] for c in firefox_commits]
     vendored = set()
@@ -302,7 +328,8 @@ def unvendored_commits(branch_log: list[dict], firefox_commits: list[dict]) -> l
         by_subject = len(stripped.split()) >= MIN_SUBJECT_WORDS and stripped in text
         if c["commit"] in vendored or vendored.intersection(original) or by_subject:
             continue
-        out.append({"sha": c["commit"], "subject": subject})
+        fix, role = fix_identity(subject)
+        out.append({"sha": c["commit"], "subject": subject, "fix": fix, "role": role})
     return out
 
 
@@ -319,9 +346,15 @@ def project_view(view: dict) -> dict:
         out = pick(r, _ROW_FIELDS)
         out["last_change"] = pick(out["last_change"], _LAST_CHANGE_FIELDS)
         u = r.get("unvendored")
-        out["unvendored"] = u and {**pick(u, _UNVENDORED_FIELDS), "commits": pick_all(
-            u.get("commits"), _UNVENDORED_COMMIT_FIELDS)}
+        out["unvendored"] = u and {**pick(u, _UNVENDORED_FIELDS), "commits": [
+            commit(c) for c in pick_all(u.get("commits"), _UNVENDORED_COMMIT_FIELDS)]}
         return out
+
+    def commit(c):
+        # Files written before fix_identity carry only the subject.
+        if c["fix"] is None and c["subject"]:
+            c["fix"], c["role"] = fix_identity(c["subject"])
+        return c
 
     plan, stack = view.get("plan"), view.get("patch_stack")
     return {
@@ -421,8 +454,7 @@ def _fetch_unvendored(github_get, get_text, *, branch: str, branch_head: str,
     else:
         if entries:
             raise RuntimeError(f"{branch} history exceeds {MAX_PAGES} pages")
-    missing = unvendored_commits(entries, firefox)
-    return {"count": len(missing), "commits": missing, "as_of": today.isoformat()}
+    return {"commits": unvendored_commits(entries, firefox), "as_of": today.isoformat()}
 
 
 def _guarded(get_text, on_error):
@@ -520,7 +552,17 @@ def collect_status(github_get, get_text, *, today: date, previous: dict | None =
     last_unvendored = {(r.get("label"), r.get("branch_head")): r.get("unvendored")
                        for r in (previous or {}).get("rows") or []}
     releases = supported_releases(json.loads(get_text(PRODUCT_DETAILS_URL)))
-    chrome_stable = json.loads(get_text(CHROME_STABLE_URL))[0]["milestone"]
+    def scheduled(milestone: int) -> tuple:
+        """(branch, stable) dates, or (None, None) if chromiumdash fails; the
+        table still refreshes, just without them."""
+        try:
+            return _fetch_schedules(get_text, milestone, 1).get(milestone, (None, None))
+        except Exception as exc:  # noqa: BLE001
+            on_error("chrome stable", exc)
+            return None, None
+
+    newest = max(r["milestone"] for r in json.loads(get_text(CHROME_STABLE_URL)))
+    chrome_stable = full_stable(newest, scheduled(newest)[1], today)
     rows, nightly, nightly_count = [], None, None
     for rel in releases:
         env = _decode_content(
@@ -531,8 +573,7 @@ def collect_status(github_get, get_text, *, today: date, previous: dict | None =
         commits = github_get(f"{_REPO}/commits?sha={rel.branch}"
                              f"&path=third_party/libwebrtc&per_page=30")
         if milestone not in dates:
-            dates[milestone] = (_fetch_schedules(get_text, milestone, 1)
-                                .get(milestone, (None, None))[0])
+            dates[milestone] = scheduled(milestone)[0]
         patches = count_patches(
             github_get(f"{_REPO}/contents/{_PATCH_STACK}?ref={rel.branch}"))
         # Only Nightly vendors a milestone incrementally; release branches
@@ -557,7 +598,7 @@ def collect_status(github_get, get_text, *, today: date, previous: dict | None =
                                            branch_head=branch_head,
                                            branched=dates[milestone], today=today)
         except Exception as exc:  # noqa: BLE001 — keep last week's list
-            on_error("unvendored", exc)
+            on_error("missing fixes", exc)
             unvendored = last_unvendored.get((rel.label, branch_head))
         rows.append({
             "label": rel.label, "firefox": firefox, "milestone": milestone,

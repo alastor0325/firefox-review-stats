@@ -415,18 +415,26 @@
   /* Short values: size columns to content and scroll on narrow screens. */
   table.lw-table { table-layout: auto; }
   table.lw-table td { white-space: nowrap; }
-  /* Not-vendored cards: .stat tiles in a wider grid, with the page's rating
-     colours as a status edge. */
-  .lw-nv-grid { display: grid; gap: 12px; align-items: start;
-                grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
-  .lw-nv-card { border: 1px solid var(--rule-soft); border-left: 3px solid var(--rate-mixed);
-                min-width: 0; }
-  .lw-nv-card.is-clear { border-left-color: var(--rate-good); }
-  .lw-nv-card.is-none { border-left-color: var(--rule); }
-  .lw-nv-summary { border: 1px solid var(--rule-soft); grid-column: 1 / -1; }
-  .lw-nv-head { display: flex; justify-content: space-between; gap: 8px; }
-  .lw-nv-list { margin: 8px 0 0; padding-left: 16px; font-size: 13px; line-height: 1.4; }
-  .lw-nv-list li { margin-bottom: 4px; }
+  /* Missing-fixes list: one foldable row per fix, release chips in fixed
+     slots so they line up into columns on wide screens. */
+  #libwebrtc-section .info { color: var(--ink-soft); }
+  .lw-fix { border-top: 1px solid var(--rule-soft); }
+  .lw-fix:last-child { border-bottom: 1px solid var(--rule-soft); }
+  .lw-fix summary { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline;
+                    padding: 8px 2px; cursor: pointer; font-size: 13.5px; list-style: none; }
+  .lw-fix summary::-webkit-details-marker { display: none; }
+  .lw-fix summary::before { content: "▸"; color: var(--ink-soft); width: 10px; }
+  .lw-fix[open] summary::before { content: "▾"; }
+  .lw-fix-subject { flex: 1 1 320px; min-width: 0; }
+  .lw-fix-chips { display: flex; gap: 4px; flex-wrap: wrap; }
+  .lw-chip, .lw-chip-gap { font-family: var(--mono); font-size: 10.5px; min-width: 62px;
+                           text-align: center; padding: 1px 6px; border-radius: 3px; }
+  .lw-chip { background: var(--paper-warm); color: var(--ink); }
+  .lw-chip.is-unknown { background: none; border: 1px dashed var(--rule); color: var(--ink-soft); }
+  .lw-fix-body { padding: 0 2px 10px 20px; font-size: 12.5px; color: var(--ink-soft); }
+  .lw-fix-line { margin-top: 4px; }
+  .lw-fix-where { display: inline-block; min-width: 170px; }
+  @media (max-width: 700px) { .lw-chip-gap { display: none; } }
 
   /* Tables */
   table {
@@ -1569,25 +1577,32 @@ __GH_CORNER__
 <div id="libwebrtc-section" class="libwebrtc-only">
   <div class="footer-note" id="libwebrtc-stale" style="display:none"></div>
 
-  <section id="lw-nv-section">
-    <h2>Not vendored (to triage) <span class="info" data-tip="Upstream libwebrtc commits on each release's milestone branch that Firefox hasn't vendored, by the rules of check_missing_branch_head_commits.py. A triage list, not a verdict: matching is heuristic and some commits are deliberately not taken (Chrome-only code paths)."></span></h2>
-    <div class="lw-nv-grid" id="lw-nv-cards"></div>
+  <section>
+    <h2>Upstream fixes not vendored <span class="info" data-tip="Commits Chrome merged to a milestone's release branch (branch-heads/N) that Firefox's history doesn't show as vendored. Matched by Upstream-commit footers, cherry-pick lines and subject, following check_missing_branch_head_commits.py, so expect some false positives and some fixes skipped on purpose (Chrome-only code). Each fix is counted once: Chrome merges it to each branch under its own SHA, and a revert and reland count as one fix."></span></h2>
+    <div class="footer-note" id="lw-missing-summary"></div>
+    <div class="lw-fixes" id="lw-fixes"></div>
   </section>
 
   <section>
-    <h2>libwebrtc in Firefox releases <span class="info" data-tip="Which Chrome milestone of libwebrtc each supported Firefox release vendors (MOZ_NEXT_LIBWEBRTC_MILESTONE on its branch), and how many Mozilla patches it carries on top of upstream (third_party/libwebrtc/moz-patch-stack). Releases come from product-details, so ESRs appear and drop out automatically. Branched = when Chrome cut that milestone. The upstream branch links to every commit that exists only on that milestone's branch; the section above lists the ones Firefox hasn't taken."></span></h2>
+    <h2>libwebrtc in Firefox releases <span class="info" data-tip="The Chrome milestone of libwebrtc each supported Firefox release vendors (MOZ_NEXT_LIBWEBRTC_MILESTONE on its branch). Releases come from product-details, so ESRs appear and drop out on their own."></span></h2>
     <div class="footer-note" id="libwebrtc-meta"></div>
     <div class="table-wrap"><table class="lw-table"><thead><tr>
-      <th>Channel</th><th>Firefox</th><th>libwebrtc</th><th>Upstream branch</th>
-      <th>Branched</th><th>Milestones from Chrome stable</th><th>Mozilla patches</th><th>Last libwebrtc change</th>
+      <th>Channel</th><th>Version</th><th>Milestone</th>
+      <th>Branch<span class="info" data-tip="Chrome's release branch for this milestone. The link lists every commit on it that isn't on upstream main."></span></th>
+      <th>Branched<span class="info" data-tip="When Chrome cut this milestone's branch from main."></span></th>
+      <th>vs Chrome stable</th>
+      <th>Mozilla patches<span class="info" data-tip="Patches in third_party/libwebrtc/moz-patch-stack on this release's branch, carried on top of upstream."></span></th>
+      <th>Missing fixes<span class="info" data-tip="Fixes on this release's branch that it hasn't vendored; listed above."></span></th>
+      <th>Last libwebrtc change<span class="info" data-tip="Newest commit on this release's branch that changes third_party/libwebrtc code. Metadata-only commits are skipped."></span></th>
     </tr></thead><tbody id="libwebrtc-rows"></tbody></table></div>
   </section>
 
   <section>
-    <h2>Milestone plan <span class="info" data-tip="The first row is the update Nightly is vendoring and the Firefox release it targets, from main's default_config_env (MOZ_NEXT_FIREFOX_REL_TARGET); it has to be complete before that release merges to Beta. Later rows are projected: Chrome and Firefox both ship every two weeks, so each next milestone is expected to target the next train, and a milestone that branches after its train merges shows no target. Dates from chromiumdash and whattrainisitnow.com; blank means not scheduled yet."></span></h2>
+    <h2>Milestone plan <span class="info" data-tip="Row 1 is the milestone Nightly is moving to and the release it targets (MOZ_NEXT_FIREFOX_REL_TARGET in main's default_config_env). It must be vendored before that release merges to Beta. Later rows assume one milestone per Firefox train. Dates from chromiumdash and whattrainisitnow.com."></span></h2>
     <div class="table-wrap"><table class="lw-table"><thead><tr>
-      <th>Chrome</th><th>Chrome branch</th><th>Stable date</th><th>Targets Firefox</th>
-      <th>Nightly from</th><th>Merges to Beta</th><th>Status</th>
+      <th>Milestone</th><th>Branches</th><th>Chrome stable</th>
+      <th>Firefox<span class="info" data-tip="Rows after the first are projected, not planned. &quot;Misses its train&quot;: Chrome branches this milestone after its Firefox train merges to Beta, so no release targets it."></span></th>
+      <th>Nightly starts</th><th>Beta merge</th><th>Status</th>
     </tr></thead><tbody id="lw-plan-rows"></tbody></table></div>
     <div class="footer-note" id="lw-lag"></div>
   </section>
@@ -2135,22 +2150,26 @@ function ageLabel(iso) {
   const days = -daysFromToday(iso);
   return days < 56 ? `${Math.round(days / 7)} wk` : `${Math.round(days / 30.44)} mo`;
 }
+const monthLabel = ym => new Date(ym + '-01T00:00:00')
+  .toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
 const esc = s => escHtml(s == null ? '' : s);
 const escA = s => escAttr(s == null ? '' : s);
+const NO_DATA_YET = 'No data yet; the next weekly refresh fills this in.';
 
 // The weekly fetch keeps last week's copy of any part it can't refresh, so
 // say which parts are old instead of letting them look current.
 const LIBWEBRTC_STALE_DAYS = 10;
+const isStale = asOf => asOf && -daysFromToday(asOf) >= LIBWEBRTC_STALE_DAYS;
 function renderLibwebrtcStale(view) {
-  const stale = [['Release data', view], ['the milestone plan', view.plan],
-                 ['the patch-stack trend', view.patch_stack],
-                 ...view.rows.map(r => [`${r.label}'s not-vendored list`, r.unvendored])]
-    .filter(([, part]) => part && -daysFromToday(part.as_of) >= LIBWEBRTC_STALE_DAYS)
+  const stale = [['the releases table', view], ['the milestone plan', view.plan],
+                 ['the patch stack chart', view.patch_stack],
+                 ...view.rows.map(r => [`${r.label}'s missing fixes`, r.unvendored])]
+    .filter(([, part]) => part && isStale(part.as_of))
     .map(([what, part]) => `${what} (as of ${part.as_of})`);
   const el = document.getElementById('libwebrtc-stale');
   el.textContent = stale.length
-    ? `Not refreshed recently: ${stale.join(', ')} — the weekly libwebrtc fetch may be `
-      + 'failing; see fetch_libwebrtc_status.py in the workflow log.'
+    ? `Out of date: ${stale.join(', ')}. The weekly fetch may be failing; check the `
+      + 'fetch_libwebrtc_status.py step in the workflow log.'
     : '';
   el.style.display = stale.length ? 'block' : 'none';
 }
@@ -2162,58 +2181,77 @@ function branchLink(head) {
     + `<code>${esc(head)}</code></a>`;
 }
 
-// The view's lead: a summary tile, then one card per release in table order
-// (trains sharing a fix sit together). Status is never colour alone: each
-// card carries an icon and a label, and text stays in ink.
-const subjectOf = s => s.replace(/^(\[[^\]]*\]\s*)+/, '');
-function renderLibwebrtcNotVendored(view) {
-  const cards = document.getElementById('lw-nv-cards');
-  const rows = view.rows.filter(r => r.unvendored);
-  if (!rows.length) {
-    cards.innerHTML = '<div class="stat" id="lw-nv-summary">No not-vendored data yet; '
-      + 'it appears after the next weekly refresh.</div>';
-    return;
-  }
-  const total = rows.reduce((n, r) => n + r.unvendored.count, 0);
-  const releases = rows.filter(r => r.unvendored.count).length;
-  // The same upstream fix lands on each train's branch under its own SHA;
-  // count it once for "how much is there to look at".
-  const distinct = new Set(rows.flatMap(r => r.unvendored.commits.map(c => subjectOf(c.subject)))).size;
-  const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
-  const summary = `<div class="stat lw-nv-summary" id="lw-nv-summary"><div class="label">Not vendored</div>`
-    + `<div class="value">${total}</div><div class="sub">`
-    + (total ? `${plural(total, 'commit')} to triage across ${plural(releases, 'release')}`
-               + ` · ${distinct} distinct ${distinct === 1 ? 'fix' : 'fixes'}`
-             : 'every release has its branch-head commits')
-    + '</div></div>';
-  cards.innerHTML = summary + view.rows.map(r => {
-    const u = r.unvendored;
-    if (!u) {
-      return `<div class="stat lw-nv-card is-none"><div class="label lw-nv-head"><span class="lw-nv-label">${esc(r.label)}</span>`
-        + '<span class="lw-nv-status">— No data this week</span></div></div>';
+// Commits grouped into fixes by `fix`, which Python's fix_identity sets: one
+// upstream fix lands on each train's branch under its own SHA, and may be
+// reverted and relanded. Fixes come in table order of the first release
+// missing them.
+function groupFixes(rows) {
+  const fixes = new Map();
+  rows.forEach((r, ri) => {
+    if (!r.unvendored) return;
+    // Upstream lists newest first; show a fix's commits in landing order.
+    [...r.unvendored.commits].reverse().forEach(c => {
+      if (!fixes.has(c.fix)) fixes.set(c.fix, { subject: c.fix, first: ri, releases: new Map() });
+      const f = fixes.get(c.fix);
+      if (!f.releases.has(ri)) f.releases.set(ri, []);
+      f.releases.get(ri).push(c);
+    });
+  });
+  return [...fixes.values()].sort((a, b) => a.first - b.first);
+}
+const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+
+function renderLibwebrtcMissing(view) {
+  const summary = document.getElementById('lw-missing-summary');
+  const rows = view.rows;
+  if (!rows.some(r => r.unvendored)) { summary.textContent = NO_DATA_YET; return; }
+  const fixes = groupFixes(rows);
+  const missingIn = new Set(fixes.flatMap(f => [...f.releases.keys()]));
+  const unchecked = rows.filter(r => !r.unvendored).map(r => r.label);
+  const checked = rows.length - unchecked.length;
+  summary.textContent = (fixes.length
+      ? `${plural(fixes.length, 'fix', 'fixes')} missing from ${missingIn.size} of `
+        + `${plural(checked, 'release', 'releases')}.`
+      : '✓ Every release has all the fixes on its branch.')
+    + (unchecked.length ? ` ${unchecked.join(', ')} ${unchecked.length === 1 ? "wasn't" : "weren't"}`
+       + ' checked this week.' : '');
+
+  document.getElementById('lw-fixes').innerHTML = fixes.map(f => {
+    // A slot per release so chips line up. An unchecked release gets a ? chip
+    // rather than a blank, which would read as "not missing here".
+    const chips = rows.map((r, ri) => f.releases.has(ri) ? `<span class="lw-chip">${esc(r.label)}</span>`
+      : !r.unvendored ? `<span class="lw-chip is-unknown" title="${escA(r.label)}: not checked this week">?</span>`
+      : '<span class="lw-chip-gap"></span>').join('');
+    // Releases on one milestone branch carry the same commits: one line.
+    const lines = new Map();
+    for (const [ri, commits] of f.releases) {
+      const r = rows[ri], key = commits.map(c => c.sha).join();
+      if (!lines.has(key)) lines.set(key, { labels: [], r, commits });
+      lines.get(key).labels.push(r.label);
     }
-    const clear = u.count === 0;
-    const stale = u.as_of && -daysFromToday(u.as_of) >= LIBWEBRTC_STALE_DAYS ? ` · as of ${esc(u.as_of)}` : '';
-    const head = `<div class="label lw-nv-head"><span class="lw-nv-label">${esc(r.label)}</span>`
-      + `<span class="lw-nv-status">${clear ? '✓ Nothing to triage' : '⚠ To triage'}</span></div>`;
-    if (clear) return `<div class="stat lw-nv-card is-clear">${head}<div class="sub">${branchLink(r.branch_head)}${stale}</div></div>`;
-    return `<div class="stat lw-nv-card">${head}<div class="value">${esc(u.count)}</div>`
-      + `<div class="sub">${branchLink(r.branch_head)}${stale}</div><ul class="lw-nv-list">`
-      + u.commits.map(c => `<li><a href="https://webrtc.googlesource.com/src/+/${escA(c.sha)}">`
-        + `<code>${esc(c.sha.slice(0, 10))}</code></a> ${esc(c.subject)}</li>`).join('')
-      + '</ul></div>';
+    const multi = c => c.length > 1 || c[0].role !== 'landed';
+    const body = [...lines.values()].map(({ labels, r, commits }) =>
+      `<div class="lw-fix-line"><span class="lw-fix-where">${esc(labels.join(', '))} · M${esc(r.milestone)}</span> `
+      + commits.map(c => `<a href="https://webrtc.googlesource.com/src/+/${escA(c.sha)}"><code>${esc(c.sha.slice(0, 10))}</code></a>`
+        + (multi(commits) ? ` ${c.role}` : '')).join(' ')
+      + (isStale(r.unvendored.as_of) ? ` · as of ${esc(r.unvendored.as_of)}` : '') + '</div>').join('');
+    return `<details class="lw-fix"><summary><span class="lw-fix-subject">${esc(f.subject)}</span>`
+      + `<span class="lw-fix-chips">${chips}</span></summary><div class="lw-fix-body">${body}</div></details>`;
   }).join('');
 }
 
 function renderLibwebrtc(view) {
   document.getElementById('libwebrtc-meta').textContent =
-    `Chrome stable: M${view.chrome_stable} · as of ${view.as_of}`;
-  document.getElementById('libwebrtc-rows').innerHTML = view.rows.map(r => {
-    const lc = r.last_change ? `${esc(r.last_change.date)} (${esc(r.last_change.kind)})` : '—';
-    const branched = r.branched ? `${esc(r.branched)} (${ageLabel(r.branched)})` : '—';
+    `Chrome stable: M${view.chrome_stable} · data from ${view.as_of}`;
+  const fixes = groupFixes(view.rows);
+  document.getElementById('libwebrtc-rows').innerHTML = view.rows.map((r, ri) => {
+    const branched = r.branched ? `${esc(r.branched)} (${ageLabel(r.branched)} ago)` : '—';
+    const missing = r.unvendored ? fixes.filter(f => f.releases.has(ri)).length
+      : '<span title="Not checked this week">—</span>';
     return `<tr><td>${esc(r.label)}</td><td>${esc(r.firefox)}</td><td>M${esc(r.milestone)}</td>`
       + `<td>${branchLink(r.branch_head)}</td><td>${branched}</td>`
-      + `<td>${esc(r.vs_chrome)}</td><td>${esc(r.patches ?? '—')}</td><td>${lc}</td></tr>`;
+      + `<td>${esc(r.vs_chrome)}</td><td>${esc(r.patches ?? '—')}</td><td>${missing}</td>`
+      + `<td>${r.last_change ? esc(r.last_change.date) : '—'}</td></tr>`;
   }).join('');
 }
 
@@ -2223,63 +2261,56 @@ function vendoringStatus(r) {
   const bug = r.fastforward_bug
     ? ` · <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=${esc(r.fastforward_bug)}">Bug ${esc(r.fastforward_bug)}</a>`
     : '';
-  let st;
-  if (r.in_progress == null) st = 'status unknown this week';
-  else if (!r.in_progress) st = 'complete';
-  else if (!r.merge_day) st = 'in progress';
-  else {
-    const left = daysFromToday(r.merge_day);
-    st = `in progress, ${left >= 0 ? `${left} days to Beta merge` : 'past Beta merge'}`;
-  }
-  return `<strong>Now:</strong> ${st}${bug}`;
+  if (r.in_progress == null) return `Vendoring? · not checked this week${bug}`;
+  if (!r.in_progress) return `Vendored${bug}`;
+  if (!r.merge_day) return `Vendoring${bug}`;
+  const left = daysFromToday(r.merge_day);
+  return `Vendoring · ${left >= 0 ? `${left} days to Beta merge` : 'past Beta merge'}${bug}`;
 }
 
 function renderLibwebrtcPlan(plan) {
   const rows = document.getElementById('lw-plan-rows');
-  if (!plan) {
-    rows.innerHTML = '<tr><td colspan="7">No milestone plan yet; it appears after the next weekly refresh.</td></tr>';
-    return;
-  }
+  if (!plan) { rows.innerHTML = `<tr><td colspan="7">${NO_DATA_YET}</td></tr>`; return; }
   rows.innerHTML = plan.rows.map(r => {
     let st = '—';
     if (r.vendoring) st = vendoringStatus(r);
     else if (r.chrome_branch) {
       const d = daysFromToday(r.chrome_branch);
-      st = d > 0 ? `Branches in ${d} days` : 'Branched — ready to start';
+      st = d > 0 ? `Branches in ${d} days` : d === 0 ? 'Branched today' : `Branched ${-d} days ago`;
     }
-    const target = !r.firefox ? '— <em>(branches too late for its train)</em>'
-      : `Firefox ${esc(r.firefox)}` + (r.vendoring ? '' : ' <em>(projected)</em>');
+    const firefox = !r.firefox ? '— (misses its train)'
+      : r.vendoring ? esc(r.firefox) : `<em>${esc(r.firefox)}</em>`;
     return `<tr><td>M${esc(r.milestone)}</td><td>${esc(r.chrome_branch || '—')}</td>`
-      + `<td>${esc(r.chrome_stable || '—')}</td><td>${target}</td>`
+      + `<td>${esc(r.chrome_stable || '—')}</td><td>${firefox}</td>`
       + `<td>${esc(r.nightly_start || '—')}</td><td>${esc(r.merge_day || '—')}</td>`
       + `<td>${st}</td></tr>`;
   }).join('');
 
-  const lag = plan.lag;
-  document.getElementById('lw-lag').textContent = !lag
-    ? 'No vendored upstream commit found on Nightly.'
-    : `Nightly's newest vendored upstream commit is from ${lag.last_vendored}: `
-      + `${daysFromToday(lag.upstream_head) - daysFromToday(lag.last_vendored)} days`
-      + (lag.behind == null ? '' : ` and ${lag.behind} commits`)
-      + ` behind upstream main (${lag.upstream_head}).`;
+  const lag = plan.lag, el = document.getElementById('lw-lag');
+  if (!lag) { el.textContent = "Couldn't find Nightly's newest vendored commit this week."; return; }
+  const days = daysFromToday(lag.upstream_head) - daysFromToday(lag.last_vendored);
+  const gap = lag.behind == null ? `${days} days` : `${lag.behind} commits (${days} days)`;
+  el.textContent = `Nightly is ${gap} behind upstream main; its newest vendored commit `
+    + `is from ${lag.last_vendored}.`;
 }
 
 function renderLibwebrtcStack(stack) {
   const summary = document.getElementById('lw-stack-summary');
   if (!stack || !stack.history.length) {
-    summary.textContent = 'No patch-stack trend yet; it appears after the next weekly refresh.';
+    summary.textContent = NO_DATA_YET;
     document.getElementById('chart-lw-stack').parentElement.style.display = 'none';
     return;
   }
-  const h = stack.history;
-  const change = h.length > 1 ? h[h.length - 1].count - h[0].count : null;
-  summary.textContent = change == null ? '' : `${change >= 0 ? '+' : ''}${change} patches since ${h[0].month}.`;
+  const h = stack.history, now = h[h.length - 1].count;
+  const change = h.length > 1 ? now - h[0].count : 0;
+  summary.textContent = `${now} patches, ` + (change > 0 ? `up ${change}` : change < 0
+    ? `down ${-change}` : 'unchanged') + ` since ${monthLabel(h[0].month)}.`;
   new Chart(document.getElementById('chart-lw-stack'), {
     type: 'line',
     data: {
-      labels: h.map(p => p.month),
+      labels: h.map(p => monthLabel(p.month)),
       datasets: [{
-        label: 'Patches on Nightly (end of month; this month so far)',
+        label: 'Patches',
         data: h.map(p => p.count),
         borderColor: COLOR_NAVY,
         backgroundColor: COLOR_NAVY + '33',
@@ -2287,7 +2318,7 @@ function renderLibwebrtcStack(stack) {
       }],
     },
     options: {
-      plugins: { legend: { position: 'bottom' } },
+      plugins: { legend: { display: false } },
       scales: { y: { title: { display: true, text: 'patches' } } },
       maintainAspectRatio: false,
     },
@@ -2297,7 +2328,7 @@ function renderLibwebrtcStack(stack) {
 // Each part renders on its own: a malformed one must not stop the rest, nor
 // the tab-hiding code below.
 if (LIBWEBRTC) {
-  [[renderLibwebrtcNotVendored, LIBWEBRTC], [renderLibwebrtc, LIBWEBRTC],
+  [[renderLibwebrtcMissing, LIBWEBRTC], [renderLibwebrtc, LIBWEBRTC],
    [renderLibwebrtcStale, LIBWEBRTC],
    [renderLibwebrtcPlan, LIBWEBRTC.plan],
    [renderLibwebrtcStack, LIBWEBRTC.patch_stack]].forEach(([fn, data]) => {

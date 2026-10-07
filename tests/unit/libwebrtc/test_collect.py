@@ -18,7 +18,7 @@ UP = "Upstream commit: https://webrtc.googlesource.com/src/+/"
 MAIN_LAST = "c" * 40
 TODAY = date(2026, 10, 5)
 BRANCHES = {"main": (155, 8059, "159.0a1"), "esr140": (135, 7049, "140.17.1")}
-BRANCH_DATES = {"135": "2025-03-03", "155": "2026-09-14", "156": "2026-09-28",
+BRANCH_DATES = {"135": "2025-03-03", "154": "2026-08-31", "155": "2026-09-14", "156": "2026-09-28",
                 "157": "2026-10-12", "158": "2026-10-26"}
 
 
@@ -65,7 +65,7 @@ class Upstream:
     def web(self, url):
         self.calls.append(url)
         host = url.split("/")[2]
-        if any(d in host for d in self.down):
+        if any(d in host or d in url for d in self.down):
             raise OSError(f"{host} down")
         if "product-details" in url:
             return '{"FIREFOX_NIGHTLY": "159.0a1", "FIREFOX_ESR": "140.17.0esr"}'
@@ -97,7 +97,7 @@ class Upstream:
         if "refs/heads/main..refs/branch-heads/" in url:
             bh = url.split("branch-heads/")[1].split("?")[0]
             return ")]}'\n" + json.dumps({"log": [
-                {"commit": f"{bh}{i}".ljust(40, "0"), "message": f"[M] Fix {bh}-{i}\n"}
+                {"commit": f"{bh}{i}".ljust(40, "0"), "message": f"[M100] Fix {bh}-{i}\n"}
                 for i in range(4)]})
         if "googlesource.com" in url:
             return ")]}'\n" + json.dumps({"log": [{}] * 3})
@@ -205,10 +205,11 @@ def test_the_core_still_fails_hard():
 
 def test_each_release_lists_its_unvendored_branch_head_commits():
     rows = _collect(Upstream())["rows"]
-    assert [(r["label"], r["unvendored"]["count"]) for r in rows] == [
+    assert [(r["label"], len(r["unvendored"]["commits"])) for r in rows] == [
         ("Nightly", 3), ("ESR 140", 3)]
-    assert rows[0]["unvendored"]["commits"][0] == {
-        "sha": "80591".ljust(40, "0"), "subject": "[M] Fix 8059-1"}
+    first = rows[0]["unvendored"]["commits"][0]
+    assert (first["sha"], first["fix"], first["role"]) == (
+        "80591".ljust(40, "0"), "Fix 8059-1", "landed")
 
 
 def test_firefox_history_is_read_from_the_branch_date_on():
@@ -227,8 +228,8 @@ def test_unvendored_falls_back_to_last_weeks_list_per_release():
     errors = []
     rows = _collect(Upstream(down={"googlesource"}), previous=previous,
                     on_error=lambda key, exc: errors.append(key))["rows"]
-    assert "unvendored" in errors
-    assert rows[0]["unvendored"] == {"count": 2, "commits": [], "as_of": "2026-09-28"}
+    assert "missing fixes" in errors
+    assert rows[0]["unvendored"] == {"commits": [], "as_of": "2026-09-28"}
     assert rows[1]["unvendored"] is None
 
 
@@ -261,3 +262,29 @@ def test_identical_requests_are_made_once_per_run():
     _collect(up)
     log = [c for c in up.calls if "refs/heads/main..refs/branch-heads/8059" in c]
     assert len(log) == 1
+
+
+def _early_stable(up_cls):
+    class Early(up_cls):
+        def web(self, url):
+            if "fetch_releases" in url:
+                self.calls.append(url)
+                return '[{"milestone": 156}]'
+            return super().web(url)
+    return Early
+
+
+def test_chrome_stable_is_full_stable_not_early_stable(monkeypatch):
+    """M156 is in the release feed but its stable date is still ahead."""
+    monkeypatch.setitem(BRANCH_DATES, "156", "2026-10-20")
+    assert _collect(_early_stable(Upstream)())["chrome_stable"] == 155
+
+
+def test_a_failing_schedule_does_not_fail_the_table():
+    """The stable-date lookup is optional: without it the release feed's
+    milestone is used and the rest still refreshes."""
+    errors = []
+    view = _collect(_early_stable(Upstream)(down={"chromiumdash.appspot.com/fetch_milestone"}),
+                    on_error=lambda key, exc: errors.append(key))
+    assert view["chrome_stable"] == 156 and view["rows"]
+    assert "chrome stable" in errors

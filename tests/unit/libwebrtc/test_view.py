@@ -37,13 +37,3 @@ def test_sections_in_order():
     order = [html.index(x) for x in ('id="libwebrtc-rows"', 'id="lw-plan-rows"',
                                      'id="lw-lag"', 'id="chart-lw-stack"')]
     assert order == sorted(order)
-
-
-def test_releases_table_carries_the_patch_counts():
-    """One row per release, rather than a second per-release table."""
-    assert "<th>Mozilla patches</th>" in HTML
-
-
-def test_the_chrome_column_says_it_counts_milestones():
-    assert "<th>Milestones from Chrome stable</th>" in HTML
-

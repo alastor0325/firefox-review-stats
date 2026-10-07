@@ -93,16 +93,36 @@ def _run_uncached(tmp_path, view):
                 "stale": page.evaluate(
                     "() => { const e = document.getElementById('libwebrtc-stale');"
                     " return e.offsetParent ? e.innerText : ''; }"),
+                "body": page.evaluate("() => document.getElementById('libwebrtc-section').innerText"),
                 "chart": page.evaluate("() => !!Chart.getChart('chart-lw-stack')"),
-                "nv_summary": text("#lw-nv-summary")[0],
-                "nv_cards": text(".lw-nv-card"),
-                # textContent: innerText would apply the CSS uppercase.
-                "nv_labels": page.evaluate("() => [...document.querySelectorAll("
-                                           "'.lw-nv-card .lw-nv-label')].map(e => e.textContent)"),
-                "nv_status": page.evaluate("() => [...document.querySelectorAll("
-                                           "'.lw-nv-card .lw-nv-status')].map(e => e.textContent)"),
+                "plan_cells": page.evaluate(
+                    "() => [...document.querySelectorAll('#lw-plan-rows tr')]"
+                    ".map(t => [...t.cells].map(c => c.innerText.trim()))"),
+                "headers": page.evaluate(
+                    "() => [...document.querySelectorAll('#libwebrtc-section thead tr')]"
+                    ".map(t => [...t.cells].map(c => c.textContent.trim()))"),
+                "missing_summary": text("#lw-missing-summary")[0],
+                "missing_col": page.evaluate(
+                    "() => [...document.querySelectorAll('#libwebrtc-rows tr')]"
+                    ".map(t => t.cells[7].textContent.trim())"),
+                "fix_subjects": page.evaluate(
+                    "() => [...document.querySelectorAll('.lw-fix .lw-fix-subject')]"
+                    ".map(e => e.textContent)"),
+                "fix_chips": page.evaluate(
+                    "() => [...document.querySelectorAll('.lw-fix')].map(d =>"
+                    " [...d.querySelectorAll('.lw-chip')].map(c => c.textContent).join(' '))"),
+                "fix_open": page.evaluate(
+                    "() => [...document.querySelectorAll('.lw-fix')].map(d => d.open)"),
+                "fix_bodies": page.evaluate(
+                    "() => [...document.querySelectorAll('.lw-fix .lw-fix-body')]"
+                    ".map(b => [...b.querySelectorAll('.lw-fix-line')]"
+                    ".map(l => l.textContent.replace(/\\s+/g, ' ').trim()).join(' '))"),
+                "stack_summary": text("#lw-stack-summary")[0],
+                "fold_marker": page.evaluate(
+                    "() => { const s = document.querySelector('.lw-fix summary');"
+                    " return s ? getComputedStyle(s, '::before').content : null; }"),
                 "unvendored_links": page.evaluate(
-                    "() => [...document.querySelectorAll('.lw-nv-list a')].map(a => a.href)"),
+                    "() => [...document.querySelectorAll('.lw-fix-body a')].map(a => a.href)"),
                 "branch_links": page.evaluate(
                     "() => [...document.querySelectorAll('#libwebrtc-rows a')]"
                     ".map(a => [a.textContent, a.href])"),
@@ -116,14 +136,15 @@ def test_the_view_runs_and_counts_from_today(tmp_path):
     state, errors = _run(tmp_path, _view())
     assert errors == []
     assert state["view"] == "libwebrtc"
-    assert "149" in state["releases"][0] and "(3 wk)" in state["releases"][0]
-    # Anchored on the colon: "-17 days" also contains "17 days".
-    assert ": 17 days and 201 commits behind" in state["lag"]
-    assert "in progress, 3 days to Beta merge" in state["plan"][0]
+    assert "149" in state["releases"][0] and "(3 wk ago)" in state["releases"][0]
+    # Anchored: "-17 days" would also contain "17 days".
+    assert state["lag"] == ("Nightly is 201 commits (17 days) behind upstream main; "
+                            f"its newest vendored commit is from {_iso(-17)}.")
+    assert "Vendoring · 3 days to Beta merge" in state["plan"][0]
     assert "Bug 2072400" in state["plan"][0]
-    assert "Firefox 160 (projected)" in state["plan"][1]
+    assert state["plan_cells"][1][3] == "160"
     assert "Branches in 7 days" in state["plan"][1]
-    assert "branches too late for its train" in state["plan"][2]
+    assert "misses its train" in state["plan"][2]
     assert state["chart"] is True
     assert state["branch_links"] == [[
         "branch-heads/8059",
@@ -134,54 +155,97 @@ def test_the_view_runs_and_counts_from_today(tmp_path):
 def test_old_data_is_named_as_stale(tmp_path):
     state, errors = _run(tmp_path, _view(as_of_days=-30))
     assert errors == []
-    assert "Release data" in state["stale"] and "the milestone plan" in state["stale"]
+    assert "the releases table" in state["stale"] and "the milestone plan" in state["stale"]
 
 
 def test_a_stale_not_vendored_list_is_named(tmp_path):
     view = _view()
-    view["rows"][0]["unvendored"] = {"count": 0, "as_of": _iso(-30), "commits": []}
+    view["rows"][0]["unvendored"] = {"as_of": _iso(-30), "commits": []}
     state, errors = _run(tmp_path, view)
-    assert errors == [] and "Nightly's not-vendored list" in state["stale"]
+    assert errors == [] and state["stale"].startswith("Out of date: Nightly's missing fixes")
+
+
+def _commit(c, subject, fix, role="landed"):
+    """A commit as fetch_libwebrtc_status.py writes it: Python's
+    fix_identity sets `fix` and `role`."""
+    return {"sha": c * 40, "subject": subject, "fix": fix, "role": role}
 
 
 def _with_lists(view):
-    """Four releases: two share a fix, one is clear, one has no data."""
+    """One fix on three trains (Beta and Release share M154), one on two, a
+    land/revert/reland chain on ESR 115, a clear ESR 140, no data for ESR 153."""
     base = view["rows"][0]
-    shared = {"sha": "a" * 40, "subject": "[M155] Ensure stopped transceivers do not hold a channel"}
+    stopped, harden = "Ensure stopped transceivers do not hold a channel", "Harden payload capacity checks"
+    jsep = "JsepTransportController: Remove raw pointers to description objects"
+    m154 = [_commit("b", f"[M154] {stopped}", stopped), _commit("c", f"[M154] {harden}", harden)]
     view["rows"] = [
-        {**base, "label": "Nightly", "unvendored": {"count": 1, "as_of": _iso(0),
-                                                     "commits": [shared]}},
-        {**base, "label": "Beta", "milestone": 154, "unvendored": {
-            "count": 2, "as_of": _iso(-30), "commits": [
-                {**shared, "sha": "b" * 40,
-                 "subject": "[M154] Ensure stopped transceivers do not hold a channel"},
-                {"sha": "c" * 40, "subject": "[M154] Harden payload capacity checks"}]}},
-        {**base, "label": "ESR 140", "milestone": 135, "unvendored": {
-            "count": 0, "as_of": _iso(0), "commits": []}},
-        {**base, "label": "ESR 115", "milestone": 120, "unvendored": None},
+        {**base, "label": "Nightly", "unvendored": {"as_of": _iso(0), "commits": [
+            _commit("a", f"[M155] {stopped}", stopped)]}},
+        {**base, "label": "Beta", "milestone": 154, "unvendored": {"as_of": _iso(0), "commits": m154}},
+        {**base, "label": "Release", "milestone": 154, "unvendored": {"as_of": _iso(0), "commits": m154}},
+        {**base, "label": "ESR 153", "milestone": 149, "unvendored": None},
+        {**base, "label": "ESR 140", "milestone": 135, "unvendored": {"as_of": _iso(0), "commits": []}},
+        {**base, "label": "ESR 115", "milestone": 120, "unvendored": {"as_of": _iso(-30), "commits": [
+            _commit("g", f'Revert^2 "[M120] {jsep}"', jsep, "relanded"),
+            _commit("f", f'Revert "[M120] {jsep}"', jsep, "reverted"),
+            _commit("e", f"[M120] {jsep}", jsep)]}},
     ]
     return view
 
 
-def test_not_vendored_cards(tmp_path):
+def test_missing_fixes_are_one_foldable_list(tmp_path):
     state, errors = _run(tmp_path, _with_lists(_view()))
     assert errors == []
-    # Per-branch total, plus the distinct fixes behind it: the same upstream
-    # fix on two trains is one fix to look at.
-    assert state["nv_summary"].startswith("NOT VENDORED 3")
-    assert "3 commits to triage across 2 releases · 2 distinct fixes" in state["nv_summary"]
-    # Channel order, same as the Releases table.
-    assert state["nv_labels"] == ["Nightly", "Beta", "ESR 140", "ESR 115"]
-    # Status is an icon + label, never colour alone.
-    assert state["nv_status"] == ["⚠ To triage", "⚠ To triage",
-                                  "✓ Nothing to triage", "— No data this week"]
-    assert state["unvendored_links"] == [
-        "https://webrtc.googlesource.com/src/+/" + c * 40 for c in "abc"]
-    # A stale list says how old it is on its own card.
-    assert "as of " + _iso(-30) in state["nv_cards"][1]
-    assert "as of" not in state["nv_cards"][0]
+    # Each fix once: the same upstream fix on several trains, and a revert
+    # chain, are one row each.
+    assert state["fix_subjects"] == [
+        "Ensure stopped transceivers do not hold a channel",
+        "Harden payload capacity checks",
+        "JsepTransportController: Remove raw pointers to description objects"]
+    # ESR 153 wasn't checked: "?" in every row rather than a blank.
+    assert state["fix_chips"] == ["Nightly Beta Release ?", "Beta Release ?", "? ESR 115"]
+    assert state["fix_open"] == [False, False, False]
+    assert state["missing_summary"] == ("3 fixes missing from 4 of 5 releases. "
+                                        "ESR 153 wasn't checked this week.")
+
+
+def test_an_expanded_fix_shows_each_release_and_commit(tmp_path):
+    state, _ = _run(tmp_path, _with_lists(_view()))
+    first, _, jsep = state["fix_bodies"]
+    # Releases on one milestone branch share a line.
+    assert first == f"Nightly · M155 {'a' * 10} Beta, Release · M154 {'b' * 10}"
+    assert jsep == (f"ESR 115 · M120 {'e' * 10} landed {'f' * 10} reverted "
+                    f"{'g' * 10} relanded · as of {_iso(-30)}")
+    assert state["unvendored_links"][0] == "https://webrtc.googlesource.com/src/+/" + "a" * 40
+
+
+def test_releases_table_counts_missing_fixes_per_release(tmp_path):
+    state, _ = _run(tmp_path, _with_lists(_view()))
+    assert state["missing_col"] == ["1", "2", "2", "—", "0", "1"]
 
 
 def test_without_lists_the_section_says_so(tmp_path):
     state, errors = _run(tmp_path, _view())
-    assert errors == [] and "appears after the next weekly refresh" in state["nv_summary"]
+    assert errors == [] and state["missing_summary"] == (
+        "No data yet; the next weekly refresh fills this in.")
+
+
+def test_page_copy(tmp_path):
+    """Every heading uses the page's terms (vendored / missing / fix);
+    explanations live behind (i) icons, not in the labels."""
+    state, _ = _run(tmp_path, _with_lists(_view()))
+    assert state["headers"] == [
+        ["Channel", "Version", "Milestone", "Branch", "Branched", "vs Chrome stable",
+         "Mozilla patches", "Missing fixes", "Last libwebrtc change"],
+        ["Milestone", "Branches", "Chrome stable", "Firefox", "Nightly starts",
+         "Beta merge", "Status"]]
+    assert "to triage" not in state["body"].lower()
+    assert state["stack_summary"] == "149 patches, up 4 since Sep 2026."
+
+
+def test_each_fix_row_shows_it_folds(tmp_path):
+    """A flex <summary> loses the browser's disclosure triangle; the row
+    must still show that it opens."""
+    state, _ = _run(tmp_path, _with_lists(_view()))
+    assert state["fold_marker"] == '"▸"'
+
