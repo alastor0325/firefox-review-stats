@@ -420,21 +420,31 @@
   #libwebrtc-section .info { color: var(--ink-soft); }
   .lw-fix { border-top: 1px solid var(--rule-soft); }
   .lw-fix:last-child { border-bottom: 1px solid var(--rule-soft); }
-  .lw-fix summary { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline;
-                    padding: 8px 2px; cursor: pointer; font-size: 13.5px; list-style: none; }
+  /* Arrow in its own column, so the subject and its chips share one left edge. */
+  .lw-fix summary { display: grid; grid-template-columns: 12px minmax(0, 1fr); column-gap: 6px;
+                    row-gap: 4px; padding: 8px 2px; cursor: pointer; font-size: 13.5px;
+                    list-style: none; }
   .lw-fix summary::-webkit-details-marker { display: none; }
-  .lw-fix summary::before { content: "▸"; color: var(--ink-soft); width: 10px; }
+  .lw-fix summary::before { content: "▸"; color: var(--ink-soft); grid-row: 1; }
   .lw-fix[open] summary::before { content: "▾"; }
-  .lw-fix-subject { flex: 1 1 320px; min-width: 0; }
+  .lw-fix-subject, .lw-fix-chips { grid-column: 2; min-width: 0; }
   .lw-fix-chips { display: flex; gap: 4px; flex-wrap: wrap; }
-  .lw-chip, .lw-chip-gap { font-family: var(--mono); font-size: 10.5px; min-width: 62px;
-                           text-align: center; padding: 1px 6px; border-radius: 3px; }
-  .lw-chip { background: var(--paper-warm); color: var(--ink); }
-  .lw-chip.is-unknown { background: none; border: 1px dashed var(--rule); color: var(--ink-soft); }
+  .lw-chip { font-family: var(--mono); font-size: 10.5px; padding: 1px 6px; border-radius: 3px;
+             background: var(--paper-warm); color: var(--ink); }
   .lw-fix-body { padding: 0 2px 10px 20px; font-size: 12.5px; color: var(--ink-soft); }
   .lw-fix-line { margin-top: 4px; }
   .lw-fix-where { display: inline-block; min-width: 170px; }
-  @media (max-width: 700px) { .lw-chip-gap { display: none; } }
+  .lw-filters { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 10px; }
+  .lw-filter { font-family: var(--mono); font-size: 11px; padding: 3px 9px; border-radius: 999px;
+               border: 1px solid var(--rule); background: var(--surface); color: var(--ink);
+               cursor: pointer; }
+  .lw-filter[aria-pressed="true"] { background: var(--pill-active); color: var(--pill-active-fg);
+                                    border-color: var(--pill-active); }
+  .lw-filter-n { opacity: 0.7; }
+  .lw-chip.is-match { background: var(--ink); color: var(--paper); }
+  .lw-fix-line.is-match .lw-fix-where { color: var(--ink); font-weight: 600; }
+  .lw-count { font: inherit; color: inherit; background: none; border: 0; padding: 0;
+              text-decoration: underline dotted 1px; text-underline-offset: 2px; cursor: pointer; }
 
   /* Tables */
   table {
@@ -1579,7 +1589,8 @@ __GH_CORNER__
 
   <section>
     <h2>Upstream fixes not vendored <span class="info" data-tip="Commits Chrome merged to a milestone's release branch (branch-heads/N) that Firefox's history doesn't show as vendored. Matched by Upstream-commit footers, cherry-pick lines and subject, following check_missing_branch_head_commits.py, so expect some false positives and some fixes skipped on purpose (Chrome-only code). Each fix is counted once: Chrome merges it to each branch under its own SHA, and a revert and reland count as one fix."></span></h2>
-    <div class="footer-note" id="lw-missing-summary"></div>
+    <div class="lw-filters" id="lw-filters" role="group" aria-label="Show missing fixes for"></div>
+    <div class="footer-note" id="lw-missing-summary" aria-live="polite"></div>
     <div class="lw-fixes" id="lw-fixes"></div>
   </section>
 
@@ -2186,6 +2197,8 @@ function branchLink(head) {
 // reverted and relanded. Fixes come in table order of the first release
 // missing them.
 function groupFixes(rows) {
+  // Both the list and the table's counts read this; group once per payload.
+  if (groupFixes.rows === rows) return groupFixes.result;
   const fixes = new Map();
   rows.forEach((r, ri) => {
     if (!r.unvendored) return;
@@ -2197,47 +2210,81 @@ function groupFixes(rows) {
       f.releases.get(ri).push(c);
     });
   });
-  return [...fixes.values()].sort((a, b) => a.first - b.first);
+  groupFixes.rows = rows;
+  return (groupFixes.result = [...fixes.values()].sort((a, b) => a.first - b.first));
 }
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 
+// The missing-fixes list renders every fix once; the release filter only
+// hides rows, marks the matching chips and rewrites the summary.
 function renderLibwebrtcMissing(view) {
   const summary = document.getElementById('lw-missing-summary');
   const rows = view.rows;
   if (!rows.some(r => r.unvendored)) { summary.textContent = NO_DATA_YET; return; }
   const fixes = groupFixes(rows);
-  const missingIn = new Set(fixes.flatMap(f => [...f.releases.keys()]));
+  const countFor = ri => fixes.filter(f => f.releases.has(ri)).length;
   const unchecked = rows.filter(r => !r.unvendored).map(r => r.label);
-  const checked = rows.length - unchecked.length;
-  summary.textContent = (fixes.length
-      ? `${plural(fixes.length, 'fix', 'fixes')} missing from ${missingIn.size} of `
-        + `${plural(checked, 'release', 'releases')}.`
-      : '✓ Every release has all the fixes on its branch.')
-    + (unchecked.length ? ` ${unchecked.join(', ')} ${unchecked.length === 1 ? "wasn't" : "weren't"}`
-       + ' checked this week.' : '');
+  const uncheckedNote = unchecked.length
+    ? `${unchecked.join(', ')} ${unchecked.length === 1 ? "wasn't" : "weren't"} checked this week.` : '';
 
-  document.getElementById('lw-fixes').innerHTML = fixes.map(f => {
-    // A slot per release so chips line up. An unchecked release gets a ? chip
-    // rather than a blank, which would read as "not missing here".
-    const chips = rows.map((r, ri) => f.releases.has(ri) ? `<span class="lw-chip">${esc(r.label)}</span>`
-      : !r.unvendored ? `<span class="lw-chip is-unknown" title="${escA(r.label)}: not checked this week">?</span>`
-      : '<span class="lw-chip-gap"></span>').join('');
+  function summaryFor(ri) {
+    if (ri == null) {
+      const missingIn = new Set(fixes.flatMap(f => [...f.releases.keys()]));
+      return [fixes.length
+          ? `${plural(fixes.length, 'fix', 'fixes')} missing from ${missingIn.size} of `
+            + `${plural(rows.length - unchecked.length, 'release', 'releases')}.`
+          : '✓ Every release has every fix on its branch.', uncheckedNote].filter(Boolean).join(' ');
+    }
+    const r = rows[ri], n = countFor(ri);
+    if (!r.unvendored) return uncheckedNote;
+    return [n ? `${plural(n, 'fix', 'fixes')} missing from ${r.label}.`
+              : `✓ ${r.label} has every fix on its branch.`, uncheckedNote].filter(Boolean).join(' ');
+  }
+
+  // Filter values are row indexes ("" = all), so labels need no escaping rules.
+  const filters = document.getElementById('lw-filters');
+  filters.innerHTML = '<button type="button" class="lw-filter" data-release="">All</button>'
+    + rows.map((r, ri) => `<button type="button" class="lw-filter" data-release="${ri}">`
+      + `${esc(r.label)} <span class="lw-filter-n">${r.unvendored ? countFor(ri) : '?'}</span></button>`).join('');
+
+  const list = document.getElementById('lw-fixes');
+  list.innerHTML = fixes.map(f => {
+    const chips = [...f.releases.keys()].sort((a, b) => a - b)
+      .map(ri => `<span class="lw-chip" data-release="${ri}">${esc(rows[ri].label)}</span>`).join('');
     // Releases on one milestone branch carry the same commits: one line.
     const lines = new Map();
     for (const [ri, commits] of f.releases) {
       const r = rows[ri], key = commits.map(c => c.sha).join();
-      if (!lines.has(key)) lines.set(key, { labels: [], r, commits });
+      if (!lines.has(key)) lines.set(key, { labels: [], releases: [], r, commits });
       lines.get(key).labels.push(r.label);
+      lines.get(key).releases.push(ri);
     }
     const multi = c => c.length > 1 || c[0].role !== 'landed';
-    const body = [...lines.values()].map(({ labels, r, commits }) =>
-      `<div class="lw-fix-line"><span class="lw-fix-where">${esc(labels.join(', '))} · M${esc(r.milestone)}</span> `
+    const body = [...lines.values()].map(({ labels, releases, r, commits }) =>
+      `<div class="lw-fix-line" data-releases="${releases.join(' ')}"><span class="lw-fix-where">`
+      + `${esc(labels.join(', '))} · M${esc(r.milestone)}</span> `
       + commits.map(c => `<a href="https://webrtc.googlesource.com/src/+/${escA(c.sha)}"><code>${esc(c.sha.slice(0, 10))}</code></a>`
         + (multi(commits) ? ` ${c.role}` : '')).join(' ')
       + (isStale(r.unvendored.as_of) ? ` · as of ${esc(r.unvendored.as_of)}` : '') + '</div>').join('');
-    return `<details class="lw-fix"><summary><span class="lw-fix-subject">${esc(f.subject)}</span>`
+    return `<details class="lw-fix" data-releases="${[...f.releases.keys()].join(' ')}"><summary>`
+      + `<span class="lw-fix-subject">${esc(f.subject)}</span>`
       + `<span class="lw-fix-chips">${chips}</span></summary><div class="lw-fix-body">${body}</div></details>`;
   }).join('');
+
+  function apply(value) {
+    const has = el => el.dataset.releases.split(' ').includes(value);
+    filters.querySelectorAll('.lw-filter').forEach(b =>
+      b.setAttribute('aria-pressed', String(b.dataset.release === value)));
+    list.querySelectorAll('.lw-fix').forEach(d => { d.hidden = value !== '' && !has(d); });
+    list.querySelectorAll('.lw-chip').forEach(c => c.classList.toggle('is-match', c.dataset.release === value));
+    list.querySelectorAll('.lw-fix-line').forEach(l => l.classList.toggle('is-match', value !== '' && has(l)));
+    summary.textContent = summaryFor(value === '' ? null : Number(value));
+  }
+  filters.addEventListener('click', e => {
+    const b = e.target.closest('.lw-filter');
+    if (b) apply(b.dataset.release);
+  });
+  apply('');
 }
 
 function renderLibwebrtc(view) {
@@ -2246,13 +2293,26 @@ function renderLibwebrtc(view) {
   const fixes = groupFixes(view.rows);
   document.getElementById('libwebrtc-rows').innerHTML = view.rows.map((r, ri) => {
     const branched = r.branched ? `${esc(r.branched)} (${ageLabel(r.branched)} ago)` : '—';
-    const missing = r.unvendored ? fixes.filter(f => f.releases.has(ri)).length
-      : '<span title="Not checked this week">—</span>';
+    // A count links to the list, filtered to this release.
+    const n = r.unvendored ? fixes.filter(f => f.releases.has(ri)).length : null;
+    const missing = n == null ? '<span title="Not checked this week">—</span>'
+      : n ? `<button type="button" class="lw-count" data-release="${ri}">${n}</button>` : '0';
     return `<tr><td>${esc(r.label)}</td><td>${esc(r.firefox)}</td><td>M${esc(r.milestone)}</td>`
       + `<td>${branchLink(r.branch_head)}</td><td>${branched}</td>`
       + `<td>${esc(r.vs_chrome)}</td><td>${esc(r.patches ?? '—')}</td><td>${missing}</td>`
       + `<td>${r.last_change ? esc(r.last_change.date) : '—'}</td></tr>`;
   }).join('');
+  document.getElementById('libwebrtc-rows').addEventListener('click', e => {
+    const b = e.target.closest('.lw-count');
+    if (!b) return;
+    // Go through the filter itself, and move focus there so keyboard and
+    // screen-reader users land on what changed.
+    const pill = document.querySelector(`.lw-filter[data-release="${b.dataset.release}"]`);
+    if (!pill) return;
+    pill.click();
+    pill.focus({ preventScroll: true });
+    pill.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
 }
 
 // The row being vendored says whether the update is done and, if not, how

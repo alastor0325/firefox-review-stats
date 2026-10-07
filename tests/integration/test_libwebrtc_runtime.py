@@ -6,6 +6,7 @@ here are relative to the real today, so countdowns can be asserted exactly.
 Skipped without Playwright or a browser, like test_page_runtime.py.
 """
 
+import contextlib
 import json
 import pathlib
 from datetime import date, timedelta
@@ -58,13 +59,16 @@ def _run(tmp_path, view):
     return _RUNS[key]
 
 
-def _run_uncached(tmp_path, view):
+@contextlib.contextmanager
+def _page(tmp_path, view, width=1280):
+    """Render `view`, open it in Chromium at #libwebrtc, and yield
+    (page, errors) with both page errors and console errors collected."""
     pytest.importorskip("playwright", reason="playwright not installed")
     from playwright.sync_api import sync_playwright
 
     from reviewstats.render import render_html
 
-    path = tmp_path / "index.html"
+    path = tmp_path / f"index-{width}.html"
     path.write_text(render_html(_MINIMAL_DATA, libwebrtc_data=view), encoding="utf-8")
     errors = []
     with sync_playwright() as pw:
@@ -76,59 +80,64 @@ def _run_uncached(tmp_path, view):
         except Exception as exc:
             pytest.skip(f"no Chromium available to execute the page: {exc}")
         try:
-            page = browser.new_page()
+            page = browser.new_page(viewport={"width": width, "height": 900})
             page.on("pageerror", lambda e: errors.append(str(e)))
             page.on("console", lambda m: errors.append(m.text) if m.type == "error"
                     and "Failed to load resource" not in m.text else None)
             page.goto(path.resolve().as_uri() + "#libwebrtc", wait_until="load")
-            page.wait_for_timeout(500)
-            text = lambda sel: page.evaluate(
-                "(s) => [...document.querySelectorAll(s)].map(e => e.innerText"
-                ".replace(/\\s+/g, ' ').trim())", sel)
-            state = {
-                "view": page.evaluate("() => document.body.dataset.view"),
-                "releases": text("#libwebrtc-rows tr"),
-                "plan": text("#lw-plan-rows tr"),
-                "lag": text("#lw-lag")[0],
-                "stale": page.evaluate(
-                    "() => { const e = document.getElementById('libwebrtc-stale');"
-                    " return e.offsetParent ? e.innerText : ''; }"),
-                "body": page.evaluate("() => document.getElementById('libwebrtc-section').innerText"),
-                "chart": page.evaluate("() => !!Chart.getChart('chart-lw-stack')"),
-                "plan_cells": page.evaluate(
-                    "() => [...document.querySelectorAll('#lw-plan-rows tr')]"
-                    ".map(t => [...t.cells].map(c => c.innerText.trim()))"),
-                "headers": page.evaluate(
-                    "() => [...document.querySelectorAll('#libwebrtc-section thead tr')]"
-                    ".map(t => [...t.cells].map(c => c.textContent.trim()))"),
-                "missing_summary": text("#lw-missing-summary")[0],
-                "missing_col": page.evaluate(
-                    "() => [...document.querySelectorAll('#libwebrtc-rows tr')]"
-                    ".map(t => t.cells[7].textContent.trim())"),
-                "fix_subjects": page.evaluate(
-                    "() => [...document.querySelectorAll('.lw-fix .lw-fix-subject')]"
-                    ".map(e => e.textContent)"),
-                "fix_chips": page.evaluate(
-                    "() => [...document.querySelectorAll('.lw-fix')].map(d =>"
-                    " [...d.querySelectorAll('.lw-chip')].map(c => c.textContent).join(' '))"),
-                "fix_open": page.evaluate(
-                    "() => [...document.querySelectorAll('.lw-fix')].map(d => d.open)"),
-                "fix_bodies": page.evaluate(
-                    "() => [...document.querySelectorAll('.lw-fix .lw-fix-body')]"
-                    ".map(b => [...b.querySelectorAll('.lw-fix-line')]"
-                    ".map(l => l.textContent.replace(/\\s+/g, ' ').trim()).join(' '))"),
-                "stack_summary": text("#lw-stack-summary")[0],
-                "fold_marker": page.evaluate(
-                    "() => { const s = document.querySelector('.lw-fix summary');"
-                    " return s ? getComputedStyle(s, '::before').content : null; }"),
-                "unvendored_links": page.evaluate(
-                    "() => [...document.querySelectorAll('.lw-fix-body a')].map(a => a.href)"),
-                "branch_links": page.evaluate(
-                    "() => [...document.querySelectorAll('#libwebrtc-rows a')]"
-                    ".map(a => [a.textContent, a.href])"),
-            }
+            page.wait_for_selector("#libwebrtc-rows tr")
+            yield page, errors
         finally:
             browser.close()
+
+
+def _run_uncached(tmp_path, view):
+    with _page(tmp_path, view) as (page, errors):
+        text = lambda sel: page.evaluate(
+            "(s) => [...document.querySelectorAll(s)].map(e => e.innerText"
+            ".replace(/\\s+/g, ' ').trim())", sel)
+        state = {
+            "view": page.evaluate("() => document.body.dataset.view"),
+            "releases": text("#libwebrtc-rows tr"),
+            "plan": text("#lw-plan-rows tr"),
+            "lag": text("#lw-lag")[0],
+            "stale": page.evaluate(
+                "() => { const e = document.getElementById('libwebrtc-stale');"
+                " return e.offsetParent ? e.innerText : ''; }"),
+            "body": page.evaluate("() => document.getElementById('libwebrtc-section').innerText"),
+            "chart": page.evaluate("() => !!Chart.getChart('chart-lw-stack')"),
+            "plan_cells": page.evaluate(
+                "() => [...document.querySelectorAll('#lw-plan-rows tr')]"
+                ".map(t => [...t.cells].map(c => c.innerText.trim()))"),
+            "headers": page.evaluate(
+                "() => [...document.querySelectorAll('#libwebrtc-section thead tr')]"
+                ".map(t => [...t.cells].map(c => c.textContent.trim()))"),
+            "missing_summary": text("#lw-missing-summary")[0],
+            "missing_col": page.evaluate(
+                "() => [...document.querySelectorAll('#libwebrtc-rows tr')]"
+                ".map(t => t.cells[7].textContent.trim())"),
+            "fix_subjects": page.evaluate(
+                "() => [...document.querySelectorAll('.lw-fix .lw-fix-subject')]"
+                ".map(e => e.textContent)"),
+            "fix_chips": page.evaluate(
+                "() => [...document.querySelectorAll('.lw-fix')].map(d =>"
+                " [...d.querySelectorAll('.lw-chip')].map(c => c.textContent).join(' '))"),
+            "fix_open": page.evaluate(
+                "() => [...document.querySelectorAll('.lw-fix')].map(d => d.open)"),
+            "fix_bodies": page.evaluate(
+                "() => [...document.querySelectorAll('.lw-fix .lw-fix-body')]"
+                ".map(b => [...b.querySelectorAll('.lw-fix-line')]"
+                ".map(l => l.textContent.replace(/\\s+/g, ' ').trim()).join(' '))"),
+            "stack_summary": text("#lw-stack-summary")[0],
+            "fold_marker": page.evaluate(
+                "() => { const s = document.querySelector('.lw-fix summary');"
+                " return s ? getComputedStyle(s, '::before').content : null; }"),
+            "unvendored_links": page.evaluate(
+                "() => [...document.querySelectorAll('.lw-fix-body a')].map(a => a.href)"),
+            "branch_links": page.evaluate(
+                "() => [...document.querySelectorAll('#libwebrtc-rows a')]"
+                ".map(a => [a.textContent, a.href])"),
+        }
     return state, errors
 
 
@@ -202,8 +211,8 @@ def test_missing_fixes_are_one_foldable_list(tmp_path):
         "Ensure stopped transceivers do not hold a channel",
         "Harden payload capacity checks",
         "JsepTransportController: Remove raw pointers to description objects"]
-    # ESR 153 wasn't checked: "?" in every row rather than a blank.
-    assert state["fix_chips"] == ["Nightly Beta Release ?", "Beta Release ?", "? ESR 115"]
+    # Only the releases missing the fix, in table order.
+    assert state["fix_chips"] == ["Nightly Beta Release", "Beta Release", "ESR 115"]
     assert state["fix_open"] == [False, False, False]
     assert state["missing_summary"] == ("3 fixes missing from 4 of 5 releases. "
                                         "ESR 153 wasn't checked this week.")
@@ -249,3 +258,73 @@ def test_each_fix_row_shows_it_folds(tmp_path):
     state, _ = _run(tmp_path, _with_lists(_view()))
     assert state["fold_marker"] == '"▸"'
 
+
+_LIST_STATE = """() => ({
+  summary: document.getElementById('lw-missing-summary').textContent,
+  rows: [...document.querySelectorAll('.lw-fix')].filter(d => d.offsetParent)
+          .map(d => d.querySelector('.lw-fix-subject').textContent),
+  pressed: [...document.querySelectorAll('.lw-filter[aria-pressed="true"]')]
+          .map(b => b.textContent),
+  buttons: [...document.querySelectorAll('.lw-filter')].map(b => b.textContent),
+  focused: document.activeElement && document.activeElement.textContent,
+  matched: [...document.querySelectorAll('.lw-fix')].filter(d => d.offsetParent)
+          .map(d => [...d.querySelectorAll('.lw-chip.is-match')].map(c => c.textContent).join()),
+  // Left edge of every chip row vs its subject's left edge.
+  misaligned: [...document.querySelectorAll('.lw-fix')].filter(d => d.offsetParent)
+          .filter(d => Math.abs(d.querySelector('.lw-chip').getBoundingClientRect().left
+                 - d.querySelector('.lw-fix-subject').getBoundingClientRect().left) > 1).length,
+})"""
+
+
+def _filter_button(label):
+    """JS that clicks the filter pill whose label is `label` ("All" too)."""
+    return ("() => [...document.querySelectorAll('.lw-filter')]"
+            f".find(b => b.textContent.split(' ')[0] === {json.dumps(label.split(' ')[0])}"
+            f" && b.textContent.startsWith({json.dumps(label)})).click()")
+
+
+def _interact(tmp_path, view, width, steps):
+    """The list's state on load, then after each JS step."""
+    with _page(tmp_path, view, width) as (page, errors):
+        states = [page.evaluate(_LIST_STATE)]
+        for step in steps:
+            page.evaluate(step)
+            states.append(page.evaluate(_LIST_STATE))
+    assert errors == []
+    return states
+
+
+@pytest.mark.parametrize("width", [730, 1280])
+def test_chips_line_up_under_the_subject(tmp_path, width):
+    (state,) = _interact(tmp_path, _with_lists(_view()), width, [])
+    assert state["misaligned"] == 0
+
+
+def test_a_release_filter_narrows_the_list(tmp_path):
+    all_, release, clear, unchecked, back = _interact(tmp_path, _with_lists(_view()), 1280, [
+        _filter_button("Release"), _filter_button("ESR 140"),
+        _filter_button("ESR 153"), _filter_button("All")])
+    assert all_["buttons"] == ["All", "Nightly 1", "Beta 2", "Release 2", "ESR 153 ?",
+                               "ESR 140 0", "ESR 115 1"]
+    assert all_["pressed"] == ["All"] and len(all_["rows"]) == 3
+    assert release["pressed"] == ["Release 2"]
+    assert release["rows"] == ["Ensure stopped transceivers do not hold a channel",
+                               "Harden payload capacity checks"]
+    # The filtered release is marked in each row; the other chips stay.
+    assert release["matched"] == ["Release", "Release"]
+    # The unchecked release stays mentioned whatever the filter.
+    assert release["summary"] == ("2 fixes missing from Release. "
+                                  "ESR 153 wasn't checked this week.")
+    assert clear["rows"] == [] and clear["summary"].startswith(
+        "✓ ESR 140 has every fix on its branch.")
+    assert unchecked["rows"] == [] and unchecked["summary"] == "ESR 153 wasn't checked this week."
+    assert back["pressed"] == ["All"] and len(back["rows"]) == 3 and back["matched"] == ["", "", ""]
+
+
+def test_the_tables_missing_count_applies_the_filter_and_moves_focus(tmp_path):
+    _, after = _interact(tmp_path, _with_lists(_view()), 1280, [
+        "() => document.querySelectorAll('#libwebrtc-rows tr')[5].cells[7]"
+        ".querySelector('button').click()"])
+    assert after["pressed"] == ["ESR 115 1"]
+    assert after["rows"] == ["JsepTransportController: Remove raw pointers to description objects"]
+    assert after["focused"] == "ESR 115 1"
