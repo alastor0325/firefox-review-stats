@@ -17,6 +17,7 @@ page simply has no libwebrtc tab.
 
 import argparse
 import json
+import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -30,6 +31,21 @@ from reviewstats.libwebrtc import collect_status
 _HTTP = {"timeout": 15, "max_attempts": 2}
 
 
+def _annotate(level: str, msg: str) -> None:
+    """On GitHub Actions, an annotation on the run summary — the step is
+    continue-on-error, so a log line alone would go unnoticed. Elsewhere,
+    stderr."""
+    if os.environ.get("GITHUB_ACTIONS") == "true":
+        msg = msg.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+        print(f"::{level} title=libwebrtc fetch::{msg}")
+    else:
+        print(msg, file=sys.stderr)
+
+
+def report_fallback(key: str, exc: Exception) -> None:
+    _annotate("warning", f"{key} fetch failed ({exc}); keeping last week's copy.")
+
+
 def collect(previous: dict | None) -> dict:
     """Fetch this week's view. Last week's file supplies settled values and
     backs the optional sections; a section that falls back is reported, and
@@ -40,9 +56,7 @@ def collect(previous: dict | None) -> dict:
         lambda url: get_text(url, **_HTTP),
         today=datetime.now(timezone.utc).date(),
         previous=previous,
-        on_error=lambda key, exc: print(
-            f"libwebrtc {key} fetch failed ({exc}); keeping last week's copy.",
-            file=sys.stderr),
+        on_error=report_fallback,
     )
 
 
@@ -65,12 +79,11 @@ def main(argv: list[str] | None = None) -> int:
     try:
         view = collect(previous)
     except Exception as e:  # noqa: BLE001 — any upstream failure degrades
-        print(f"libwebrtc status fetch failed ({e}); leaving {path.name} alone.",
-              file=sys.stderr)
+        _annotate("error", f"fetch failed ({e}); {path.name} keeps last week's data.")
         return 1
     if not view["rows"]:
-        print(f"No supported releases in the response; leaving {path.name} alone.",
-              file=sys.stderr)
+        _annotate("error", f"no supported releases in the response; {path.name} "
+                           "keeps last week's data.")
         return 1
 
     path.parent.mkdir(parents=True, exist_ok=True)

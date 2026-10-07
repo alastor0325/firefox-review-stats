@@ -60,3 +60,38 @@ def test_the_weekly_job_publishes_what_the_fetcher_writes():
     default team must be one of them or its file would never be published."""
     from reviewstats.teams import TEAMS
     assert fls.build_parser().parse_args([]).team in TEAMS
+
+
+def test_failures_are_annotated_on_the_actions_run(tmp_path, monkeypatch, capsys):
+    """The CI step is continue-on-error, so a failure must surface as an
+    annotation on the run summary, not only as a log line."""
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+
+    def down(previous):
+        raise OSError("gitiles down")
+    monkeypatch.setattr(fls, "collect", down)
+    assert fls.main(["--out", str(tmp_path)]) == 1
+    assert "::error title=libwebrtc fetch::" in capsys.readouterr().out
+
+
+def test_section_fallbacks_are_warnings_on_the_actions_run(monkeypatch, capsys):
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    fls.report_fallback("plan", OSError("whattrainisitnow down"))
+    out = capsys.readouterr().out
+    assert out.startswith("::warning title=libwebrtc fetch::") and "plan" in out
+
+
+def test_outside_actions_messages_go_to_stderr(monkeypatch, capsys):
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
+    fls.report_fallback("plan", OSError("down"))
+    captured = capsys.readouterr()
+    assert captured.out == "" and "plan" in captured.err
+
+
+def test_annotation_text_is_escaped(monkeypatch, capsys):
+    """Workflow commands end at a newline; %, CR and LF must be encoded or a
+    multi-line exception truncates the annotation."""
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    fls.report_fallback("plan", OSError("50% down\nsecond line"))
+    out = capsys.readouterr().out
+    assert out.count("\n") == 1 and "50%25 down%0Asecond line" in out
