@@ -378,7 +378,7 @@ def test_a_release_filter_narrows_the_list(tmp_path):
     # Which Chrome branch the count is against, and whether Chrome still merges to it.
     assert release["branch"] == "Chrome branch: M154 · branch-heads/8037 · last fix 2026-10-05"
     assert release["branchLink"].endswith("+log/refs/heads/main..refs/branch-heads/8037")
-    # A closed branch's 0 is not "fully patched": no ✓, and it says so.
+    # A closed branch's 0 is not "fully patched": no checkmark, and it says so.
     assert clear["rows"] == [] and clear["summary"].startswith(
         "ESR 140 has all 3 fixes on its Chrome branch.")
     assert clear["branch"] == ("Chrome branch: M135 · branch-heads/7049 · closed 2025-04-07. "
