@@ -17,7 +17,12 @@ from reviewstats.libwebrtc import collect_status
 UP = "Upstream commit: https://webrtc.googlesource.com/src/+/"
 MAIN_LAST = "c" * 40
 TODAY = date(2026, 10, 5)
-BRANCHES = {"main": (155, 8059, "159.0a1"), "esr140": (135, 7049, "140.17.1")}
+# ref -> (milestone, branch-head). Shipped builds are read at their tag.
+REFS = {"main": (155, 8059), "FIREFOX_158_0b5_RELEASE": (154, 7990),
+            "FIREFOX_157_0_1_RELEASE": (154, 7990), "FIREFOX_140_17_0esr_RELEASE": (135, 7049)}
+VERSIONS = {"FIREFOX_NIGHTLY": "159.0a1", "LATEST_FIREFOX_DEVEL_VERSION": "158.0b5",
+            "LATEST_FIREFOX_VERSION": "157.0.1", "FIREFOX_ESR": "140.17.0esr"}
+CALENDAR = {"157.0": "2026-09-29", "157.0.1": "2026-10-06", "158.0": "2026-10-13"}
 BRANCH_DATES = {"135": "2025-03-03", "154": "2026-08-31", "155": "2026-09-14", "156": "2026-09-28",
                 "157": "2026-10-12", "158": "2026-10-26"}
 
@@ -34,8 +39,9 @@ class Upstream:
     """Fake GitHub + web hosts. `down` names hosts that raise; `calls`
     records every request."""
 
-    def __init__(self, down=(), train_horizon=162):
+    def __init__(self, down=(), train_horizon=162, versions=VERSIONS):
         self.down, self.train_horizon, self.calls = set(down), train_horizon, []
+        self.versions = versions
 
     def github(self, path):
         self.calls.append(path)
@@ -62,7 +68,7 @@ class Upstream:
                     names.remove("s0009.patch")       # ...and one dropped by hand in October
                 # The blob sha is the file name: unchanged files share blobs.
                 return [{"name": n, "sha": n} for n in names]
-            n = 98 if "ref=esr140" in path else 147
+            n = 98 if "ref=FIREFOX_140" in path else 147
             return [{"name": f"s{i:04d}.patch"} for i in range(n)] + [{"name": "README.md"}]
         if "/commits?sha=main&path=dom/media/webrtc/third_party_build/default_config_env" in path:
             return [{"sha": "cfg155", "parents": [{"sha": "pushbefore155"}],
@@ -74,16 +80,14 @@ class Upstream:
                     {"sha": "x", "parents": [{"sha": "y"}],
                      "commit": {"message": "Bug 1 - unrelated config tweak",
                                 "committer": {"date": "2026-09-01T10:00:00Z"}}}]
-        for branch, (ms, bh, ver) in BRANCHES.items():
-            if path.endswith(f"default_config_env?ref={branch}"):
+        for ref, (ms, bh) in REFS.items():
+            if path.endswith(f"default_config_env?ref={ref}"):
                 return _content(
                     f"export MOZ_NEXT_LIBWEBRTC_MILESTONE={ms}\n"
                     "export MOZ_NEXT_FIREFOX_REL_TARGET=159\n"
                     'export MOZ_FASTFORWARD_BUG="2072400"\n'
                     f'export MOZ_TARGET_UPSTREAM_BRANCH_HEAD="branch-heads/{bh}"\n')
-            if path.endswith(f"version.txt?ref={branch}"):
-                return _content(ver + "\n")
-            if f"sha={branch}&path=third_party/libwebrtc" in path:
+            if f"sha={ref}&path=third_party/libwebrtc" in path:
                 taken = f"{bh}0".ljust(40, "0")  # one branch-head fix vendored
                 return [{"commit": {"message": "Bug 1 - Vendor libwebrtc from cccc\n\n"
                                     + UP + MAIN_LAST + "\n" + UP + taken,
@@ -99,7 +103,7 @@ class Upstream:
             name = url.rsplit("/", 1)[1]
             return f"Subject: [PATCH] Bug 7 - Patch {name}\n\nbody\n"
         if "product-details" in url:
-            return '{"FIREFOX_NIGHTLY": "159.0a1", "FIREFOX_ESR": "140.17.0esr"}'
+            return json.dumps(self.versions)
         if "fetch_releases" in url:
             return '[{"milestone": 154}]'
         if "fetch_milestone_schedule" in url:
@@ -108,6 +112,8 @@ class Upstream:
                 {"mstone": m, "branch_point": BRANCH_DATES[str(m)] + "T00:00:00",
                  "stable_date": BRANCH_DATES[str(m)] + "T00:00:00"}
                 for m in range(first, first + n)]})
+        if url.endswith("/api/firefox/releases/"):
+            return json.dumps(CALENDAR)
         if "whattrainisitnow" in url:
             v = int(url.rsplit("=", 1)[1])
             if v > self.train_horizon:
@@ -144,7 +150,9 @@ def test_builds_one_row_per_supported_release():
     assert [(r["label"], r["firefox"], r["milestone"], r["branch_head"], r["vs_chrome"],
              r["patches"]) for r in view["rows"]] == [
         ("Nightly", "159.0a1", 155, "branch-heads/8059", "1 ahead", 147),
-        ("ESR 140", "140.17.1", 135, "branch-heads/7049", "19 behind", 98)]
+        ("Beta", "158.0b5", 154, "branch-heads/7990", "current", 147),
+        ("Release", "157.0.1", 154, "branch-heads/7990", "current", 147),
+        ("ESR 140", "140.17.0", 135, "branch-heads/7049", "19 behind", 98)]
     assert view["chrome_stable"] == 154
 
 
@@ -251,14 +259,20 @@ def test_a_failing_optional_host_keeps_last_weeks_section_only():
     view = _collect(Upstream(down={"googlesource"}), previous=PREVIOUS,
                     on_error=lambda key, exc: errors.append(key))
     assert {"in_progress", "plan"} <= set(errors)
-    assert view["as_of"] == "2026-10-05" and len(view["rows"]) == 2
+    assert view["as_of"] == "2026-10-05" and len(view["rows"]) == 4
     assert view["plan"]["as_of"] == "2026-09-28"
     assert view["patch_stack"]["as_of"] == "2026-10-05"
 
 
 def test_an_optional_section_with_no_previous_copy_is_none():
-    view = _collect(Upstream(down={"whattrainisitnow"}))
+    view = _collect(Upstream(down={"release/schedule"}))
     assert view["plan"] is None and view["rows"]
+
+
+def test_no_release_calendar_fails_the_fetch():
+    """The calendar is what checks the channels, so it is part of the core."""
+    with pytest.raises(OSError):
+        _collect(Upstream(down={"whattrainisitnow"}))
 
 
 def test_the_core_still_fails_hard():
@@ -271,7 +285,7 @@ def test_the_core_still_fails_hard():
 def test_each_release_lists_its_unvendored_branch_head_commits():
     rows = _collect(Upstream())["rows"]
     assert [(r["label"], len(r["unvendored"]["commits"])) for r in rows] == [
-        ("Nightly", 3), ("ESR 140", 3)]
+        ("Nightly", 3), ("Beta", 3), ("Release", 3), ("ESR 140", 3)]
     first = rows[0]["unvendored"]["commits"][0]
     assert (first["sha"], first["fix"], first["role"]) == (
         "80591".ljust(40, "0"), "Fix 8059-1", "landed")
@@ -280,7 +294,7 @@ def test_each_release_lists_its_unvendored_branch_head_commits():
 def test_firefox_history_is_read_from_the_branch_date_on():
     up = Upstream()
     _collect(up)
-    assert any("sha=esr140&path=third_party/libwebrtc&since=2025-03-03" in c
+    assert any("sha=FIREFOX_140_17_0esr_RELEASE&path=third_party/libwebrtc&since=2025-03-03" in c
                for c in up.calls)
 
 
@@ -296,6 +310,23 @@ def test_unvendored_falls_back_to_last_weeks_list_per_release():
     assert "missing fixes" in errors
     assert rows[0]["unvendored"] == {"commits": [], "as_of": "2026-09-28"}
     assert rows[1]["unvendored"] is None
+
+
+def test_shipped_channels_are_read_at_their_release_tag():
+    """Not the branch tip: on 10-05 the release branch already holds 158,
+    which ships on 10-13."""
+    up = Upstream()
+    _collect(up)
+    assert any("default_config_env?ref=FIREFOX_157_0_1_RELEASE" in c for c in up.calls)
+    assert not any(c.endswith(("ref=release", "ref=beta")) for c in up.calls)
+
+
+def test_channels_that_disagree_with_the_calendar_fail_the_fetch():
+    """Last week's whole file is kept rather than publishing a wrong Release."""
+    versions = {**VERSIONS, "FIREFOX_NIGHTLY": "160.0a1",
+                "LATEST_FIREFOX_DEVEL_VERSION": "159.0b1", "LATEST_FIREFOX_VERSION": "158.0"}
+    with pytest.raises(ValueError, match="calendar says 157"):
+        _collect(Upstream(versions=versions))
 
 
 def test_last_weeks_list_is_not_reused_for_a_different_milestone():

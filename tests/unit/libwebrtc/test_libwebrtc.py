@@ -11,6 +11,7 @@ import pytest
 
 from reviewstats.libwebrtc import (
     Release,
+    check_channels,
     full_stable,
     is_libwebrtc_change,
     last_libwebrtc_change,
@@ -18,6 +19,7 @@ from reviewstats.libwebrtc import (
     parse_config_env,
     parse_gitiles_json,
     project_view,
+    release_tag,
     supported_releases,
     update_in_progress,
 )
@@ -36,18 +38,65 @@ class TestSupportedReleases:
 
     def test_channels_then_esrs_newest_first(self):
         assert supported_releases(self.VERSIONS) == [
-            Release("Nightly", "main"),
-            Release("Beta", "beta"),
-            Release("Release", "release"),
-            Release("ESR 153", "esr153"),
-            Release("ESR 140", "esr140"),
-            Release("ESR 115", "esr115"),
+            Release("Nightly", "main", "159.0a1"),
+            Release("Beta", "FIREFOX_158_0b4_RELEASE", "158.0b4"),
+            Release("Release", "FIREFOX_157_0_RELEASE", "157.0"),
+            Release("ESR 153", "FIREFOX_153_4_0esr_RELEASE", "153.4.0"),
+            Release("ESR 140", "FIREFOX_140_17_0esr_RELEASE", "140.17.0"),
+            Release("ESR 115", "FIREFOX_115_42_0esr_RELEASE", "115.42.0"),
         ]
 
     def test_empty_or_duplicate_esr_entries_are_ignored(self):
         versions = {"FIREFOX_ESR": "140.17.0esr", "FIREFOX_ESR140": "140.17.0esr",
                     "FIREFOX_ESR_NEXT": ""}
-        assert supported_releases(versions) == [Release("ESR 140", "esr140")]
+        assert supported_releases(versions) == [
+            Release("ESR 140", "FIREFOX_140_17_0esr_RELEASE", "140.17.0")]
+
+
+class TestReleaseTag:
+    """A shipped build's tag, not its branch: between merge day and release
+    day the release branch already carries the next version."""
+
+    @pytest.mark.parametrize("version, tag", [
+        ("157.0.1", "FIREFOX_157_0_1_RELEASE"),
+        ("158.0b5", "FIREFOX_158_0b5_RELEASE"),
+        ("140.17.0esr", "FIREFOX_140_17_0esr_RELEASE"),
+    ])
+    def test_tag_names(self, version, tag):
+        assert release_tag(version) == tag
+
+
+class TestCheckChannels:
+    VERSIONS = {"FIREFOX_NIGHTLY": "159.0a1", "LATEST_FIREFOX_DEVEL_VERSION": "158.0b5",
+                "LATEST_FIREFOX_VERSION": "157.0.1"}
+    CALENDAR = {"156.0": "2026-09-15", "157.0": "2026-09-29", "157.0.1": "2026-10-06",
+                "158.0": "2026-10-13"}
+    TODAY = date(2026, 10, 7)
+
+    def test_consistent_channels_pass(self):
+        check_channels(self.VERSIONS, self.CALENDAR, self.TODAY)
+
+    def test_channels_must_be_one_version_apart(self):
+        versions = {**self.VERSIONS, "LATEST_FIREFOX_VERSION": "158.0"}
+        with pytest.raises(ValueError, match="Nightly 159, Beta 158, Release 158"):
+            check_channels(versions, self.CALENDAR, self.TODAY)
+
+    def test_release_must_be_the_newest_one_the_calendar_has_shipped(self):
+        """158 is scheduled for 10-13, so on 10-07 it has not shipped."""
+        versions = {"FIREFOX_NIGHTLY": "160.0a1", "LATEST_FIREFOX_DEVEL_VERSION": "159.0b1",
+                    "LATEST_FIREFOX_VERSION": "158.0"}
+        with pytest.raises(ValueError, match="calendar says 157"):
+            check_channels(versions, self.CALENDAR, self.TODAY)
+
+    def test_release_day_counts_as_shipped(self):
+        versions = {"FIREFOX_NIGHTLY": "160.0a1", "LATEST_FIREFOX_DEVEL_VERSION": "159.0b1",
+                    "LATEST_FIREFOX_VERSION": "158.0"}
+        check_channels(versions, self.CALENDAR, date(2026, 10, 13))
+
+    def test_a_missing_channel_fails(self):
+        versions = {k: v for k, v in self.VERSIONS.items() if k != "LATEST_FIREFOX_VERSION"}
+        with pytest.raises(ValueError, match="LATEST_FIREFOX_VERSION"):
+            check_channels(versions, self.CALENDAR, self.TODAY)
 
 
 class TestParseConfigEnv:

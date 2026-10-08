@@ -39,6 +39,8 @@ CHROME_STABLE_URL = (
 )
 CHROME_SCHEDULE_URL = "https://chromiumdash.appspot.com/fetch_milestone_schedule?mstone={}&n={}"
 FIREFOX_TRAIN_URL = "https://whattrainisitnow.com/api/release/schedule/?version={}"
+# Every shipped Firefox version and its release date.
+FIREFOX_RELEASES_URL = "https://whattrainisitnow.com/api/firefox/releases/"
 # A `next` key means the log ran past one page.
 GITILES_LOG_URL = "https://webrtc.googlesource.com/src/+log/{}..{}?format=JSON&n=200"
 GITILES_HEAD_URL = "https://webrtc.googlesource.com/src/+log/refs/heads/main?format=JSON&n=1"
@@ -78,10 +80,11 @@ _BRACKET_PREFIX_RE = re.compile(r"^(\[[^\]]*\]\s*)+")
 # main position it branched from.
 _MAIN_POSITION_RE = re.compile(
     r"^Cr-(?:Commit-Position|Branched-From):.*refs/heads/main@\{#(\d+)\}", re.MULTILINE)
+NIGHTLY_REF = "main"  # Nightly ships main; there is no tag to read
 _CHANNELS = (
-    ("FIREFOX_NIGHTLY", "Nightly", "main"),
-    ("LATEST_FIREFOX_DEVEL_VERSION", "Beta", "beta"),
-    ("LATEST_FIREFOX_VERSION", "Release", "release"),
+    ("FIREFOX_NIGHTLY", "Nightly"),
+    ("LATEST_FIREFOX_DEVEL_VERSION", "Beta"),
+    ("LATEST_FIREFOX_VERSION", "Release"),
 )
 _VIEW_FIELDS = ("chrome_stable", "as_of")
 _ROW_FIELDS = ("label", "firefox", "milestone", "branch_head", "branched",
@@ -103,21 +106,56 @@ _UNVENDORED_COMMIT_FIELDS = ("sha", "subject", "fix", "role")
 @dataclass(frozen=True)
 class Release:
     label: str
-    branch: str
+    ref: str      # git ref of the build users have
+    firefox: str  # its version
+
+
+def _major(version: str) -> int:
+    return int(version.split(".")[0])
+
+
+def release_tag(version: str) -> str:
+    """The tag a shipped build was made from ("158.0b5" ->
+    FIREFOX_158_0b5_RELEASE). Branch tips are not it: from merge day to
+    release day the release branch already carries the next version."""
+    return f"FIREFOX_{version.replace('.', '_')}_RELEASE"
 
 
 def supported_releases(versions: dict) -> list[Release]:
-    """Release channels, then every ESR in the feed, newest first.
+    """Release channels, then every ESR in the feed, newest first. Nightly
+    is main; the others are read at their shipped build's tag.
 
     ESRs are taken from any `FIREFOX_ESR*` key (FIREFOX_ESR, FIREFOX_ESR115,
     FIREFOX_ESR_NEXT, ...) and de-duplicated by major version.
     """
-    out = [Release(label, branch) for key, label, branch in _CHANNELS
-           if versions.get(key)]
-    majors = {int(v.split(".")[0]) for k, v in versions.items()
-              if k.startswith("FIREFOX_ESR") and v}
-    out += [Release(f"ESR {m}", f"esr{m}") for m in sorted(majors, reverse=True)]
+    out = [Release(label, NIGHTLY_REF if key == "FIREFOX_NIGHTLY" else release_tag(v), v)
+           for key, label in _CHANNELS if (v := versions.get(key))]
+    esrs = {}
+    for k, v in versions.items():
+        if k.startswith("FIREFOX_ESR") and v:
+            esrs.setdefault(_major(v), v)
+    out += [Release(f"ESR {m}", release_tag(esrs[m]), esrs[m].removesuffix("esr"))
+            for m in sorted(esrs, reverse=True)]
     return out
+
+
+def check_channels(versions: dict, calendar: dict, today: date) -> None:
+    """Raise unless Nightly, Beta and Release are each one major apart and
+    Release is the newest major the release calendar (version -> release
+    date) has shipped by `today`."""
+    try:
+        n, b, r = (_major(versions[key]) for key in
+                   ("FIREFOX_NIGHTLY", "LATEST_FIREFOX_DEVEL_VERSION", "LATEST_FIREFOX_VERSION"))
+    except KeyError as exc:
+        raise ValueError(f"product-details has no {exc.args[0]}") from None
+    if (n - b, b - r) != (1, 1):
+        raise ValueError(f"Nightly {n}, Beta {b}, Release {r}: "
+                         "expected each one version apart")
+    shipped = max((_major(v) for v, d in calendar.items() if d <= today.isoformat()),
+                  default=None)
+    if r != shipped:
+        raise ValueError(f"product-details says Release {r}, "
+                         f"but the release calendar says {shipped}")
 
 
 def parse_env_vars(text: str) -> dict[str, str]:
@@ -515,7 +553,7 @@ def _fetch_gitiles_count(get_text, frm: str, to: str) -> int | None:
     return None if log.get("next") else len(log.get("log", []))
 
 
-def _fetch_unvendored(github_get, get_text, *, branch: str, branch_head: str,
+def _fetch_unvendored(github_get, get_text, *, ref: str, branch_head: str,
                       branched: str | None, today: date) -> dict:
     """A release's unvendored upstream branch-head commits.
 
@@ -533,14 +571,14 @@ def _fetch_unvendored(github_get, get_text, *, branch: str, branch_head: str,
     entries = log.get("log", [])
     firefox = []
     for page in range(1, MAX_PAGES + 1) if entries else ():
-        batch = github_get(f"{_REPO}/commits?sha={branch}&path=third_party/libwebrtc"
+        batch = github_get(f"{_REPO}/commits?sha={ref}&path=third_party/libwebrtc"
                            f"&since={branched}T00:00:00Z&per_page=100&page={page}")
         firefox += batch
         if len(batch) < 100:
             break
     else:
         if entries:
-            raise RuntimeError(f"{branch} history exceeds {MAX_PAGES} pages")
+            raise RuntimeError(f"{ref} history exceeds {MAX_PAGES} pages")
     return {"commits": unvendored_commits(entries, firefox), "as_of": today.isoformat()}
 
 
@@ -729,7 +767,9 @@ def collect_status(github_get, get_text, *, today: date, previous: dict | None =
     # week a release moves milestone and the old list no longer applies.
     last_unvendored = {(r.get("label"), r.get("branch_head")): r.get("unvendored")
                        for r in (previous or {}).get("rows") or []}
-    releases = supported_releases(json.loads(get_text(PRODUCT_DETAILS_URL)))
+    versions = json.loads(get_text(PRODUCT_DETAILS_URL))
+    check_channels(versions, json.loads(get_text(FIREFOX_RELEASES_URL)), today)
+    releases = supported_releases(versions)
     def scheduled(milestone: int) -> tuple:
         """(branch, stable) dates, or (None, None) if chromiumdash fails; the
         table still refreshes, just without them."""
@@ -744,41 +784,39 @@ def collect_status(github_get, get_text, *, today: date, previous: dict | None =
     rows, nightly = [], None
     for rel in releases:
         env = _decode_content(
-            github_get(f"{_REPO}/contents/{_CONFIG_ENV}?ref={rel.branch}"))
+            github_get(f"{_REPO}/contents/{_CONFIG_ENV}?ref={rel.ref}"))
         milestone, branch_head = parse_config_env(env)
-        firefox = _decode_content(github_get(
-            f"{_REPO}/contents/browser/config/version.txt?ref={rel.branch}")).strip()
-        commits = github_get(f"{_REPO}/commits?sha={rel.branch}"
+        commits = github_get(f"{_REPO}/commits?sha={rel.ref}"
                              f"&path=third_party/libwebrtc&per_page=30")
         if milestone not in dates:
             dates[milestone] = scheduled(milestone)[0]
         patches = count_patches(
-            github_get(f"{_REPO}/contents/{_PATCH_STACK}?ref={rel.branch}"))
+            github_get(f"{_REPO}/contents/{_PATCH_STACK}?ref={rel.ref}"))
         # Only Nightly vendors a milestone incrementally; release branches
         # only ever take cherry-picks once they have it.
-        if rel.branch == "main":
-            ref = f"refs/{branch_head}"
+        if rel.ref == NIGHTLY_REF:
+            head_ref = f"refs/{branch_head}"
             last = last_vendored_upstream(commits)
             # Gitiles is optional: if it is down the table still refreshes,
             # with the update status unknown (None) for the week.
             try:
                 in_progress = last is None or update_in_progress(
-                    remaining=_fetch_gitiles_count(get_text, last, ref),
-                    branch_only=_fetch_gitiles_count(get_text, "refs/heads/main", ref) or 0)
+                    remaining=_fetch_gitiles_count(get_text, last, head_ref),
+                    branch_only=_fetch_gitiles_count(get_text, "refs/heads/main", head_ref) or 0)
             except Exception as exc:  # noqa: BLE001
                 on_error("in_progress", exc)
                 in_progress = None
             nightly = dict(env=env, milestone=milestone, in_progress=in_progress,
                            last=last)
         try:
-            unvendored = _fetch_unvendored(github_get, get_text, branch=rel.branch,
+            unvendored = _fetch_unvendored(github_get, get_text, ref=rel.ref,
                                            branch_head=branch_head,
                                            branched=dates[milestone], today=today)
         except Exception as exc:  # noqa: BLE001 — keep last week's list
             on_error("missing fixes", exc)
             unvendored = last_unvendored.get((rel.label, branch_head))
         rows.append({
-            "label": rel.label, "firefox": firefox, "milestone": milestone,
+            "label": rel.label, "firefox": rel.firefox, "milestone": milestone,
             "branch_head": branch_head, "branched": dates[milestone],
             "vs_chrome": _vs_chrome(milestone, chrome_stable),
             "patches": patches,

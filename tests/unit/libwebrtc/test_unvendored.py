@@ -81,7 +81,7 @@ class TestIncompleteInputFails:
 
     def _fetch(self, **kw):
         from reviewstats.libwebrtc import _fetch_unvendored
-        args = dict(branch="release", branch_head="branch-heads/8010",
+        args = dict(ref="FIREFOX_157_0_1_RELEASE", branch_head="branch-heads/8010",
                     branched="2026-08-17", today=__import__("datetime").date(2026, 10, 5))
         args.update(kw)
         return _fetch_unvendored(**args)
