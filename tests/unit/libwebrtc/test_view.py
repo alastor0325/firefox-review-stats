@@ -35,5 +35,5 @@ def test_section_renderers_are_isolated():
 def test_sections_in_order():
     html = HTML[HTML.index('id="libwebrtc-section"'):]
     order = [html.index(x) for x in ('id="libwebrtc-rows"', 'id="lw-plan-rows"',
-                                     'id="lw-lag"', 'id="chart-lw-stack"')]
+                                     'id="lw-lag"', 'id="chart-lw-stack-total"')]
     assert order == sorted(order)

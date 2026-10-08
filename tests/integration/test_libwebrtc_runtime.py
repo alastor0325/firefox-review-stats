@@ -17,6 +17,31 @@ from tests.integration.test_page_runtime import CHROME
 from tests.unit.render.test_sticky_layout import _MINIMAL_DATA
 
 
+_UP = lambda s, absorbed=False: {"subject": s, "absorbed": absorbed}
+_DROP = lambda s, update, absorbed=False: {"subject": s, "absorbed": absorbed, "update": update}
+# Shaped like real Aug-Oct 2026: two updates in September dropped five
+# patches (four absorbed upstream) and added four.
+_STACK = [
+    {"month": "2026-08", "count": 150, "sampled": "2026-08-31", "sha": "a" * 40,
+     "added": [_UP("Bug 2054622 - WebRTC backport: PipeWire mmap improvements")],
+     "dropped": [], "updates": [{"milestone": 153, "bug": 2064200, "date": "2026-08-28"}]},
+    {"month": "2026-09", "count": 149, "sampled": "2026-09-30", "sha": "b" * 40,
+     "added": [_UP("Bug 2069067 - (fix-44d3a8877e) support AudioReceiveStreamInterface"),
+               _UP("Bug 1996020 - use I420Buffer::CreateOrNull"),
+               _UP("Bug 1996020 - use I420Buffer::CreateOrNull"),
+               _UP("Bug 1996020 - Cleanup remaining usages")],
+     "dropped": [_DROP("Bug 1654112 - Don't check the calling thread in GetSources", 155),
+                 _DROP("Bug 2054622 - WebRTC backport: PipeWire mmap improvements", 154, True),
+                 _DROP("Bug 2055703 - WebRTC backport: Screen capture: reject negative", 154, True),
+                 _DROP("Bug 2058627 - WebRTC backport: Screen capture: check n_datas", 154, True),
+                 _DROP("Bug 2059127 - WebRTC backport: Screen capture: validate", 154, True)],
+     "updates": [{"milestone": 154, "bug": 2069067, "date": "2026-09-14"},
+                 {"milestone": 155, "bug": 2072400, "date": "2026-09-25"}]},
+    {"month": "2026-10", "count": 147, "sampled": "2026-10-07", "sha": "c" * 40,
+     "added": [], "dropped": [_DROP("Bug 9 - Something removed by hand", None)], "updates": []},
+]
+
+
 def _iso(days):
     return (date.today() + timedelta(days=days)).isoformat()
 
@@ -42,9 +67,7 @@ def _view(as_of_days=0):
                  "merge_day": None, "vendoring": False, "fastforward_bug": None,
                  "in_progress": None},
             ]},
-        "patch_stack": {"as_of": _iso(as_of_days), "history": [
-            {"month": "2026-09", "count": 145, "sampled": "2026-09-30"},
-            {"month": "2026-10", "count": 149, "sampled": "2026-10-05"}]},
+        "patch_stack": {"as_of": _iso(as_of_days), "history": _STACK},
     }
 
 
@@ -105,7 +128,7 @@ def _run_uncached(tmp_path, view):
                 "() => { const e = document.getElementById('libwebrtc-stale');"
                 " return e.offsetParent ? e.innerText : ''; }"),
             "body": page.evaluate("() => document.getElementById('libwebrtc-section').innerText"),
-            "chart": page.evaluate("() => !!Chart.getChart('chart-lw-stack')"),
+            "chart": page.evaluate("() => !!Chart.getChart('chart-lw-stack-total') && !!Chart.getChart('chart-lw-stack-change')"),
             "plan_cells": page.evaluate(
                 "() => [...document.querySelectorAll('#lw-plan-rows tr')]"
                 ".map(t => [...t.cells].map(c => c.innerText.trim()))"),
@@ -128,7 +151,16 @@ def _run_uncached(tmp_path, view):
                 "() => [...document.querySelectorAll('.lw-fix .lw-fix-body')]"
                 ".map(b => [...b.querySelectorAll('.lw-fix-line')]"
                 ".map(l => l.textContent.replace(/\\s+/g, ' ').trim()).join(' '))"),
+            "stack_title": page.evaluate(
+                "() => document.querySelector('#lw-stack-section h2').firstChild.textContent.trim()"),
+            "stack_hero": text("#lw-stack-hero")[0],
             "stack_summary": text("#lw-stack-summary")[0],
+            "stack_detail_head": text("#lw-stack-detail .lw-stack-detail-head")[0],
+            "stack_detail": text("#lw-stack-detail")[0],
+            # textContent: the table sits in a closed <details>.
+            "stack_table": page.evaluate(
+                "() => [...document.querySelectorAll('#lw-stack-table tbody tr')]"
+                ".map(t => [...t.cells].map(c => c.textContent.trim()).join(' ').trim())"),
             "fold_marker": page.evaluate(
                 "() => { const s = document.querySelector('.lw-fix summary');"
                 " return s ? getComputedStyle(s, '::before').content : null; }"),
@@ -247,9 +279,10 @@ def test_page_copy(tmp_path):
         ["Channel", "Version", "Milestone", "Branch", "Branched", "vs Chrome stable",
          "Mozilla patches", "Missing fixes", "Last libwebrtc change"],
         ["Milestone", "Branches", "Chrome stable", "Firefox", "Nightly starts",
-         "Beta merge", "Status"]]
+         "Beta merge", "Status"],
+        ["Month", "Total", "Added", "Dropped", "Upstream updates", ""]]
     assert "to triage" not in state["body"].lower()
-    assert state["stack_summary"] == "149 patches, up 4 since Sep 2026."
+    assert state["stack_title"] == "Mozilla's own patches on top of upstream libwebrtc"
 
 
 def test_each_fix_row_shows_it_folds(tmp_path):
@@ -328,3 +361,60 @@ def test_the_tables_missing_count_applies_the_filter_and_moves_focus(tmp_path):
     assert after["pressed"] == ["ESR 115 1"]
     assert after["rows"] == ["JsepTransportController: Remove raw pointers to description objects"]
     assert after["focused"] == "ESR 115 1"
+
+
+def test_patch_stack_explains_itself(tmp_path):
+    state, errors = _run(tmp_path, _view())
+    assert errors == []
+    # Headline: the total and its change, in words, not colour.
+    assert state["stack_hero"].startswith("147") and "2 fewer than at the end of September" in state["stack_hero"]
+    # The story of the latest month that had an upstream update.
+    # Per update, from which push removed each patch.
+    assert state["stack_summary"] == (
+        "In September the M154 update dropped 4 (all now in upstream) and the "
+        "M155 update dropped 1; 4 new ones were added.")
+
+
+def test_month_detail_opens_on_the_latest_change(tmp_path):
+    state, _ = _run(tmp_path, _view())
+    # October has a drop no update push explains: the backout signal wins
+    # over the summary's month.
+    assert state["stack_detail_head"].startswith("October 2026")
+    assert "1 dropped outside an upstream update: check whether it was backed out." in state["stack_detail"]
+    assert "not explained by an update" in state["stack_detail"]
+
+
+def test_selecting_a_month_lists_its_patches(tmp_path):
+    with _page(tmp_path, _view()) as (page, errors):
+        page.click("#lw-stack-section .lw-stack-table-wrap summary")  # open the table
+        page.click("#lw-stack-table tbody tr:nth-child(2) button")
+        head = page.inner_text("#lw-stack-detail .lw-stack-detail-head")
+        detail = page.text_content("#lw-stack-detail")  # innerText would apply CSS uppercase
+        links = page.eval_on_selector_all("#lw-stack-detail a", "as => as.map(a => a.href)")
+    assert errors == []
+    assert head.startswith("September 2026 · M154 update Sep 14 (Bug 2069067) · "
+                           "M155 update Sep 25 (Bug 2072400) · see the change on GitHub")
+    assert "Dropped (5)" in detail and "Added (4)" in detail
+    assert detail.count("M154 · now in upstream") == 4 and detail.count("M155 · no longer needed") == 1
+    assert "outside an upstream update" not in detail
+    # Identical subjects collapse.
+    assert "Bug 1996020 - use I420Buffer::CreateOrNull (×2)" in detail
+    assert "https://bugzilla.mozilla.org/show_bug.cgi?id=2072400" in links
+    assert any(l.endswith("a" * 40 + "..." + "b" * 40) for l in links), links
+
+
+def test_patch_stack_table_twin(tmp_path):
+    state, _ = _run(tmp_path, _view())
+    assert [r.split(" ")[0:2] for r in state["stack_table"]] == [
+        ["Aug", "2026"], ["Sep", "2026"], ["Oct", "2026"]]
+    assert state["stack_table"][1].startswith("Sep 2026 149 +4 −5 M154, M155")
+
+
+def test_detail_opens_on_the_summary_month_when_nothing_is_unexplained(tmp_path):
+    view = _view()
+    view["patch_stack"]["history"] = [dict(p) for p in _STACK]
+    view["patch_stack"]["history"][-1] = {**_STACK[-1], "dropped": [],
+                                          "added": [_UP("Bug 10 - New patch")]}
+    state, _ = _run(tmp_path, view)
+    assert state["stack_detail_head"].startswith("September 2026")
+

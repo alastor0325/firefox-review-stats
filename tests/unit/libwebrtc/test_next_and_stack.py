@@ -119,25 +119,32 @@ class TestPatchStackHistory:
             ("2025-12", "2025-12-31"), ("2026-01", "2026-01-10")]
 
     def test_final_points_are_reused_and_the_current_month_left_out(self):
-        known = {"2026-09": {"month": "2026-09", "count": 149, "sampled": "2026-09-30"}}
-        reuse, fetch = plan_history(date(2026, 10, 5), known)
-        assert reuse == known
-        assert ("2026-09", "2026-09-30") not in fetch
-        assert all(m != "2026-10" for m, _ in fetch)
-        assert len(fetch) == 10
+        known = {"2026-09": {"month": "2026-09", "count": 149, "sampled": "2026-09-30",
+                             "added": [], "dropped": []}}
+        assert plan_history(date(2026, 10, 5), known) == known
 
     def test_a_mid_month_sample_is_refetched_once_the_month_closes(self):
         """Last week's run sampled September on the 28th; that is not the
         end-of-month value the chart claims, so fetch it again."""
         known = {"2026-09": {"month": "2026-09", "count": 148, "sampled": "2026-09-28"}}
-        reuse, fetch = plan_history(date(2026, 10, 5), known)
-        assert "2026-09" not in reuse and ("2026-09", "2026-09-30") in fetch
+        assert "2026-09" not in plan_history(date(2026, 10, 5), known)
+
+    def test_points_without_change_lists_are_refetched(self):
+        """Points from before added/dropped were recorded."""
+        assert plan_history(date(2026, 10, 5), {"2026-09": {
+            "month": "2026-09", "count": 149, "sampled": "2026-09-30"}}) == {}
+
+    def test_points_without_drop_attribution_are_refetched(self):
+        """Saved before drops were credited to update pushes: reusing them
+        would show every drop as unexplained."""
+        assert plan_history(date(2026, 10, 5), {"2026-09": {
+            "month": "2026-09", "count": 149, "sampled": "2026-09-30", "added": [],
+            "dropped": [{"subject": "A", "absorbed": True}]}}) == {}
 
     def test_points_without_a_sample_date_are_refetched(self):
         """Files written before sample dates were recorded."""
-        reuse, _ = plan_history(date(2026, 10, 5),
-                                {"2026-09": {"month": "2026-09", "count": 149}})
-        assert reuse == {}
+        assert plan_history(date(2026, 10, 5),
+                            {"2026-09": {"month": "2026-09", "count": 149}}) == {}
 
     def test_known_history_from_last_weeks_file(self):
         point = {"month": "2026-09", "count": 145, "sampled": "2026-09-30"}

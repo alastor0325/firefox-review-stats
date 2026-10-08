@@ -433,6 +433,23 @@
              background: var(--paper-warm); color: var(--ink); }
   .lw-fix-body { padding: 0 2px 10px 20px; font-size: 12.5px; color: var(--ink-soft); }
   .lw-fix-line { margin-top: 4px; }
+  .lw-stack-sub { font-size: 13px; color: var(--ink-soft); margin: 0 0 10px; max-width: 70ch; }
+  .lw-stack-hero { font-family: var(--sans); color: var(--ink-soft); }
+  .lw-stack-n { font-size: 40px; font-weight: 600; color: var(--ink); margin-right: 6px; }
+  .lw-stack-panel-title, .lw-stack-group { font-family: var(--mono); font-size: 10.5px;
+                          text-transform: uppercase; letter-spacing: 0.07em; color: var(--ink-soft); }
+  .lw-stack-panel-title { margin: 14px 0 2px; }
+  .chart-box.lw-stack-total { height: 150px; }
+  .chart-box.lw-stack-change { height: 200px; }
+  .lw-stack-detail { margin-top: 14px; font-size: 13px; }
+  .lw-stack-detail-head { font-weight: 600; margin-bottom: 6px; }
+  .lw-stack-group { margin-top: 8px; }
+  .lw-stack-list { margin: 4px 0 0; padding-left: 18px; }
+  .lw-stack-list li { margin-bottom: 3px; }
+  .lw-stack-list .lw-chip { display: inline-block; min-width: 26ch; }
+  .lw-stack-warn { margin-top: 8px; font-weight: 600; }
+  .lw-stack-table-wrap { margin-top: 12px; font-size: 12.5px; }
+  .lw-stack-table-wrap summary { cursor: pointer; color: var(--ink-soft); }
   .lw-fix-where { display: inline-block; min-width: 170px; }
   .lw-filters { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 10px; }
   .lw-filter { font-family: var(--mono); font-size: 11px; padding: 3px 9px; border-radius: 999px;
@@ -1618,10 +1635,21 @@ __GH_CORNER__
     <div class="footer-note" id="lw-lag"></div>
   </section>
 
-  <section>
-    <h2>Mozilla patch stack on Nightly <span class="info" data-tip="Patches Firefox carries on top of upstream libwebrtc. Each one has to be rebased at every milestone update, so growth means more update work. Month-end counts; the current month is the count so far."></span></h2>
+  <section id="lw-stack-section">
+    <h2>Mozilla's own patches on top of upstream libwebrtc <span class="info" data-tip="Patches Firefox carries on top of the upstream libwebrtc it vendors (third_party/libwebrtc/moz-patch-stack on main). Every patch must be reapplied at each upstream update, so fewer is better. Each dropped patch is credited to the upstream update whose push removed it. It is 'now in upstream' when its title says WebRTC backport or cherry-pick upstream (a best guess from the title), otherwise 'no longer needed'. A drop no update explains is flagged: check whether it was backed out. Counts compare month-end snapshots, so a patch added and removed in the same month is not shown, and a patch whose title changed shows as one dropped and one added. The current month is counted so far."></span></h2>
+    <p class="lw-stack-sub">Each patch has to be redone every time we take a new upstream version, so fewer is better. Patches drop off when upstream ships the same fix or removes the code they changed.</p>
+    <div class="lw-stack-hero" id="lw-stack-hero"></div>
     <div class="footer-note" id="lw-stack-summary"></div>
-    <div class="chart-box"><canvas id="chart-lw-stack"></canvas></div>
+    <div class="lw-stack-panel-title">Total at month end</div>
+    <div class="chart-box lw-stack-total"><canvas id="chart-lw-stack-total"></canvas></div>
+    <div class="lw-stack-panel-title">Added and dropped each month</div>
+    <div class="chart-box lw-stack-change"><canvas id="chart-lw-stack-change"></canvas></div>
+    <div id="lw-stack-detail" class="lw-stack-detail" aria-live="polite"></div>
+    <details class="lw-stack-table-wrap"><summary>Show as table</summary>
+      <div class="table-wrap"><table class="lw-table" id="lw-stack-table"><thead><tr>
+        <th>Month</th><th>Total</th><th>Added</th><th>Dropped</th><th>Upstream updates</th><th></th>
+      </tr></thead><tbody></tbody></table></div>
+    </details>
   </section>
 </div>
 
@@ -2318,9 +2346,7 @@ function renderLibwebrtc(view) {
 // The row being vendored says whether the update is done and, if not, how
 // long is left before its Beta merge.
 function vendoringStatus(r) {
-  const bug = r.fastforward_bug
-    ? ` · <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=${esc(r.fastforward_bug)}">Bug ${esc(r.fastforward_bug)}</a>`
-    : '';
+  const bug = r.fastforward_bug ? ` · ${bugLink(r.fastforward_bug)}` : '';
   if (r.in_progress == null) return `Vendoring? · not checked this week${bug}`;
   if (!r.in_progress) return `Vendored${bug}`;
   if (!r.merge_day) return `Vendoring${bug}`;
@@ -2354,35 +2380,187 @@ function renderLibwebrtcPlan(plan) {
     + `is from ${lag.last_vendored}.`;
 }
 
+// Patch stack: a headline total, the month-end total line, and the
+// added/dropped bars, on one month axis; each month's upstream updates are
+// named under it.
+// Fewer patches is better, so direction is said in words, never coloured.
+const STACK_ADDED = '#eb6834', STACK_DROPPED = '#2a78d6';
+const monthLong = ym => new Date(ym + '-01T00:00:00')
+  .toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+const monthName = ym => new Date(ym + '-01T00:00:00').toLocaleDateString('en-US', { month: 'long' });
+const dayShort = iso => new Date(iso + 'T00:00:00')
+  .toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+const bugLink = n => `<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=${escA(n)}">Bug ${esc(n)}</a>`;
+// "M154, M155" — consecutive runs of three or more as a range ("M146–148").
+function milestones(u) {
+  const ms = (u || []).map(x => x.milestone);
+  if (ms.length > 2 && ms.every((m, k) => !k || m === ms[k - 1] + 1)) return `M${ms[0]}–${ms[ms.length - 1]}`;
+  return ms.map(m => 'M' + m).join(', ');
+}
+// Why a dropped patch left: an update's push removed it (its change is now
+// upstream, or no longer needed), or nothing explains it — check for a backout.
+const dropReason = d => d.update == null ? 'not explained by an update'
+  : d.absorbed ? 'now in upstream' : 'no longer needed';
+const unexplained = p => (p.dropped || []).filter(d => d.update == null);
+function fewerMore(delta, than) {
+  return delta === 0 ? `same as ${than}` : `${Math.abs(delta)} ${delta < 0 ? 'fewer' : 'more'} than ${than}`;
+}
+
+// Both panels share one month axis: same centred slots, same y-axis width,
+// so a month's dot sits above its bars.
+const STACK_Y_WIDTH = 44;
+const fixedWidth = { afterFit: scale => { scale.width = STACK_Y_WIDTH; } };
+// Every month labelled where it fits; on a phone Chart.js skips some (the
+// tooltip and the table still name every month).
+const STACK_X_TICKS = { autoSkip: matchMedia('(max-width: 600px)').matches,
+                        maxRotation: 0, font: { size: 10 } };
+
+function stackTooltip(points) {
+  return {
+    callbacks: {
+      title: items => monthLong(points[items[0].dataIndex].month)
+        + (items[0].dataIndex === points.length - 1 ? ' (so far)' : ''),
+      label: () => null,
+      afterBody: items => {
+        const i = items[0].dataIndex, p = points[i], prev = points[i - 1];
+        const lines = [`${p.count} at month end` + (prev ? ` (${fewerMore(p.count - prev.count, 'before')})` : '')];
+        if (p.added) lines.push(`+${p.added.length} added`);
+        if (p.dropped) {
+          const by = r => p.dropped.filter(d => dropReason(d) === r).length;
+          const parts = ['now in upstream', 'no longer needed', 'not explained by an update']
+            .filter(r => by(r)).map(r => `${by(r)} ${r}`);
+          lines.push(`−${p.dropped.length} dropped` + (parts.length ? `: ${parts.join(', ')}` : ''));
+        }
+        (p.updates || []).forEach(u => lines.push(`M${u.milestone} update landed ${dayShort(u.date)} · Bug ${u.bug}`));
+        if (unexplained(p).length) lines.push('Check the unexplained drops for backouts');
+        lines.push('Click to see which patches');
+        return lines;
+      },
+    },
+  };
+}
+
 function renderLibwebrtcStack(stack) {
+  const hero = document.getElementById('lw-stack-hero');
   const summary = document.getElementById('lw-stack-summary');
-  if (!stack || !stack.history.length) {
-    summary.textContent = NO_DATA_YET;
-    document.getElementById('chart-lw-stack').parentElement.style.display = 'none';
+  const points = (stack && stack.history) || [];
+  if (!points.length) {
+    hero.textContent = NO_DATA_YET;
+    document.querySelectorAll('#lw-stack-section .chart-box, #lw-stack-section .lw-stack-panel-title,'
+      + ' #lw-stack-section .lw-stack-table-wrap').forEach(e => { e.style.display = 'none'; });
     return;
   }
-  const h = stack.history, now = h[h.length - 1].count;
-  const change = h.length > 1 ? now - h[0].count : 0;
-  summary.textContent = `${now} patches, ` + (change > 0 ? `up ${change}` : change < 0
-    ? `down ${-change}` : 'unchanged') + ` since ${monthLabel(h[0].month)}.`;
-  new Chart(document.getElementById('chart-lw-stack'), {
+  const last = points[points.length - 1], prev = points[points.length - 2];
+  hero.innerHTML = `<span class="lw-stack-n">${esc(last.count)}</span> patches carried on Nightly`
+    + (prev ? ` · ${fewerMore(last.count - prev.count, `at the end of ${monthName(prev.month)}`)}` : '');
+  // The story of the latest month an upstream update landed in.
+  const story = [...points].reverse().find(p => (p.updates || []).length && p.added);
+  if (story) {
+    // What each update's push dropped, then what was added.
+    const clauses = story.updates.map(u => {
+      const ds = story.dropped.filter(d => d.update === u.milestone);
+      if (!ds.length) return null;
+      const up = ds.filter(d => d.absorbed).length;
+      const why = up === ds.length ? ' (all now in upstream)' : up ? ` (${up} now in upstream)` : '';
+      return `the M${u.milestone} update dropped ${ds.length}${why}`;
+    }).filter(Boolean);
+    const odd = unexplained(story).length;
+    if (odd) clauses.push(`${odd} ${odd === 1 ? 'was' : 'were'} dropped outside an update`);
+    const dropped = clauses.length > 1
+      ? clauses.slice(0, -1).join(', ') + ' and ' + clauses[clauses.length - 1] : clauses[0];
+    const added = `${plural(story.added.length, 'new one was', 'new ones were')} added`;
+    summary.textContent = `In ${monthName(story.month)} ` + (dropped ? `${dropped}; ${added}.` : `${added}.`);
+  }
+
+  // Compact axis labels so twelve months fit on a phone: "Nov '25", "Dec",
+  // "Jan '26"; that month's updates beneath, consecutive ones as a range.
+  const shortMonth = (p, i) => {
+    const d = new Date(p.month + '-01T00:00:00');
+    const m = d.toLocaleDateString('en-US', { month: 'short' });
+    return i === 0 || d.getMonth() === 0 ? `${m} '${String(d.getFullYear()).slice(2)}` : m;
+  };
+  const labels = points.map((p, i) => [shortMonth(p, i), milestones(p.updates)]);
+  const showDetail = i => renderStackDetail(points, i);
+  const onClick = (_, els) => { if (els.length) showDetail(els[0].index); };
+  const common = {
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: { legend: { display: false }, tooltip: stackTooltip(points) },
+    onClick,
+  };
+  new Chart(document.getElementById('chart-lw-stack-total'), {
     type: 'line',
-    data: {
-      labels: h.map(p => monthLabel(p.month)),
-      datasets: [{
-        label: 'Patches',
-        data: h.map(p => p.count),
-        borderColor: COLOR_NAVY,
-        backgroundColor: COLOR_NAVY + '33',
-        tension: 0.25,
-      }],
-    },
-    options: {
-      plugins: { legend: { display: false } },
-      scales: { y: { title: { display: true, text: 'patches' } } },
-      maintainAspectRatio: false,
-    },
+    data: { labels, datasets: [{ data: points.map(p => p.count), borderColor: COLOR_NAVY,
+      backgroundColor: COLOR_NAVY, borderWidth: 2, tension: 0, pointRadius: 4,
+      pointBorderColor: '#FFFFFF', pointBorderWidth: 2 }] },
+    options: { ...common, layout: { padding: { top: 8 } },
+      // The same month labels as the bars, drawn invisibly, so Chart.js lays
+      // out both panels identically and each dot sits above its bars.
+      scales: { x: { offset: true, grid: { display: false }, border: { display: false },
+                     ticks: { ...STACK_X_TICKS, color: 'transparent' } },
+                y: { ...fixedWidth, ticks: { maxTicksLimit: 4 } } } },
   });
+  new Chart(document.getElementById('chart-lw-stack-change'), {
+    type: 'bar',
+    data: { labels, datasets: [
+      { label: 'added', data: points.map(p => p.added ? p.added.length : null), backgroundColor: STACK_ADDED,
+        borderRadius: 4, borderSkipped: 'start', maxBarThickness: 20, stack: 's' },
+      { label: 'dropped', data: points.map(p => p.dropped ? -p.dropped.length : null), backgroundColor: STACK_DROPPED,
+        borderRadius: 4, borderSkipped: 'start', maxBarThickness: 20, stack: 's' }] },
+    // The line chart keeps 6px on the right for its last dot (4px radius +
+    // 2px ring); match it so the month slots are the same width.
+    options: { ...common, layout: { padding: { right: 6 } },
+      plugins: { ...common.plugins, legend: { display: true, position: 'top', align: 'start',
+        labels: { boxWidth: 14, boxHeight: 3, color: '#3B342D' } } },
+      scales: { x: { stacked: true, ticks: STACK_X_TICKS },
+        y: { ...fixedWidth, stacked: true,
+          ticks: { callback: v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v) } } } },
+  });
+
+  // Table twin: every value without hover, and keyboard access to a month.
+  document.querySelector('#lw-stack-table tbody').innerHTML = points.map((p, i) =>
+    `<tr><td>${esc(monthLabel(p.month))}${i === points.length - 1 ? ' (so far)' : ''}</td><td>${esc(p.count)}</td>`
+    + `<td>${p.added ? '+' + p.added.length : '—'}</td><td>${p.dropped ? '−' + p.dropped.length : '—'}</td>`
+    + `<td>${esc(milestones(p.updates)) || '—'}</td>`
+    + `<td><button type="button" class="lw-count" data-month="${i}">Show</button></td></tr>`).join('');
+  document.getElementById('lw-stack-table').addEventListener('click', e => {
+    const b = e.target.closest('button[data-month]');
+    if (b) showDetail(Number(b.dataset.month));
+  });
+  // Open on the summary's month, unless a later month has a drop no update
+  // explains — that is the one to look at.
+  const storyAt = story ? points.indexOf(story) : -1;
+  const oddAt = points.map((p, i) => unexplained(p).length ? i : -1).filter(i => i > storyAt).pop();
+  const changedAt = points.map((p, i) => (p.added || []).length || (p.dropped || []).length ? i : -1)
+    .filter(i => i >= 0).pop();
+  showDetail(oddAt ?? (storyAt >= 0 ? storyAt : changedAt ?? points.length - 1));
+}
+
+function renderStackDetail(points, i) {
+  const p = points[i], prev = points[i - 1];
+  const head = [monthLong(p.month)]
+    .concat((p.updates || []).map(u => `M${u.milestone} update ${dayShort(u.date)} (${bugLink(u.bug)})`))
+    .concat(prev && prev.sha && p.sha ? [`<a href="https://github.com/mozilla-firefox/firefox/compare/${escA(prev.sha)}...${escA(p.sha)}">see the change on GitHub</a>`] : []);
+  // Identical subjects collapse to one line with a count.
+  const list = (items, tag) => {
+    const counts = new Map();
+    items.forEach(it => counts.set(it.subject, { it, n: (counts.get(it.subject)?.n || 0) + 1 }));
+    return '<ul class="lw-stack-list">' + [...counts.values()].map(({ it, n }) =>
+      `<li>${tag ? `<span class="lw-chip">${tag(it)}</span> ` : ''}`
+      + esc(it.subject).replace(/^Bug (\d+)/, (m, b) => bugLink(b))
+      + (n > 1 ? ` (×${n})` : '') + '</li>').join('') + '</ul>';
+  };
+  const dropped = p.dropped || [], added = p.added || [];
+  const body = (p.added == null)
+    ? '<p>No earlier snapshot to compare with.</p>'
+    : (dropped.length ? `<div class="lw-stack-group">Dropped (${dropped.length})</div>`
+        + list(dropped, d => (d.update == null ? '' : `M${d.update} · `) + dropReason(d)) : '')
+      + (added.length ? `<div class="lw-stack-group">Added (${added.length})</div>` + list(added) : '')
+      + (!dropped.length && !added.length ? '<p>No patches added or dropped.</p>' : '')
+      + (unexplained(p).length ? `<p class="lw-stack-warn">${unexplained(p).length} dropped outside an upstream `
+         + `update: check whether ${unexplained(p).length === 1 ? 'it was' : 'they were'} backed out.</p>` : '');
+  document.getElementById('lw-stack-detail').innerHTML =
+    `<div class="lw-stack-detail-head">${head.join(' · ')}</div>${body}`;
 }
 
 // Each part renders on its own: a malformed one must not stop the rest, nor

@@ -41,11 +41,39 @@ class Upstream:
         self.calls.append(path)
         if "github" in self.down:
             raise OSError("github down")
+        if "moz-patch-stack" in path and "/commits?" in path and "since=" in path:
+            bug = "2072400" if "since=2026-09-25" in path else "2069067"
+            after = "pushafter155" if bug == "2072400" else "pushafter154"
+            return [{"sha": after, "commit": {"message": f"Bug {bug} - Vendor libwebrtc from x"}},
+                    {"sha": "z", "commit": {"message": f"Bug {bug} - updated libwebrtc patch stack"}}]
         if "moz-patch-stack" in path:
             if "/commits?" in path:
-                return [{"sha": "d" * 40}]
+                # One snapshot per month: the sha names the month.
+                until = path.split("until=")[1][:7]
+                return [{"sha": f"snap{until}".ljust(40, "0")}]
+            if "ref=" in path and ("ref=snap" in path or "ref=push" in path):
+                ref = path.split("ref=")[1]
+                names = [f"s{i:04d}.patch" for i in range(147)]
+                if ref.startswith("snap2026-10"):
+                    names.append("s0147.patch")       # October adds one patch
+                if ref.startswith(("snap2026-09", "snap2026-10", "pushafter155")):
+                    names.remove("s0005.patch")       # removed in the M155 push...
+                if ref.startswith(("snap2026-10",)):
+                    names.remove("s0009.patch")       # ...and one dropped by hand in October
+                # The blob sha is the file name: unchanged files share blobs.
+                return [{"name": n, "sha": n} for n in names]
             n = 98 if "ref=esr140" in path else 147
             return [{"name": f"s{i:04d}.patch"} for i in range(n)] + [{"name": "README.md"}]
+        if "/commits?sha=main&path=dom/media/webrtc/third_party_build/default_config_env" in path:
+            return [{"sha": "cfg155", "parents": [{"sha": "pushbefore155"}],
+                     "commit": {"message": "Bug 2072400 - updated default_config_env for v155",
+                                "committer": {"date": "2026-09-25T10:00:00Z"}}},
+                    {"sha": "cfg154", "parents": [{"sha": "pushbefore154"}],
+                     "commit": {"message": "Bug 2069067 - updated default_config_env for v154",
+                                "committer": {"date": "2026-09-14T10:00:00Z"}}},
+                    {"sha": "x", "parents": [{"sha": "y"}],
+                     "commit": {"message": "Bug 1 - unrelated config tweak",
+                                "committer": {"date": "2026-09-01T10:00:00Z"}}}]
         for branch, (ms, bh, ver) in BRANCHES.items():
             if path.endswith(f"default_config_env?ref={branch}"):
                 return _content(
@@ -67,6 +95,9 @@ class Upstream:
         host = url.split("/")[2]
         if any(d in host or d in url for d in self.down):
             raise OSError(f"{host} down")
+        if "raw.githubusercontent.com" in url:
+            name = url.rsplit("/", 1)[1]
+            return f"Subject: [PATCH] Bug 7 - Patch {name}\n\nbody\n"
         if "product-details" in url:
             return '{"FIREFOX_NIGHTLY": "159.0a1", "FIREFOX_ESR": "140.17.0esr"}'
         if "fetch_releases" in url:
@@ -157,20 +188,54 @@ def test_a_train_past_the_calendar_horizon_is_blank_not_a_failure():
     assert rows[2]["merge_day"] is None
 
 
-def test_patch_stack_trend_uses_nightlys_live_count_for_this_month():
-    up = Upstream()
-    stack = _collect(up)["patch_stack"]
+def test_patch_stack_records_each_months_changes_and_updates():
+    stack = _collect(Upstream())["patch_stack"]
     assert len(stack["history"]) == 12
-    assert stack["history"][-1] == {"month": "2026-10", "count": 147,
-                                    "sampled": "2026-10-05"}
-    assert not any("until=2026-10-05" in c for c in up.calls)
+    sep, octo = stack["history"][-2:]
+    assert sep["sha"] == "snap2026-09".ljust(40, "0")
+    assert sep["updates"] == [{"milestone": 154, "bug": 2069067, "date": "2026-09-14"},
+                              {"milestone": 155, "bug": 2072400, "date": "2026-09-25"}]
+    # September's drop happened inside the M155 push: credited to it.
+    assert sep["dropped"] == [{"subject": "Bug 7 - Patch s0005.patch", "absorbed": False,
+                               "update": 155}]
+    # October: one added, one dropped with no update at all.
+    assert octo["added"] == [{"subject": "Bug 7 - Patch s0147.patch", "absorbed": False}]
+    assert octo["dropped"] == [{"subject": "Bug 7 - Patch s0009.patch", "absorbed": False,
+                                "update": None}]
+
+
+def test_each_patch_version_is_read_once():
+    """Snapshots share most files; a blob already read isn't fetched again."""
+    up = Upstream()
+    _collect(up)
+    raw = [c for c in up.calls if "raw.githubusercontent.com" in c]
+    assert len(raw) == len({c.rsplit("/", 1)[1] for c in raw})
+
+
+def test_an_unchanged_snapshot_is_not_read_again():
+    previous = _collect(Upstream())
+    up = Upstream()
+    _collect(up, previous=previous)
+    assert not any("raw.githubusercontent.com" in c for c in up.calls)
+
+
+def test_a_slow_raw_host_falls_back_instead_of_blowing_the_ci_limit(monkeypatch):
+    """Past its time budget the section keeps last week's copy, so the core
+    file is still written inside the CI step's limit."""
+    import reviewstats.libwebrtc as lw
+    ticks = iter(range(0, 10_000, 100))
+    monkeypatch.setattr(lw, "_now", lambda: next(ticks))
+    errors = []
+    view = _collect(Upstream(), previous=PREVIOUS, on_error=lambda k, e: errors.append(k))
+    assert "patch_stack" in errors
+    assert view["patch_stack"]["as_of"] == "2026-09-28" and view["rows"]
 
 
 def test_a_warm_week_fetches_no_history():
     previous = _collect(Upstream())
     up = Upstream()
     _collect(up, previous=previous)
-    assert not any("moz-patch-stack&until=" in c for c in up.calls)
+    assert not any("moz-patch-stack&until=2026-08" in c for c in up.calls)
 
 
 PREVIOUS = {
