@@ -134,7 +134,8 @@ class Upstream:
         if "refs/heads/main..refs/branch-heads/" in url:
             bh = url.split("branch-heads/")[1].split("?")[0]
             return ")]}'\n" + json.dumps({"log": [
-                {"commit": f"{bh}{i}".ljust(40, "0"), "message": f"[M100] Fix {bh}-{i}\n"}
+                {"commit": f"{bh}{i}".ljust(40, "0"), "message": f"[M100] Fix {bh}-{i}\n",
+                 "committer": {"time": f"Thu Oct 0{i + 1} 11:04:14 2026"}}
                 for i in range(4)]})
         if "googlesource.com" in url:
             return ")]}'\n" + json.dumps({"log": [{}] * 3})
@@ -308,7 +309,8 @@ def test_unvendored_falls_back_to_last_weeks_list_per_release():
     rows = _collect(Upstream(down={"googlesource"}), previous=previous,
                     on_error=lambda key, exc: errors.append(key))["rows"]
     assert "missing fixes" in errors
-    assert rows[0]["unvendored"] == {"commits": [], "as_of": "2026-09-28"}
+    assert rows[0]["unvendored"] == {"commits": [], "as_of": "2026-09-28",
+                                     "branch_commits": None, "last_merge": None}
     assert rows[1]["unvendored"] is None
 
 

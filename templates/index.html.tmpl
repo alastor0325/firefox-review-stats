@@ -1607,7 +1607,7 @@ __GH_CORNER__
   <section>
     <h2>Upstream fixes not vendored <span class="info" data-tip="Commits Chrome merged to a milestone's release branch (branch-heads/N) that Firefox's history doesn't show as vendored. Matched by Upstream-commit footers, cherry-pick lines and subject, following check_missing_branch_head_commits.py, so expect some false positives and some fixes skipped on purpose (Chrome-only code). Each fix is counted once: Chrome merges it to each branch under its own SHA, and a revert and reland count as one fix."></span></h2>
     <div class="lw-filters" id="lw-filters" role="group" aria-label="Show missing fixes for"></div>
-    <div class="footer-note" id="lw-missing-summary" aria-live="polite"></div>
+    <div class="footer-note" id="lw-missing-summary" aria-live="polite" aria-atomic="true"></div>
     <div class="lw-fixes" id="lw-fixes"></div>
   </section>
 
@@ -1725,7 +1725,12 @@ function attachTooltips(root) {
   root.querySelectorAll('[data-tip]').forEach(icon => {
     if (icon.dataset.tipBound) return;
     icon.dataset.tipBound = '1';
-    icon.addEventListener('mouseenter', () => {
+    if (icon.classList.contains('info') && !icon.hasAttribute('tabindex')) {
+      icon.tabIndex = 0;
+      icon.setAttribute('role', 'img');
+      icon.setAttribute('aria-label', icon.dataset.tip);
+    }
+    const show = () => {
       tipEl.textContent = icon.dataset.tip;
       tipEl.style.display = 'block';
       tipEl.style.left = '0px';
@@ -1744,8 +1749,12 @@ function attachTooltips(root) {
       if (left < margin) left = margin;
       tipEl.style.left = left + 'px';
       tipEl.style.top = top + 'px';
-    });
-    icon.addEventListener('mouseleave', () => { tipEl.style.display = 'none'; });
+    };
+    const hide = () => { tipEl.style.display = 'none'; };
+    icon.addEventListener('mouseenter', show);
+    icon.addEventListener('focus', show);
+    icon.addEventListener('mouseleave', hide);
+    icon.addEventListener('blur', hide);
   });
 }
 
@@ -2213,6 +2222,19 @@ function renderLibwebrtcStale(view) {
   el.style.display = stale.length ? 'block' : 'none';
 }
 
+// Chrome merges fixes to a milestone's branch only while it supports it:
+// stable, and the one before on extended stable. Without a stable
+// milestone, a branch with no merge in 60 days counts as closed.
+const CLOSED_TIP = "Chrome merges fixes to a milestone's branch only while it supports that milestone. "
+  + 'The date is the last merge. Later fixes went only to newer branches and main, so this count '
+  + 'leaves them out, and they may still apply to this release.';
+function branchClosed(r, chromeStable) {
+  if (chromeStable) return r.milestone < chromeStable - 2;
+  const last = r.unvendored && r.unvendored.last_merge;
+  return last ? daysFromToday(last) < -60 : false;
+}
+const infoTip = tip => `<span class="info" data-tip="${escA(tip)}"></span>`;
+
 // Upstream-only commits on a milestone's branch (Gitiles main..branch).
 function branchLink(head) {
   if (!head) return '—';
@@ -2242,31 +2264,53 @@ function groupFixes(rows) {
   return (groupFixes.result = [...fixes.values()].sort((a, b) => a.first - b.first));
 }
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+const andList = xs => xs.length > 1 ? xs.slice(0, -1).join(', ') + ' and ' + xs[xs.length - 1] : xs[0];
 
 // The missing-fixes list renders every fix once; the release filter only
 // hides rows, marks the matching chips and rewrites the summary.
 function renderLibwebrtcMissing(view) {
   const summary = document.getElementById('lw-missing-summary');
   const rows = view.rows;
-  if (!rows.some(r => r.unvendored)) { summary.textContent = NO_DATA_YET; return; }
+  if (!rows.some(r => r.unvendored)) {
+    summary.innerHTML = `<span class="lw-summary-count">${NO_DATA_YET}</span>`;
+    return;
+  }
   const fixes = groupFixes(rows);
   const countFor = ri => fixes.filter(f => f.releases.has(ri)).length;
   const unchecked = rows.filter(r => !r.unvendored).map(r => r.label);
   const uncheckedNote = unchecked.length
     ? `${unchecked.join(', ')} ${unchecked.length === 1 ? "wasn't" : "weren't"} checked this week.` : '';
 
+  const closed = rows.map(r => branchClosed(r, view.chrome_stable));
+
+  // [count sentence, branch line (HTML)].
   function summaryFor(ri) {
     if (ri == null) {
       const missingIn = new Set(fixes.flatMap(f => [...f.releases.keys()]));
-      return [fixes.length
+      const shut = rows.filter((r, i) => closed[i]).map(r => r.label);
+      return [[fixes.length
           ? `${plural(fixes.length, 'fix', 'fixes')} missing from ${missingIn.size} of `
             + `${plural(rows.length - unchecked.length, 'release', 'releases')}.`
-          : '✓ Every release has every fix on its branch.', uncheckedNote].filter(Boolean).join(' ');
+          : '✓ Every release has every fix on its branch.', uncheckedNote].filter(Boolean).join(' '),
+        shut.length ? `${esc(andList(shut))} ${shut.length === 1 ? 'is' : 'are'} on closed Chrome branches.`
+          + ' ' + infoTip('Each release is counted against its own Chrome milestone branch. On a closed '
+          + 'branch, a low count means Chrome stopped merging fixes, not that the release has them all.') : ''];
     }
-    const r = rows[ri], n = countFor(ri);
-    if (!r.unvendored) return uncheckedNote;
-    return [n ? `${plural(n, 'fix', 'fixes')} missing from ${r.label}.`
-              : `✓ ${r.label} has every fix on its branch.`, uncheckedNote].filter(Boolean).join(' ');
+    const r = rows[ri], n = countFor(ri), u = r.unvendored, shut = closed[ri];
+    const total = u && u.branch_commits;
+    const all = total ? `all ${plural(total, 'fix', 'fixes')}` : 'every fix';
+    const count = !u ? '' : n ? `${plural(n, 'fix', 'fixes')} missing from ${r.label}.`
+      : `${shut ? '' : '✓ '}${r.label} has ${all} on its Chrome branch.`;
+    const date = u && u.last_merge ? esc(u.last_merge) : '';
+    let state;
+    if (shut) {
+      state = ['closed', date].filter(Boolean).join(' ')
+        + (u ? ". Later fixes aren't counted." : '') + ' ' + infoTip(CLOSED_TIP);
+    } else {
+      state = date ? `last fix ${date}` : 'open';
+    }
+    const branch = `Chrome branch: M${esc(r.milestone)} · ${branchLink(r.branch_head)} · ${state}`;
+    return [[count, uncheckedNote].filter(Boolean).join(' '), branch];
   }
 
   // Filter values are row indexes ("" = all), so labels need no escaping rules.
@@ -2306,7 +2350,10 @@ function renderLibwebrtcMissing(view) {
     list.querySelectorAll('.lw-fix').forEach(d => { d.hidden = value !== '' && !has(d); });
     list.querySelectorAll('.lw-chip').forEach(c => c.classList.toggle('is-match', c.dataset.release === value));
     list.querySelectorAll('.lw-fix-line').forEach(l => l.classList.toggle('is-match', value !== '' && has(l)));
-    summary.textContent = summaryFor(value === '' ? null : Number(value));
+    const [count, branch] = summaryFor(value === '' ? null : Number(value));
+    summary.innerHTML = `<span class="lw-summary-count">${esc(count)}</span>`
+      + (branch ? `<div class="lw-summary-branch">${branch}</div>` : '');
+    attachTooltips(summary);
   }
   filters.addEventListener('click', e => {
     const b = e.target.closest('.lw-filter');
@@ -2324,7 +2371,8 @@ function renderLibwebrtc(view) {
     // A count links to the list, filtered to this release.
     const n = r.unvendored ? fixes.filter(f => f.releases.has(ri)).length : null;
     const missing = n == null ? '<span title="Not checked this week">—</span>'
-      : n ? `<button type="button" class="lw-count" data-release="${ri}">${n}</button>` : '0';
+      : (n ? `<button type="button" class="lw-count" data-release="${ri}">${n}</button>` : '0')
+        + (branchClosed(r, view.chrome_stable) ? ' · branch closed' : '');
     return `<tr><td>${esc(r.label)}</td><td>${esc(r.firefox)}</td><td>M${esc(r.milestone)}</td>`
       + `<td>${branchLink(r.branch_head)}</td><td>${branched}</td>`
       + `<td>${esc(r.vs_chrome)}</td><td>${esc(r.patches ?? '—')}</td><td>${missing}</td>`
@@ -2466,8 +2514,7 @@ function renderLibwebrtcStack(stack) {
     }).filter(Boolean);
     const odd = unexplained(story).length;
     if (odd) clauses.push(`${odd} ${odd === 1 ? 'was' : 'were'} dropped outside an update`);
-    const dropped = clauses.length > 1
-      ? clauses.slice(0, -1).join(', ') + ' and ' + clauses[clauses.length - 1] : clauses[0];
+    const dropped = andList(clauses);
     const added = `${plural(story.added.length, 'new one was', 'new ones were')} added`;
     summary.textContent = `In ${monthName(story.month)} ` + (dropped ? `${dropped}; ${added}.` : `${added}.`);
   }

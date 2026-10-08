@@ -106,6 +106,22 @@ class TestIncompleteInputFails:
         with pytest.raises(RuntimeError):
             self._fetch(github_get=lambda p: [], get_text=lambda u: "{}", branched=None)
 
+    def test_reports_how_much_chrome_merged_and_when(self):
+        """A branch Chrome stopped merging to has few commits however
+        current a release is; the page needs both to say so."""
+        import json
+        log = {"log": [
+            {"commit": "b" * 40, "message": "[M117] Newer fix here\n",
+             "committer": {"time": "Tue Sep 05 18:36:55 2023"}},
+            {"commit": "a" * 40, "message": "[M117] Older fix here\n",
+             "committer": {"time": "Wed Aug 30 18:15:30 2023"}}]}
+        got = self._fetch(github_get=lambda p: [], get_text=lambda u: ")]}'\n" + json.dumps(log))
+        assert (got["branch_commits"], got["last_merge"]) == (2, "2023-09-05")
+
+    def test_an_empty_branch_has_no_last_merge(self):
+        got = self._fetch(github_get=lambda p: [], get_text=lambda u: ")]}'\n" + '{"log": []}')
+        assert (got["branch_commits"], got["last_merge"]) == (0, None)
+
     def test_an_empty_branch_log_needs_no_firefox_history(self):
         calls = []
         got = self._fetch(github_get=lambda p: calls.append(p) or [],

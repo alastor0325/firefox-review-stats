@@ -135,7 +135,10 @@ def _run_uncached(tmp_path, view):
             "headers": page.evaluate(
                 "() => [...document.querySelectorAll('#libwebrtc-section thead tr')]"
                 ".map(t => [...t.cells].map(c => c.textContent.trim()))"),
-            "missing_summary": text("#lw-missing-summary")[0],
+            "missing_summary": text("#lw-missing-summary .lw-summary-count")[0],
+            "missing_branch": page.evaluate(
+                "() => document.querySelector('#lw-missing-summary .lw-summary-branch')"
+                "?.textContent.replace(/\\s+/g, ' ').trim() ?? ''"),
             "missing_col": page.evaluate(
                 "() => [...document.querySelectorAll('#libwebrtc-rows tr')]"
                 ".map(t => t.cells[7].textContent.trim())"),
@@ -215,6 +218,10 @@ def _commit(c, subject, fix, role="landed"):
     return {"sha": c * 40, "subject": subject, "fix": fix, "role": role}
 
 
+def _branch(n, last):
+    return {"branch_commits": n, "last_merge": last}
+
+
 def _with_lists(view):
     """One fix on three trains (Beta and Release share M154), one on two, a
     land/revert/reland chain on ESR 115, a clear ESR 140, no data for ESR 153."""
@@ -223,13 +230,19 @@ def _with_lists(view):
     jsep = "JsepTransportController: Remove raw pointers to description objects"
     m154 = [_commit("b", f"[M154] {stopped}", stopped), _commit("c", f"[M154] {harden}", harden)]
     view["rows"] = [
-        {**base, "label": "Nightly", "unvendored": {"as_of": _iso(0), "commits": [
+        {**base, "label": "Nightly", "unvendored": {**_branch(4, _iso(-5)), "as_of": _iso(0), "commits": [
             _commit("a", f"[M155] {stopped}", stopped)]}},
-        {**base, "label": "Beta", "milestone": 154, "unvendored": {"as_of": _iso(0), "commits": m154}},
-        {**base, "label": "Release", "milestone": 154, "unvendored": {"as_of": _iso(0), "commits": m154}},
-        {**base, "label": "ESR 153", "milestone": 149, "unvendored": None},
-        {**base, "label": "ESR 140", "milestone": 135, "unvendored": {"as_of": _iso(0), "commits": []}},
-        {**base, "label": "ESR 115", "milestone": 120, "unvendored": {"as_of": _iso(-30), "commits": [
+        {**base, "label": "Beta", "milestone": 154, "branch_head": "branch-heads/8037",
+         "unvendored": {**_branch(5, "2026-10-05"), "as_of": _iso(0), "commits": m154}},
+        {**base, "label": "Release", "milestone": 154, "branch_head": "branch-heads/8037",
+         "unvendored": {**_branch(5, "2026-10-05"), "as_of": _iso(0), "commits": m154}},
+        {**base, "label": "ESR 153", "milestone": 149, "branch_head": "branch-heads/7827",
+         "unvendored": None},
+        {**base, "label": "ESR 140", "milestone": 135, "branch_head": "branch-heads/7049",
+         "unvendored": {**_branch(3, "2025-04-07"), "as_of": _iso(0), "commits": []}},
+        {**base, "label": "ESR 115", "milestone": 120, "branch_head": "branch-heads/6099",
+         # Written before branch_commits existed.
+         "unvendored": {"as_of": _iso(-30), "commits": [
             _commit("g", f'Revert^2 "[M120] {jsep}"', jsep, "relanded"),
             _commit("f", f'Revert "[M120] {jsep}"', jsep, "reverted"),
             _commit("e", f"[M120] {jsep}", jsep)]}},
@@ -251,6 +264,8 @@ def test_missing_fixes_are_one_foldable_list(tmp_path):
     assert state["fix_open"] == [False, False, False]
     assert state["missing_summary"] == ("3 fixes missing from 4 of 5 releases. "
                                         "ESR 153 wasn't checked this week.")
+    # Chrome stable is M154: M149 and older are no longer merged to.
+    assert state["missing_branch"] == "ESR 153, ESR 140 and ESR 115 are on closed Chrome branches."
 
 
 def test_an_expanded_fix_shows_each_release_and_commit(tmp_path):
@@ -265,7 +280,7 @@ def test_an_expanded_fix_shows_each_release_and_commit(tmp_path):
 
 def test_releases_table_counts_missing_fixes_per_release(tmp_path):
     state, _ = _run(tmp_path, _with_lists(_view()))
-    assert state["missing_col"] == ["1", "2", "2", "—", "0", "1"]
+    assert state["missing_col"] == ["1", "2", "2", "—", "0 · branch closed", "1 · branch closed"]
 
 
 def test_without_lists_the_section_says_so(tmp_path):
@@ -301,7 +316,11 @@ def test_each_fix_row_shows_it_folds(tmp_path):
 
 
 _LIST_STATE = """() => ({
-  summary: document.getElementById('lw-missing-summary').textContent,
+  summary: document.querySelector('#lw-missing-summary .lw-summary-count').textContent,
+  branch: document.querySelector('#lw-missing-summary .lw-summary-branch')?.textContent
+          .replace(/\s+/g, ' ').trim() ?? '',
+  branchLink: document.querySelector('#lw-missing-summary .lw-summary-branch a')?.href ?? '',
+  branchTip: document.querySelector('#lw-missing-summary .lw-summary-branch .info')?.dataset.tip ?? '',
   rows: [...document.querySelectorAll('.lw-fix')].filter(d => d.offsetParent)
           .map(d => d.querySelector('.lw-fix-subject').textContent),
   pressed: [...document.querySelectorAll('.lw-filter[aria-pressed="true"]')]
@@ -356,9 +375,17 @@ def test_a_release_filter_narrows_the_list(tmp_path):
     # The unchecked release stays mentioned whatever the filter.
     assert release["summary"] == ("2 fixes missing from Release. "
                                   "ESR 153 wasn't checked this week.")
+    # Which Chrome branch the count is against, and whether Chrome still merges to it.
+    assert release["branch"] == "Chrome branch: M154 · branch-heads/8037 · last fix 2026-10-05"
+    assert release["branchLink"].endswith("+log/refs/heads/main..refs/branch-heads/8037")
+    # A closed branch's 0 is not "fully patched": no ✓, and it says so.
     assert clear["rows"] == [] and clear["summary"].startswith(
-        "✓ ESR 140 has every fix on its branch.")
+        "ESR 140 has all 3 fixes on its Chrome branch.")
+    assert clear["branch"] == ("Chrome branch: M135 · branch-heads/7049 · closed 2025-04-07. "
+                               "Later fixes aren't counted.")
+    assert "only while it supports that milestone" in clear["branchTip"]
     assert unchecked["rows"] == [] and unchecked["summary"] == "ESR 153 wasn't checked this week."
+    assert unchecked["branch"] == "Chrome branch: M149 · branch-heads/7827 · closed"
     assert back["pressed"] == ["All"] and len(back["rows"]) == 3 and back["matched"] == ["", "", ""]
 
 
@@ -369,6 +396,8 @@ def test_the_tables_missing_count_applies_the_filter_and_moves_focus(tmp_path):
     assert after["pressed"] == ["ESR 115 1"]
     assert after["rows"] == ["JsepTransportController: Remove raw pointers to description objects"]
     assert after["focused"] == "ESR 115 1"
+    # Written before last_merge existed: no date, but still closed.
+    assert after["branch"] == "Chrome branch: M120 · branch-heads/6099 · closed. Later fixes aren't counted."
 
 
 def test_patch_stack_explains_itself(tmp_path):

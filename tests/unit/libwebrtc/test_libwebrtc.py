@@ -219,7 +219,7 @@ class TestProjectView:
             "commits": [{"sha": "a" * 40, "subject": "Fix A", "fix": "Fix A",
                          "role": "landed", "extra": 1}]}}
         assert project_view({**self.VIEW, "rows": [row]})["rows"][0]["unvendored"] == {
-            "as_of": "2026-10-05",
+            "as_of": "2026-10-05", "branch_commits": None, "last_merge": None,
             "commits": [{"sha": "a" * 40, "subject": "Fix A", "fix": "Fix A",
                          "role": "landed"}]}
 

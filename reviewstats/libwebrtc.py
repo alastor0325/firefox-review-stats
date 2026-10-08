@@ -99,7 +99,7 @@ _STACK_ADDED_FIELDS = ("subject", "absorbed")
 _STACK_DROPPED_FIELDS = ("subject", "absorbed", "update")
 _STACK_UPDATE_FIELDS = ("milestone", "bug", "date")
 RAW_URL = "https://raw.githubusercontent.com/{}/{}/{}/{}"
-_UNVENDORED_FIELDS = ("commits", "as_of")
+_UNVENDORED_FIELDS = ("commits", "as_of", "branch_commits", "last_merge")
 _UNVENDORED_COMMIT_FIELDS = ("sha", "subject", "fix", "role")
 
 
@@ -579,7 +579,10 @@ def _fetch_unvendored(github_get, get_text, *, ref: str, branch_head: str,
     else:
         if entries:
             raise RuntimeError(f"{ref} history exceeds {MAX_PAGES} pages")
-    return {"commits": unvendored_commits(entries, firefox), "as_of": today.isoformat()}
+    return {"commits": unvendored_commits(entries, firefox), "as_of": today.isoformat(),
+            # Gitiles lists newest first.
+            "branch_commits": len(entries),
+            "last_merge": gitiles_date(entries[0]["committer"]["time"]) if entries else None}
 
 
 def _guarded(get_text, on_error):
