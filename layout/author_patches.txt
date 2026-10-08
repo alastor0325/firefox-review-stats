@@ -1,8 +1,8 @@
 ==============================================================================
 LAYOUT-REVIEWERS AUTHOR-PATCH LISTING (raw author %an, no aliasing)
-Source: github.com/mozilla-firefox/firefox   Paths: layout   Since: 2026-04-10T22:08:04Z
+Source: github.com/mozilla-firefox/firefox   Paths: layout   Since: 2026-04-11T06:08:24Z
 Excluded paths: (none)
-Authors: 126    Patches: 1385    (Lando-format / Lando-author / merge / Revert commits already excluded)
+Authors: 126    Patches: 1394    (Lando-format / Lando-author / merge / Revert commits already excluded)
 ==============================================================================
 
 Known aliases (applied in HTML report, NOT below):
@@ -11,8 +11,11 @@ Known aliases (applied in HTML report, NOT below):
 
 ==============================================================================
 
-[ 1] Emilio Cobos Álvarez  —  318 patch(es)
+[ 1] Emilio Cobos Álvarez  —  321 patch(es)
     ----------------------------------------------------------------------
+      2026-10-07  0c14f089ccb3  Bug 2072310 - Only walk across fragments for some callers of GetNextRow(). r=layout-reviewers,dshin
+      2026-10-07  b0af5bf7cd94  Bug 2076268 - Don't create an unnecessary style scope from AddCounterChanges. r=layout-reviewers,dshin
+      2026-10-07  84edf83684a2  Bug 2076268 - Simplify nsGenConInitializer. r=layout-reviewers,dshin
       2026-10-01  a7825fd3129f  Bug 2077170 - Remove legacy masonry syntax. r=layout-reviewers,firefox-style-system-reviewers,dholbert,dshin
       2026-10-01  541495e265ec  Bug 2077030 - Reset zoom level across crashtests. r=layout-reviewers,dshin
       2026-09-30  cf90232f2f7c  Bug 2075197 - Allow a crashtest to assert more.
@@ -332,8 +335,9 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-13  d9ccddbe9d55  Bug 2031110 - Remove padding: inherit from scrolled content pseudos. r=jwatt
       2026-04-11  5739ff900f02  Bug 2031065 - More cleanly destroy objects in nsDocumentViewer. r=layout-reviewers,dholbert
 
-[ 2] Jan Varga  —  101 patch(es)
+[ 2] Jan Varga  —  102 patch(es)
     ----------------------------------------------------------------------
+      2026-10-07  a6bc7652b488  Bug 2079188 - Expose the CSS namespace in workers and worklets behind a preference; r=emilio,webidl,firefox-style-system-reviewers
       2026-09-24  68fd3a4c02b8  Bug 2075135 - Complete the CSSTransformValue implementation; r=emilio,firefox-style-system-reviewers
       2026-09-22  5813645774ce  Bug 2074503 - Implement CSSNumericValue.equals(); r=firefox-style-system-reviewers,dshin
       2026-09-10  e33f4ef93182  Bug 2057579 - Complete the CSSMatrixComponent and CSSTransformComponent implementations; r=emilio,firefox-style-system-reviewers
@@ -928,7 +932,36 @@ Known aliases (applied in HTML report, NOT below):
       2026-05-06  168ad02b97cb  Bug 2036815 - Properly handle stretch_size when it is larger than the prim local rect. r=gw
       2026-05-06  502d0b7180cb  Bug 2036815 - Properly handle stretch_size when it is larger than the prim local rect. r=gw
 
-[12] Nicolas Chevobbe  —  26 patch(es)
+[12] Daniel Holbert  —  26 patch(es)
+    ----------------------------------------------------------------------
+      2026-10-07  8e18f67fb66f  Bug 2079026: When applying size-containment from content-visibility, more-robustly check whether we already have size-containment. r=layout-reviewers,firefox-style-system-reviewers,emilio
+      2026-09-30  4a3e4ad49863  Bug 2076619: Properly handle the case where both 'grid-template-rows' and 'grid-template-columns' are set in a grid-lanes container. r=layout-reviewers,emilio
+      2026-09-24  116e11256aae  Bug 2075399: Remove one remaining usage of now-removed pref 'dom.viewTransitions.enabled'. r=layout-reviewers,firefox-style-system-reviewers,emilio
+      2026-08-30  690bf4bda3b1  Bug 2065438: Simplify annotations for 446100-1* reftests to just depend on useDrawSnapshot.
+      2026-08-19  7bfc01b46c33  Bug 2064464: Modernize css error reporter to use StaticRefPtr. r=layout-reviewers,TYLin
+      2026-08-06  0f2de4e4e80f  Bug 2056804: Maintain a count of content-visibility:hidden frames, to optimize away provably-unnecessary searches for such frames. r=layout-reviewers,emilio
+      2026-08-05  6a1779dd7e94  Bug 2060970: Use range-based for-loop (and avoid unnecessary refcount traffic) in PresShell::MaybeReflowForInflationScreenSizeChange(). r=layout-reviewers,dshin
+      2026-08-05  7e13dea1e55d  Bug 2060925: Move the aDefaultAnchorValid check earlier in GetAutoResolutionOverrideParams. r=layout-reviewers,firefox-style-system-reviewers,dshin
+      2026-07-27  06b6d4fe57bd  Bug 2054354: Properly handle case where inline axis is bottom-to-top when drawing fragmented borders. r=layout-reviewers,TYLin
+      2026-06-05  3879f16d18d2  Bug 2044510: Pass already_AddRefed types by-value instead of by rvalue reference, in layout/. r=layout-reviewers,firefox-style-system-reviewers,emilio
+      2026-06-02  170fd532843a  Bug 2022056: Extend printpreview_helper.xhtml mochitest file to include some tests for PDFs. r=AlaskanEmily,layout-reviewers
+      2026-05-12  9c0ef373b0e0  Bug 2038723: Use MakeRefPtr to do allocation for local RefPtr variables, in layout. r=layout-reviewers,firefox-style-system-reviewers,firefox-svg-reviewers,dshin
+      2026-05-11  09af591d4df7  Bug 2038767: Use GetOrCreateDeletableProperty in a few more places. r=layout-reviewers,firefox-svg-reviewers,longsonr,emilio
+      2026-05-11  edd61684e616  Bug 2037700: Use MakeRefPtr and MakeAndAddRef instead of 'new' to allocate gfxDrawable instances. r=media-playback-reviewers,layout-reviewers,emilio,padenot
+      2026-05-07  47356193e7e2  Bug 2037693: Use MakeAndAddRef instead of 'new' to construct objects stored in local nsCOMPtrs, in various places in layout. r=layout-reviewers,jfkthame
+      2026-05-07  10725540f638  Bug 2037754: Use 'MakeAndAddRef' instead of 'new' when allocating runnable for nsContentUtils::AddScriptRunner. r=dom-core,smaug
+      2026-05-07  4171b65e29b5  Bug 2037633: Switch to use do_AddRef(new) to allocate nsXULPopupManager::sInstance, so that we don't need a friend declaration. r=layout-reviewers,dshin,TYLin
+      2026-05-06  b9eb620914f1  Bug 2036982: Use MakeAndAddRef to replace some new/forget() patterns in layout/style. r=layout-reviewers,firefox-style-system-reviewers,emilio
+      2026-05-06  1d19a6df137d  Bug 2036984: Allocate reference-counted objects with MakeRefPtr instead of 'new', in layout/style. r=layout-reviewers,firefox-style-system-reviewers,emilio
+      2026-05-06  c3379cae265a  Bug 2036979: Use "return do_AddRef(new ...)" pattern in VsyncRefreshDriverTimer factory methods. r=smaug
+      2026-05-06  8ce7475f6e84  Bug 2036989: Use GetOrCreateDeletableProperty to reduce manual 'new' invocations in layout code. r=layout-reviewers,emilio
+      2026-05-05  21a484138a9c  Bug 2036981: Modernize nsXULPopupManager::sInstance to use StaticRefPtr. r=layout-reviewers,emilio
+      2026-05-05  300ed0d12a96  Bug 2036989: Use GetOrCreateDeletableProperty to reduce manual 'new' invocations in layout code. r=layout-reviewers,emilio
+      2026-05-05  955f0ef9403c  Bug 2036951: Allocate reference-counted objects for nsCOMPtr variables using MakeAndAddRef, in various places within layout. r=layout-reviewers,TYLin
+      2026-05-05  f67f00d37288  Bug 2036951: Use 'MakeRefPtr' instead of 'new' to allocate reference-counted objects, in various places within layout. r=layout-reviewers,TYLin
+      2026-04-20  b51b546abec0  Bug 2028537: Add null-check to gracefully handle missing IBSplitSibling(). r=layout-reviewers,emilio
+
+[13] Nicolas Chevobbe  —  26 patch(es)
     ----------------------------------------------------------------------
       2026-10-06  e83eb2f74fe0  Bug 2072512 - [devtools] Fix InspectorUtils.valueMatchesSyntax() when value is using random(). r=layout-reviewers,devtools-reviewers,firefox-style-system-reviewers,dshin,jdescottes
       2026-09-22  e3dd2875dd54  Bug 2074405 - Accept simple dimension and percentage expressions in Servo_GetComputationSteps. r=layout-reviewers,firefox-style-system-reviewers,emilio.
@@ -957,35 +990,34 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-17  a62e813ba162  Bug 2032064 - Implement nsComputedDOMStyle::HasLonghandProperty. r=layout-reviewers,firefox-style-system-reviewers,emilio.
       2026-04-13  eb5d6789adf4  Bug 2030693 - [devtools] Add chrome-only CSSContainerRule#queryConditionMatchesElement. r=layout-reviewers,webidl,firefox-style-system-reviewers,emilio.
 
-[13] Daniel Holbert  —  25 patch(es)
+[14] Seva Alipov  —  24 patch(es)
     ----------------------------------------------------------------------
-      2026-09-30  4a3e4ad49863  Bug 2076619: Properly handle the case where both 'grid-template-rows' and 'grid-template-columns' are set in a grid-lanes container. r=layout-reviewers,emilio
-      2026-09-24  116e11256aae  Bug 2075399: Remove one remaining usage of now-removed pref 'dom.viewTransitions.enabled'. r=layout-reviewers,firefox-style-system-reviewers,emilio
-      2026-08-30  690bf4bda3b1  Bug 2065438: Simplify annotations for 446100-1* reftests to just depend on useDrawSnapshot.
-      2026-08-19  7bfc01b46c33  Bug 2064464: Modernize css error reporter to use StaticRefPtr. r=layout-reviewers,TYLin
-      2026-08-06  0f2de4e4e80f  Bug 2056804: Maintain a count of content-visibility:hidden frames, to optimize away provably-unnecessary searches for such frames. r=layout-reviewers,emilio
-      2026-08-05  6a1779dd7e94  Bug 2060970: Use range-based for-loop (and avoid unnecessary refcount traffic) in PresShell::MaybeReflowForInflationScreenSizeChange(). r=layout-reviewers,dshin
-      2026-08-05  7e13dea1e55d  Bug 2060925: Move the aDefaultAnchorValid check earlier in GetAutoResolutionOverrideParams. r=layout-reviewers,firefox-style-system-reviewers,dshin
-      2026-07-27  06b6d4fe57bd  Bug 2054354: Properly handle case where inline axis is bottom-to-top when drawing fragmented borders. r=layout-reviewers,TYLin
-      2026-06-05  3879f16d18d2  Bug 2044510: Pass already_AddRefed types by-value instead of by rvalue reference, in layout/. r=layout-reviewers,firefox-style-system-reviewers,emilio
-      2026-06-02  170fd532843a  Bug 2022056: Extend printpreview_helper.xhtml mochitest file to include some tests for PDFs. r=AlaskanEmily,layout-reviewers
-      2026-05-12  9c0ef373b0e0  Bug 2038723: Use MakeRefPtr to do allocation for local RefPtr variables, in layout. r=layout-reviewers,firefox-style-system-reviewers,firefox-svg-reviewers,dshin
-      2026-05-11  09af591d4df7  Bug 2038767: Use GetOrCreateDeletableProperty in a few more places. r=layout-reviewers,firefox-svg-reviewers,longsonr,emilio
-      2026-05-11  edd61684e616  Bug 2037700: Use MakeRefPtr and MakeAndAddRef instead of 'new' to allocate gfxDrawable instances. r=media-playback-reviewers,layout-reviewers,emilio,padenot
-      2026-05-07  47356193e7e2  Bug 2037693: Use MakeAndAddRef instead of 'new' to construct objects stored in local nsCOMPtrs, in various places in layout. r=layout-reviewers,jfkthame
-      2026-05-07  10725540f638  Bug 2037754: Use 'MakeAndAddRef' instead of 'new' when allocating runnable for nsContentUtils::AddScriptRunner. r=dom-core,smaug
-      2026-05-07  4171b65e29b5  Bug 2037633: Switch to use do_AddRef(new) to allocate nsXULPopupManager::sInstance, so that we don't need a friend declaration. r=layout-reviewers,dshin,TYLin
-      2026-05-06  b9eb620914f1  Bug 2036982: Use MakeAndAddRef to replace some new/forget() patterns in layout/style. r=layout-reviewers,firefox-style-system-reviewers,emilio
-      2026-05-06  1d19a6df137d  Bug 2036984: Allocate reference-counted objects with MakeRefPtr instead of 'new', in layout/style. r=layout-reviewers,firefox-style-system-reviewers,emilio
-      2026-05-06  c3379cae265a  Bug 2036979: Use "return do_AddRef(new ...)" pattern in VsyncRefreshDriverTimer factory methods. r=smaug
-      2026-05-06  8ce7475f6e84  Bug 2036989: Use GetOrCreateDeletableProperty to reduce manual 'new' invocations in layout code. r=layout-reviewers,emilio
-      2026-05-05  21a484138a9c  Bug 2036981: Modernize nsXULPopupManager::sInstance to use StaticRefPtr. r=layout-reviewers,emilio
-      2026-05-05  300ed0d12a96  Bug 2036989: Use GetOrCreateDeletableProperty to reduce manual 'new' invocations in layout code. r=layout-reviewers,emilio
-      2026-05-05  955f0ef9403c  Bug 2036951: Allocate reference-counted objects for nsCOMPtr variables using MakeAndAddRef, in various places within layout. r=layout-reviewers,TYLin
-      2026-05-05  f67f00d37288  Bug 2036951: Use 'MakeRefPtr' instead of 'new' to allocate reference-counted objects, in various places within layout. r=layout-reviewers,TYLin
-      2026-04-20  b51b546abec0  Bug 2028537: Add null-check to gracefully handle missing IBSplitSibling(). r=layout-reviewers,emilio
+      2026-10-07  067e028626bf  Bug 2057345: No longer ignore block-ellipsis in line-clamp containers. r=layout-reviewers,dshin
+      2026-10-07  9903eebfc8a8  Bug 2057345: No longer ignore block-ellipsis in line-clamp containers. r=layout-reviewers,dshin
+      2026-09-28  41eb98d6e3ad  Bug 2075419: Fix assertion failure in line-clamp containers with 0-height non-empty lines. r=layout-reviewers,emilio
+      2026-09-28  48224bb2ad2f  Bug 2029784: Ensure frame table is valid after adjusting selection r=layout-reviewers,dshin
+      2026-09-24  315a7d55313c  Bug 2029784: Ensure frame table is valid after adjusting selection r=layout-reviewers,dshin
+      2026-09-22  c059228ee485  Bug 2045846: Fix CSS zoom for translations. r=layout-reviewers,firefox-style-system-reviewers,emilio,dshin
+      2026-09-18  3b6da5ad431b  Bug 2045846: Fix CSS zoom for translations. r=layout-reviewers,firefox-style-system-reviewers,emilio,dshin
+      2026-09-14  5e6e95317564  Bug 2066625: For automatic line clamping, containers now respect descendants' min-height. r=layout-reviewers,dshin
+      2026-09-04  56b246655ff3  Bug 2043002: Implement the automatic, container size based line clamping for css line-clamp. r=layout-reviewers,dshin
+      2026-09-03  c5b375897eb7  Bug 2043002: Implement the automatic, container size based line clamping for css line-clamp. r=layout-reviewers,dshin
+      2026-09-03  51cdaf975231  Bug 2043002: Implement the automatic, container size based line clamping for css line-clamp. r=layout-reviewers,dshin
+      2026-08-07  9f7519efb8a7  Bug 1998331: Making button element selectable by default r=dholbert,firefox-style-system-reviewers,emilio,devtools-reviewers,layout-reviewers,dshin,nchevobbe
+      2026-08-07  042bed283e8c  Bug 1998331: Making button element selectable by default r=dholbert,firefox-style-system-reviewers,emilio,devtools-reviewers,layout-reviewers,dshin,nchevobbe
+      2026-08-05  f3477aafb445  Bug 1998331: Making button element selectable by default r=dholbert,firefox-style-system-reviewers,emilio,devtools-reviewers,layout-reviewers,dshin,nchevobbe
+      2026-07-20  0e084adab846  Bug 2042999: Enable non-legacy line-clamp to work without special values. r=firefox-style-system-reviewers,layout-reviewers,dshin,AlaskanEmily
+      2026-07-17  4f7b9ecf4798  Bug 2042999: Enable non-legacy line-clamp to work without special values. r=firefox-style-system-reviewers,layout-reviewers,dshin,AlaskanEmily
+      2026-07-16  ea62ecf45c24  Bug 1799494: Fix bottom baseline alignment for webkit-line-clamp containers. r=layout-reviewers,diegociudadreale,dshin
+      2026-07-16  1df279cb00ed  Bug 1799494: Fix bottom baseline alignment for webkit-line-clamp containers. r=layout-reviewers,diegociudadreale,dshin
+      2026-07-15  18ab816cf834  Bug 1799494: Fix bottom baseline alignment for webkit-line-clamp containers. r=layout-reviewers,diegociudadreale,dshin
+      2026-06-09  c240063f8024  Bug 1927699: Prevent <br> from having its own block size via its own line-height or font properties. r=firefox-style-system-reviewers,layout-reviewers,dshin
+      2026-06-08  4f6218c8fe54  Bug 1927186: Alternative approach, fixing matrix zoom upsteam. r=firefox-style-system-reviewers,layout-reviewers,emilio,dshin
+      2026-05-15  cd12b86811cc  Bug 2039704: Remove unneeded selectors for buttons. r=emilio,firefox-style-system-reviewers
+      2026-05-12  710971a5762c  Bug 2039029: Changed a UniquePtr return to be more idiomatic. r=dholbert,layout-reviewers
+      2026-05-12  54674578ab26  Bug 1567317: Added testcases for CSS deleteRule() with invalid index. r=layout-reviewers,firefox-style-system-reviewers,dshin
 
-[14] Keith Cirkel  —  23 patch(es)
+[15] Keith Cirkel  —  23 patch(es)
     ----------------------------------------------------------------------
       2026-09-03  3b182041b584  Bug 2068709 - Count listbox rows from the DOM's option list r=emilio,layout-reviewers
       2026-08-23  629b57335e42  Bug 2065649 - Build option list by deeply traversing select subtree r=emilio,firefox-style-system-reviewers,layout-reviewers
@@ -1010,31 +1042,6 @@ Known aliases (applied in HTML report, NOT below):
       2026-05-18  156e44f134d6  Bug 2012698 - Part 3 - Introduce UA styles for button>select r=layout-reviewers,firefox-style-system-reviewers,dshin
       2026-05-05  e4e3c6dc79c2  Bug 2012698 - Part 3 - Introduce UA styles for button>select r=layout-reviewers,firefox-style-system-reviewers,dshin
       2026-04-12  5ae01c480e5d  Bug 1977176 - Part 1: Ensure change hint for field-sizing reflows size r=emilio
-
-[15] Seva Alipov  —  22 patch(es)
-    ----------------------------------------------------------------------
-      2026-09-28  41eb98d6e3ad  Bug 2075419: Fix assertion failure in line-clamp containers with 0-height non-empty lines. r=layout-reviewers,emilio
-      2026-09-28  48224bb2ad2f  Bug 2029784: Ensure frame table is valid after adjusting selection r=layout-reviewers,dshin
-      2026-09-24  315a7d55313c  Bug 2029784: Ensure frame table is valid after adjusting selection r=layout-reviewers,dshin
-      2026-09-22  c059228ee485  Bug 2045846: Fix CSS zoom for translations. r=layout-reviewers,firefox-style-system-reviewers,emilio,dshin
-      2026-09-18  3b6da5ad431b  Bug 2045846: Fix CSS zoom for translations. r=layout-reviewers,firefox-style-system-reviewers,emilio,dshin
-      2026-09-14  5e6e95317564  Bug 2066625: For automatic line clamping, containers now respect descendants' min-height. r=layout-reviewers,dshin
-      2026-09-04  56b246655ff3  Bug 2043002: Implement the automatic, container size based line clamping for css line-clamp. r=layout-reviewers,dshin
-      2026-09-03  c5b375897eb7  Bug 2043002: Implement the automatic, container size based line clamping for css line-clamp. r=layout-reviewers,dshin
-      2026-09-03  51cdaf975231  Bug 2043002: Implement the automatic, container size based line clamping for css line-clamp. r=layout-reviewers,dshin
-      2026-08-07  9f7519efb8a7  Bug 1998331: Making button element selectable by default r=dholbert,firefox-style-system-reviewers,emilio,devtools-reviewers,layout-reviewers,dshin,nchevobbe
-      2026-08-07  042bed283e8c  Bug 1998331: Making button element selectable by default r=dholbert,firefox-style-system-reviewers,emilio,devtools-reviewers,layout-reviewers,dshin,nchevobbe
-      2026-08-05  f3477aafb445  Bug 1998331: Making button element selectable by default r=dholbert,firefox-style-system-reviewers,emilio,devtools-reviewers,layout-reviewers,dshin,nchevobbe
-      2026-07-20  0e084adab846  Bug 2042999: Enable non-legacy line-clamp to work without special values. r=firefox-style-system-reviewers,layout-reviewers,dshin,AlaskanEmily
-      2026-07-17  4f7b9ecf4798  Bug 2042999: Enable non-legacy line-clamp to work without special values. r=firefox-style-system-reviewers,layout-reviewers,dshin,AlaskanEmily
-      2026-07-16  ea62ecf45c24  Bug 1799494: Fix bottom baseline alignment for webkit-line-clamp containers. r=layout-reviewers,diegociudadreale,dshin
-      2026-07-16  1df279cb00ed  Bug 1799494: Fix bottom baseline alignment for webkit-line-clamp containers. r=layout-reviewers,diegociudadreale,dshin
-      2026-07-15  18ab816cf834  Bug 1799494: Fix bottom baseline alignment for webkit-line-clamp containers. r=layout-reviewers,diegociudadreale,dshin
-      2026-06-09  c240063f8024  Bug 1927699: Prevent <br> from having its own block size via its own line-height or font properties. r=firefox-style-system-reviewers,layout-reviewers,dshin
-      2026-06-08  4f6218c8fe54  Bug 1927186: Alternative approach, fixing matrix zoom upsteam. r=firefox-style-system-reviewers,layout-reviewers,emilio,dshin
-      2026-05-15  cd12b86811cc  Bug 2039704: Remove unneeded selectors for buttons. r=emilio,firefox-style-system-reviewers
-      2026-05-12  710971a5762c  Bug 2039029: Changed a UniquePtr return to be more idiomatic. r=dholbert,layout-reviewers
-      2026-05-12  54674578ab26  Bug 1567317: Added testcases for CSS deleteRule() with invalid index. r=layout-reviewers,firefox-style-system-reviewers,dshin
 
 [16] Sylvestre Ledru  —  21 patch(es)
     ----------------------------------------------------------------------
@@ -1108,7 +1115,27 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-24  07304c9f2625  Bug 2033987 - Remove unused include of <inttypes.h> r=dom-storage-reviewers,firefox-style-system-reviewers,emilio,jari
       2026-04-23  4bb4610739cb  Bug 2033982 - Remove unused include of <iostream> r=necko-reviewers,layout-reviewers,emilio,valentin
 
-[19] Tiaan Louw  —  17 patch(es)
+[19] Katherine Ye  —  17 patch(es)
+    ----------------------------------------------------------------------
+      2026-10-07  9e4be729605c  Bug 2043007 - Continue display-list traversal after line clamping for visible out-of-flow descendants. r=dshin,layout-reviewers
+      2026-10-05  48a357a3441b  Bug 2043007 - Continue display-list traversal after line clamping for visible out-of-flow descendants. r=dshin,layout-reviewers
+      2026-09-25  63aaea311e6c  Bug 2068458 - Keep text frame continuation offsets consistent when setting first letter length. r=layout-reviewers,jfkthame
+      2026-09-01  bc6b2cdc1eec  Bug 2063759 - Avoid line-clamp style adjustment for displays that aren't block/inline. r=firefox-style-system-reviewers,emilio,layout-reviewers
+      2026-08-20  c0e30ee6b7d3  Bug 2063759 - Avoid line-clamp style adjustment for displays that aren't block/inline. r=firefox-style-system-reviewers,emilio,layout-reviewers
+      2026-08-18  b5762f7765ac  Bug 2063759 - Avoid line-clamp style adjustment for displays that aren't block/inline. r=firefox-style-system-reviewers,emilio,layout-reviewers
+      2026-08-11  53756688f4c0  Bug 2062219 - Store text overflow marker string in a RefPtr. r=dshin,layout-reviewers,emilio
+      2026-08-07  ddfdc8ab4d56  Bug 2043000 - Support block-ellipsis values for line-clamp markers. r=dshin,layout-reviewers
+      2026-08-05  1e047fb768e6  Bug 2042994 - Parse and serialize -webkit-line-clamp as a legacy shorthand for line-clamp. r=AlaskanEmily,dshin,firefox-style-system-reviewers,emilio
+      2026-08-04  4889e720448b  Bug 2042994 - Parse and serialize -webkit-line-clamp as a legacy shorthand for line-clamp. r=AlaskanEmily,dshin,firefox-style-system-reviewers,emilio
+      2026-08-04  755cab013ee2  Bug 2042994 - Parse and serialize -webkit-line-clamp as a legacy shorthand for line-clamp. r=AlaskanEmily,dshin,firefox-style-system-reviewers,emilio
+      2026-07-31  5242e6d6546a  Bug 2043000 - Support block-ellipsis values for line-clamp markers. r=dshin,layout-reviewers
+      2026-07-28  ccb424375c83  Bug 2042994 - Parse and serialize -webkit-line-clamp as a legacy shorthand for line-clamp. r=dshin,firefox-style-system-reviewers,emilio
+      2026-07-20  b331de106889  Bug 1924567 - Remove unobservable-document constraints from plaintext layout styles. r=AlaskanEmily,firefox-style-system-reviewers,emilio,layout-reviewers
+      2026-07-14  dc7f1346c1e9  Bug 2042986 - Add pref-gated parsing for line-clamp longhand. r=dshin,firefox-style-system-reviewers,layout-reviewers,emilio
+      2026-07-10  6f07be87811b  Bug 1924567 - Remove unobservable-document constraints from plaintext layout styles. r=firefox-style-system-reviewers,emilio
+      2026-06-22  5733aee5f334  Bug 1762458 - Fix grid abspos fragmentainer reflow by using full grid block size for containing block. Modify meta and add new test cases for 3 columns and grid gap. r=AlaskanEmily
+
+[20] Tiaan Louw  —  17 patch(es)
     ----------------------------------------------------------------------
       2026-09-25  5a991196e742  Bug 1995348 - Implement the "grid-lanes" value for the "display" property r=layout-reviewers,firefox-style-system-reviewers,dholbert,emilio
       2026-09-24  0cee93c68c01  Bug 1995348 - Implement the "grid-lanes" value for the "display" property r=layout-reviewers,firefox-style-system-reviewers,dholbert,emilio
@@ -1127,25 +1154,6 @@ Known aliases (applied in HTML report, NOT below):
       2026-06-02  aa4033b3f8f0  Bug 1974792 - Implement ::checkmark pseudo selector for customizable select r=layout-reviewers,devtools-reviewers,firefox-style-system-reviewers,emilio,nchevobbe
       2026-06-01  3e903c86a3b1  Bug 1974792 - Implement ::checkmark pseudo selector for customizable select r=layout-reviewers,devtools-reviewers,firefox-style-system-reviewers,emilio,nchevobbe
       2026-06-01  498b28b9e5d7  Bug 1974792 - Implement ::checkmark pseudo selector for customizable select r=layout-reviewers,devtools-reviewers,firefox-style-system-reviewers,emilio,nchevobbe
-
-[20] Katherine Ye  —  16 patch(es)
-    ----------------------------------------------------------------------
-      2026-10-05  48a357a3441b  Bug 2043007 - Continue display-list traversal after line clamping for visible out-of-flow descendants. r=dshin,layout-reviewers
-      2026-09-25  63aaea311e6c  Bug 2068458 - Keep text frame continuation offsets consistent when setting first letter length. r=layout-reviewers,jfkthame
-      2026-09-01  bc6b2cdc1eec  Bug 2063759 - Avoid line-clamp style adjustment for displays that aren't block/inline. r=firefox-style-system-reviewers,emilio,layout-reviewers
-      2026-08-20  c0e30ee6b7d3  Bug 2063759 - Avoid line-clamp style adjustment for displays that aren't block/inline. r=firefox-style-system-reviewers,emilio,layout-reviewers
-      2026-08-18  b5762f7765ac  Bug 2063759 - Avoid line-clamp style adjustment for displays that aren't block/inline. r=firefox-style-system-reviewers,emilio,layout-reviewers
-      2026-08-11  53756688f4c0  Bug 2062219 - Store text overflow marker string in a RefPtr. r=dshin,layout-reviewers,emilio
-      2026-08-07  ddfdc8ab4d56  Bug 2043000 - Support block-ellipsis values for line-clamp markers. r=dshin,layout-reviewers
-      2026-08-05  1e047fb768e6  Bug 2042994 - Parse and serialize -webkit-line-clamp as a legacy shorthand for line-clamp. r=AlaskanEmily,dshin,firefox-style-system-reviewers,emilio
-      2026-08-04  4889e720448b  Bug 2042994 - Parse and serialize -webkit-line-clamp as a legacy shorthand for line-clamp. r=AlaskanEmily,dshin,firefox-style-system-reviewers,emilio
-      2026-08-04  755cab013ee2  Bug 2042994 - Parse and serialize -webkit-line-clamp as a legacy shorthand for line-clamp. r=AlaskanEmily,dshin,firefox-style-system-reviewers,emilio
-      2026-07-31  5242e6d6546a  Bug 2043000 - Support block-ellipsis values for line-clamp markers. r=dshin,layout-reviewers
-      2026-07-28  ccb424375c83  Bug 2042994 - Parse and serialize -webkit-line-clamp as a legacy shorthand for line-clamp. r=dshin,firefox-style-system-reviewers,emilio
-      2026-07-20  b331de106889  Bug 1924567 - Remove unobservable-document constraints from plaintext layout styles. r=AlaskanEmily,firefox-style-system-reviewers,emilio,layout-reviewers
-      2026-07-14  dc7f1346c1e9  Bug 2042986 - Add pref-gated parsing for line-clamp longhand. r=dshin,firefox-style-system-reviewers,layout-reviewers,emilio
-      2026-07-10  6f07be87811b  Bug 1924567 - Remove unobservable-document constraints from plaintext layout styles. r=firefox-style-system-reviewers,emilio
-      2026-06-22  5733aee5f334  Bug 1762458 - Fix grid abspos fragmentainer reflow by using full grid block size for containing block. Modify meta and add new test cases for 3 columns and grid gap. r=AlaskanEmily
 
 [21] Leo Tenenbaum  —  15 patch(es)
     ----------------------------------------------------------------------
@@ -1441,81 +1449,82 @@ Known aliases (applied in HTML report, NOT below):
       2026-05-26  32d4a0ef7d6f  Bug 2038250 - Fork media-query-no-invalid stylelint rule to allow -moz-pref. r=hjones,desktop-theme-reviewers,firefox-style-system-reviewers,emilio
       2026-05-13  bca5d1f7e072  Bug 2038250 - Fork media-query-no-invalid stylelint rule to allow -moz-pref. r=hjones,desktop-theme-reviewers,firefox-style-system-reviewers,emilio
 
-[51] Lee Salzman  —  3 patch(es)
+[51] Jens Stutte  —  3 patch(es)
+    ----------------------------------------------------------------------
+      2026-10-07  1a53414f0e96  Bug 2066416 - Add a lowest priority class to TaskController. r=smaug
+      2026-10-06  6c90f0f6e830  Bug 2051892 - Disable the navigation rate limit for the WebGL conformance mochitests. r=firefox-style-system-reviewers,farre,emilio
+      2026-10-05  53db12495bc2  Bug 1726898 - Share the atomic refcount decrement and annotate its acquire for TSan. r=xpcom-reviewers,mfbt-reviewers,firefox-style-system-reviewers,emilio
+
+[52] Lee Salzman  —  3 patch(es)
     ----------------------------------------------------------------------
       2026-05-30  0f156170c30f  Bug 2042256 - Adjust fuzz for Skia m149. r=gfx-reviewers,media-playback-reviewers,nical,aosmond
       2026-05-27  33c3a75ca730  Bug 2042256 - Adjust fuzz for Skia m149. r=gfx-reviewers,media-playback-reviewers,nical,aosmond
       2026-05-27  9f7788214070  Bug 2042256 - Adjust fuzz for Skia m149. r=gfx-reviewers,media-playback-reviewers,nical,aosmond
 
-[52] Ryan Curran  —  3 patch(es)
+[53] Ryan Curran  —  3 patch(es)
     ----------------------------------------------------------------------
       2026-05-29  d51f90c6573d  Bug 2037084 - Enable crashtest (opt) on macosx1500-aarch64-vms r=media-playback-reviewers,webrtc-reviewers,bwc,padenot
       2026-05-08  10ff8c9be80d  Bug 2034604 - Migrate low-risk test suites from macosx1470-64 to macosx1500-aarch64 r=aryx,layout-reviewers,emilio
       2026-04-29  143b508425d4  Bug 2034604 - run macOS mochitests on AArch64 r=aryx,devtools-reviewers,jdescottes,media-playback-reviewers,padenot
 
-[53] Ryan VanderMeulen  —  3 patch(es)
+[54] Ryan VanderMeulen  —  3 patch(es)
     ----------------------------------------------------------------------
       2026-04-23  6ac745a048bf  Bug 1991653 - Fix race in layout/svg/crashtests/1758029-1.html where go() can be undefined when img onload fires. r=dholbert
       2026-04-21  26cade81c20c  Bug 1979253 - Fix pre-existing Android accessibility crashtest failures. r=accessibility-platform-reviewers,eeejay
       2026-04-13  6533ad405c87  Bug 2031093 - Fix various "supress" typos in the codebase. r=necko-reviewers,geckoview-reviewers,Gijs,hiro,nalexander
 
-[54] hannajones  —  3 patch(es)
+[55] hannajones  —  3 patch(es)
     ----------------------------------------------------------------------
       2026-09-01  3b09a9f7dc3c  Bug 2062795 - tweak checkbox and radio styles for Nova r=emilio,layout-reviewers
       2026-08-31  e1ddca80fdaa  Bug 2062795 - tweak checkbox and radio styles for Nova r=emilio,layout-reviewers
       2026-08-26  368606ece148  Bug 2062795 - tweak checkbox and radio styles for Nova r=emilio,layout-reviewers
 
-[55] mayankleoboy1  —  3 patch(es)
+[56] mayankleoboy1  —  3 patch(es)
     ----------------------------------------------------------------------
       2026-08-26  069a1bcec3c4  Bug 2066856 - Bug 1850626 - Read the docshell's CSS error reporting flag directly. r=firefox-style-system-reviewers,emilio
       2026-08-22  60b973acdc6c  Bug 2052629 - Remove unused nsSelectsAreaFrame from FrameClasses.py r=layout-reviewers,emilio
       2026-08-20  7c518c648ee0  Bug 1968416 - Collapse to the focused node's start directly on focus move. r=masayuki,layout-reviewers,emilio
 
-[56] tannal  —  3 patch(es)
+[57] tannal  —  3 patch(es)
     ----------------------------------------------------------------------
       2026-09-14  6b3a08b9e13b  Bug 2067526 - Avoid integer overflow when layouting mpadded using voffset or lspace. r=emilio,layout-reviewers
       2026-07-27  cadda9dc89d6  Bug 2057406 - Implement StylePropertyMap.delete in CSS Typed OM r=janv,firefox-style-system-reviewers,emilio
       2026-07-16  4694fcd4d1f9  Bug 2054878 - Implement StylePropertyMap.clear in CSS Typed OM r=emilio,firefox-style-system-reviewers
 
-[57] Abhinav Singh  —  2 patch(es)
+[58] Abhinav Singh  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-10-02  a3c328e4aff3  Bug 2070629 - Implement zero-copy DMABuf VideoFrame import to remote Canvas2D on Linux r=gfx-reviewers,lsalzman
       2026-10-02  a1ce6fdd6513  Bug 2070629 - Implement zero-copy DMABuf VideoFrame import to remote Canvas2D on Linux r=gfx-reviewers,lsalzman
 
-[58] Andreas Pehrson  —  2 patch(es)
+[59] Andreas Pehrson  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-09-21  b06c54f94e03  Bug 2066949 - Apply capture rotation centrally, behind a pref. r=webrtc-reviewers,layout-reviewers,bwc,TYLin
       2026-09-17  8447ecb42cfd  Bug 2066949 - Apply capture rotation centrally, behind a pref. r=webrtc-reviewers,layout-reviewers,bwc,TYLin
 
-[59] Chris Peterson  —  2 patch(es)
+[60] Chris Peterson  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-07-06  189c0925c0dd  Bug 2052092 - Fix -Wimplicit-int-enum-cast warning in nsCSSFrameConstructor.cpp. r=layout-reviewers,TYLin
       2026-07-06  1fa7230cbbdd  Bug 2052092 - Fix -Wimplicit-int-enum-cast warnings in nsGridContainerFrame.cpp and nsPresContext.cpp. r=layout-reviewers,TYLin
 
-[60] Damien Carver  —  2 patch(es)
+[61] Damien Carver  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-09-21  9241a228e498  Bug 2006461 - Mark the Styles marker as stack based. r=profiler-reviewers,canova
       2026-09-17  b8ab5304fe72  Bug 2037105 - Migrate markers in gfx/ layout/ modules/ mozglue/ widget/ to the new api. r=canova,profiler-reviewers,win-reviewers,layout-reviewers,jfkthame,gstoll
 
-[61] Eugeniusz Lewandowski  —  2 patch(es)
+[62] Eugeniusz Lewandowski  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-05-04  fc8097fcc380  Bug 1650944 - Remove ReflowInput.h include from nsIFrame.h r=firefox-style-system-reviewers,layout-reviewers,emilio
       2026-05-03  6a11c5d881c6  Bug 2036580 - Move BreakType definition out of ReflowInput class r=dholbert,layout-reviewers
 
-[62] Gregory Pappas  —  2 patch(es)
+[63] Gregory Pappas  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-08-21  4113f0170117  Bug 1978211 - Remove layout.css.moz-broken.content.enabled pref r=emilio
       2026-08-20  a52021bfebee  Bug 1978211 - Remove layout.css.moz-broken.content.enabled pref r=emilio
 
-[63] James Teh  —  2 patch(es)
+[64] James Teh  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-09-24  7d6a46b954ff  Bug 2055767: Mark content not associated with an accessibility node as an artifact so it is ignored by accessibility consumers. r=accessibility-platform-reviewers,layout-reviewers,emilio,eeejay
       2026-05-21  18da8376c715  Bug 2021820 part 9: Make DocManager::NotifyOfPrintDocument bootstrap the a11y service. r=eeejay,layout-reviewers,emilio
-
-[64] Jens Stutte  —  2 patch(es)
-    ----------------------------------------------------------------------
-      2026-10-06  6c90f0f6e830  Bug 2051892 - Disable the navigation rate limit for the WebGL conformance mochitests. r=firefox-style-system-reviewers,farre,emilio
-      2026-10-05  53db12495bc2  Bug 1726898 - Share the atomic refcount decrement and annotate its acquire for TSan. r=xpcom-reviewers,mfbt-reviewers,firefox-style-system-reviewers,emilio
 
 [65] Makoto Kato  —  2 patch(es)
     ----------------------------------------------------------------------

@@ -1,8 +1,8 @@
 ==============================================================================
 MEDIA-PLAYBACK-REVIEWERS AUTHOR-PATCH LISTING (raw author %an, no aliasing)
-Source: github.com/mozilla-firefox/firefox   Paths: dom/media   Since: 2026-04-10T22:08:04Z
+Source: github.com/mozilla-firefox/firefox   Paths: dom/media   Since: 2026-04-11T06:08:24Z
 Excluded paths: dom/media/webrtc, dom/media/systemservices
-Authors: 97    Patches: 1095    (Lando-format / Lando-author / merge / Revert commits already excluded)
+Authors: 97    Patches: 1093    (Lando-format / Lando-author / merge / Revert commits already excluded)
 ==============================================================================
 
 Known aliases (applied in HTML report, NOT below):
@@ -253,7 +253,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-14  73c5d174941b  Bug 2030484 - Part 1: Detect powerEfficient by checking real decoder for software-DRM key systems. r=media-playback-reviewers,jolin
       2026-04-13  6bd4b7e97928  Bug 2030916 - Use checked arithmetic in ADTSTrackDemuxer::Duration. r=media-playback-reviewers,karlt
 
-[ 2] Chun-Min Chang  —  152 patch(es)
+[ 2] Chun-Min Chang  —  147 patch(es)
     ----------------------------------------------------------------------
       2026-09-17  d6b8df32116f  Bug 1954806 - Share the conversion pipeline between the I420 and NV12 outputs r=media-playback-reviewers,alwu
       2026-09-17  7d65e7153ab8  Bug 1954806 - Test that NV12 conversion accepts the sources I420 conversion does r=media-playback-reviewers,padenot
@@ -402,11 +402,6 @@ Known aliases (applied in HTML report, NOT below):
       2026-05-08  623590e14d2b  Bug 2019109 - Add test for display rect exceeding plane dimensions in RemoteImageHolder r=media-playback-reviewers,padenot
       2026-05-08  157b461edece  Bug 2019109 - Add test for descriptor validation in RemoteImageHolder r=media-playback-reviewers,padenot
       2026-05-08  bdbdb3c4be67  Bug 2016329 - Add test r=aosmond
-      2026-04-11  9d653b04f83f  Bug 2025883 - Fix AudioData.copyTo() planar-to-interleaved not applying frame offset. r=media-playback-reviewers,padenot
-      2026-04-11  77f6a1bf327b  Bug 2025883 - Fix AudioData.copyTo() interleaved-to-interleaved incorrect frame offset calculation. r=media-playback-reviewers,padenot
-      2026-04-11  0c6f3fd3394f  Bug 2025883 - Pass source frames-per-channel to AudioData CopySamples. r=jolin
-      2026-04-11  063096f14e9f  Bug 2025883 - Fix VideoFrame.copyTo() using incorrect stride for YUV surfaces. r=media-playback-reviewers,padenot
-      2026-04-11  68e97e45a43a  Bug 2022604 - Fix VideoFrame.copyTo() using incorrect stride for RGB surfaces. r=media-playback-reviewers,padenot
 
 [ 3] Paul Adenot  —  113 patch(es)
     ----------------------------------------------------------------------
@@ -600,8 +595,9 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-14  6e47537bb835  Bug 2031641 - Make MOZ_DUMP_AUDIO accept a path to a directory for writing. r=padenot
       2026-04-13  1b2bc97de2c8  Bug 2031470 - Make GeckoMediaPluginServiceParent::EnsureInitialized return a non-exclusive promise. r=aosmond,media-playback-reviewers
 
-[ 5] Andrew Osmond  —  61 patch(es)
+[ 5] Andrew Osmond  —  62 patch(es)
     ----------------------------------------------------------------------
+      2026-10-07  59d9ce6956b8  Bug 2042672 - Wait for the HTML media tab to become audible before competing for audio focus in browser_uncontrollable_audio_focus.js. r=media-playback-reviewers,padenot
       2026-10-06  ed57676de9c2  Bug 2078676 - Show the frame for the current playback position when VideoSink pauses. r=media-playback-reviewers,pehrsons,alwu
       2026-10-06  4bd4a6112307  Bug 2067689 - Part 5. Make KeySystemConfig/MediaKeySystemAccess use the new gfxVars. r=media-playback-reviewers,azebrowski
       2026-10-06  8b665026f16a  Bug 2067689 - Part 4. Make AndroidDecoder/EncoderModule use the new gfxVars. r=ipc-reviewers,media-playback-reviewers,azebrowski
@@ -715,8 +711,9 @@ Known aliases (applied in HTML report, NOT below):
       2026-05-06  39eb21802351  Bug 1825286 - Part 2: Add pref to enable/disable WebRTC type support in the Media Capabilities API. r=pehrsons
       2026-04-27  79a24a349602  Bug 2034395 - Clean up MediaDrmCDMProxy::Shutdown r=aosmond,media-playback-reviewers
 
-[ 7] Tymur Boiko  —  35 patch(es)
+[ 7] Tymur Boiko  —  36 patch(es)
     ----------------------------------------------------------------------
+      2026-10-07  9b0e8d0ebaed  Bug 2070034 - Don't trust MP4 stss to decide if an AV1 frame is a keyframe. r=media-playback-reviewers,padenot
       2026-10-07  6073db908ce8  Bug 2034236 [Linux][Vulkan Video] Default to bundled ffvpx; prefer system FFmpeg only via pref. r=stransky,media-playback-reviewers
       2026-09-16  4dd0bcf92d5e  Bug 2069551 - [Linux][Vulkan Video] Defer vkDestroyDevice until no decoder holds any cached device. r=stransky,media-playback-reviewers
       2026-09-14  43c270e37b72  Bug 2068764 [Linux][Vulkan Video] Cache selected device for compositor GPU too. r=stransky,media-playback-reviewers
@@ -942,7 +939,21 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-16  8622964bae2e  Bug 2032201 - Remove some HTMLMediaElement includes. r=media-playback-reviewers,aosmond
       2026-04-15  26866407bcd2  Bug 2027416 - Prevent video controls from sending web exposed events for caption resize. r=mconley,smaug,webidl,layout-reviewers,hjones,desktop-theme-reviewers,jwatt
 
-[16] Tom Schuster  —  11 patch(es)
+[16] Sylvestre Ledru  —  11 patch(es)
+    ----------------------------------------------------------------------
+      2026-10-07  258480a2afdc  Bug 2078393 - Stop copying the media configuration into the final continuation of MediaCapabilities::CreateWebRTCEncodingInfo (Coverity CID 1701833) r=media-playback-reviewers,padenot
+      2026-08-10  fd90ef9c023d  Bug 2062204 - Reject empty plugin version in GMPParent::ParseVersion (Coverity CID 1640424) r=media-playback-reviewers,padenot
+      2026-07-28  42c923cea166  Bug 2058054 - Coverity CID 1697238: hoist AverageFrameLength() out of MP3TrackDemuxer::Duration r=media-playback-reviewers,alwu
+      2026-07-20  f7a115c6921b  Bug 2054405 - Remove unused sShutdownMode global in cdm-test-decryptor.cpp. r=media-playback-reviewers,padenot
+      2026-07-14  62c2a37fb6e8  Bug 2054240 - Fix bugprone-fold-init-type warnings in WebMDemuxer::GetNextPacket r=media-playback-reviewers,chunmin
+      2026-07-04  3ba47a22767f  Bug 2038819 - Convert dom/ RST docs to Markdown r=dom-core-reviewers,media-playback-reviewers,dom-worker-reviewers,smaug,azebrowski,edenchuang
+      2026-07-03  0fd322216b81  Bug 2038819 - Convert dom/ RST docs to Markdown r=dom-core-reviewers,media-playback-reviewers,dom-worker-reviewers,smaug,azebrowski,edenchuang
+      2026-07-02  696745f74f44  Bug 2051204 - Skip null codec states in OggDemuxer::SetupMediaTracksInfo (Coverity CID 1364678) r=media-playback-reviewers,alwu
+      2026-07-02  2c5fe8a807f9  Bug 2051207 - Fix off-by-one and signed shift in AudioConfig::Map (Coverity CID 1512893) r=media-playback-reviewers,alwu
+      2026-06-20  6c13767fb58b  Bug 2038819 - Convert dom/ RST docs to Markdown r=dom-core-reviewers,media-playback-reviewers,dom-worker-reviewers,smaug,azebrowski,edenchuang
+      2026-05-04  4caddf6d2318  Bug 2023411 - Lowercase MinGW Windows header includes flagged by mozcheck r=tjr,media-playback-reviewers,padenot
+
+[17] Tom Schuster  —  11 patch(es)
     ----------------------------------------------------------------------
       2026-06-17  6767ecd66f51  Bug 2047708 - Use setHTML instead of innerHTML in WebVTT. r=alwu
       2026-06-17  9caa2653eb43  Bug 2047320 - Set ReferrerInfo for MediaSession image requests. r=alwu
@@ -956,7 +967,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-23  e5ff36a61cdb  Bug 2030381 - Update EnumSerializers in media. r=alwu
       2026-04-21  50a73c0033f5  Bug 2033728 - Use WebIDLEnumSerializer where possible. r=media-playback-reviewers,padenot,ipc-reviewers,mccr8
 
-[17] Brad Werth  —  10 patch(es)
+[18] Brad Werth  —  10 patch(es)
     ----------------------------------------------------------------------
       2026-07-20  5ccb8503a632  Bug 2039373 Part 4: Make AppleVTDecoder::OutputFrame rebuild the colorspace. r=media-playback-reviewers,mstange,padenot
       2026-07-20  a6de1d412131  Bug 2039373 Part 3: Make MP4 decoder provide default HDR metadata. r=media-playback-reviewers,mstange,padenot
@@ -968,19 +979,6 @@ Known aliases (applied in HTML report, NOT below):
       2026-05-19  a588759afe43  Bug 2038047: Make MacIOSurface derive alpha from pixel format, update callsites. r=media-playback-reviewers,gfx-reviewers,padenot,jrmuizel
       2026-05-06  e24ad0129c16  Bug 2034952: Remove an expensive alpha check from AppleVTDecoder. r=media-playback-reviewers,gfx-reviewers,padenot,ahale
       2026-04-16  6f2fb9d1d917  Bug 2029054 Part 2: Remove default values to MacIOSurface constructor and ::Lookup, and fixup callsites. r=media-playback-reviewers,padenot
-
-[18] Sylvestre Ledru  —  10 patch(es)
-    ----------------------------------------------------------------------
-      2026-08-10  fd90ef9c023d  Bug 2062204 - Reject empty plugin version in GMPParent::ParseVersion (Coverity CID 1640424) r=media-playback-reviewers,padenot
-      2026-07-28  42c923cea166  Bug 2058054 - Coverity CID 1697238: hoist AverageFrameLength() out of MP3TrackDemuxer::Duration r=media-playback-reviewers,alwu
-      2026-07-20  f7a115c6921b  Bug 2054405 - Remove unused sShutdownMode global in cdm-test-decryptor.cpp. r=media-playback-reviewers,padenot
-      2026-07-14  62c2a37fb6e8  Bug 2054240 - Fix bugprone-fold-init-type warnings in WebMDemuxer::GetNextPacket r=media-playback-reviewers,chunmin
-      2026-07-04  3ba47a22767f  Bug 2038819 - Convert dom/ RST docs to Markdown r=dom-core-reviewers,media-playback-reviewers,dom-worker-reviewers,smaug,azebrowski,edenchuang
-      2026-07-03  0fd322216b81  Bug 2038819 - Convert dom/ RST docs to Markdown r=dom-core-reviewers,media-playback-reviewers,dom-worker-reviewers,smaug,azebrowski,edenchuang
-      2026-07-02  696745f74f44  Bug 2051204 - Skip null codec states in OggDemuxer::SetupMediaTracksInfo (Coverity CID 1364678) r=media-playback-reviewers,alwu
-      2026-07-02  2c5fe8a807f9  Bug 2051207 - Fix off-by-one and signed shift in AudioConfig::Map (Coverity CID 1512893) r=media-playback-reviewers,alwu
-      2026-06-20  6c13767fb58b  Bug 2038819 - Convert dom/ RST docs to Markdown r=dom-core-reviewers,media-playback-reviewers,dom-worker-reviewers,smaug,azebrowski,edenchuang
-      2026-05-04  4caddf6d2318  Bug 2023411 - Lowercase MinGW Windows header includes flagged by mozcheck r=tjr,media-playback-reviewers,padenot
 
 [19] Daniel Holbert  —  9 patch(es)
     ----------------------------------------------------------------------
