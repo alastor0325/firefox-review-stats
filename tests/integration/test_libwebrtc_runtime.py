@@ -289,7 +289,8 @@ def test_page_copy(tmp_path):
     (total, total_tip), (change, change_tip) = state["panel_tips"]
     assert (total, change) == ("Total at month end", "Added and dropped each month")
     assert "month-end snapshot" in total_tip
-    assert "Dropped: removed from the stack" in change_tip and "backout" in change_tip
+    assert "Dropped: patches Firefox stopped carrying" in change_tip
+    assert "backport" in change_tip and "backed out" in change_tip
 
 
 def test_each_fix_row_shows_it_folds(tmp_path):
