@@ -153,6 +153,9 @@ def _run_uncached(tmp_path, view):
                 ".map(l => l.textContent.replace(/\\s+/g, ' ').trim()).join(' '))"),
             "stack_title": page.evaluate(
                 "() => document.querySelector('#lw-stack-section h2').firstChild.textContent.trim()"),
+            "panel_tips": page.evaluate(
+                "() => [...document.querySelectorAll('.lw-stack-panel-title')]"
+                ".map(t => [t.firstChild.textContent.trim(), t.querySelector('.info')?.dataset.tip || ''])"),
             "stack_hero": text("#lw-stack-hero")[0],
             "stack_summary": text("#lw-stack-summary")[0],
             "stack_detail_head": text("#lw-stack-detail .lw-stack-detail-head")[0],
@@ -283,6 +286,10 @@ def test_page_copy(tmp_path):
         ["Month", "Total", "Added", "Dropped", "Upstream updates", ""]]
     assert "to triage" not in state["body"].lower()
     assert state["stack_title"] == "Mozilla's own patches on top of upstream libwebrtc"
+    (total, total_tip), (change, change_tip) = state["panel_tips"]
+    assert (total, change) == ("Total at month end", "Added and dropped each month")
+    assert "month-end snapshot" in total_tip
+    assert "Dropped: removed from the stack" in change_tip and "backout" in change_tip
 
 
 def test_each_fix_row_shows_it_folds(tmp_path):
