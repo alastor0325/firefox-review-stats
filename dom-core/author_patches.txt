@@ -1,8 +1,8 @@
 ==============================================================================
 DOM-CORE-REVIEWERS AUTHOR-PATCH LISTING (raw author %an, no aliasing)
-Source: github.com/mozilla-firefox/firefox   Paths: dom/base, dom/html, dom/events, dom/bindings, dom/webidl, dom/ipc, docshell, parser   Since: 2026-04-11T06:38:35Z
+Source: github.com/mozilla-firefox/firefox   Paths: dom/base, dom/html, dom/events, dom/bindings, dom/webidl, dom/ipc, docshell, parser   Since: 2026-04-11T15:36:48Z
 Excluded paths: (none)
-Authors: 192    Patches: 1924    (Lando-format / Lando-author / merge / Revert commits already excluded)
+Authors: 192    Patches: 1927    (Lando-format / Lando-author / merge / Revert commits already excluded)
 ==============================================================================
 
 Known aliases (applied in HTML report, NOT below):
@@ -385,7 +385,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-22  9e68b78abd4f  Bug 1899486 - Disable `test_auxclick_autoscroll_off.html` in the xorig mode on Android r=dom-core,smaug
       2026-04-13  ad61492d2b47  Bug 1826272 - Make `TextControlState::mTextListener` live longer r=emilio
 
-[ 4] Keith Cirkel  —  102 patch(es)
+[ 4] Keith Cirkel  —  101 patch(es)
     ----------------------------------------------------------------------
       2026-10-07  962f46c0c42c  Bug 2074555 - Switch dead code for an assert r=dom-core-reviewers,smaug
       2026-10-06  1cc1555d62cd  Bug 2075981 - Avoid CE upgrades for static clones r=dom-core-reviewers,smaug
@@ -488,10 +488,10 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-15  a5a2e75a5a49  Bug 2032023 - Clean up dom.custom_elements.relaxed_names.enabled flag r=dom-core,jjaschke
       2026-04-15  e9a7c8c795cf  Bug 2031294 - Serialize shadowrootslotassignment before shadowrootclonable r=dom-core,farre
       2026-04-12  24f3550204ff  Bug 2027425 - Test insertion mode reset for select fragments with noInSelectMode r=hsivonen
-      2026-04-11  edf216794113  Bug 2023824 - Implement shadowrootslotassignment r=webidl,emilio
 
-[ 5] Edgar Chen  —  74 patch(es)
+[ 5] Edgar Chen  —  75 patch(es)
     ----------------------------------------------------------------------
+      2026-10-08  adfca1cb6c78  Bug 2077656 - Don't check whether directory is readable in content process; r=smaug
       2026-10-07  ded96f333df1  Bug 2072379 - Add test; r=smaug
       2026-10-05  d123a65eb415  Bug 2072379 - Add test; r=smaug
       2026-09-23  3d4fb7a1cf19  Bug 2071024 - Part 3: Propagate mMovement to the coalesced pointer event; r=smaug
@@ -715,7 +715,67 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-20  efb97dec2aa7  Bug 1967270 - Rewrite the nsContentPolicyType serializer. r=nika,dom-worker-reviewers,asuth
       2026-04-16  14d1a3af3904  Bug 2031064 - Use ClientInfo when creating EventSource. r=asuth,dom-worker-reviewers
 
-[ 8] Vincent Hilla  —  57 patch(es)
+[ 8] Adam Vandolder  —  57 patch(es)
+    ----------------------------------------------------------------------
+      2026-10-07  408aa33592d1  Bug 2070879 - Wait for frame construction before considering document speculation rules. r=smaug,dom-core-reviewers
+      2026-10-06  653f8ae55ffa  Bug 2070879 - Wait for frame construction before considering document speculation rules. r=smaug,dom-core-reviewers
+      2026-10-06  3f1bba5b5903  Bug 2070879 - Wait for frame construction before considering document speculation rules. r=smaug,dom-core-reviewers
+      2026-10-02  d0a922ca450b  Bug 2070879 - Wait for frame construction before considering document speculation rules. r=smaug,dom-core-reviewers
+      2026-10-01  9c6a2d132543  Bug 2074819 - Don't consider speculative loads on link changes when there are no rulesets. r=dom-core-reviewers,jjaschke
+      2026-09-23  6543439deea5  Bug 2074478 - Don't prefetch for speculative candidate whose URI differs from the current document only by the fragment. r=dom-core-reviewers,jjaschke
+      2026-09-18  49008f12963a  Bug 2071501 - Fire eager speculation rules on hover after a shorter timeout then moderate. r=dom-core-reviewers,jjaschke
+      2026-09-18  1934478e3cae  Bug 2072050 - Fire prefetches for conservative eagerness speculation rules on pointerdown. r=dom-core-reviewers,smaug,keithamus
+      2026-09-18  c620092b5902  Bug 2072213 - Consider speculative loads on links changes. r=dom-core-reviewers,jjaschke
+      2026-09-17  f0d4b2436bec  Bug 2072213 - Consider speculative loads on links changes. r=dom-core-reviewers,jjaschke
+      2026-09-16  f8941394ea37  Bug 2072213 - Consider speculative loads on links changes. r=dom-core-reviewers,jjaschke
+      2026-09-11  5ef992531356  Bug 2061013 - Part 3: Fire prefetches for moderate eagerness speculation rules on hover. r=jjaschke
+      2026-09-11  961ce625e023  Bug 2061013 - Part 2: Track prefetch candidates on the document. r=jjaschke
+      2026-09-11  f03c13c3c9fd  Bug 2061013 - Part 1: Add support for all eagerness speculation rule groups. r=jjaschke
+      2026-08-05  493ad3010cd0  Bug 2020715 - Implement consider speculative loads for predicate rules. r=dom-core-reviewers,jjaschke
+      2026-08-05  15f0184d199f  Bug 2020715 - Track potentially speculatable links. r=dom-core-reviewers,jjaschke
+      2026-07-31  329010ac2c86  Bug 2058157 - Add DOM use counters for Speculation Rules. r=dom-core-reviewers,jjaschke
+      2026-07-06  dc86c936de58  Bug 2020715 - Expose null speculation rule tags as voided strings. r=dom-core-reviewers,jjaschke
+      2026-07-06  72e813a8c735  Bug 2020715 - Implement consider speculative loads for URL rules. r=dom-core-reviewers,jjaschke
+      2026-07-06  59f2aba72c92  Bug 2020715 - Reorder speculationrules ReferrerPolicy to match webidl. r=webidl,emilio
+      2026-07-06  fbd8370212d6  Bug 2020715 - Implement consider speculative loads microtask. r=dom-core-reviewers,smaug
+      2026-06-25  c6d673ec3809  Bug 2048755 - Refactor speculation rules out of Document into separate class. r=dom-core-reviewers,jjaschke
+      2026-06-25  a9b0301b5318  Bug 2048755 - Rename mozilla::dom::SpeculationRules to SpeculationRuleSet. r=dom-core-reviewers,jjaschke
+      2026-06-25  1a2404e2b736  Bug 2048755 - Refactor speculation rules out of Document into separate class. r=dom-core-reviewers,jjaschke
+      2026-06-25  c728baf70321  Bug 2048755 - Rename mozilla::dom::SpeculationRules to SpeculationRuleSet. r=dom-core-reviewers,jjaschke
+      2026-06-19  e09d1402a6da  Bug 2048292 - Track mSelectedCandidateURL in ResponsiveImageSelector CC macro. r=dom-core-reviewers,edgar
+      2026-06-15  7a7b20ea519d  Bug 2020707 - Part 5: Gate speculation rules script support behind a pref. r=dom-core-reviewers,jjaschke
+      2026-06-15  f104f23575ed  Bug 2020707 - Part 4: Unregister speculation rules when their script element is removed. r=dom-core-reviewers,hsivonen
+      2026-06-15  d846a808519a  Bug 2020707 - Part 3: Report an exception if speculation rules parsing fails. r=dom-core-reviewers,jjaschke
+      2026-06-15  7526d08b40be  Bug 2020707 - Part 1: Allow speculation rules to be registered to the document from scripts. r=hsivonen,jjaschke
+      2026-06-15  75ad7a75c64c  Bug 2020707 - Part 2: Add support for speculationrules script type. r=dom-core-reviewers,jjaschke
+      2026-06-15  3c8373ed15bb  Bug 2020704 - Part 2: Add parser for speculation rule sets. r=hsivonen,jjaschke
+      2026-06-15  b1785e80db7a  Bug 2020704 - Part 1: Add speculation rules crate. r=dom-core-reviewers,jjaschke
+      2026-06-12  5202943dc9d1  Bug 2020707 - Part 4: Unregister speculation rules when their script element is removed. r=dom-core-reviewers,hsivonen
+      2026-06-12  70c5aa54253f  Bug 2020707 - Part 3: Report an exception if speculation rules parsing fails. r=dom-core-reviewers,jjaschke
+      2026-06-12  11741d18ad36  Bug 2020707 - Part 5: Gate speculation rules script support behind a pref. r=dom-core-reviewers,jjaschke
+      2026-06-12  65b30a350ba4  Bug 2020707 - Part 2: Add support for speculationrules script type. r=dom-core-reviewers,jjaschke
+      2026-06-12  28c7050de96b  Bug 2020707 - Part 1: Allow speculation rules to be registered to the document from scripts. r=hsivonen,jjaschke
+      2026-06-12  eabb8c6eb327  Bug 2020704 - Part 2: Add parser for speculation rule sets. r=hsivonen,jjaschke
+      2026-06-12  cd65bed005c5  Bug 2020704 - Part 1: Add speculation rules crate. r=dom-core-reviewers,jjaschke
+      2026-06-04  be38de8f6f6b  Bug 2037998 - Use the bfcache.page_restored telemetry metric when restoring a page from the BFCache. r=dom-core-reviewers,chutten,smaug
+      2026-05-07  32a0ee5ccd76  Bug 2037457 - Don't exit pointerlock when applying fullscreen. r=dom-core,smaug
+      2026-04-18  869d401fbddb  Bug 2032932 - Don't track fullscreen keyboard lock in the actor, get it from the window instead. r=edgar,dom-core,webidl
+      2026-04-17  b692580f003f  Bug 2032647 - Track fullscreen keyboard lock status per-element instead of per-document. r=dom-core,edgar
+      2026-04-17  fd21cb97a387  Bug 2032507 - Update fullscreen keyboard lock status when requestFullscreen is called on already fullscreened element. r=dom-core,smaug,sfarre
+      2026-04-17  f685c19bfeab  Bug 2032647 - Track fullscreen keyboard lock status per-element instead of per-document. r=dom-core,edgar
+      2026-04-17  3e07ae8ab38f  Bug 2032507 - Update fullscreen keyboard lock status when requestFullscreen is called on already fullscreened element. r=dom-core,smaug,sfarre
+      2026-04-17  8edd824d71af  Bug 2032749 - Add use counter for Fullscreen Keyboard Lock API. r=dom-core,webidl,edgar
+      2026-04-16  997c54cae4ea  Bug 2032507 - Update fullscreen keyboard lock status when requestFullscreen is called on already fullscreened element. r=dom-core,smaug
+      2026-04-16  8440f7113c9a  Bug 700123 - Part 8: Update fullscreen keyboard lock status when entering fullscreen-in-fullscreen. r=dom-core,edgar
+      2026-04-16  f8e6ba4cd5ac  Bug 700123 - Part 7: Show a warning when user presses Escape while fullscreen keyboard lock is enabled. r=dom-core,smaug
+      2026-04-15  99d5373dbdfe  Bug 700123 - Part 3: Make exiting fullscreen require long-pressing the Escape key when the fullscreen keyboard lock is enabled. r=edgar,dom-core,masayuki
+      2026-04-15  76fd69fd5907  Bug 700123 - Part 2: Track the fullscreen keyboard lock status and propagate it to the browser chrome. r=dom-core,edgar
+      2026-04-15  e842d362efa9  Bug 700123 - Part 1: Add keyboardLock option to requestFullscreen. r=webidl,saschanaz
+      2026-04-14  a11e06665e1c  Bug 700123 - Part 3: Make exiting fullscreen require long-pressing the Escape key when the fullscreen keyboard lock is enabled. r=edgar,dom-core,masayuki
+      2026-04-14  11794474237f  Bug 700123 - Part 2: Track the fullscreen keyboard lock status and propagate it to the browser chrome. r=dom-core,edgar
+      2026-04-14  ac8fd5e4de3e  Bug 700123 - Part 1: Add keyboardLock option to requestFullscreen. r=webidl,saschanaz
+
+[ 9] Vincent Hilla  —  57 patch(es)
     ----------------------------------------------------------------------
       2026-09-23  097875cf577d  Bug 2074373 - Don't crash in nsSHistory::Reload if mIndex = -1. r=farre
       2026-09-23  27c23d91c881  Bug 2074373 - Don't crash in nsSHistory::Reload if mIndex = -1. r=farre
@@ -774,65 +834,6 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-21  28192d0bdb34  Bug 2033840 - Extend GWT RichTextArea compat hack to Polarion. r=hsivonen
       2026-04-13  414a0bef7b98  Bug 2020432 - Use nsIURI::GetQuery for location.search. r=dom-core,edgar
       2026-04-13  cced3864f351  Bug 2015010 - Reset dir=auto elements if a slot descendant is removed. r=dom-core,smaug
-
-[ 9] Adam Vandolder  —  56 patch(es)
-    ----------------------------------------------------------------------
-      2026-10-06  653f8ae55ffa  Bug 2070879 - Wait for frame construction before considering document speculation rules. r=smaug,dom-core-reviewers
-      2026-10-06  3f1bba5b5903  Bug 2070879 - Wait for frame construction before considering document speculation rules. r=smaug,dom-core-reviewers
-      2026-10-02  d0a922ca450b  Bug 2070879 - Wait for frame construction before considering document speculation rules. r=smaug,dom-core-reviewers
-      2026-10-01  9c6a2d132543  Bug 2074819 - Don't consider speculative loads on link changes when there are no rulesets. r=dom-core-reviewers,jjaschke
-      2026-09-23  6543439deea5  Bug 2074478 - Don't prefetch for speculative candidate whose URI differs from the current document only by the fragment. r=dom-core-reviewers,jjaschke
-      2026-09-18  49008f12963a  Bug 2071501 - Fire eager speculation rules on hover after a shorter timeout then moderate. r=dom-core-reviewers,jjaschke
-      2026-09-18  1934478e3cae  Bug 2072050 - Fire prefetches for conservative eagerness speculation rules on pointerdown. r=dom-core-reviewers,smaug,keithamus
-      2026-09-18  c620092b5902  Bug 2072213 - Consider speculative loads on links changes. r=dom-core-reviewers,jjaschke
-      2026-09-17  f0d4b2436bec  Bug 2072213 - Consider speculative loads on links changes. r=dom-core-reviewers,jjaschke
-      2026-09-16  f8941394ea37  Bug 2072213 - Consider speculative loads on links changes. r=dom-core-reviewers,jjaschke
-      2026-09-11  5ef992531356  Bug 2061013 - Part 3: Fire prefetches for moderate eagerness speculation rules on hover. r=jjaschke
-      2026-09-11  961ce625e023  Bug 2061013 - Part 2: Track prefetch candidates on the document. r=jjaschke
-      2026-09-11  f03c13c3c9fd  Bug 2061013 - Part 1: Add support for all eagerness speculation rule groups. r=jjaschke
-      2026-08-05  493ad3010cd0  Bug 2020715 - Implement consider speculative loads for predicate rules. r=dom-core-reviewers,jjaschke
-      2026-08-05  15f0184d199f  Bug 2020715 - Track potentially speculatable links. r=dom-core-reviewers,jjaschke
-      2026-07-31  329010ac2c86  Bug 2058157 - Add DOM use counters for Speculation Rules. r=dom-core-reviewers,jjaschke
-      2026-07-06  dc86c936de58  Bug 2020715 - Expose null speculation rule tags as voided strings. r=dom-core-reviewers,jjaschke
-      2026-07-06  72e813a8c735  Bug 2020715 - Implement consider speculative loads for URL rules. r=dom-core-reviewers,jjaschke
-      2026-07-06  59f2aba72c92  Bug 2020715 - Reorder speculationrules ReferrerPolicy to match webidl. r=webidl,emilio
-      2026-07-06  fbd8370212d6  Bug 2020715 - Implement consider speculative loads microtask. r=dom-core-reviewers,smaug
-      2026-06-25  c6d673ec3809  Bug 2048755 - Refactor speculation rules out of Document into separate class. r=dom-core-reviewers,jjaschke
-      2026-06-25  a9b0301b5318  Bug 2048755 - Rename mozilla::dom::SpeculationRules to SpeculationRuleSet. r=dom-core-reviewers,jjaschke
-      2026-06-25  1a2404e2b736  Bug 2048755 - Refactor speculation rules out of Document into separate class. r=dom-core-reviewers,jjaschke
-      2026-06-25  c728baf70321  Bug 2048755 - Rename mozilla::dom::SpeculationRules to SpeculationRuleSet. r=dom-core-reviewers,jjaschke
-      2026-06-19  e09d1402a6da  Bug 2048292 - Track mSelectedCandidateURL in ResponsiveImageSelector CC macro. r=dom-core-reviewers,edgar
-      2026-06-15  7a7b20ea519d  Bug 2020707 - Part 5: Gate speculation rules script support behind a pref. r=dom-core-reviewers,jjaschke
-      2026-06-15  f104f23575ed  Bug 2020707 - Part 4: Unregister speculation rules when their script element is removed. r=dom-core-reviewers,hsivonen
-      2026-06-15  d846a808519a  Bug 2020707 - Part 3: Report an exception if speculation rules parsing fails. r=dom-core-reviewers,jjaschke
-      2026-06-15  7526d08b40be  Bug 2020707 - Part 1: Allow speculation rules to be registered to the document from scripts. r=hsivonen,jjaschke
-      2026-06-15  75ad7a75c64c  Bug 2020707 - Part 2: Add support for speculationrules script type. r=dom-core-reviewers,jjaschke
-      2026-06-15  3c8373ed15bb  Bug 2020704 - Part 2: Add parser for speculation rule sets. r=hsivonen,jjaschke
-      2026-06-15  b1785e80db7a  Bug 2020704 - Part 1: Add speculation rules crate. r=dom-core-reviewers,jjaschke
-      2026-06-12  5202943dc9d1  Bug 2020707 - Part 4: Unregister speculation rules when their script element is removed. r=dom-core-reviewers,hsivonen
-      2026-06-12  70c5aa54253f  Bug 2020707 - Part 3: Report an exception if speculation rules parsing fails. r=dom-core-reviewers,jjaschke
-      2026-06-12  11741d18ad36  Bug 2020707 - Part 5: Gate speculation rules script support behind a pref. r=dom-core-reviewers,jjaschke
-      2026-06-12  65b30a350ba4  Bug 2020707 - Part 2: Add support for speculationrules script type. r=dom-core-reviewers,jjaschke
-      2026-06-12  28c7050de96b  Bug 2020707 - Part 1: Allow speculation rules to be registered to the document from scripts. r=hsivonen,jjaschke
-      2026-06-12  eabb8c6eb327  Bug 2020704 - Part 2: Add parser for speculation rule sets. r=hsivonen,jjaschke
-      2026-06-12  cd65bed005c5  Bug 2020704 - Part 1: Add speculation rules crate. r=dom-core-reviewers,jjaschke
-      2026-06-04  be38de8f6f6b  Bug 2037998 - Use the bfcache.page_restored telemetry metric when restoring a page from the BFCache. r=dom-core-reviewers,chutten,smaug
-      2026-05-07  32a0ee5ccd76  Bug 2037457 - Don't exit pointerlock when applying fullscreen. r=dom-core,smaug
-      2026-04-18  869d401fbddb  Bug 2032932 - Don't track fullscreen keyboard lock in the actor, get it from the window instead. r=edgar,dom-core,webidl
-      2026-04-17  b692580f003f  Bug 2032647 - Track fullscreen keyboard lock status per-element instead of per-document. r=dom-core,edgar
-      2026-04-17  fd21cb97a387  Bug 2032507 - Update fullscreen keyboard lock status when requestFullscreen is called on already fullscreened element. r=dom-core,smaug,sfarre
-      2026-04-17  f685c19bfeab  Bug 2032647 - Track fullscreen keyboard lock status per-element instead of per-document. r=dom-core,edgar
-      2026-04-17  3e07ae8ab38f  Bug 2032507 - Update fullscreen keyboard lock status when requestFullscreen is called on already fullscreened element. r=dom-core,smaug,sfarre
-      2026-04-17  8edd824d71af  Bug 2032749 - Add use counter for Fullscreen Keyboard Lock API. r=dom-core,webidl,edgar
-      2026-04-16  997c54cae4ea  Bug 2032507 - Update fullscreen keyboard lock status when requestFullscreen is called on already fullscreened element. r=dom-core,smaug
-      2026-04-16  8440f7113c9a  Bug 700123 - Part 8: Update fullscreen keyboard lock status when entering fullscreen-in-fullscreen. r=dom-core,edgar
-      2026-04-16  f8e6ba4cd5ac  Bug 700123 - Part 7: Show a warning when user presses Escape while fullscreen keyboard lock is enabled. r=dom-core,smaug
-      2026-04-15  99d5373dbdfe  Bug 700123 - Part 3: Make exiting fullscreen require long-pressing the Escape key when the fullscreen keyboard lock is enabled. r=edgar,dom-core,masayuki
-      2026-04-15  76fd69fd5907  Bug 700123 - Part 2: Track the fullscreen keyboard lock status and propagate it to the browser chrome. r=dom-core,edgar
-      2026-04-15  e842d362efa9  Bug 700123 - Part 1: Add keyboardLock option to requestFullscreen. r=webidl,saschanaz
-      2026-04-14  a11e06665e1c  Bug 700123 - Part 3: Make exiting fullscreen require long-pressing the Escape key when the fullscreen keyboard lock is enabled. r=edgar,dom-core,masayuki
-      2026-04-14  11794474237f  Bug 700123 - Part 2: Track the fullscreen keyboard lock status and propagate it to the browser chrome. r=dom-core,edgar
-      2026-04-14  ac8fd5e4de3e  Bug 700123 - Part 1: Add keyboardLock option to requestFullscreen. r=webidl,saschanaz
 
 [10] Jan-Niklas Jaeschke  —  55 patch(es)
     ----------------------------------------------------------------------
@@ -1382,7 +1383,29 @@ Known aliases (applied in HTML report, NOT below):
       2026-05-07  10725540f638  Bug 2037754: Use 'MakeAndAddRef' instead of 'new' when allocating runnable for nsContentUtils::AddScriptRunner. r=dom-core,smaug
       2026-05-04  965e74ab68d4  Bug 2036250: Make HTMLCanvasElement smarter about avoiding redundant mozPrintCallback invocations. r=smaug
 
-[26] Yoshi Cheng-Hao Huang  —  19 patch(es)
+[26] Jan Varga  —  19 patch(es)
+    ----------------------------------------------------------------------
+      2026-10-07  0c560faeeecc  Bug 2079188 - Expose the CSS namespace in workers and worklets behind a preference; r=emilio,webidl,firefox-style-system-reviewers
+      2026-10-07  a6bc7652b488  Bug 2079188 - Expose the CSS namespace in workers and worklets behind a preference; r=emilio,webidl,firefox-style-system-reviewers
+      2026-09-24  68fd3a4c02b8  Bug 2075135 - Complete the CSSTransformValue implementation; r=emilio,firefox-style-system-reviewers
+      2026-09-08  c0128c647a04  Bug 2057579 - Complete the CSSPerspective implementation; r=firefox-style-system-reviewers,dshin
+      2026-09-06  cb4ffbfbe3e0  Bug 2057579 - Complete the CSSSkew implementation; r=emilio,firefox-style-system-reviewers
+      2026-06-29  c6e5d67755d6  Bug 2051105 - Gate CSS Typed OM color interfaces behind a separate pref; r=emilio,webidl,firefox-style-system-reviewers
+      2026-06-06  c36c6f6c4231  Bug 2044096 - Add missing pieces for CSSMathProduct; r=emilio,webidl,firefox-style-system-reviewers
+      2026-06-06  f25af4aca18f  Bug 2044096 - Add missing pieces for CSSMathInvert; r=emilio,webidl,firefox-style-system-reviewers
+      2026-06-06  0266d34f9e32  Bug 2044096 - Add missing pieces for CSSMathNegate; r=emilio,webidl,firefox-style-system-reviewers
+      2026-06-06  1f1e044e308e  Bug 2044096 - Add missing pieces for CSSMathClamp; r=emilio,webidl,firefox-style-system-reviewers
+      2026-06-06  d9102c650e5c  Bug 2044096 - Add missing pieces for CSSMathMax; r=emilio,webidl,firefox-style-system-reviewers
+      2026-06-06  0666876e3904  Bug 2044096 - Add missing pieces for CSSMathMin; r=emilio,webidl,firefox-style-system-reviewers
+      2026-05-23  23ede296c348  Bug 2038579 - Add some missing pieces to CSSMatrixComponent for Typed OM reification; r=emilio,webidl,firefox-style-system-reviewers
+      2026-05-22  4ebc4e96f9a0  Bug 2038579 - Change DOMMatrix serialization to UTF-8 output; r=emilio,webidl
+      2026-05-21  00878b660859  Bug 2038579 - Add some missing pieces to CSSSkewY for Typed OM reification; r=emilio,webidl,firefox-style-system-reviewers
+      2026-05-21  a1f0c27b132d  Bug 2038579 - Add some missing pieces to CSSSkewX for Typed OM reification; r=emilio,webidl,firefox-style-system-reviewers
+      2026-05-21  01726cb87a92  Bug 2038579 - Add some missing pieces to CSSSkew for Typed OM reification; r=emilio,webidl,firefox-style-system-reviewers
+      2026-05-21  1cca68da992b  Bug 2038579 - Add some missing pieces to CSSRotate for Typed OM reification; r=emilio,webidl,firefox-style-system-reviewers
+      2026-05-20  53c8235c2b4b  Bug 2038579 - Add some missing pieces to CSSTranslate for Typed OM reification; r=emilio,webidl,firefox-style-system-reviewers
+
+[27] Yoshi Cheng-Hao Huang  —  19 patch(es)
     ----------------------------------------------------------------------
       2026-09-17  56f7c2706378  Bug 2014283 - Part 5: A mochitest-plain test to call import() in a relazifiable function script. r=jonco,arai
       2026-09-07  28e5b605facd  Bug 2067200 - Return an empty WebAssembly binary module if scripting is disabled. r=spidermonkey-reviewers,frontend-codestyle-reviewers,dminor
@@ -1403,27 +1426,6 @@ Known aliases (applied in HTML report, NOT below):
       2026-07-19  dcbef1e53f13  Bug 2054848 - Part 5: Stop mozJSModuleLoader.h from including ModuleLoaderBase.h. r=arai
       2026-07-19  f2f9097132b4  Bug 2054848 - Part 3: Stop dom/script and dom/workers ScriptLoader.h from including ModuleLoaderBase.h. r=dom-worker-reviewers,dom-core-reviewers,jjaschke,edenchuang
       2026-07-19  c46250149aaa  Bug 2054848 - Part 2: Stop WorkerPrivate.h and WorkerScope.h from including ModuleLoaderBase.h. r=dom-worker-reviewers,media-playback-reviewers,bvandersloot,edenchuang,padenot
-
-[27] Jan Varga  —  18 patch(es)
-    ----------------------------------------------------------------------
-      2026-10-07  a6bc7652b488  Bug 2079188 - Expose the CSS namespace in workers and worklets behind a preference; r=emilio,webidl,firefox-style-system-reviewers
-      2026-09-24  68fd3a4c02b8  Bug 2075135 - Complete the CSSTransformValue implementation; r=emilio,firefox-style-system-reviewers
-      2026-09-08  c0128c647a04  Bug 2057579 - Complete the CSSPerspective implementation; r=firefox-style-system-reviewers,dshin
-      2026-09-06  cb4ffbfbe3e0  Bug 2057579 - Complete the CSSSkew implementation; r=emilio,firefox-style-system-reviewers
-      2026-06-29  c6e5d67755d6  Bug 2051105 - Gate CSS Typed OM color interfaces behind a separate pref; r=emilio,webidl,firefox-style-system-reviewers
-      2026-06-06  c36c6f6c4231  Bug 2044096 - Add missing pieces for CSSMathProduct; r=emilio,webidl,firefox-style-system-reviewers
-      2026-06-06  f25af4aca18f  Bug 2044096 - Add missing pieces for CSSMathInvert; r=emilio,webidl,firefox-style-system-reviewers
-      2026-06-06  0266d34f9e32  Bug 2044096 - Add missing pieces for CSSMathNegate; r=emilio,webidl,firefox-style-system-reviewers
-      2026-06-06  1f1e044e308e  Bug 2044096 - Add missing pieces for CSSMathClamp; r=emilio,webidl,firefox-style-system-reviewers
-      2026-06-06  d9102c650e5c  Bug 2044096 - Add missing pieces for CSSMathMax; r=emilio,webidl,firefox-style-system-reviewers
-      2026-06-06  0666876e3904  Bug 2044096 - Add missing pieces for CSSMathMin; r=emilio,webidl,firefox-style-system-reviewers
-      2026-05-23  23ede296c348  Bug 2038579 - Add some missing pieces to CSSMatrixComponent for Typed OM reification; r=emilio,webidl,firefox-style-system-reviewers
-      2026-05-22  4ebc4e96f9a0  Bug 2038579 - Change DOMMatrix serialization to UTF-8 output; r=emilio,webidl
-      2026-05-21  00878b660859  Bug 2038579 - Add some missing pieces to CSSSkewY for Typed OM reification; r=emilio,webidl,firefox-style-system-reviewers
-      2026-05-21  a1f0c27b132d  Bug 2038579 - Add some missing pieces to CSSSkewX for Typed OM reification; r=emilio,webidl,firefox-style-system-reviewers
-      2026-05-21  01726cb87a92  Bug 2038579 - Add some missing pieces to CSSSkew for Typed OM reification; r=emilio,webidl,firefox-style-system-reviewers
-      2026-05-21  1cca68da992b  Bug 2038579 - Add some missing pieces to CSSRotate for Typed OM reification; r=emilio,webidl,firefox-style-system-reviewers
-      2026-05-20  53c8235c2b4b  Bug 2038579 - Add some missing pieces to CSSTranslate for Typed OM reification; r=emilio,webidl,firefox-style-system-reviewers
 
 [28] Ayoub hedri  —  17 patch(es)
     ----------------------------------------------------------------------
@@ -2206,222 +2208,223 @@ Known aliases (applied in HTML report, NOT below):
       2026-05-10  97c84d223966  Bug 1829401 - Part 1: Implements Element.requestPointerLock() to return Promise<undefined>; r=smaug,webidl
       2026-05-07  e4344e3d3c01  Bug 1829401 - Part 1: Implements Element.requestPointerLock() to return Promise<undefined>; r=smaug,webidl
 
-[119] Ryan Curran  —  2 patch(es)
+[119] Rong Bao  —  2 patch(es)
+    ----------------------------------------------------------------------
+      2026-10-08  d23a59b5ad62  Bug 2078673 - Implement LSX-based CharacterDataBuffer FirstNon8Bit() acceleration. r=dom-core-reviewers,smaug
+      2026-10-02  9c72e81acde2  Bug 2077173 - Implement htmlaccel on LoongArch64 platforms with LSX intrinsics. r=dom-core-reviewers,hsivonen
+
+[120] Ryan Curran  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-10-07  87fecfcaa698  Bug 2077556 - Don't restore the pointer to a synthesized position after pointer lock r=edgar,smaug
       2026-04-29  143b508425d4  Bug 2034604 - run macOS mochitests on AArch64 r=aryx,devtools-reviewers,jdescottes,media-playback-reviewers,padenot
 
-[120] Sandor Molnar  —  2 patch(es)
+[121] Sandor Molnar  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-05-01  c39f630ea92d  Bug 2017993 - Disable test_coalesce_touchmove.html for frequent failures. r=intermittent-reviewers,aryx DONTBUILD
       2026-04-15  fadbe2268d45  Bug 1976484 - Disable browser_layers_unloaded_while_interruptingJS.js on linux tsan for frequent failures. r=intermittent-reviewers,aryx DONTBUILD
 
-[121] Sebastian Zartner  —  2 patch(es)
+[122] Sebastian Zartner  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-04-17  2765f48f3ded  Bug 2032580 - [devtools] Added prefers-reduced-motion override to BrowsingContext. r=emilio,nchevobbe,devtools-reviewers,firefox-style-system-reviewers,layout-reviewers
       2026-04-16  655ef92be3bb  Bug 2032580 - [devtools] Added prefers-reduced-motion override to BrowsingContext. r=emilio,nchevobbe,devtools-reviewers,firefox-style-system-reviewers,layout-reviewers
 
-[122] Sky Ning  —  2 patch(es)
+[123] Sky Ning  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-09-14  4c9281d78c70  Bug 2066918 - Make the navigational-prefetch activation flag actually reach content r=necko-reviewers,acreskey,avandolder,jesup
       2026-05-26  dc0bff8eafbe  Bug 2031413 - Update sLastPointerId at eMouseEnterIntoWidget so the synthesized eMouseMove can update the cursor. r=masayuki,dom-core
 
-[123] Tim Huang  —  2 patch(es)
+[124] Tim Huang  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-05-22  76ccc02a1a34  Bug 2038663 - Part 3: Move classifier blocking error code helpers into ChannelClassifierUtils. r=bvandersloot,media-playback-reviewers,firefox-style-system-reviewers,aosmond,emilio
       2026-05-22  21a72ace6cd0  Bug 2038663 - Part 1: Introduce ClassifierChannelUtils and move relevant APIs. r=bvandersloot
 
-[124] Ting-Yu Lin  —  2 patch(es)
+[125] Ting-Yu Lin  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-08-13  1f6768dfc648  Bug 2063136 Part 1 - Convert anonymous enum flag for transform matrix to enum class. r=firefox-svg-reviewers,longsonr
       2026-08-04  485d39aa1fc4  Bug 2055937 - Remove layout.css.anchor-positioning.enabled preference. r=layout-reviewers,webidl,devtools-reviewers,firefox-style-system-reviewers,emilio,nchevobbe
 
-[125] alexical  —  2 patch(es)
+[126] alexical  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-09-03  fb30077f2d3b  Bug 2005954 - Escape newlines in IDs in FragmentOrElement CC logging r=mccr8
       2026-09-03  908042a0d257  Bug 2005954 - Create Collector Log Analyzer UI in about:memory r=smaug,mccr8,desktop-theme-reviewers,frontend-codestyle-reviewers,mossop,emilio
 
-[126] az  —  2 patch(es)
+[127] az  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-08-21  976bbc9aef17  Bug 2056051: Don't cancel the ImageDecoder read request from cycle-collection unlink r=dom-core-reviewers,media-playback-reviewers,smaug,aosmond
       2026-05-06  598afe6e71cb  Bug 1825286 - Part 1: Add webrtc type to MediaCapabilities IDL and remove transmission type. r=pehrsons,webidl,smaug
 
-[127] owlishDeveloper  —  2 patch(es)
+[128] owlishDeveloper  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-09-11  3fa9e2861b47  Bug 2057685 - Part 3: Add IPC to get full scrollable size and device pixel ratio from content r=emilio
       2026-09-08  db51560737b2  Bug 2057685 - Part 1: Add a ProcessCrossPaint function for obtaining full page screenshots on mobile r=emilio
 
-[128] Alex Franchuk  —  1 patch(es)
+[129] Alex Franchuk  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-06-23  92be69532e14  Bug 2037623 p3 - Use macros for trivial ParamTraits implementations r=ipc-reviewers,necko-reviewers,media-playback-reviewers,profiler-reviewers,dom-storage-reviewers,permissions-reviewers,layout-reviewers,dom-worker-reviewers,chutten,farre,timhuang,jari,valentin,aosmond,asuth,nika,dcarver
 
-[129] Alex Jakobi  —  1 patch(es)
+[130] Alex Jakobi  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-04-30  0fd2cbfbdf45  Bug 2019490 - Prefer target element for multiple aligned snap areas r=hiro,layout-reviewers,botond
 
-[130] Alice Boxhall  —  1 patch(es)
+[131] Alice Boxhall  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-05-05  d9e4c01c2847  Bug 2029571 - Ensure form association still works correctly when ID and form attr are equal. r=dom-core,smaug
 
-[131] Andreas Pehrson  —  1 patch(es)
+[132] Andreas Pehrson  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-04-23  63dc6d879c5e  Bug 2033420 - Implement RTCEncodedFrameMetadata.receiveTime. r=bwc,webidl,smaug
 
-[132] Andrew Sutherland  —  1 patch(es)
+[133] Andrew Sutherland  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-08-21  82be20cb059e  Bug 2064648 - Don't apply the file:// URI allowlist to worker process selection. r=nika,ipc-reviewers
 
-[133] Benjamin Peterson  —  1 patch(es)
+[134] Benjamin Peterson  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-08-21  20435ce47961  Bug 2065293 - Finish removing AttachShadowInternal. r=emilio
 
-[134] Caleb Chan  —  1 patch(es)
+[135] Caleb Chan  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-09-10  c3965fa0d595  Bug 2031836 - Rename separate private default search engine preferences and don't turn on the split by default. r=Standard8,firefox-desktop-core-reviewers ,urlbar-reviewers,akulyk,hsohaney,chutten
 
-[135] Calvin Lei-Cramer  —  1 patch(es)
+[136] Calvin Lei-Cramer  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-09-15  87ce44a6bbe6  Bug 1975584 - fix typo. r=media-playback-reviewers,smaug,padenot
 
-[136] Charlie Humphreys  —  1 patch(es)
+[137] Charlie Humphreys  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-06-23  9d89c83c5f16  Bug 1641989: Add FOGTransport parent/child to replace PContentChild in FOG IPC r=chutten,nika
 
-[137] Chris Martin  —  1 patch(es)
+[138] Chris Martin  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-04-30  441bce78681d  Bug 2024431 - Ensure pose array isn't just sentinel span r=dom-core,smaug
 
-[138] Daisuke Akatsuka  —  1 patch(es)
+[139] Daisuke Akatsuka  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-05-25  31e276101e9d  Bug 1874203: Introduce nsIClipboard.getDataIfSmallerThan() r=mak,win-reviewers,geckoview-reviewers,nalexander,gstoll
 
-[139] Dmitry Gozman  —  1 patch(es)
+[140] Dmitry Gozman  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-10-02  da1688c62468  Bug 2076389 - Set the target of coalesced PointerEvents only after duplicating their private data. r=dom-core-reviewers,masayuki
 
-[140] Dominik Bay  —  1 patch(es)
+[141] Dominik Bay  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-08-26  c06fc27a7571  Bug 2066736 - Validate filter array lengths in FilePickerParent::RecvOpen. r=dom-core-reviewers,smaug
 
-[141] Drew Willcoxon  —  1 patch(es)
+[142] Drew Willcoxon  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-09-10  3e7c069ee0d5  Bug 2035971 - Make the moz-remote-image protocol preserve the instrinsic aspect ratio by default and add a stretch param. r=mak,urlbar-reviewers,tnikkel
 
-[142] Eitan Isaacson  —  1 patch(es)
+[143] Eitan Isaacson  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-04-11  c7e7a510015f  Bug 2027237 - Check that embedder doc is managed by same PBrowser. r=morgan
 
-[143] Eleanor Dicharry  —  1 patch(es)
+[144] Eleanor Dicharry  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-04-13  32e673a1902e  Bug 2018995 - Add new x-moz-graph custom protocol to support Microsoft Graph in Thunderbird. r=emilio
 
-[144] Erich Gubler  —  1 patch(es)
+[145] Erich Gubler  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-07-30  09a90e0260da  Bug 2059417 - chore(webgpu): document reliance on `enum` discriminants matching for blend factors r=webidl,saschanaz DONTBUILD
 
-[145] Francis McKenzie  —  1 patch(es)
+[146] Francis McKenzie  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-06-04  ad0bfcf7bc08  Bug 1315558 - Add publicSuffix extension API. 1/4 - scaffolding. r=robwu,webidl,smaug
 
-[146] Gabriele Svelto  —  1 patch(es)
+[147] Gabriele Svelto  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-08-27  881de96cacc2  Bug 2066464 - Remove the thread id hack when initializing the crash reporter on macOS r=jld,necko-reviewers,ipc-reviewers,media-playback-reviewers,padenot
 
-[147] Greg Tatum  —  1 patch(es)
+[148] Greg Tatum  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-08-25  2534cbb3208c  Bug 2063103 - Add a ChromeUtils.addProfilerCounter() to hook up counters to JS r=canova,profiler-reviewers
 
-[148] Harveer Singh  —  1 patch(es)
+[149] Harveer Singh  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-06-16  e29aad050d44  Bug 2025417: Capping a max size on SharedMap value that could be stored/broadcasted.r=ipc-reviewers,mccr8
 
-[149] Helmut Januschka  —  1 patch(es)
+[150] Helmut Januschka  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-04-28  ceb343c444f6  Bug 2006340 - Implement Resource Timing Level 3 interim response timestamps r=necko-reviewers,webidl,smaug,valentin
 
-[150] James Han  —  1 patch(es)
+[151] James Han  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-05-12  14716cb80c5f  Bug 2030052 - Flush live ContentBlockingLogs on anti-tracking DB query r=emz
 
-[151] Jari Jalkanen  —  1 patch(es)
+[152] Jari Jalkanen  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-08-10  546b6eb4118a  Bug 2053743 - Add use counters for FileSystemHandle::move. r=smaug,webidl,edgar,saschanaz
 
-[152] John M. Schanck  —  1 patch(es)
+[153] John M. Schanck  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-09-10  f3c0eac8f691  Bug 2040812 - show passkeys in autocomplete="webauthn" autofill dropdown. r=credential-management-reviewers,mtigley
 
-[153] Jonathan Garbee  —  1 patch(es)
+[154] Jonathan Garbee  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-06-12  06a3d64fbbef  Bug 2045887 - Avoid null deref in ElementInternals::GetAttrElements when there is no cached value. r=eeejay
 
-[154] Jonathan Sudiaman  —  1 patch(es)
+[155] Jonathan Sudiaman  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-07-13  51616ea0b426  Bug 2046675 - New sidebar: F6 focuses widgets when it should only focus panels r=sfoster
 
-[155] Justin Link  —  1 patch(es)
+[156] Justin Link  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-05-28  121593b924f0  Bug 1889737: Ensure that we don't report underflowed values in largest_contentful_paint_* metrics r=denispal
 
-[156] Kershaw Chang  —  1 patch(es)
+[157] Kershaw Chang  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-06-08  af475f217795  Bug 2044254 -  Prefetch A and AAAA separately so Happy Eyeballs reuses the speculative DNS lookup, r=mxinden
 
-[157] Landry Breuil  —  1 patch(es)
+[158] Landry Breuil  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-05-07  c1658d9fae29  Bug 2037843: include SandboxSettings.h to fix the build on OpenBSD after bug 1977813 r=bobowen
 
-[158] Lars Eggert  —  1 patch(es)
+[159] Lars Eggert  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-09-11  a82f8263961e  Bug 2068800 - Stop presenting network resets on https as SSL errors r=dom-core-reviewers,smaug,valentin
 
-[159] Martin Raiber  —  1 patch(es)
+[160] Martin Raiber  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-09-23  2f48e2754b47  Bug 2064392 - Fix opener-after-user-interaction heuristic being run inconsistently r=timhuang
 
-[160] Maryam  —  1 patch(es)
+[161] Maryam  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-09-04  c36c839b1040  Bug 2062077 - Deduplicate storage access promise resolve/reject logic in Document r=timhuang
 
-[161] Matthew Gregan  —  1 patch(es)
+[162] Matthew Gregan  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-05-08  3a16c481f09e  Bug 2034274 - Pass trusted client PID to AudioIPC server. r=cubeb-reviewers,pehrsons
 
-[162] Max Emig  —  1 patch(es)
+[163] Max Emig  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-08-09  111b07e67e80  Bug 2019456 - Expose nsISocketTransport connection flags in TCPSocket SocketOptions. r=necko-reviewers,webidl,smaug,jesup
 
-[163] Mike Conley  —  1 patch(es)
+[164] Mike Conley  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-09-03  662fdb47c3b8  Bug 1844148 - Provide a mechanism for using center cropping on HTML labels in privileged documents and syntactic sugar to use it with moz-label. r=emilio,mstriemer,desktop-theme-reviewers,layout-reviewers
 
-[164] Mike Hommey  —  1 patch(es)
+[165] Mike Hommey  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-09-08  38946f6f1f52  Bug 2069193 - Reformat Python files that lost `ruff-format` coverage. r=linter-reviewers,perftest-reviewers,geckoview-reviewers,devtools-reviewers,firefox-style-system-reviewers,layout-reviewers,whimboo,sergesanspaille,dshin,sparky,m_kato
 
-[165] Mr. M  —  1 patch(es)
+[166] Mr. M  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-05-29  5f837dd775a3  Bug 2005007 - Add parsing for CSS corner-shape support r=firefox-style-system-reviewers,emilio,dshin
 
-[166] Nicolas Guichard  —  1 patch(es)
+[167] Nicolas Guichard  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-09-15  2e70387e03ff  Bug 2070387 - Skip tests skipped on android-em-14-x86_64/opt on android-em-14-x86_64-ccov/opt as well. r=intermittent-reviewers,ahal
 
-[167] Nishu Sheth  —  1 patch(es)
+[168] Nishu Sheth  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-06-16  6da0d7899689  Bug 2000683 - Enable "Copy" in right click menu when window is inactive on macOS. r=spohl,dom-core-reviewers,smaug
 
-[168] Perf AI Bot  —  1 patch(es)
+[169] Perf AI Bot  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-09-15  05924a8db751  Bug 2066583 - Add compile-time-length overloads for HTML parser ASCII literal comparisons, using an exact-length check and bounded character comparison. r=hsivonen
 
-[169] Robbendebiene  —  1 patch(es)
+[170] Robbendebiene  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-07-07  bfa5336c0905  Bug 1685123 - Implement manifest sandbox support r=robwu
-
-[170] Rong Bao  —  1 patch(es)
-    ----------------------------------------------------------------------
-      2026-10-02  9c72e81acde2  Bug 2077173 - Implement htmlaccel on LoongArch64 platforms with LSX intrinsics. r=dom-core-reviewers,hsivonen
 
 [171] Sammy Khamis  —  1 patch(es)
     ----------------------------------------------------------------------
