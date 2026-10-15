@@ -1923,14 +1923,14 @@ class TestASelfComparisonCardIsCharted:
         prefix rather than an exact 'firefox' key."""
         html = self._html()
         i = html.index("function dotRows")
-        body = html[i:i + 1400]
+        body = html[i:html.index("function metricCard", i)]
         assert "b.startsWith('firefox')" in body
 
     def test_no_best_label_on_a_self_comparison(self):
         """"best" would be praising one of our own measurements over another."""
         html = self._html()
         i = html.index("function dotRows")
-        body = html[i:i + 1400]
+        body = html[i:html.index("function metricCard", i)]
         assert "? null : m.leader" in body
 
     def test_the_expansion_does_not_call_it_a_bare_trend_line(self):
@@ -1990,3 +1990,53 @@ class TestThinSamplesDoNotEarnTheMarker:
         change is only whether they light the marker on their own."""
         src = self._icon_src()
         assert "m.noisy" in src and "m.low_samples" in src
+
+
+class TestARecentShiftIsShownOnTheCard:
+    """A 30-day median lags a step change by weeks, so a card whose last week moved
+    clear of noise carries a badge, a last-week row in its plot, and a note naming
+    where the move started. The comparison itself stays on the 30-day window."""
+
+    def _js(self):
+        html = _render(_ROADMAP)
+        m = re.search(r"function renderMetrics\(\) \{(.*?)\nrenderMetrics\(\);",
+                      html, re.DOTALL)
+        return m.group(1)
+
+    def _fn(self, name):
+        js = self._js()
+        m = re.search(r"function " + name + r"\(m[^)]*\) \{(.*?)\n  \}", js, re.DOTALL)
+        assert m is not None, name
+        return m.group(1)
+
+    def test_badge_is_gated_on_the_shift(self):
+        body = self._fn("shiftBadge")
+        assert "if (!sh) return ''" in body
+        assert "this week" in body
+        assert "sh.since" in body, "a streak names its start, not 'this week'"
+        assert "shiftWhen(sh)" in body
+
+    def test_badge_colour_follows_better_not_the_arrow(self):
+        """A latency that rose is bad and a score that rose is good: colour comes
+        from `improved`, the arrow from which way the number moved."""
+        body = self._fn("shiftBadge")
+        assert "sh.improved ? 'ahead' : 'behind'" in body
+        assert "sh.change_pct < 0" in body
+
+    def test_badge_sits_in_the_collapsed_row(self):
+        assert "shiftBadge(m)" in self._fn("metricCard")
+
+    def test_plot_gains_a_last_week_row(self):
+        body = self._fn("dotRows")
+        assert "'firefox recent'" in body
+        assert "m.recent_shift" in body
+
+    def test_last_week_row_sits_under_the_first_firefox_row(self):
+        """Placed by position, not by name, so a self-comparison card's
+        'firefox cold' row still comes first."""
+        assert "browsers.splice(1, 0, 'firefox recent')" in self._fn("dotRows")
+
+    def test_the_expansion_names_where_it_started(self):
+        body = self._fn("metricCard")
+        assert "first_revision" in body
+        assert "before_median" in body

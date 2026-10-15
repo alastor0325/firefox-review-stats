@@ -862,6 +862,16 @@
     cursor: help;
   }
   .pm-card.is-stale > summary .pm-diverge { opacity: 0.72 }
+  /* Last-week move. Colour says better or worse for Firefox; the arrow says
+     which way the number went, so a reader who cannot tell the two apart still
+     has the word in the tooltip. */
+  .pm-shift {
+    display: inline-block; margin-left: 6px; padding: 0 5px; border-radius: 3px;
+    font-family: var(--mono); font-size: 9.5px; font-weight: 700;
+    vertical-align: middle; cursor: help; color: #fff;
+  }
+  .pm-shift.ahead { background: var(--pm-ahead) }
+  .pm-shift.behind { background: var(--pm-behind) }
 
   /* Expandable metric card, mirroring the roadmap tree so both subviews of
      Media Health behave the same way. */
@@ -969,6 +979,9 @@
   .pm-dot.nospread { background: var(--surface); border: 2px solid var(--pm-them) }
   .pm-plot-row.us .pm-range { background: var(--pm-us) }
   .pm-plot-row.us .pm-dot { background: var(--pm-us) }
+  /* The last-week row is ours too, drawn lighter so it reads as a part of the
+     Firefox row above it rather than another browser. */
+  .pm-plot-row.recent .pm-range, .pm-plot-row.recent .pm-dot { opacity: 0.55 }
   .pm-plot-row.us .pm-dot.nospread { background: var(--surface);
     border-color: var(--pm-us) }
   .pm-value {
@@ -3096,6 +3109,26 @@ function renderMetrics() {
     return '<div class="pm-vs">' + head + rest + '</div>';
   }
 
+  // Firefox's last week has moved clear of the weeks before it. The 30-day bar
+  // and verdict lag a step change by weeks; this is what says one happened.
+  // A streak names its start; otherwise the comparison is the whole last week.
+  // One phrase for the badge, its tooltip and the expansion, so they cannot drift.
+  const shiftWhen = sh => sh.since
+    ? 'since ' + sh.since : 'over the last ' + sh.recent_days + ' days';
+  const shiftVerdict = sh => sh.improved ? 'better' : 'worse';
+
+  function shiftBadge(m) {
+    const sh = m.recent_shift;
+    if (!sh) return '';
+    const down = sh.change_pct < 0, pct = Math.abs(sh.change_pct);
+    return '<span class="pm-shift ' + (sh.improved ? 'ahead' : 'behind') + '"'
+      + ' data-tip="Firefox ' + (down ? 'fell' : 'rose') + ' ' + pct + '% '
+      + escA(shiftWhen(sh)) + ' (' + shiftVerdict(sh)
+      + '). The bar and verdict still use the 30-day median.">'
+      + (down ? '\u25BC ' : '\u25B2 ') + pct + '% '
+      + (sh.since ? 'since ' + esc(sh.since.slice(5)) : 'this week') + '</span>';
+  }
+
   // Compact warning. The detail it stands for lives in the expansion, so the
   // collapsed row stays scannable.
   function warnIcon(m, solo) {
@@ -3139,9 +3172,15 @@ function renderMetrics() {
     const rowSeries = (!m.comparison.factor && base)
       ? {['firefox ' + base.self_label]: m.series.firefox,
          ['firefox ' + base.label]: base.series}
-      : m.series;
+      : {...m.series};
     const browsers = Object.keys(rowSeries).sort(
       (a, b) => (a === 'firefox' ? -1 : b === 'firefox' ? 1 : a.localeCompare(b)));
+    // Firefox's recent runs, straight under the first Firefox row whatever it is
+    // called. Ours alone: rivals run too rarely for a week to mean anything.
+    if (m.recent_shift) {
+      rowSeries['firefox recent'] = m.recent_shift.recent;
+      browsers.splice(1, 0, 'firefox recent');
+    }
     // Decided in the data layer, which knows which series are stale. A series that
     // stopped reporting cannot hold "best" while a current one is on the card. A
     // self comparison has no leader: both rows are ours, so "best" would be praising
@@ -3152,6 +3191,7 @@ function renderMetrics() {
       const l = pct(s.p25, max), r = pct(s.p75, max);
       const flat = s.p75 <= s.p25;
       return '<div class="pm-plot-row' + (us ? ' us' : '')
+        + (b === 'firefox recent' ? ' recent' : '')
         + (s.stale ? ' is-stale' : '') + '">'
         + '<div class="pm-browser' + (us ? ' us' : '')
         + '"><span class="pm-swatch"></span>' + esc(b)
@@ -3224,6 +3264,20 @@ function renderMetrics() {
         + 'median is thin evidence - usually a suite that landed recently, and it '
         + 'settles as history accumulates');
     }
+    const sh = m.recent_shift;
+    if (sh) {
+      facts.push('<b>Firefox ' + esc(shiftWhen(sh)) + ': median ' + sh.recent.median + ' ' + esc(m.unit) + ' over ' + sh.recent.n
+        + ' runs, against ' + sh.before_median + ' ' + esc(m.unit) + ' in the '
+        + sh.before_days + ' days before (' + (sh.change_pct > 0 ? '+' : '')
+        + sh.change_pct + '%, ' + shiftVerdict(sh) + ')</b>. '
+        + 'The move is outside the earlier run-to-run spread, so it is unlikely '
+        + 'to be noise; the 30-day median above will catch up over the next weeks.'
+        + (sh.first_revision
+            ? ' First run after the shift: <code>'
+              + esc(String(sh.first_revision).slice(0, 12)) + '</code> ('
+              + esc(sh.first_date) + ').'
+            : ''));
+    }
     if (m.note) facts.push(esc(m.note));
     facts.push('platform ' + esc(plat(m.platform)));
 
@@ -3236,6 +3290,7 @@ function renderMetrics() {
     return '<details class="pm-card' + (m.stale ? ' is-stale' : '') + '">'
       + '<summary><div class="pm-row">'
       + '<div class="pm-row-label">' + esc(m.title) + warnIcon(m, solo)
+      + shiftBadge(m)
       + '<em class="pm-flag">expand for browsers, window and source</em></div>'
       + divergeBar(m) + verdictOf(m) + '</div></summary>'
       + '<div class="pm-card-body">'

@@ -516,6 +516,18 @@ which reads as provenance rather than as a warning. Two safeguards now:
   rename on the Perfherder side would have written an empty file over a good one
   and silently emptied the subview.
 
+Every card's bar and verdict use a 30-day median, which lags a step change by
+weeks. So the fetcher also records a **recent shift** for Firefox
+(`recent_shift`): the newest runs compared against the rest of the window. It is
+flagged only when there are at least 5 runs on each side, the recent median sits
+outside the earlier p25–p75, *and* it moved by at least 10%. "Recent" is a
+trailing streak of at least 5 runs beyond that spread, when there is one, so a
+step that is a day or two old is caught before it takes over the week; otherwise
+it is the last 7 days. A flagged card gets a `▼ 76% since 10-13` badge (green if
+better for Firefox, amber if worse), a "firefox recent" row in its plot, and a
+note naming the first run after the shift. Rivals get no such row: they run about
+three times a week, too few to say anything about one week.
+
 ## CI / weekly refresh
 
 `.github/workflows/refresh.yml` fires on Monday 09:00 UTC and on manual `workflow_dispatch`. Each run:

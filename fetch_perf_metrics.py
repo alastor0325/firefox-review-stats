@@ -44,9 +44,11 @@ from reviewstats.perfmetrics import (
     is_safe_to_write,
     matches_test,
     pick_signature,
+    recent_shift,
     select_recent_window,
     summarize,
     unresolved_metrics,
+    utc_day,
 )
 
 PROJECT = "mozilla-central"
@@ -389,6 +391,7 @@ def collect(days: int) -> dict:
                   f"expected 1 -- {names}", file=sys.stderr)
 
         series = {}
+        shift = None
         window_end, days_behind = None, None
         now_ts = datetime.now(timezone.utc).timestamp()
         for app, rows in candidates.items():
@@ -415,6 +418,9 @@ def collect(days: int) -> dict:
                 # window, just an old one.
                 sm["days_behind"] = w["days_behind"]
                 series[app] = sm
+                if app == "firefox":
+                    shift = recent_shift(w["points"],
+                                         lower_is_better=spec["lower_is_better"])
                 if window_end is None or (w["window_end"] or 0) > window_end:
                     window_end = w["window_end"]
                 days_behind = (w["days_behind"] if days_behind is None
@@ -434,11 +440,11 @@ def collect(days: int) -> dict:
             "baseline_label": spec.get("baseline_label"),
             "self_label": spec.get("self_label"),
             "series": series,
+            "recent_shift": shift,
             "window_days": days,
             "stale": stale,
             "days_behind": days_behind,
-            "window_end": (datetime.fromtimestamp(window_end, timezone.utc)
-                           .date().isoformat()) if window_end else None,
+            "window_end": utc_day(window_end) if window_end else None,
         })
 
     # A configured metric that matched nothing is the quiet failure mode of adding

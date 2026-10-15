@@ -2114,3 +2114,162 @@ class TestEveryConfiguredPlatformIsFetched:
         body = src[src.index("def collect("):]
         assert 'machine_platform' in body
         assert 'spec["platform"]' in body
+
+
+class TestARecentShiftIsFlagged:
+    """A 30-day median takes weeks to reflect a step change: `mc.first` fell from
+    about 3.0 ms to 0.76 ms on 2026-10-13 while its card still read 2.92 ms. The
+    shift marker compares Firefox's last 7 days against the 23 days before them, and
+    fires only when the move is clear of run-to-run noise."""
+
+    DAY = 86400
+    NOW = 1_800_000_000
+
+    def _pts(self, before, recent):
+        """`before` spaced over days 8..29 back, `recent` over the last 6 days,
+        the last of them at NOW -- both windows anchor on the newest point."""
+        out = []
+        for i, v in enumerate(before):
+            ts = self.NOW - 8 * self.DAY - i * (21 * self.DAY // max(1, len(before)))
+            out.append({"value": v, "push_timestamp": ts, "revision": f"b{i}"})
+        for i, v in enumerate(recent):
+            ts = self.NOW - (len(recent) - 1 - i) * (6 * self.DAY // len(recent))
+            out.append({"value": v, "push_timestamp": ts, "revision": f"r{i}"})
+        return out
+
+    def _window(self, pts):
+        """What the fetcher hands over: the card's own 30-day window."""
+        from reviewstats.perfmetrics import select_recent_window
+        return select_recent_window(pts, days=30, now_ts=self.NOW)["points"]
+
+    def _shift(self, before, recent, lower=True):
+        from reviewstats.perfmetrics import recent_shift
+        return recent_shift(self._window(self._pts(before, recent)),
+                            lower_is_better=lower)
+
+    def test_a_clear_drop_is_flagged_as_an_improvement(self):
+        s = self._shift([3.0, 2.8, 3.2, 3.1, 2.9, 3.3, 2.7, 3.0],
+                        [0.7, 0.8, 0.6, 0.9, 0.75])
+        assert s is not None
+        assert s["improved"] is True
+        assert s["change_pct"] == -75
+        assert s["recent"]["median"] == 0.75
+        assert s["recent"]["n"] == 5
+        assert s["before_median"] == 3.0
+        assert s["before_n"] == 8
+
+    def test_a_rise_on_a_latency_is_a_regression(self):
+        s = self._shift([3.0, 2.8, 3.2, 3.1, 2.9, 3.3, 2.7, 3.0],
+                        [5.0, 5.2, 4.9, 5.1, 5.0])
+        assert s["improved"] is False
+        assert s["change_pct"] > 0
+
+    def test_direction_follows_higher_is_better(self):
+        s = self._shift([30, 28, 32, 31, 29, 33, 27, 30],
+                        [50, 52, 49, 51, 50], lower=False)
+        assert s["improved"] is True
+
+    def test_noise_inside_the_earlier_spread_is_not_flagged(self):
+        assert self._shift([3.0, 2.0, 4.0, 3.5, 2.5, 3.8, 2.2, 3.0],
+                           [3.3, 3.4, 3.2, 3.5, 3.3]) is None
+
+    def test_a_move_outside_the_spread_but_under_ten_percent_is_not_flagged(self):
+        # A very tight series: 5% is outside p25-p75 yet too small to call.
+        assert self._shift([10.0, 10.01, 9.99, 10.0, 10.02, 9.98, 10.0, 10.01],
+                           [10.5, 10.5, 10.5, 10.5, 10.5]) is None
+
+    def test_too_few_recent_runs_are_not_flagged(self):
+        assert self._shift([3.0, 2.8, 3.2, 3.1, 2.9, 3.3, 2.7, 3.0],
+                           [0.7, 0.8, 0.6, 0.9]) is None
+
+    def test_too_few_earlier_runs_are_not_flagged(self):
+        assert self._shift([3.0, 2.8, 3.2, 3.1], [0.7, 0.8, 0.6, 0.9, 0.75]) is None
+
+    def test_a_fresh_step_is_caught_before_it_owns_the_week(self):
+        """The mc.first case: the drop landed 2.5 days ago, so most of the last
+        week is still the old level and its median has not moved. A trailing
+        streak of runs beyond the old spread is compared on its own instead."""
+        from reviewstats.perfmetrics import recent_shift
+        pts = self._pts([3.0, 2.8, 3.2, 3.1, 2.9, 3.3, 2.7, 3.0], [])
+        # Six days of the old level, then six runs at the new one.
+        for i, v in enumerate([3.0, 2.9, 3.1, 3.0, 2.8, 3.2, 3.0, 2.9]):
+            pts.append({"value": v, "push_timestamp": self.NOW - 6 * self.DAY
+                        + i * self.DAY // 2, "revision": f"o{i}"})
+        for i, v in enumerate([0.7, 0.8, 0.6, 0.9, 0.75, 0.7]):
+            pts.append({"value": v, "push_timestamp": self.NOW - (5 - i) * 3600,
+                        "revision": f"n{i}"})
+        s = recent_shift(self._window(pts), lower_is_better=True)
+        assert s is not None
+        assert s["recent"]["n"] == 6
+        assert s["recent"]["median"] == 0.725
+        assert s["since"] == s["first_date"]
+        assert s["first_revision"] == "n0"
+
+    def test_a_short_streak_falls_back_to_the_week(self):
+        s = self._shift([3.0, 2.8, 3.2, 3.1, 2.9, 3.3, 2.7, 3.0],
+                        [3.0, 3.1, 2.9, 3.0, 0.7, 0.8, 0.6])
+        assert s is None
+
+    def test_no_points_is_none(self):
+        from reviewstats.perfmetrics import recent_shift
+        assert recent_shift([], lower_is_better=True) is None
+
+    def test_the_first_shifted_run_is_named(self):
+        """The earliest run of the trailing streak beyond the old spread is where
+        a reader goes looking for the push that caused it."""
+        s = self._shift([3.0, 2.8, 3.2, 3.1, 2.9, 3.3, 2.7, 3.0],
+                        [3.0, 0.7, 0.8, 0.6, 0.9, 0.75])
+        assert s["first_revision"] == "r1"
+        assert s["first_date"]
+
+    def test_no_first_run_when_the_newest_run_is_back_in_range(self):
+        s = self._shift([3.0, 2.8, 3.2, 3.1, 2.9, 3.3, 2.7, 3.0],
+                        [0.7, 0.8, 0.6, 0.9, 0.75, 0.7, 3.0])
+        assert s is not None
+        assert s["first_revision"] is None
+
+    def test_points_older_than_the_window_are_ignored(self):
+        from reviewstats.perfmetrics import recent_shift
+        pts = self._pts([3.0, 2.8, 3.2, 3.1, 2.9, 3.3, 2.7, 3.0],
+                        [0.7, 0.8, 0.6, 0.9, 0.75])
+        pts += [{"value": 0.7, "push_timestamp": self.NOW - 60 * self.DAY,
+                 "revision": "old"}] * 20
+        s = recent_shift(self._window(pts), lower_is_better=True)
+        assert s["before_n"] == 8
+
+
+class TestTheShiftReachesThePage:
+    def _raw(self, shift):
+        return {"generated_at": "2026-10-15", "window_days": 30, "metrics": [{
+            "id": "mc.first", "group": "g", "title": "First", "unit": "ms",
+            "lower_is_better": True, "platform": "p", "note": "",
+            "window_days": 30, "days_behind": 0,
+            "series": {"firefox": {"n": 95, "median": 2.9, "p25": 2.3,
+                                   "p75": 3.3, "cv": 20, "days_behind": 0}},
+            "recent_shift": shift,
+        }]}
+
+    def test_shift_is_carried_through(self):
+        shift = {"recent": {"n": 10, "median": 0.76, "p25": 0.6, "p75": 0.8,
+                            "cv": 20}, "before_median": 3.0, "change_pct": -75,
+                 "improved": True}
+        m = build_metrics_view(self._raw(shift))["metrics"][0]
+        assert m["recent_shift"]["change_pct"] == -75
+        assert m["recent_shift"]["recent"]["cv_known"] is True
+
+    def test_absent_shift_is_none(self):
+        m = build_metrics_view(self._raw(None))["metrics"][0]
+        assert m["recent_shift"] is None
+
+    def test_axis_reaches_a_recent_rise(self):
+        shift = {"recent": {"n": 10, "median": 9.0, "p25": 8.0, "p75": 10.0,
+                            "cv": 5}, "before_median": 3.0, "change_pct": 200,
+                 "improved": False}
+        m = build_metrics_view(self._raw(shift))["metrics"][0]
+        assert m["axis_max"] >= 10.0
+
+    def test_the_fetcher_records_the_shift(self):
+        import pathlib
+        src = pathlib.Path("fetch_perf_metrics.py").read_text(encoding="utf-8")
+        assert "recent_shift(" in src
+        assert '"recent_shift"' in src

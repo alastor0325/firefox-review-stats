@@ -25,6 +25,7 @@ would hide that the gap exists.
 
 import statistics as _st
 from collections import defaultdict
+from datetime import datetime, timezone
 
 # A run-to-run spread this wide is louder than most differences worth detecting,
 # so the page says so rather than plotting it as though it were solid.
@@ -229,19 +230,123 @@ def select_recent_window(points: list, *, days: int, now_ts: float) -> dict:
     usable = [p for p in points or []
               if p.get("value") is not None and p.get("push_timestamp")]
     if not usable:
-        return {"values": [], "window_end": None, "window_start": None,
-                "days_behind": None}
+        return {"values": [], "points": [], "window_end": None,
+                "window_start": None, "days_behind": None}
 
     newest = max(p["push_timestamp"] for p in usable)
     span = days * 86400
     cutoff = newest - span
-    values = [p["value"] for p in usable if p["push_timestamp"] > cutoff]
+    in_window = [p for p in usable if p["push_timestamp"] > cutoff]
     return {
-        "values": values,
+        "values": [p["value"] for p in in_window],
+        # The points themselves, for `recent_shift`, so the shift is measured on
+        # exactly the window the card's median is.
+        "points": in_window,
         "window_end": newest,
         "window_start": cutoff,
         # How far behind "now" the window ends. Zero-ish means current.
         "days_behind": max(0, int((now_ts - newest) // 86400)),
+    }
+
+
+# A recent shift: Firefox's last SHIFT_RECENT_DAYS against the rest of the 30-day
+# window. The 30-day median is deliberately slow, so a step change sat on the page
+# as the old number for weeks -- `mc.first` fell from 3.0 ms to 0.76 ms and the card
+# still read 2.92. Firefox only: rivals run about three times a week, too few to
+# say anything about one week.
+SHIFT_RECENT_DAYS = 7
+SHIFT_MIN_RUNS = 5
+SHIFT_MIN_CHANGE = 0.10
+
+
+def _trailing_streak(points: list, beyond) -> list:
+    """The newest run of consecutive points that all satisfy `beyond`."""
+    k = len(points)
+    while k and beyond(float(points[k - 1]["value"])):
+        k -= 1
+    return points[k:]
+
+
+def utc_day(ts: float) -> str:
+    """The UTC calendar date of a push timestamp, as the page prints it."""
+    return datetime.fromtimestamp(ts, timezone.utc).date().isoformat()
+
+
+def recent_shift(points: list, *, lower_is_better: bool) -> dict | None:
+    """Has Firefox recently moved clear of the weeks before? None if not.
+
+    `points` is the card's own window -- `select_recent_window(...)["points"]`.
+
+    "Recent" is one of two things. A trailing streak of at least SHIFT_MIN_RUNS
+    runs, all beyond the earlier p25-p75 on the same side, is a step that has
+    just landed: it is compared on its own, because a fresh step does not own
+    the week yet -- `mc.first` dropped 2.5 days before a refresh and its 7-day
+    median had not moved. Otherwise it is the last SHIFT_RECENT_DAYS. Five in a
+    row on one side of the quartiles happens by chance about 0.1% of the time.
+
+    Either way it fires only when all three hold:
+
+      * at least SHIFT_MIN_RUNS runs on each side;
+      * the recent median sits outside the earlier p25-p75;
+      * and it differs from the earlier median by at least SHIFT_MIN_CHANGE.
+    """
+    usable = sorted(points or [], key=lambda p: p["push_timestamp"])
+    if not usable:
+        return None
+    split = usable[-1]["push_timestamp"] - SHIFT_RECENT_DAYS * 86400
+    before = [float(p["value"]) for p in usable if p["push_timestamp"] <= split]
+    if len(before) < SHIFT_MIN_RUNS:
+        return None
+    p25, _, p75 = _st.quantiles(before, n=4)
+
+    # Only one side can hold a streak: the newest point is on one side or neither.
+    streak = (_trailing_streak(usable, lambda v: v < p25)
+              or _trailing_streak(usable, lambda v: v > p75))
+    if len(streak) >= SHIFT_MIN_RUNS:
+        recent = streak
+        # A streak older than the week eats into the earlier side; re-measure it
+        # without the streak's own runs.
+        if streak[0]["push_timestamp"] <= split:
+            before = [float(p["value"]) for p in usable[:-len(streak)]]
+            if len(before) < SHIFT_MIN_RUNS:
+                return None
+            p25, _, p75 = _st.quantiles(before, n=4)
+    else:
+        streak = []
+        recent = [p for p in usable if p["push_timestamp"] > split]
+        if len(recent) < SHIFT_MIN_RUNS:
+            return None
+
+    b_med = _st.median(before)
+    r_med = _st.median(float(p["value"]) for p in recent)
+    if not b_med:
+        return None
+    change = (r_med - b_med) / b_med
+    if abs(change) < SHIFT_MIN_CHANGE or p25 <= r_med <= p75:
+        return None
+
+    # Where it started: the streak's first run, or else the earliest run of the
+    # trailing streak beyond the old spread. None when the newest run is back in
+    # range -- then there is no single push to point at.
+    tail = streak or _trailing_streak(
+        recent, (lambda v: v < p25) if r_med < b_med else (lambda v: v > p75))
+    first = tail[0] if tail else None
+    first_date = utc_day(first["push_timestamp"]) if first else None
+
+    return {
+        "recent": summarize([p["value"] for p in recent]),
+        "recent_days": SHIFT_RECENT_DAYS,
+        # Set when the recent side is a streak: the badge then names its start
+        # rather than claiming a whole week.
+        "since": first_date if streak else None,
+        "before_median": _keep_precision(b_med),
+        "before_n": len(before),
+        "before_days": round((recent[0]["push_timestamp"]
+                              - usable[0]["push_timestamp"]) / 86400),
+        "change_pct": round(100 * change),
+        "improved": (r_med < b_med) if lower_is_better else (r_med > b_med),
+        "first_revision": first.get("revision") if first else None,
+        "first_date": first_date,
     }
 
 
@@ -326,6 +431,13 @@ def pick_signature(candidates: list) -> dict | None:
     return min(usable, key=lambda c: (-len(c["samples"]), c.get("id", 0)))
 
 
+def _cv_known(s: dict) -> bool:
+    """A lone sample has no spread. `summarize` yields cv 0.0 for it, which
+    renders as "CV 0%" and reads as rock-steady -- the opposite of what one run
+    supports."""
+    return int(s.get("n") or 0) >= 2
+
+
 def _render_metric(metric: dict) -> dict | None:
     series = {b: s for b, s in (metric.get("series") or {}).items()
               if s and b in DISPLAY_BROWSERS}
@@ -341,9 +453,7 @@ def _render_metric(metric: dict) -> dict | None:
     for b, s in series.items():
         db = s.get("days_behind")
         s["stale"] = db is not None and db > STALE_AFTER_DAYS
-        # A lone sample has no spread. `summarize` yields cv 0.0 for it, which renders
-        # as "CV 0%" and reads as rock-steady -- the opposite of what one run supports.
-        s["cv_known"] = int(s.get("n") or 0) >= 2
+        s["cv_known"] = _cv_known(s)
     stale_browsers = sorted(b for b, s in series.items()
                             if b != "firefox" and s["stale"])
 
@@ -376,6 +486,12 @@ def _render_metric(metric: dict) -> dict | None:
     axis_max = max(
         [s["p75"] for s in series.values()] + [s["median"] for s in series.values()]
     )
+    # The last-week row is drawn on the same scale, so a rise must not run off it.
+    shift = metric.get("recent_shift")
+    if shift:
+        shift = {**shift, "recent": {**shift["recent"],
+                                     "cv_known": _cv_known(shift["recent"])}}
+        axis_max = max(axis_max, shift["recent"]["p75"], shift["recent"]["median"])
     return {
         "id": metric.get("id", ""),
         "title": metric.get("title", ""),
@@ -397,6 +513,7 @@ def _render_metric(metric: dict) -> dict | None:
         "days_behind": metric.get("days_behind"),
         "window_end": metric.get("window_end") or "",
         "series": series,
+        "recent_shift": shift,
         "comparison": comparison,
         "compared": comparison["factor"] is not None,
         "axis_max": axis_max,
