@@ -1,10 +1,28 @@
 {
   "chrome_stable": 155,
-  "as_of": "2026-10-08",
+  "as_of": "2026-10-15",
   "rows": [
     {
       "label": "Nightly",
-      "firefox": "159.0a1",
+      "firefox": "160.0a1",
+      "milestone": 156,
+      "branch_head": "branch-heads/8078",
+      "branched": "2026-09-28",
+      "vs_chrome": "1 ahead",
+      "patches": 149,
+      "last_change": {
+        "date": "2026-10-08"
+      },
+      "unvendored": {
+        "commits": [],
+        "as_of": "2026-10-15",
+        "branch_commits": 3,
+        "last_merge": "2026-10-05"
+      }
+    },
+    {
+      "label": "Beta",
+      "firefox": "159.0b2",
       "milestone": 155,
       "branch_head": "branch-heads/8059",
       "branched": "2026-09-14",
@@ -34,14 +52,14 @@
             "role": "landed"
           }
         ],
-        "as_of": "2026-10-08",
+        "as_of": "2026-10-15",
         "branch_commits": 4,
         "last_merge": "2026-10-03"
       }
     },
     {
-      "label": "Beta",
-      "firefox": "158.0b5",
+      "label": "Release",
+      "firefox": "158.0",
       "milestone": 154,
       "branch_head": "branch-heads/8037",
       "branched": "2026-08-31",
@@ -77,39 +95,14 @@
             "role": "landed"
           }
         ],
-        "as_of": "2026-10-08",
+        "as_of": "2026-10-15",
         "branch_commits": 5,
         "last_merge": "2026-10-05"
       }
     },
     {
-      "label": "Release",
-      "firefox": "157.0.1",
-      "milestone": 153,
-      "branch_head": "branch-heads/8010",
-      "branched": "2026-08-17",
-      "vs_chrome": "2 behind",
-      "patches": 150,
-      "last_change": {
-        "date": "2026-09-01"
-      },
-      "unvendored": {
-        "commits": [
-          {
-            "sha": "fb1629986f85fb5d7d679ba838c0f8b102000067",
-            "subject": "[M153] Ensure stopped transceivers do not hold a channel",
-            "fix": "Ensure stopped transceivers do not hold a channel",
-            "role": "landed"
-          }
-        ],
-        "as_of": "2026-10-08",
-        "branch_commits": 1,
-        "last_merge": "2026-10-01"
-      }
-    },
-    {
       "label": "ESR 153",
-      "firefox": "153.4.0",
+      "firefox": "153.5.0",
       "milestone": 149,
       "branch_head": "branch-heads/7827",
       "branched": "2026-05-04",
@@ -145,75 +138,64 @@
             "role": "landed"
           }
         ],
-        "as_of": "2026-10-08",
+        "as_of": "2026-10-15",
         "branch_commits": 7,
         "last_merge": "2026-06-10"
       }
     },
     {
-      "label": "ESR 140",
-      "firefox": "140.17.0",
-      "milestone": 135,
-      "branch_head": "branch-heads/7049",
-      "branched": "2025-03-03",
-      "vs_chrome": "20 behind",
-      "patches": 148,
-      "last_change": {
-        "date": "2026-08-06"
-      },
-      "unvendored": {
-        "commits": [],
-        "as_of": "2026-10-08",
-        "branch_commits": 3,
-        "last_merge": "2025-04-07"
-      }
-    },
-    {
       "label": "ESR 115",
-      "firefox": "115.42.0",
-      "milestone": 117,
-      "branch_head": "branch-heads/5938",
-      "branched": "2023-08-08",
-      "vs_chrome": "38 behind",
+      "firefox": "115.43.0",
+      "milestone": 120,
+      "branch_head": "branch-heads/6099",
+      "branched": "2023-10-30",
+      "vs_chrome": "35 behind",
       "patches": 113,
       "last_change": {
-        "date": "2026-09-05"
+        "date": "2026-09-25"
       },
       "unvendored": {
         "commits": [
           {
-            "sha": "70aa7e99e4af06e9a2273793179dfcfddad11898",
-            "subject": "[Merge to 117] CHECK against overwrites in send_modules_map_",
-            "fix": "[Merge to 117] CHECK against overwrites in send_modules_map_",
+            "sha": "b0b827e0fa26f6dc141807c8bbd41c050029483b",
+            "subject": "[M120-LTS] Limit max frame size in DAV1D decoder",
+            "fix": "Limit max frame size in DAV1D decoder",
             "role": "landed"
           },
           {
-            "sha": "d95382fab7dcac8867d9811c4630367c4454cb7d",
-            "subject": "[M117][SctpDataChannel] Don't use PostTask for observer registration.",
-            "fix": "[SctpDataChannel] Don't use PostTask for observer registration.",
+            "sha": "5ab829e4ca8f63be6b4ed1d98eee382d7307d34e",
+            "subject": "Revert^2 \"[M120] JsepTransportController: Remove raw pointers to description objects\"",
+            "fix": "JsepTransportController: Remove raw pointers to description objects",
+            "role": "relanded"
+          },
+          {
+            "sha": "bf2e30678e0e5b21f2a2d49180a13225fdcfaa1a",
+            "subject": "Revert \"[M120] JsepTransportController: Remove raw pointers to description objects\"",
+            "fix": "JsepTransportController: Remove raw pointers to description objects",
+            "role": "reverted"
+          },
+          {
+            "sha": "e79a99060f70a356b131d9f2f7497914984944d1",
+            "subject": "[M120] JsepTransportController: Remove raw pointers to description objects",
+            "fix": "JsepTransportController: Remove raw pointers to description objects",
+            "role": "landed"
+          },
+          {
+            "sha": "b0cc68e61205fd11a7256a6e85307ec17ad95790",
+            "subject": "Reduces rate at which TryGetNextFrame returns NULL for WGC",
+            "fix": "Reduces rate at which TryGetNextFrame returns NULL for WGC",
             "role": "landed"
           }
         ],
-        "as_of": "2026-10-08",
-        "branch_commits": 2,
-        "last_merge": "2023-09-05"
+        "as_of": "2026-10-15",
+        "branch_commits": 5,
+        "last_merge": "2024-03-19"
       }
     }
   ],
   "plan": {
-    "as_of": "2026-10-08",
+    "as_of": "2026-10-15",
     "rows": [
-      {
-        "milestone": 155,
-        "firefox": 159,
-        "chrome_branch": "2026-09-14",
-        "chrome_stable": "2026-10-06",
-        "nightly_start": "2026-09-24",
-        "merge_day": "2026-10-08",
-        "vendoring": true,
-        "fastforward_bug": 2072400,
-        "in_progress": false
-      },
       {
         "milestone": 156,
         "firefox": 160,
@@ -221,9 +203,9 @@
         "chrome_stable": "2026-10-20",
         "nightly_start": "2026-10-08",
         "merge_day": "2026-10-22",
-        "vendoring": false,
-        "fastforward_bug": null,
-        "in_progress": null
+        "vendoring": true,
+        "fastforward_bug": 2077266,
+        "in_progress": false
       },
       {
         "milestone": 157,
@@ -246,16 +228,27 @@
         "vendoring": false,
         "fastforward_bug": null,
         "in_progress": null
+      },
+      {
+        "milestone": 159,
+        "firefox": 163,
+        "chrome_branch": "2026-11-09",
+        "chrome_stable": "2026-12-08",
+        "nightly_start": "2026-11-19",
+        "merge_day": "2026-12-03",
+        "vendoring": false,
+        "fastforward_bug": null,
+        "in_progress": null
       }
     ],
     "lag": {
-      "last_vendored": "2026-09-18",
-      "upstream_head": "2026-10-08",
-      "behind": 238
+      "last_vendored": "2026-10-05",
+      "upstream_head": "2026-10-15",
+      "behind": 185
     }
   },
   "patch_stack": {
-    "as_of": "2026-10-08",
+    "as_of": "2026-10-15",
     "history": [
       {
         "month": "2025-11",
@@ -795,11 +788,17 @@
       {
         "month": "2026-10",
         "count": 149,
-        "sampled": "2026-10-08",
-        "sha": "4ad2eb15b14e85132e844ef6d46c1ece5b3b9299",
+        "sampled": "2026-10-15",
+        "sha": "098e537cc4338b343383540dd7e7907fece986b7",
         "added": [],
         "dropped": [],
-        "updates": []
+        "updates": [
+          {
+            "milestone": 156,
+            "bug": 2077266,
+            "date": "2026-10-08"
+          }
+        ]
       }
     ]
   }
