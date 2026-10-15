@@ -95,8 +95,9 @@ def describe_cause(summary: dict, alert: dict, pushes, *,
     `bug_role` says what the named bug is. A push-sourced bug is the landing. A
     linked bug is the landing on an improvement, but on a regression it is the
     tracker sheriffs filed -- and only a tracker's `regressed_by` names the
-    cause; a landing's names whatever that landing fixed. `bug_summary` and
-    `regressed_by` are filled in by the fetcher from Bugzilla.
+    cause; a landing's names whatever that landing fixed. `bug_summary`,
+    `bug_state`, `accepted` and `regressed_by` are filled in by the fetcher from
+    Bugzilla.
     """
     pushes = pushes or []
     bugs = bugs_in_pushes(pushes)
@@ -119,5 +120,17 @@ def describe_cause(summary: dict, alert: dict, pushes, *,
         "bug_source": source,
         "bug_role": role,
         "bug_summary": None,
+        "bug_state": None,
+        "accepted": False,
         "regressed_by": [],
     }
+
+
+def accepted_move(role, state) -> bool:
+    """Whether sheriffs accepted the move rather than leaving it to be fixed.
+
+    A tracker closed WONTFIX is how they record a move the patch author
+    explained -- which reads very differently from an open regression. Only a
+    tracker: a landing closed WONTFIX says nothing about this move.
+    """
+    return role == "tracker" and state == "WONTFIX"

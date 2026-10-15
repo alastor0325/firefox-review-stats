@@ -909,6 +909,14 @@
   }
   .pm-source.none { color: var(--ink-soft) }
   .pm-permalink { margin-left: 14px }
+  .pm-row-link {
+    margin-left: 6px; font-size: 11px; text-decoration: none; opacity: 0.55;
+    vertical-align: middle;
+  }
+  .pm-row-link:hover, .pm-row-link:focus-visible { opacity: 1 }
+  .pm-row-link.is-copied { opacity: 1 }
+  .pm-row-link.is-copied::after { content: " \2713" }
+  .pm-permalink.is-copied::after { content: " \2014  copied" }
   /* The card a deep link opened, so the reader sees which one was meant. */
   .pm-card.pm-targeted { outline: 2px solid var(--pm-us); outline-offset: 2px }
   .pm-head { border-bottom: 1px solid var(--rule); padding-bottom: 2px }
@@ -2222,9 +2230,10 @@ function copyCardLink(ev, a) {
   ev.stopPropagation();
   setHash(a.getAttribute('href').slice(1));
   const done = () => {
-    a.textContent = 'link copied';
+    // Feedback through a class and CSS, so the link's own text never changes.
+    a.classList.add('is-copied');
     clearTimeout(a._reset);
-    a._reset = setTimeout(() => { a.textContent = 'link to this card'; }, 1500);
+    a._reset = setTimeout(() => a.classList.remove('is-copied'), 1500);
   };
   if (navigator.clipboard) navigator.clipboard.writeText(location.href).then(done, () => {});
 }
@@ -3172,9 +3181,14 @@ function renderMetrics() {
   // A link inside a card must open elsewhere and not toggle the card.
   const ext = (href, text) => '<a href="' + escA(href) + '" target="_blank"'
     + ' rel="noopener" onclick="event.stopPropagation()">' + text + '</a>';
-  const bugRef = (id, summary) =>
+  const bugRef = (id, summary, state) =>
     ext('https://bugzilla.mozilla.org/show_bug.cgi?id=' + id, 'Bug ' + esc(id))
+    + (state ? ' (' + esc(state) + ')' : '')
     + (summary ? ' \u2014 ' + esc(summary) : '');
+  const cardHref = m => '#health/metrics/' + encodeURIComponent(m.id);
+  const copyLink = (m, cls, label, extra = '') => '<a class="' + cls + '" href="'
+    + cardHref(m) + '"' + extra + ' onclick="copyCardLink(event, this)">'
+    + label + '</a>';
 
   function causeLine(c) {
     if (!c) return '';
@@ -3185,7 +3199,7 @@ function renderMetrics() {
         + c.push_count + (c.push_count_capped ? '+' : '') + ' '
         + esc(c.repository) + ' pushes, so bisecting it needs backfills.';
     }
-    const bug = bugRef(c.bug_id, c.bug_summary);
+    const bug = bugRef(c.bug_id, c.bug_summary, c.bug_state);
     if (c.bug_source === 'push') {
       return ' <b>Landed with ' + bug + '</b>, the only change in '
         + esc(c.repository) + ' push <code>' + esc(c.revision) + '</code>; '
@@ -3199,8 +3213,12 @@ function renderMetrics() {
     const culprits = c.regressed_by || [];
     return ' ' + alertLink + ' is tracked in ' + bug + (culprits.length
       ? ', which Bugzilla records as regressed by <b>'
-        + culprits.map(r => bugRef(r.id, r.summary)).join(', ') + '</b>.'
-      : ', which does not yet name the change that caused it.');
+        + culprits.map(r => bugRef(r.id, r.summary, r.state)).join(', ') + '</b>.'
+      : ', which does not yet name the change that caused it.')
+      + (c.accepted
+          ? ' <b>Sheriffs accepted this move rather than fixing it</b>, so read'
+            + ' the tracker before treating it as a regression.'
+          : '');
   }
 
   function shiftBadge(m) {
@@ -3373,15 +3391,16 @@ function renderMetrics() {
         + ' rel="noopener" onclick="event.stopPropagation()">'
         + 'open these exact series in Perfherder \u2197</a>'
       : '<span class="pm-source none">no signature recorded \u2014 cannot link</span>';
-    const permalink = '<a class="pm-source pm-permalink" href="#health/metrics/'
-      + encodeURIComponent(m.id) + '" onclick="copyCardLink(event, this)">'
-      + 'link to this card</a>';
+    const permalink = copyLink(m, 'pm-source pm-permalink', 'link to this card');
+    // The same link on the collapsed row, where it is seen without expanding.
+    const rowLink = copyLink(m, 'pm-row-link', '\u{1F517}',
+      ' title="Copy link to this card" aria-label="Copy link to this card"');
 
     return '<details id="pm-card-' + escA(m.id) + '" class="pm-card'
       + (m.stale ? ' is-stale' : '') + '">'
       + '<summary><div class="pm-row">'
       + '<div class="pm-row-label">' + esc(m.title) + warnIcon(m, solo)
-      + shiftBadge(m)
+      + shiftBadge(m) + rowLink
       + '<em class="pm-flag">expand for browsers, window and source</em></div>'
       + divergeBar(m) + verdictOf(m) + '</div></summary>'
       + '<div class="pm-card-body">'

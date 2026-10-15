@@ -2063,7 +2063,7 @@ class TestTheShiftNamesItsCause:
     def test_a_named_bug_links_to_bugzilla(self):
         html = _render(_ROADMAP)
         assert "https://bugzilla.mozilla.org/show_bug.cgi?id=" in html
-        assert "bugRef(c.bug_id, c.bug_summary)" in self._fn("causeLine")
+        assert "bugRef(c.bug_id, c.bug_summary, c.bug_state)" in self._fn("causeLine")
 
     def test_a_wide_range_is_stated_not_guessed(self):
         body = self._fn("causeLine")
@@ -2072,6 +2072,15 @@ class TestTheShiftNamesItsCause:
 
     def test_a_known_culprit_is_named(self):
         assert "c.regressed_by" in self._fn("causeLine")
+
+    def test_an_accepted_tracker_is_said_plainly(self):
+        """The decision is made in reviewstats.perfcause; the page only reads it."""
+        body = self._fn("causeLine")
+        assert "c.accepted" in body
+        assert "WONTFIX" not in body
+
+    def test_culprits_carry_their_state_too(self):
+        assert "bugRef(r.id, r.summary, r.state)" in self._fn("causeLine")
 
     def test_only_a_tracker_shows_regressed_by(self):
         """A landing's regressed_by names what it fixed, not this move."""
@@ -2131,8 +2140,7 @@ class TestAMetricCardIsDeepLinkable:
 
     def test_each_card_offers_its_link(self):
         html = _render(_ROADMAP)
-        assert re.search(r"href=\"#health/metrics/'\s*\+\s*encodeURIComponent\(m\.id\)",
-                         html)
+        assert "const cardHref = m => '#health/metrics/' + encodeURIComponent(m.id)" in html
         assert "link to this card" in html
 
     def test_the_link_copies_without_toggling_the_card(self):
@@ -2140,3 +2148,35 @@ class TestAMetricCardIsDeepLinkable:
         assert "navigator.clipboard" in body
         assert "stopPropagation()" in body
         assert "preventDefault()" in body
+
+
+class TestTheCardLinkIsVisibleWithoutExpanding:
+    """The only copy control sat at the bottom of the expanded card, where it
+    was missed. The collapsed row carries one too."""
+
+    def _js(self):
+        html = _render(_ROADMAP)
+        return re.search(r"function renderMetrics\(\) \{(.*?)\nrenderMetrics\(\);",
+                         html, re.DOTALL).group(1)
+
+    def test_row_has_a_link_icon(self):
+        m = re.search(r"function metricCard\(m[^)]*\) \{(.*?)\n  \}", self._js(),
+                      re.DOTALL).group(1)
+        assert "pm-row-link" in m
+        assert "aria-label=\"Copy link to this card\"" in m
+
+    def test_both_links_share_one_href_builder(self):
+        js = self._js()
+        assert "const cardHref = m =>" in js
+        assert "const copyLink = (m, cls, label" in js
+        assert js.count("copyLink(m, ") == 2
+
+    def test_copy_feedback_never_rewrites_the_link_text(self):
+        """Swapping the text shifted the row and needed each label saved and
+        restored; a class and CSS carry the feedback instead."""
+        html = _render(_ROADMAP)
+        i = html.index("\nfunction copyCardLink")
+        body = html[i:html.index("\n}", i)]
+        assert "classList.add('is-copied')" in body
+        assert "textContent" not in body
+        assert ".pm-row-link.is-copied::after" in html

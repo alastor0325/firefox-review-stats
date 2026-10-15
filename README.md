@@ -29,7 +29,7 @@ Each per-team page has four views, toggled at the top — plus **Media Health** 
 
 **Keyboard navigation:** on a team page, **←/→** cycle the view (Team → Member → Wait Queue → Recent Changes → Media Health → libwebrtc, skipping any that are hidden) and **Shift+←/→** cycle the current view's secondary axis — the period in Team View (6-Month → 3-Month → 1-Month → Per-Week), the window in Recent Changes, the section in Media Health. Arrows are ignored while typing in a field, and Cmd/Alt/Ctrl+arrow are left to the OS/browser (Ctrl+← / → is the macOS Spaces switch, which is why Shift — not Ctrl — drives the period).
 
-**Deep links:** the view and its period/window are encoded in the URL hash, so you can link straight to a state — `#team/6m`, `#team/3m`, `#team/1m`, `#team/weekly`, `#member`, `#queue`, `#recent/1w`, `#recent/1m`, `#health/roadmap`, `#libwebrtc`. The hash updates as you toggle and is restored on load and on back/forward. A third segment opens one Media Health metric card — `#health/metrics/ve.av1` expands that card and scrolls to it; each card's **link to this card** copies that URL. The segment is the metric `id` in `METRICS` (`fetch_perf_metrics.py`), so it stays stable across refreshes; an id no longer on the page just opens the Metrics view.
+**Deep links:** the view and its period/window are encoded in the URL hash, so you can link straight to a state — `#team/6m`, `#team/3m`, `#team/1m`, `#team/weekly`, `#member`, `#queue`, `#recent/1w`, `#recent/1m`, `#health/roadmap`, `#libwebrtc`. The hash updates as you toggle and is restored on load and on back/forward. A third segment opens one Media Health metric card — `#health/metrics/ve.av1` expands that card and scrolls to it; each card's 🔗 on the collapsed row (or **link to this card** inside it) copies that URL. The segment is the metric `id` in `METRICS` (`fetch_perf_metrics.py`), so it stays stable across refreshes; an id no longer on the page just opens the Metrics view.
 
 The landing page is a static picker that lists every registered team and links into its subfolder. **↑/↓** move a focus highlight through the teams; **Enter** opens the highlighted one.
 
@@ -536,7 +536,7 @@ within 4 days before / 1 day after the shift's first run; a reassigned or
 downstream alert is followed to its new summary), and lists the pushes in its
 range. A bug is named only when the range is one push with one bug in it, or
 sheriffs linked one; for a regression the linked bug is usually their tracker, so
-its `regressed_by` is followed to the landing. A wide range is stated as one
+its `regressed_by` is followed to the landing, and the linked bug's Bugzilla state is shown — a tracker closed WONTFIX means the move was explained and accepted, not left broken. A wide range is stated as one
 ("spans 40 autoland pushes") rather than blamed on its last push. This runs on
 every refresh rather than being cached: triage and backfills narrow the range
 days after the alert fires. Any failed request leaves the card without a cause

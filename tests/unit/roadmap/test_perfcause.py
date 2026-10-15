@@ -175,12 +175,27 @@ class TestDescribeCause:
         s = _summary()
         c = describe_cause(s, s["alerts"][0], [])
         assert c["bug_summary"] is None and c["regressed_by"] == []
+        assert c["bug_state"] is None and c["accepted"] is False
 
-    def test_status_is_readable(self):
-        s = _summary(status=4)
-        assert describe_cause(s, s["alerts"][0], [])["status"] == "improvement"
-        s = _summary(status=42)
-        assert describe_cause(s, s["alerts"][0], [])["status"] == "unknown"
+
+class TestAcceptedMove:
+    """A tracker closed WONTFIX means the move was explained and accepted, not
+    left broken -- the AV1 encode regression was exactly that."""
+
+    def test_a_wontfix_tracker_is_accepted(self):
+        from reviewstats.perfcause import accepted_move
+        assert accepted_move("tracker", "WONTFIX") is True
+
+    def test_an_open_or_fixed_tracker_is_not(self):
+        from reviewstats.perfcause import accepted_move
+        assert accepted_move("tracker", "NEW") is False
+        assert accepted_move("tracker", "FIXED") is False
+
+    def test_a_landing_never_is(self):
+        """A landing closed WONTFIX says nothing about this move."""
+        from reviewstats.perfcause import accepted_move
+        assert accepted_move("landing", "WONTFIX") is False
+        assert accepted_move(None, None) is False
 
 
 class TestResolveCauseInTheFetcher:
@@ -210,7 +225,8 @@ class TestResolveCauseInTheFetcher:
             return {"results": [_push("Bug 2080876 - Part 2",
                                       "Bug 2080876 - Part 1")]}
         if "bugzilla.mozilla.org/rest/bug" in url:
-            return {"bugs": [{"id": 2080876, "summary": "Prime video fails"}]}
+            return {"bugs": [{"id": 2080876, "summary": "Prime video fails",
+                              "status": "RESOLVED", "resolution": "FIXED"}]}
         raise AssertionError(url)
 
     def test_happy_path_names_the_bug_and_its_title(self, monkeypatch):
@@ -219,6 +235,8 @@ class TestResolveCauseInTheFetcher:
         c = m.resolve_cause("abc", self.SHIFT)
         assert c["bug_id"] == 2080876
         assert c["bug_summary"] == "Prime video fails"
+        assert c["bug_state"] == "FIXED"
+        assert c["accepted"] is False, "an improvement's landing is never 'accepted'"
         assert c["push_count"] == 1
 
     def test_a_moved_alert_follows_to_its_new_summary(self, monkeypatch):
@@ -275,9 +293,11 @@ class TestResolveCauseInTheFetcher:
         def routes(url):
             if "bugzilla" in url and "id=2080876" in url:
                 return {"bugs": [{"id": 2080876, "summary": "tracker",
+                                  "status": "RESOLVED", "resolution": "WONTFIX",
                                   "regressed_by": [2051892]}]}
             if "bugzilla" in url and "id=2051892" in url:
-                return {"bugs": [{"id": 2051892, "summary": "precise timers"}]}
+                return {"bugs": [{"id": 2051892, "summary": "precise timers",
+                                  "status": "RESOLVED", "resolution": "FIXED"}]}
             if "/project/autoland/push/" in url:
                 return {"results": [_push("Bug 1 - a"), _push("Bug 2 - b")]}
             return self._routes(url)
@@ -290,7 +310,9 @@ class TestResolveCauseInTheFetcher:
         c = m.resolve_cause("abc",
                             {"improved": False, "first_ts": T + 8 * 3600})
         assert c["bug_source"] == "alert"
-        assert c["regressed_by"] == [{"id": 2051892, "summary": "precise timers"}]
+        assert c["regressed_by"] == [{"id": 2051892, "summary": "precise timers",
+                                      "state": "FIXED"}]
+        assert c["bug_state"] == "WONTFIX" and c["accepted"] is True
 
     def test_an_improvement_does_not_follow_regressed_by(self, monkeypatch):
         """For an improvement the linked bug is the landing itself, and its

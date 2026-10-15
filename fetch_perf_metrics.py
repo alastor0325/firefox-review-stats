@@ -41,6 +41,7 @@ from pathlib import Path
 from reviewstats.perfcause import (
     PUSH_CAP,
     TREEHERDER,
+    accepted_move,
     alert_redirect,
     describe_cause,
     select_alert,
@@ -336,16 +337,24 @@ def _add_bug_details(cause: dict) -> None:
     if not cause["bug_id"]:
         return
     try:
-        bug = _bugs([cause["bug_id"]], "id,summary,regressed_by")
+        bug = _bugs([cause["bug_id"]], "id,summary,status,resolution,regressed_by")
         if not bug:
             return
         cause["bug_summary"] = bug[0]["summary"]
+        cause["bug_state"] = _state(bug[0])
+        cause["accepted"] = accepted_move(cause["bug_role"], cause["bug_state"])
         culprits = bug[0].get("regressed_by") or []
         if cause["bug_role"] == "tracker" and culprits:
-            cause["regressed_by"] = [{"id": b["id"], "summary": b.get("summary")}
-                                     for b in _bugs(culprits, "id,summary")]
+            cause["regressed_by"] = [
+                {"id": b["id"], "summary": b.get("summary"), "state": _state(b)}
+                for b in _bugs(culprits, "id,summary,status,resolution")]
     except (urllib.error.URLError, TimeoutError, KeyError) as e:
         print(f"  ! bug {cause['bug_id']}: {e}", file=sys.stderr)
+
+
+def _state(bug: dict):
+    """A bug's resolution once closed, else its status."""
+    return bug.get("resolution") or bug.get("status")
 
 
 def _cause_get(url: str, params: dict):
