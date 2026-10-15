@@ -528,6 +528,20 @@ better for Firefox, amber if worse), a "firefox recent" row in its plot, and a
 note naming the first run after the shift. Rivals get no such row: they run about
 three times a week, too few to say anything about one week.
 
+A flagged shift also names its **cause** where Perfherder knows it
+(`resolve_cause`, logic in `reviewstats/perfcause.py`). A mozilla-central push is
+a merge and cannot name a bug, so the lookup goes to the **autoland twin** series
+(same `signature_hash`), takes the matching alert (same direction, not invalid,
+within 4 days before / 1 day after the shift's first run; a reassigned or
+downstream alert is followed to its new summary), and lists the pushes in its
+range. A bug is named only when the range is one push with one bug in it, or
+sheriffs linked one; for a regression the linked bug is usually their tracker, so
+its `regressed_by` is followed to the landing. A wide range is stated as one
+("spans 40 autoland pushes") rather than blamed on its last push. This runs on
+every refresh rather than being cached: triage and backfills narrow the range
+days after the alert fires. Any failed request leaves the card without a cause
+line; it never fails the fetch.
+
 ## CI / weekly refresh
 
 `.github/workflows/refresh.yml` fires on Monday 09:00 UTC and on manual `workflow_dispatch`. Each run:

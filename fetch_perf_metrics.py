@@ -38,6 +38,13 @@ from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 
+from reviewstats.perfcause import (
+    PUSH_CAP,
+    TREEHERDER,
+    alert_redirect,
+    describe_cause,
+    select_alert,
+)
 from reviewstats.perfmetrics import (
     STALE_AFTER_DAYS,
     ambiguous_matches,
@@ -52,7 +59,8 @@ from reviewstats.perfmetrics import (
 )
 
 PROJECT = "mozilla-central"
-BASE = f"https://treeherder.mozilla.org/api/project/{PROJECT}/performance"
+TREEHERDER_API = f"{TREEHERDER}/api"
+BASE = f"{TREEHERDER_API}/project/{PROJECT}/performance"
 BROWSERTIME_FRAMEWORK = 13
 UA = "firefox-review-stats (media dashboard; github.com/alastor0325/firefox-review-stats)"
 
@@ -271,6 +279,84 @@ def fetch_points(signature_id: int, days: int) -> list:
     ]
 
 
+BUGZILLA_REST = "https://bugzilla.mozilla.org/rest/bug"
+# Best effort: a slow Treeherder costs a card its cause line, not the refresh.
+CAUSE_TIMEOUT = 20
+
+
+def resolve_cause(signature_hash: str, shift: dict) -> dict | None:
+    """What Perfherder knows about the cause of a flagged shift, or None.
+
+    Re-resolved on every refresh rather than cached: sheriffs triage and
+    backfill alerts days after they fire, so a range that is 40 pushes wide this
+    week can be one push next week. Any failed request leaves the card without a
+    cause line; it never fails the fetch. Lookup logic is in reviewstats.perfcause.
+    """
+    if not shift.get("first_ts") or not signature_hash:
+        return None
+    try:
+        # Alerts are raised on autoland; the twin series shares the hash.
+        twins = _cause_get(f"{TREEHERDER_API}/project/autoland/performance/"
+                           "signatures/", {"signature": signature_hash})
+        twin = next((v["id"] for v in twins.values()
+                     if v.get("signature_hash") == signature_hash), None)
+        if twin is None:
+            return None
+        summaries = _cause_get(f"{TREEHERDER_API}/performance/alertsummary/", {
+            "alerts__series_signature": twin, "limit": 50})["results"]
+        picked = select_alert(summaries, signature_id=twin,
+                              improved=bool(shift["improved"]),
+                              near_ts=shift["first_ts"])
+        if not picked:
+            return None
+        summary, alert = picked
+        moved = alert_redirect(alert)
+        if moved:
+            summary = _cause_get(f"{TREEHERDER_API}/performance/alertsummary/",
+                                 {"id": moved})["results"][0]
+        pushes = _cause_get(
+            f"{TREEHERDER_API}/project/{summary['repository']}/push/", {
+                "id__gt": summary["prev_push_id"],
+                "id__lte": summary["push_id"], "count": PUSH_CAP})["results"]
+    except (urllib.error.URLError, TimeoutError, KeyError, IndexError) as e:
+        print(f"  ! cause lookup for signature {signature_hash[:12]}: {e}",
+              file=sys.stderr)
+        return None
+    cause = describe_cause(summary, alert, pushes)
+    _add_bug_details(cause)
+    return cause
+
+
+def _add_bug_details(cause: dict) -> None:
+    """Fill in the bug's title and, for a tracker, the bugs it names as cause.
+
+    A restricted bug is simply absent from Bugzilla's answer: the number stays,
+    the title does not.
+    """
+    if not cause["bug_id"]:
+        return
+    try:
+        bug = _bugs([cause["bug_id"]], "id,summary,regressed_by")
+        if not bug:
+            return
+        cause["bug_summary"] = bug[0]["summary"]
+        culprits = bug[0].get("regressed_by") or []
+        if cause["bug_role"] == "tracker" and culprits:
+            cause["regressed_by"] = [{"id": b["id"], "summary": b.get("summary")}
+                                     for b in _bugs(culprits, "id,summary")]
+    except (urllib.error.URLError, TimeoutError, KeyError) as e:
+        print(f"  ! bug {cause['bug_id']}: {e}", file=sys.stderr)
+
+
+def _cause_get(url: str, params: dict):
+    return _get(f"{url}?{urllib.parse.urlencode(params)}", timeout=CAUSE_TIMEOUT)
+
+
+def _bugs(ids: list, fields: str) -> list:
+    return _cause_get(BUGZILLA_REST, {"id": ",".join(str(i) for i in ids),
+                                      "include_fields": fields})["bugs"]
+
+
 def fetch_samples(signature_id: int, days: int) -> list:
     q = urllib.parse.urlencode(
         {"signature_id": signature_id, "interval": days * 86400}
@@ -405,7 +491,8 @@ def collect(days: int) -> dict:
                     continue
                 w = select_recent_window(pts, days=days, now_ts=now_ts)
                 enriched.append({"id": r["id"], "samples": w["values"],
-                                 "window": w})
+                                 "window": w,
+                                 "signature_hash": r.get("signature_hash")})
             chosen = pick_signature(enriched)
             if not chosen:
                 continue
@@ -421,6 +508,9 @@ def collect(days: int) -> dict:
                 if app == "firefox":
                     shift = recent_shift(w["points"],
                                          lower_is_better=spec["lower_is_better"])
+                    if shift:
+                        shift["cause"] = resolve_cause(chosen["signature_hash"],
+                                                       shift)
                 if window_end is None or (w["window_end"] or 0) > window_end:
                     window_end = w["window_end"]
                 days_behind = (w["days_behind"] if days_behind is None

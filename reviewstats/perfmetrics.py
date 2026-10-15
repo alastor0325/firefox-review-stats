@@ -347,6 +347,7 @@ def recent_shift(points: list, *, lower_is_better: bool) -> dict | None:
         "improved": (r_med < b_med) if lower_is_better else (r_med > b_med),
         "first_revision": first.get("revision") if first else None,
         "first_date": first_date,
+        "first_ts": first["push_timestamp"] if first else None,
     }
 
 

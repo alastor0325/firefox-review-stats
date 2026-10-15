@@ -2221,12 +2221,15 @@ class TestARecentShiftIsFlagged:
                         [3.0, 0.7, 0.8, 0.6, 0.9, 0.75])
         assert s["first_revision"] == "r1"
         assert s["first_date"]
+        # The cause lookup matches alerts against this, not the rounded date.
+        assert s["first_ts"] == self.NOW - 4 * self.DAY  # r1 of six recent runs
 
     def test_no_first_run_when_the_newest_run_is_back_in_range(self):
         s = self._shift([3.0, 2.8, 3.2, 3.1, 2.9, 3.3, 2.7, 3.0],
                         [0.7, 0.8, 0.6, 0.9, 0.75, 0.7, 3.0])
         assert s is not None
         assert s["first_revision"] is None
+        assert s["first_ts"] is None
 
     def test_points_older_than_the_window_are_ignored(self):
         from reviewstats.perfmetrics import recent_shift

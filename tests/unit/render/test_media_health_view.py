@@ -2040,3 +2040,43 @@ class TestARecentShiftIsShownOnTheCard:
         body = self._fn("metricCard")
         assert "first_revision" in body
         assert "before_median" in body
+
+
+class TestTheShiftNamesItsCause:
+    """A flagged shift says what Perfherder knows about its cause. A bug is
+    named only when the data supports it; a wide range is stated as one."""
+
+    def _fn(self, name):
+        html = _render(_ROADMAP)
+        js = re.search(r"function renderMetrics\(\) \{(.*?)\nrenderMetrics\(\);",
+                       html, re.DOTALL).group(1)
+        m = re.search(r"function " + name + r"\([^)]*\) \{(.*?)\n  \}", js, re.DOTALL)
+        assert m is not None, name
+        return m.group(1)
+
+    def test_cause_line_is_part_of_the_shift_note(self):
+        assert "causeLine(sh.cause)" in self._fn("metricCard")
+
+    def test_no_cause_says_nothing(self):
+        assert "if (!c) return ''" in self._fn("causeLine")
+
+    def test_a_named_bug_links_to_bugzilla(self):
+        html = _render(_ROADMAP)
+        assert "https://bugzilla.mozilla.org/show_bug.cgi?id=" in html
+        assert "bugRef(c.bug_id, c.bug_summary)" in self._fn("causeLine")
+
+    def test_a_wide_range_is_stated_not_guessed(self):
+        body = self._fn("causeLine")
+        assert "c.push_count" in body
+        assert "not yet pinned down" in body
+
+    def test_a_known_culprit_is_named(self):
+        assert "c.regressed_by" in self._fn("causeLine")
+
+    def test_only_a_tracker_shows_regressed_by(self):
+        """A landing's regressed_by names what it fixed, not this move."""
+        assert "c.bug_role !== 'tracker'" in self._fn("causeLine")
+
+    def test_the_alert_is_always_linked(self):
+        assert "ext(c.alert_url" in self._fn("causeLine")
+        assert "onclick=\"event.stopPropagation()\">' + text" in _render(_ROADMAP)

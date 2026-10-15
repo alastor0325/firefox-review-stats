@@ -3117,6 +3117,44 @@ function renderMetrics() {
     ? 'since ' + sh.since : 'over the last ' + sh.recent_days + ' days';
   const shiftVerdict = sh => sh.improved ? 'better' : 'worse';
 
+  // What Perfherder's alert on the autoland twin says caused the shift. A bug is
+  // named only when the data supports it -- a one-push range, or a bug sheriffs
+  // linked. A wide range is stated as one: its last push is only where the test
+  // happened to run next, and naming its bug would blame the wrong change.
+  // A link inside a card must open elsewhere and not toggle the card.
+  const ext = (href, text) => '<a href="' + escA(href) + '" target="_blank"'
+    + ' rel="noopener" onclick="event.stopPropagation()">' + text + '</a>';
+  const bugRef = (id, summary) =>
+    ext('https://bugzilla.mozilla.org/show_bug.cgi?id=' + id, 'Bug ' + esc(id))
+    + (summary ? ' \u2014 ' + esc(summary) : '');
+
+  function causeLine(c) {
+    if (!c) return '';
+    const alertLink = ext(c.alert_url, 'Perfherder alert #' + esc(c.alert_id)
+      + ' \u2197') + ' (' + esc(c.status) + ')';
+    if (!c.bug_id) {
+      return ' Cause not yet pinned down: ' + alertLink + ' spans '
+        + c.push_count + (c.push_count_capped ? '+' : '') + ' '
+        + esc(c.repository) + ' pushes, so bisecting it needs backfills.';
+    }
+    const bug = bugRef(c.bug_id, c.bug_summary);
+    if (c.bug_source === 'push') {
+      return ' <b>Landed with ' + bug + '</b>, the only change in '
+        + esc(c.repository) + ' push <code>' + esc(c.revision) + '</code>; '
+        + alertLink + '.';
+    }
+    if (c.bug_role !== 'tracker') {
+      return ' ' + alertLink + ' is linked to <b>' + bug + '</b>.';
+    }
+    // A tracker is the bug sheriffs filed about the regression; the landing
+    // that caused it is whatever Bugzilla records it as regressed by.
+    const culprits = c.regressed_by || [];
+    return ' ' + alertLink + ' is tracked in ' + bug + (culprits.length
+      ? ', which Bugzilla records as regressed by <b>'
+        + culprits.map(r => bugRef(r.id, r.summary)).join(', ') + '</b>.'
+      : ', which does not yet name the change that caused it.');
+  }
+
   function shiftBadge(m) {
     const sh = m.recent_shift;
     if (!sh) return '';
@@ -3276,7 +3314,8 @@ function renderMetrics() {
             ? ' First run after the shift: <code>'
               + esc(String(sh.first_revision).slice(0, 12)) + '</code> ('
               + esc(sh.first_date) + ').'
-            : ''));
+            : '')
+        + causeLine(sh.cause));
     }
     if (m.note) facts.push(esc(m.note));
     facts.push('platform ' + esc(plat(m.platform)));
