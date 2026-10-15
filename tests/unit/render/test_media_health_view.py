@@ -2138,11 +2138,6 @@ class TestAMetricCardIsDeepLinkable:
     def test_an_unknown_card_is_ignored(self):
         assert "if (!el) return" in self._top("openMetricCard")
 
-    def test_each_card_offers_its_link(self):
-        html = _render(_ROADMAP)
-        assert "const cardHref = m => '#health/metrics/' + encodeURIComponent(m.id)" in html
-        assert "link to this card" in html
-
     def test_the_link_copies_without_toggling_the_card(self):
         body = self._top("copyCardLink")
         assert "navigator.clipboard" in body
@@ -2151,8 +2146,8 @@ class TestAMetricCardIsDeepLinkable:
 
 
 class TestTheCardLinkIsVisibleWithoutExpanding:
-    """The only copy control sat at the bottom of the expanded card, where it
-    was missed. The collapsed row carries one too."""
+    """Each card has one copy-link control, on the collapsed row, so it can be
+    found without expanding the card."""
 
     def _js(self):
         html = _render(_ROADMAP)
@@ -2164,12 +2159,10 @@ class TestTheCardLinkIsVisibleWithoutExpanding:
                       re.DOTALL).group(1)
         assert "pm-row-link" in m
         assert "aria-label=\"Copy link to this card\"" in m
+        assert re.search(r"href=\"#health/metrics/'\s*\+\s*encodeURIComponent\(m\.id\)", m)
 
-    def test_both_links_share_one_href_builder(self):
-        js = self._js()
-        assert "const cardHref = m =>" in js
-        assert "const copyLink = (m, cls, label" in js
-        assert js.count("copyLink(m, ") == 2
+    def test_one_copy_control_per_card(self):
+        assert self._js().count("copyCardLink(event, this)") == 1
 
     def test_copy_feedback_never_rewrites_the_link_text(self):
         """Swapping the text shifted the row and needed each label saved and

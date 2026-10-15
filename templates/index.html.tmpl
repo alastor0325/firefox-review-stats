@@ -908,15 +908,14 @@
     font-family: var(--mono); font-size: 10px; letter-spacing: 0.03em;
   }
   .pm-source.none { color: var(--ink-soft) }
-  .pm-permalink { margin-left: 14px }
   .pm-row-link {
     margin-left: 6px; font-size: 11px; text-decoration: none; opacity: 0.55;
     vertical-align: middle;
   }
-  .pm-row-link:hover, .pm-row-link:focus-visible { opacity: 1 }
-  .pm-row-link.is-copied { opacity: 1 }
+  .pm-row-link:hover, .pm-row-link:focus-visible, .pm-row-link.is-copied {
+    opacity: 1;
+  }
   .pm-row-link.is-copied::after { content: " \2713" }
-  .pm-permalink.is-copied::after { content: " \2014  copied" }
   /* The card a deep link opened, so the reader sees which one was meant. */
   .pm-card.pm-targeted { outline: 2px solid var(--pm-us); outline-offset: 2px }
   .pm-head { border-bottom: 1px solid var(--rule); padding-bottom: 2px }
@@ -2223,7 +2222,7 @@ function openMetricCard(id) {
   el.scrollIntoView({ block: 'start' });
 }
 
-// "link to this card": copy the full URL and point the address bar at it,
+// The row's link icon: copy the card's full URL and point the address bar at it,
 // without toggling the card the link sits inside.
 function copyCardLink(ev, a) {
   ev.preventDefault();
@@ -3185,10 +3184,6 @@ function renderMetrics() {
     ext('https://bugzilla.mozilla.org/show_bug.cgi?id=' + id, 'Bug ' + esc(id))
     + (state ? ' (' + esc(state) + ')' : '')
     + (summary ? ' \u2014 ' + esc(summary) : '');
-  const cardHref = m => '#health/metrics/' + encodeURIComponent(m.id);
-  const copyLink = (m, cls, label, extra = '') => '<a class="' + cls + '" href="'
-    + cardHref(m) + '"' + extra + ' onclick="copyCardLink(event, this)">'
-    + label + '</a>';
 
   function causeLine(c) {
     if (!c) return '';
@@ -3391,10 +3386,11 @@ function renderMetrics() {
         + ' rel="noopener" onclick="event.stopPropagation()">'
         + 'open these exact series in Perfherder \u2197</a>'
       : '<span class="pm-source none">no signature recorded \u2014 cannot link</span>';
-    const permalink = copyLink(m, 'pm-source pm-permalink', 'link to this card');
-    // The same link on the collapsed row, where it is seen without expanding.
-    const rowLink = copyLink(m, 'pm-row-link', '\u{1F517}',
-      ' title="Copy link to this card" aria-label="Copy link to this card"');
+    // On the collapsed row, so it is seen without expanding the card.
+    const rowLink = '<a class="pm-row-link" href="#health/metrics/'
+      + encodeURIComponent(m.id) + '"'
+      + ' title="Copy link to this card" aria-label="Copy link to this card"'
+      + ' onclick="copyCardLink(event, this)">\u{1F517}</a>';
 
     return '<details id="pm-card-' + escA(m.id) + '" class="pm-card'
       + (m.stale ? ' is-stale' : '') + '">'
@@ -3406,7 +3402,7 @@ function renderMetrics() {
       + '<div class="pm-card-body">'
       + '<div class="pm-plot">' + dotRows(m) + '</div>'
       + '<ul class="pm-facts"><li>' + facts.join('</li><li>') + '</li></ul>'
-      + link + permalink + '</div></details>';
+      + link + '</div></details>';
   }
 
   // Categories keep a family together -- every WebCodecs codec in one place --
