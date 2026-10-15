@@ -908,6 +908,9 @@
     font-family: var(--mono); font-size: 10px; letter-spacing: 0.03em;
   }
   .pm-source.none { color: var(--ink-soft) }
+  .pm-permalink { margin-left: 14px }
+  /* The card a deep link opened, so the reader sees which one was meant. */
+  .pm-card.pm-targeted { outline: 2px solid var(--pm-us); outline-offset: 2px }
   .pm-head { border-bottom: 1px solid var(--rule); padding-bottom: 2px }
   .pm-bar.stale {
     background-image: repeating-linear-gradient(135deg,
@@ -2135,11 +2138,14 @@ const HASH_TO_PERIOD = { '6m': 'total', '3m': '3m', '1m': '1m', weekly: 'weekly'
 //   set      — the bindToggle setter
 //   toHash   — optional value -> hash-token map (only Period renames its values)
 //   fromHash — optional hash-token -> value map
+//   target   — optional sub-path -> opener for a third segment naming one item
+//              in that subview (#health/metrics/ve.av1 opens that card)
 const VIEW_SECONDARY_AXIS = {
   team:   { axis: 'period', def: 'total', set: setPeriod,
             toHash: PERIOD_TO_HASH, fromHash: HASH_TO_PERIOD },
   recent: { axis: 'recent', def: '1w', set: setRecent },
-  health: { axis: 'health', def: 'metrics', set: setHealth },
+  health: { axis: 'health', def: 'metrics', set: setHealth,
+            target: { metrics: openMetricCard } },
 };
 
 let applyingHash = false;
@@ -2154,6 +2160,11 @@ function writeHash() {
     h += '/' + (secondary.toHash ? (secondary.toHash[current] || current) : current);
   }
   if (('#' + h) === location.hash) return;
+  setHash(h);
+}
+
+// Point the address bar at `h` without adding a history entry.
+function setHash(h) {
   try { history.replaceState(null, '', '#' + h); }
   catch (e) { location.hash = h; }  // file:// fallback
 }
@@ -2161,7 +2172,8 @@ function writeHash() {
 function applyHash() {
   const raw = location.hash.replace(/^#/, '');
   if (!raw) return;
-  const [v, sub] = raw.split('/');
+  // A third segment names one item in the subview; see `target` above.
+  const [v, sub, card] = raw.split('/');
   // Only switch to a view whose tab is actually present/visible.
   if (!visibleAxisValues('view').includes(v)) return;
   applyingHash = true;
@@ -2173,13 +2185,49 @@ function applyHash() {
       // Unknown or absent sub-paths fall back to the view's default rather
       // than leaving the axis on whatever the previous view set.
       const values = visibleAxisValues(secondary.axis);
-      secondary.set(values.includes(mapped) ? mapped : secondary.def);
+      const resolved = values.includes(mapped) ? mapped : secondary.def;
+      secondary.set(resolved);
+      const open = card && secondary.target && secondary.target[resolved];
+      if (open) open(decodeURIComponent(card));
     }
   } finally {
     applyingHash = false;
   }
 }
 window.addEventListener('hashchange', applyHash);
+
+// Expand one metric card and bring it into view, so a link can point a
+// colleague at exactly one result. An id that is not on the page (a metric
+// since removed) leaves the view as it is.
+function openMetricCard(id) {
+  const el = document.getElementById('pm-card-' + id);
+  if (!el) return;
+  const prev = document.querySelector('.pm-targeted');
+  if (prev) prev.classList.remove('pm-targeted');
+  el.open = true;
+  el.classList.add('pm-targeted');
+  // Clear of the sticky .top-bar, whose height depends on the viewport, so it
+  // is measured rather than fixed in CSS; otherwise the card's title lands
+  // underneath the bar.
+  const bar = document.querySelector('.top-bar');
+  document.documentElement.style.scrollPaddingTop =
+    ((bar ? bar.offsetHeight : 0) + 12) + 'px';
+  el.scrollIntoView({ block: 'start' });
+}
+
+// "link to this card": copy the full URL and point the address bar at it,
+// without toggling the card the link sits inside.
+function copyCardLink(ev, a) {
+  ev.preventDefault();
+  ev.stopPropagation();
+  setHash(a.getAttribute('href').slice(1));
+  const done = () => {
+    a.textContent = 'link copied';
+    clearTimeout(a._reset);
+    a._reset = setTimeout(() => { a.textContent = 'link to this card'; }, 1500);
+  };
+  if (navigator.clipboard) navigator.clipboard.writeText(location.href).then(done, () => {});
+}
 
 // If the report was generated before `team_views` was introduced,
 // only 6m data is available — hide the 1m / 3m buttons so the user
@@ -3325,8 +3373,12 @@ function renderMetrics() {
         + ' rel="noopener" onclick="event.stopPropagation()">'
         + 'open these exact series in Perfherder \u2197</a>'
       : '<span class="pm-source none">no signature recorded \u2014 cannot link</span>';
+    const permalink = '<a class="pm-source pm-permalink" href="#health/metrics/'
+      + encodeURIComponent(m.id) + '" onclick="copyCardLink(event, this)">'
+      + 'link to this card</a>';
 
-    return '<details class="pm-card' + (m.stale ? ' is-stale' : '') + '">'
+    return '<details id="pm-card-' + escA(m.id) + '" class="pm-card'
+      + (m.stale ? ' is-stale' : '') + '">'
       + '<summary><div class="pm-row">'
       + '<div class="pm-row-label">' + esc(m.title) + warnIcon(m, solo)
       + shiftBadge(m)
@@ -3335,7 +3387,7 @@ function renderMetrics() {
       + '<div class="pm-card-body">'
       + '<div class="pm-plot">' + dotRows(m) + '</div>'
       + '<ul class="pm-facts"><li>' + facts.join('</li><li>') + '</li></ul>'
-      + link + '</div></details>';
+      + link + permalink + '</div></details>';
   }
 
   // Categories keep a family together -- every WebCodecs codec in one place --

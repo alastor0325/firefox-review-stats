@@ -2080,3 +2080,63 @@ class TestTheShiftNamesItsCause:
     def test_the_alert_is_always_linked(self):
         assert "ext(c.alert_url" in self._fn("causeLine")
         assert "onclick=\"event.stopPropagation()\">' + text" in _render(_ROADMAP)
+
+
+class TestAMetricCardIsDeepLinkable:
+    """One card can be sent to someone: #health/metrics/<metric id> opens the
+    Metrics view, expands that card and scrolls to it."""
+
+    def _top(self, name):
+        html = _render(_ROADMAP)
+        m = re.search(r"\nfunction " + name + r"\([^)]*\) \{(.*?)\n\}", html, re.DOTALL)
+        assert m is not None, name
+        return m.group(1)
+
+    def test_each_card_has_a_stable_id(self):
+        assert "'<details id=\"pm-card-' + escA(m.id) + '\"" in _render(_ROADMAP)
+
+    def test_hash_takes_a_third_segment_for_the_card(self):
+        body = self._top("applyHash")
+        assert "const [v, sub, card] = raw.split('/')" in body
+        assert "secondary.target[resolved]" in body
+        assert "open(decodeURIComponent(card))" in body
+
+    def test_the_card_segment_is_scoped_to_the_metrics_subview(self):
+        """#team/6m/ve.av1 must not open a card in a hidden view: the opener is
+        looked up per view and subview in the router table."""
+        assert "target: { metrics: openMetricCard }" in _render(_ROADMAP)
+
+    def test_copying_shares_the_hash_writer_and_its_file_fallback(self):
+        assert "setHash(" in self._top("copyCardLink")
+        assert "setHash(h)" in self._top("writeHash")
+        assert "location.hash = h" in self._top("setHash")
+
+    def test_only_the_latest_target_is_outlined(self):
+        assert "prev.classList.remove('pm-targeted')" in self._top("openMetricCard")
+
+    def test_opening_expands_and_scrolls(self):
+        body = self._top("openMetricCard")
+        assert "getElementById('pm-card-' + id)" in body
+        assert "el.open = true" in body
+        assert "scrollIntoView" in body
+
+    def test_scrolling_clears_the_sticky_header(self):
+        """Without padding the card's title lands under the sticky top bar."""
+        body = self._top("openMetricCard")
+        assert "querySelector('.top-bar')" in body
+        assert "scrollPaddingTop" in body
+
+    def test_an_unknown_card_is_ignored(self):
+        assert "if (!el) return" in self._top("openMetricCard")
+
+    def test_each_card_offers_its_link(self):
+        html = _render(_ROADMAP)
+        assert re.search(r"href=\"#health/metrics/'\s*\+\s*encodeURIComponent\(m\.id\)",
+                         html)
+        assert "link to this card" in html
+
+    def test_the_link_copies_without_toggling_the_card(self):
+        body = self._top("copyCardLink")
+        assert "navigator.clipboard" in body
+        assert "stopPropagation()" in body
+        assert "preventDefault()" in body
