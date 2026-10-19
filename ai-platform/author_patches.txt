@@ -1,8 +1,8 @@
 ==============================================================================
 AI-PLATFORM-REVIEWERS AUTHOR-PATCH LISTING (raw author %an, no aliasing)
-Source: github.com/mozilla-firefox/firefox   Paths: toolkit/components/ml, toolkit/components/pageextractor, toolkit/components/aboutinference, dom/onnx, third_party/llama.cpp, config/external/mozinference, browser/components/aiwindow/services   Since: 2026-04-18T18:03:11Z
+Source: github.com/mozilla-firefox/firefox   Paths: toolkit/components/ml, toolkit/components/pageextractor, toolkit/components/aboutinference, dom/onnx, third_party/llama.cpp, config/external/mozinference, browser/components/aiwindow/services   Since: 2026-04-22T16:22:32Z
 Excluded paths: (none)
-Authors: 42    Patches: 266    (Lando-format / Lando-author / merge / Revert commits already excluded)
+Authors: 41    Patches: 264    (Lando-format / Lando-author / merge / Revert commits already excluded)
 ==============================================================================
 
 Known aliases (applied in HTML report, NOT below):
@@ -78,8 +78,9 @@ Known aliases (applied in HTML report, NOT below):
       2026-05-15  6a4b950c3ed7  Bug 2030110 - Added a guard in LlamaRunner::CreateGenerationStream to prevent concurrent use. r=gregtatum,ai-platform-reviewers
       2026-04-30  1bc00aa92611  Bug 2029703 - define copy/move semantics for AutoOrtStatus r=gregtatum
 
-[ 2] Paul Adenot  —  36 patch(es)
+[ 2] Paul Adenot  —  37 patch(es)
     ----------------------------------------------------------------------
+      2026-10-16  ab50eff07911  Bug 2077921 - Fix --disable-webspeech. r=ai-platform-reviewers,valentinp
       2026-09-15  8a3a6fe4c524  Bug 2069285 - End an utterance when the decoder stops emitting tokens. r=media-webspeech-reviewers,ai-platform-reviewers,azebrowski
       2026-09-15  5a47dd23f8ec  Bug 2069285 - Emit one SpeechRecognition final result per utterance. r=media-playback-reviewers,azebrowski,media-webspeech-reviewers,ai-platform-reviewers,valentinp
       2026-09-14  8e24ac8fea44  Bug 2062329 - Attribute MLModelHubService downloads to the requesting task. r=ai-platform-reviewers,valentinp
@@ -244,16 +245,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-05-29  4cbedf66a493  Bug 2033537 - added telemetry engine for running llm-based telemetry r=ai-platform-reviewers,mlucks,tetchart,thasan
       2026-05-01  3ab010d77903  Bug 2034635 - Added better error handling when createEngineIfNotPresent fails r=cgopal,ai-models-reviewers,ai-platform-reviewers,thasan
 
-[11] Emilio Cobos Álvarez  —  6 patch(es)
-    ----------------------------------------------------------------------
-      2026-05-02  e833a1757bf7  Bug 2033243 - Replace ownerGlobal with documentGlobal, and stop exposing ownerGlobal to JS. r=firefox-desktop-core-reviewers ,webidl,joschmidt,perftest-reviewers,sparky,smaug,mossop ,webidl,joschmidt,perftest-reviewers,sparky,smaug,mossop
-      2026-05-02  526325469022  Bug 2033243 - Replace ownerGlobal with documentGlobal, and stop exposing ownerGlobal to JS. r=firefox-desktop-core-reviewers ,webidl,joschmidt,perftest-reviewers,sparky,smaug,mossop ,webidl,joschmidt,perftest-reviewers,sparky,smaug,mossop
-      2026-05-01  367d83d299b4  Bug 2033243 - Replace ownerGlobal with documentGlobal, and stop exposing ownerGlobal to JS. r=firefox-desktop-core-reviewers ,webidl,joschmidt,perftest-reviewers,sparky,smaug,mossop
-      2026-04-30  7dea1af2e034  Bug 2033243 - Replace ownerGlobal with documentGlobal, and stop exposing ownerGlobal to JS. r=firefox-desktop-core-reviewers ,webidl,joschmidt,perftest-reviewers,sparky,smaug,mossop
-      2026-04-20  c1ea0903443b  Bug 2033242 - Rename ownerDocGlobal to documentGlobal, and use it where appropriate in child actors and remote/. r=firefox-desktop-core-reviewers ,credential-management-reviewers,devtools-reviewers,migration-reviewers,frontend-codestyle-reviewers,ai-platform-reviewers,jdescottes,dimi,dao,Gijs,webidl,smaug
-      2026-04-20  200837ed3b75  Bug 2033242 - Rename ownerDocGlobal to documentGlobal, and use it where appropriate in child actors and remote/. r=firefox-desktop-core-reviewers ,credential-management-reviewers,devtools-reviewers,migration-reviewers,frontend-codestyle-reviewers,ai-platform-reviewers,jdescottes,dimi,dao,Gijs,webidl,smaug
-
-[12] Florian Quèze  —  6 patch(es)
+[11] Florian Quèze  —  6 patch(es)
     ----------------------------------------------------------------------
       2026-10-07  a9b6bb23e58f  Bug 2078158 - Re-enable tests disabled on TSan that pass there on try. r=aryx,necko-reviewers,ipc-reviewers,devtools-reviewers,firefox-style-system-reviewers,layout-reviewers,Gijs,dshin,valentin,jdescottes,mccr8
       2026-09-29  fe46b2cfe466  Bug 2076017 - Re-enable tests disabled on macOS 15 AArch64 that pass there on try. r=aryx,necko-reviewers,webcompat-reviewers,extension-reviewers,settings-reviewers,media-playback-reviewers,credential-management-reviewers,devtools-reviewers,places-reviewers,dom-storage-reviewers,firefox-style-system-reviewers,layout-reviewers,crashreporting-reviewers,mkennedy,emz,Mardak,aosmond,twisniewski,tnikkel,jdescottes,gsvelto,dimi,valentin,jari,dshin,robwu
@@ -262,13 +254,20 @@ Known aliases (applied in HTML report, NOT below):
       2026-06-23  f439878dcd2c  Bug 2048967 - Wait for the abnormal content-process shutdown when cleaning up the intentional-crash minidump in browser_ml_native.js. r=ai-platform-reviewers,thasan
       2026-06-22  74bdd271ab52  Bug 2048967 - Deterministically clean up the intentional-crash minidump in browser_ml_native.js. r=ai-platform-reviewers,thasan
 
-[13] Mark Banner  —  5 patch(es)
+[12] Mark Banner  —  5 patch(es)
     ----------------------------------------------------------------------
       2026-09-17  e8bb2745fa7f  Bug 2069131 - Rename browser/base/content/test general, about, webrtc, popups and tabPrompts directories to match eslint-test-paths conventions r=frontend-codestyle-reviewers,webcompat-reviewers,fxview-reviewers,tabbrowser-reviewers,places-reviewers,urlbar-reviewers,ai-platform-reviewers,timhuang,dao,mossop,twisniewski,nsharpley,mak
       2026-09-16  8ed33317b6c8  Bug 2069131 - Rename browser/base/content/test general, about, webrtc, popups and tabPrompts directories to match eslint-test-paths conventions r=frontend-codestyle-reviewers,webcompat-reviewers,fxview-reviewers,tabbrowser-reviewers,places-reviewers,urlbar-reviewers,ai-platform-reviewers,timhuang,dao,mossop,twisniewski,nsharpley,mak
       2026-09-16  b15860c6d471  Bug 2069131 - Rename browser/base/content/test general, about, webrtc, popups and tabPrompts directories to match eslint-test-paths conventions r=frontend-codestyle-reviewers,webcompat-reviewers,fxview-reviewers,tabbrowser-reviewers,places-reviewers,urlbar-reviewers,ai-platform-reviewers,timhuang,dao,mossop,twisniewski,nsharpley,mak
       2026-08-04  44a4b924ba68  Bug 2059751 - Rename ESLint exclusions for the eslint-plugin-sdl rule now that it is vendored. r=frontend-codestyle-reviewers,perftest-reviewers,mossop,sparky
       2026-08-04  5d4faac56ff1  Bug 2059751 - Rename ESLint exclusions for the eslint-plugin-sdl rule now that it is vendored. r=frontend-codestyle-reviewers,perftest-reviewers,mossop,sparky
+
+[13] Emilio Cobos Álvarez  —  4 patch(es)
+    ----------------------------------------------------------------------
+      2026-05-02  e833a1757bf7  Bug 2033243 - Replace ownerGlobal with documentGlobal, and stop exposing ownerGlobal to JS. r=firefox-desktop-core-reviewers ,webidl,joschmidt,perftest-reviewers,sparky,smaug,mossop ,webidl,joschmidt,perftest-reviewers,sparky,smaug,mossop
+      2026-05-02  526325469022  Bug 2033243 - Replace ownerGlobal with documentGlobal, and stop exposing ownerGlobal to JS. r=firefox-desktop-core-reviewers ,webidl,joschmidt,perftest-reviewers,sparky,smaug,mossop ,webidl,joschmidt,perftest-reviewers,sparky,smaug,mossop
+      2026-05-01  367d83d299b4  Bug 2033243 - Replace ownerGlobal with documentGlobal, and stop exposing ownerGlobal to JS. r=firefox-desktop-core-reviewers ,webidl,joschmidt,perftest-reviewers,sparky,smaug,mossop
+      2026-04-30  7dea1af2e034  Bug 2033243 - Replace ownerGlobal with documentGlobal, and stop exposing ownerGlobal to JS. r=firefox-desktop-core-reviewers ,webidl,joschmidt,perftest-reviewers,sparky,smaug,mossop
 
 [14] Tyler Etchart  —  4 patch(es)
     ----------------------------------------------------------------------
@@ -395,10 +394,6 @@ Known aliases (applied in HTML report, NOT below):
     ----------------------------------------------------------------------
       2026-08-17  e3bfebe1ae03  Bug 2063948. Make third_party/llama.cpp vendor again. r=padenot
 
-[41] Yubin Jamora  —  1 patch(es)
-    ----------------------------------------------------------------------
-      2026-04-20  0c85adc41e23  Bug 2024652 - Add in_use for for the memory_removed_panel event r=npodgurski,ai-frontend-reviewers,echa
-
-[42] gazhibekova-hub  —  1 patch(es)
+[41] gazhibekova-hub  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-07-17  a82e56b40cb4  Bug 2046183 - Implement V0 Search Loop validatio, orchestration, and tool gating for search_the_web r=ai-platform-reviewers,bjohns,simonf,tetchart,npodgurski,thasan

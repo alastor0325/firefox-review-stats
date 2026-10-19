@@ -1,8 +1,8 @@
 ==============================================================================
 WEBRTC-REVIEWERS AUTHOR-PATCH LISTING (raw author %an, no aliasing)
-Source: github.com/mozilla-firefox/firefox   Paths: dom/media/webrtc, dom/media/systemservices   Since: 2026-04-18T18:03:11Z
+Source: github.com/mozilla-firefox/firefox   Paths: dom/media/webrtc, dom/media/systemservices   Since: 2026-04-22T16:22:32Z
 Excluded paths: (none)
-Authors: 45    Patches: 430    (Lando-format / Lando-author / merge / Revert commits already excluded)
+Authors: 46    Patches: 433    (Lando-format / Lando-author / merge / Revert commits already excluded)
 ==============================================================================
 
 Known aliases (applied in HTML report, NOT below):
@@ -244,7 +244,35 @@ Known aliases (applied in HTML report, NOT below):
       2026-06-01  5e9255499f12  Bug 2043860: Change SdpAttribute::Clone() to provide the clone in a UniquePtr. r=webrtc-reviewers,bwc
       2026-06-01  47dee9bf0986  Bug 2043860: In SdpAttributeList concrete classes, store attributes in UniquePtrs instead of raw pointers. r=webrtc-reviewers,bwc
 
-[ 5] Nicolas Grunbaum  —  25 patch(es)
+[ 5] Daniel Baker  —  25 patch(es)
+    ----------------------------------------------------------------------
+      2026-10-16  6ecca5943074  Bug 1909443 - Don't emit fmtp or rtcp-fb for payload types excluded by setCodecPreferences. r=bwc,webrtc-reviewers
+      2026-10-15  6cd3b582ca31  Bug 2072722 - Don't start early media reception when the receive track has no early codecs. r=webrtc-reviewers,pehrsons
+      2026-09-17  51a93e67c558  Bug 2072642 - Force-enable tab sharing pref in getUserMedia source telemetry test r=webrtc-reviewers,ng
+      2026-09-16  9ee36181bbc2  Bug 2063642 - Record the actually granted getUserMedia source r=webrtc-reviewers,pehrsons
+      2026-09-08  842171e9bb3f  Bug 1340372 - Add an interop mochitest for Video Orientation signaling and receive. r=pehrsons,media-playback-reviewers,azebrowski
+      2026-09-08  0c55693a815a  Bug 1340372 - Add a fake-camera test pattern for pixel-level rotation tests. r=pehrsons
+      2026-09-08  0feaa5f8516e  Bug 1340372 - Add media.getusermedia.camera.fake.rotation pref for testing. r=pehrsons
+      2026-09-08  7a76dbbff5b8  Bug 1340372 - Support Video Orientation RTP header extension: signaling and receive path. r=pehrsons,media-playback-reviewers,azebrowski
+      2026-09-03  5ef9b74bf6fb  Bug 2019381 - Don't let a re-gather discard a pending StartIceChecks. r=webrtc-reviewers,bwc
+      2026-09-03  7a2ca5901d20  Bug 2019381 - Add a MID-only demux test for early media reoffers. r=webrtc-reviewers,bwc
+      2026-09-03  896ddc914b75  Bug 2019381 - Use the pending offer's RTP extensions when building the early-media demux filter. r=webrtc-reviewers,bwc
+      2026-09-03  9a3820bb8bdc  Bug 2019381 - Propagate setCodecPreferences() to the send track. r=webrtc-reviewers,bwc
+      2026-09-03  5f091da12bab  Bug 2019381 - Add early media reoffer test coverage. r=webrtc-reviewers,bwc
+      2026-09-03  5695e9492be2  Bug 2019381 - Enhance CanTentativelyReceive() to cover reoffers of already-negotiated transceivers. r=webrtc-reviewers,bwc
+      2026-09-03  b727d270f576  Bug 2019381 - Support early media reception for bundled recvonly/sendrecv transceivers. r=webrtc-reviewers,bwc
+      2026-07-07  df0c3ce3eb7c  Bug 2042589 - Prevent RTCRtpSender conduit transmit churn for a trackless sender. r=webrtc-reviewers,pehrsons
+      2026-07-07  97aabe35b47c  Bug 2042589 - Filter remote r=webrtc-reviewers,ng,pehrsons,bwc entries that duplicate our send SSRCs in RecvTrackSetRemote.
+      2026-06-22  0e780c277049  Bug 2036456 - Parse and properly use Opus ptime/minptime/maxptime from r=ng in sipcc SDP parser
+      2026-05-29  e2a9ff1eeb37  Bug 1802849 - Read camera rotation from a window context so it tracks device rotation on Android. r=pehrsons,geckoview-reviewers,m_kato
+      2026-05-23  4179641dcee0  Bug 1802849 - Read camera rotation from a window context so it tracks device rotation on Android. r=pehrsons,geckoview-reviewers,m_kato
+      2026-05-12  e6c76de8a651  Bug 2030402 - Report dropped MediaDataEncoder inputs via OnFrameDropped. r=pehrsons
+      2026-05-12  a16452a39acc  Bug 2030402 - Drive MediaDataEncoder with input timestamp_us and recover rtp_timestamp via per-frame metadata. r=pehrsons
+      2026-04-29  842a4e071592  Bug 2035639 - Fix assertion in RTCRtpReceiver when muting an ended track after renegotiation r=bwc
+      2026-04-28  d8fa067048b0  Bug 2032194 - Allow media type to change but not if we are changing type to/from application OR the m-section has not been disabled. r=bwc
+      2026-04-27  1afd25d37317  Bug 2028182 - Clamp SVC spatial and temporal values we allow to be set through pref. r=ng
+
+[ 6] Nicolas Grunbaum  —  25 patch(es)
     ----------------------------------------------------------------------
       2026-10-14  8506d7ffa5ae  Bug 2081455 - align handling of OOB AV1 FMTP parameter handling between SDP parsers;r=dbaker
       2026-10-14  b113597429b3  Bug 2072766 - preserve existing Rsdparsa behavior wrt unknown media types;r=dbaker
@@ -272,34 +300,9 @@ Known aliases (applied in HTML report, NOT below):
       2026-07-07  ef2936547b97  Bug 2000975 - report outbound-rtp stats in stable;r=dbaker,bwc
       2026-07-01  bac4e9ee6b48  Bug 2051003 - reject PT range 64-95 for RTCP MUX;r=dbaker
 
-[ 6] Daniel Baker  —  23 patch(es)
+[ 7] serge-sans-paille  —  20 patch(es)
     ----------------------------------------------------------------------
-      2026-09-17  51a93e67c558  Bug 2072642 - Force-enable tab sharing pref in getUserMedia source telemetry test r=webrtc-reviewers,ng
-      2026-09-16  9ee36181bbc2  Bug 2063642 - Record the actually granted getUserMedia source r=webrtc-reviewers,pehrsons
-      2026-09-08  842171e9bb3f  Bug 1340372 - Add an interop mochitest for Video Orientation signaling and receive. r=pehrsons,media-playback-reviewers,azebrowski
-      2026-09-08  0c55693a815a  Bug 1340372 - Add a fake-camera test pattern for pixel-level rotation tests. r=pehrsons
-      2026-09-08  0feaa5f8516e  Bug 1340372 - Add media.getusermedia.camera.fake.rotation pref for testing. r=pehrsons
-      2026-09-08  7a76dbbff5b8  Bug 1340372 - Support Video Orientation RTP header extension: signaling and receive path. r=pehrsons,media-playback-reviewers,azebrowski
-      2026-09-03  5ef9b74bf6fb  Bug 2019381 - Don't let a re-gather discard a pending StartIceChecks. r=webrtc-reviewers,bwc
-      2026-09-03  7a2ca5901d20  Bug 2019381 - Add a MID-only demux test for early media reoffers. r=webrtc-reviewers,bwc
-      2026-09-03  896ddc914b75  Bug 2019381 - Use the pending offer's RTP extensions when building the early-media demux filter. r=webrtc-reviewers,bwc
-      2026-09-03  9a3820bb8bdc  Bug 2019381 - Propagate setCodecPreferences() to the send track. r=webrtc-reviewers,bwc
-      2026-09-03  5f091da12bab  Bug 2019381 - Add early media reoffer test coverage. r=webrtc-reviewers,bwc
-      2026-09-03  5695e9492be2  Bug 2019381 - Enhance CanTentativelyReceive() to cover reoffers of already-negotiated transceivers. r=webrtc-reviewers,bwc
-      2026-09-03  b727d270f576  Bug 2019381 - Support early media reception for bundled recvonly/sendrecv transceivers. r=webrtc-reviewers,bwc
-      2026-07-07  df0c3ce3eb7c  Bug 2042589 - Prevent RTCRtpSender conduit transmit churn for a trackless sender. r=webrtc-reviewers,pehrsons
-      2026-07-07  97aabe35b47c  Bug 2042589 - Filter remote r=webrtc-reviewers,ng,pehrsons,bwc entries that duplicate our send SSRCs in RecvTrackSetRemote.
-      2026-06-22  0e780c277049  Bug 2036456 - Parse and properly use Opus ptime/minptime/maxptime from r=ng in sipcc SDP parser
-      2026-05-29  e2a9ff1eeb37  Bug 1802849 - Read camera rotation from a window context so it tracks device rotation on Android. r=pehrsons,geckoview-reviewers,m_kato
-      2026-05-23  4179641dcee0  Bug 1802849 - Read camera rotation from a window context so it tracks device rotation on Android. r=pehrsons,geckoview-reviewers,m_kato
-      2026-05-12  e6c76de8a651  Bug 2030402 - Report dropped MediaDataEncoder inputs via OnFrameDropped. r=pehrsons
-      2026-05-12  a16452a39acc  Bug 2030402 - Drive MediaDataEncoder with input timestamp_us and recover rtp_timestamp via per-frame metadata. r=pehrsons
-      2026-04-29  842a4e071592  Bug 2035639 - Fix assertion in RTCRtpReceiver when muting an ended track after renegotiation r=bwc
-      2026-04-28  d8fa067048b0  Bug 2032194 - Allow media type to change but not if we are changing type to/from application OR the m-section has not been disabled. r=bwc
-      2026-04-27  1afd25d37317  Bug 2028182 - Clamp SVC spatial and temporal values we allow to be set through pref. r=ng
-
-[ 7] serge-sans-paille  —  19 patch(es)
-    ----------------------------------------------------------------------
+      2026-10-19  5a113f981a76  Bug 1332891 - Ensure correct usage of std::forward in dom/media/ r=webrtc-reviewers,pehrsons
       2026-10-09  55b5b6f1ad58  Bug 2079267 - Activate clang-tidy's modernize-make-unique r=extension-reviewers,ipc-reviewers,webrtc-reviewers,sandbox-reviewers,nika,bwc,mccr8,bobowen,robwu
       2026-10-08  3e573caff5c8  Bug 2077605 - Register SOURCE_HEADERS for dom/ r=saschanaz,media-playback-reviewers,webrtc-reviewers,dom-storage-reviewers,firefox-svg-reviewers,dom-worker-reviewers,device-api-reviewers,media-webspeech-reviewers,ng,asuth,pehrsons,padenot,gstoll
       2026-09-23  707eaad80251  Bug 2074859 - Replace std::string::find(...) == 0 by std::string::starts_with r=webrtc-reviewers,crashreporting-reviewers,TravisLong,pehrsons
@@ -320,7 +323,27 @@ Known aliases (applied in HTML report, NOT below):
       2026-04-24  7af9fd3d7bd2  Bug 2033986 - Remove unused include of <queue> r=media-playback-reviewers,webrtc-reviewers,anba,padenot,bwc
       2026-04-23  4bb4610739cb  Bug 2033982 - Remove unused include of <iostream> r=necko-reviewers,layout-reviewers,emilio,valentin
 
-[ 8] Sylvestre Ledru  —  18 patch(es)
+[ 8] Philipp Hancke  —  17 patch(es)
+    ----------------------------------------------------------------------
+      2026-10-15  acdee14ad3d9  Bug 2074737: implement webrtc stats targetBitrate and remove totalEncodedBytesTarget r=bwc,webidl,smaug
+      2026-09-17  ed1f83e4ff90  Bug 2071008: suppress dtls error on ice failures r=bwc
+      2026-08-18  ca4fce5c5859  Bug 2022715: implement RTCConfiguration.alwaysNegotiateDataChannels r=bwc,webidl,saschanaz,smaug
+      2026-07-17  9e4231190d2c  Bug 2048521: implement webrtc rtxSsrc and retransmission stats r=bwc,webidl,smaug
+      2026-07-13  b8f869b898fb  Bug 2054208: don't send DTMF on a disabled sender r=bwc
+      2026-07-13  6f706ad9371a  Bug 2053510: (attempt to) deflake test_peerConnection_setParameters_audioActive.html r=bwc
+      2026-07-08  58c402846b98  Bug 1813848: wire up RTCRtpEncodingParameters.active for audio r=bwc
+      2026-06-18  8c6cf37262aa  Bug 2047693: implement candidate-pair packetsSent/packetsReceived r=bwc,webidl,emilio
+      2026-06-18  731e3a8c1875  Bug 2048150: add IPC serialization for keyFramesEncoded stats r=pehrsons
+      2026-06-17  09dbf44d8bc6  Bug 2048150: implement webrtc outbound-rtp keyFramesEncoded stats r=pehrsons,webidl,smaug
+      2026-06-15  631e1d9fefbd  Bug 2019349: Implement RTCTransportStats (bytes|packets)(Sent|Received) r=bwc,smaug,webidl
+      2026-06-03  22ef5960cc46  Bug 1225723: fix webrtc-stats transportId references r=bwc,smaug,webidl,pehrsons
+      2026-06-01  6c012f4fa6f7  Bug 1225723: implement (some of) RTCTransportStats r=bwc,webidl,smaug
+      2026-05-21  49d888791d7d  Bug 2036578: Implement the usernameFragment, foundation and tcpType fields of RTCIceCandidateStats r=bwc,webidl,smaug
+      2026-05-13  14ac95285577  Bug 2036578: Implement the usernameFragment, foundation and tcpType fields of RTCIceCandidateStats r=bwc,webidl,smaug
+      2026-05-07  274d9561a154  Bug 2036578: Implement the usernameFragment, foundation and tcpType fields of RTCIceCandidateStats r=bwc,webidl,smaug
+      2026-05-06  b734f76ece07  Bug 2036578: Implement the usernameFragment, foundation and tcpType fields of RTCIceCandidateStats r=bwc,webidl,smaug
+
+[ 9] Sylvestre Ledru  —  17 patch(es)
     ----------------------------------------------------------------------
       2026-09-23  23ac933ec4f9  Bug 2070824 - Declare every about:license notice in moz.build r=firefox-build-system-reviewers,ipc-reviewers,application-update-reviewers,media-playback-reviewers,credential-management-reviewers,webrtc-reviewers,devtools-reviewers,cubeb-reviewers,profiler-reviewers,win-reviewers,frontend-codestyle-reviewers,ai-platform-reviewers,sandbox-reviewers,crashreporting-reviewers,media-webspeech-reviewers,bobowen,dimi,canova,padenot,nchevobbe,mccr8,yjuglaret,bwc,ahochheiden
       2026-09-22  8c79875a596a  Bug 2070824 - Declare every about:license notice in moz.build r=firefox-build-system-reviewers,ipc-reviewers,application-update-reviewers,media-playback-reviewers,credential-management-reviewers,webrtc-reviewers,devtools-reviewers,cubeb-reviewers,profiler-reviewers,win-reviewers,frontend-codestyle-reviewers,ai-platform-reviewers,sandbox-reviewers,crashreporting-reviewers,media-webspeech-reviewers,bobowen,dimi,canova,padenot,nchevobbe,mccr8,yjuglaret,bwc,ahochheiden
@@ -339,26 +362,6 @@ Known aliases (applied in HTML report, NOT below):
       2026-05-04  cb1d1d9721d9  Bug 2036402 - Apply std::move in dom/media where values can be moved instead of copied r=media-playback-reviewers,padenot
       2026-05-04  236507fe8bf9  Bug 2036402 - Use const ref bindings/iteration in dom/media to avoid copies r=media-playback-reviewers,padenot
       2026-05-04  f20cc8e1168d  Bug 2036400 - Initialize uninitialized scalar fields in dom/media to fix Coverity uninitialized-scalar defects r=media-playback-reviewers,padenot
-      2026-04-21  3baa4071fd2b  Bug 2023419 - Remove remaining Emacs/Vim modelines from the source tree r=emilio,necko-reviewers,geckoview-reviewers,media-playback-reviewers,webidl,webrtc-reviewers,devtools-reviewers,places-reviewers,win-reviewers,firefox-style-system-reviewers,layout-reviewers,mstriemer,dshin,nchevobbe,padenot,ohall,handyman,valentin,mjf
-
-[ 9] Philipp Hancke  —  16 patch(es)
-    ----------------------------------------------------------------------
-      2026-09-17  ed1f83e4ff90  Bug 2071008: suppress dtls error on ice failures r=bwc
-      2026-08-18  ca4fce5c5859  Bug 2022715: implement RTCConfiguration.alwaysNegotiateDataChannels r=bwc,webidl,saschanaz,smaug
-      2026-07-17  9e4231190d2c  Bug 2048521: implement webrtc rtxSsrc and retransmission stats r=bwc,webidl,smaug
-      2026-07-13  b8f869b898fb  Bug 2054208: don't send DTMF on a disabled sender r=bwc
-      2026-07-13  6f706ad9371a  Bug 2053510: (attempt to) deflake test_peerConnection_setParameters_audioActive.html r=bwc
-      2026-07-08  58c402846b98  Bug 1813848: wire up RTCRtpEncodingParameters.active for audio r=bwc
-      2026-06-18  8c6cf37262aa  Bug 2047693: implement candidate-pair packetsSent/packetsReceived r=bwc,webidl,emilio
-      2026-06-18  731e3a8c1875  Bug 2048150: add IPC serialization for keyFramesEncoded stats r=pehrsons
-      2026-06-17  09dbf44d8bc6  Bug 2048150: implement webrtc outbound-rtp keyFramesEncoded stats r=pehrsons,webidl,smaug
-      2026-06-15  631e1d9fefbd  Bug 2019349: Implement RTCTransportStats (bytes|packets)(Sent|Received) r=bwc,smaug,webidl
-      2026-06-03  22ef5960cc46  Bug 1225723: fix webrtc-stats transportId references r=bwc,smaug,webidl,pehrsons
-      2026-06-01  6c012f4fa6f7  Bug 1225723: implement (some of) RTCTransportStats r=bwc,webidl,smaug
-      2026-05-21  49d888791d7d  Bug 2036578: Implement the usernameFragment, foundation and tcpType fields of RTCIceCandidateStats r=bwc,webidl,smaug
-      2026-05-13  14ac95285577  Bug 2036578: Implement the usernameFragment, foundation and tcpType fields of RTCIceCandidateStats r=bwc,webidl,smaug
-      2026-05-07  274d9561a154  Bug 2036578: Implement the usernameFragment, foundation and tcpType fields of RTCIceCandidateStats r=bwc,webidl,smaug
-      2026-05-06  b734f76ece07  Bug 2036578: Implement the usernameFragment, foundation and tcpType fields of RTCIceCandidateStats r=bwc,webidl,smaug
 
 [10] az  —  15 patch(es)
     ----------------------------------------------------------------------
@@ -514,15 +517,14 @@ Known aliases (applied in HTML report, NOT below):
       2026-08-06  78f289876b9c  Bug 2058388. Allow passing the DrawView flag to drawSnapshot so root scrollbars are painted, and so reftest's snapshot path matches its default one. r=dom-core-reviewers,webrtc-reviewers,devtools-reviewers,webcompat-reviewers,layout-reviewers,jdescottes,twisniewski,emilio,smaug,pehrsons
       2026-08-06  dd1773e2331e  Bug 2058388. Allow passing the DrawView flag to drawSnapshot so root scrollbars are painted, and so reftest's snapshot path matches its default one. r=dom-core-reviewers,webrtc-reviewers,devtools-reviewers,webcompat-reviewers,layout-reviewers,jdescottes,twisniewski,emilio,smaug,pehrsons
 
-[31] Tom Schuster  —  2 patch(es)
-    ----------------------------------------------------------------------
-      2026-04-28  391bb5f4369e  Bug 2035452 - Use CaptureEngine type for CamerasParent::GetDeviceInfo and EnsureInitialized. r=webrtc-reviewers,mjf
-      2026-04-21  9b1de3d3d560  Bug 2027690 - Cleanup MediaTransport IPC. r=bwc
-
-[32] stransky  —  2 patch(es)
+[31] stransky  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-09-30  91de7c72bcca  Bug 1922759 - Make nr_crypto_nss_hmac() work with FIPS enabled r=rrelyea,webrtc-reviewers,keeler,bwc
       2026-09-25  4b7468cc256a  Bug 1922759 - Make nr_crypto_nss_hmac() work with FIPS enabled r=rrelyea,webrtc-reviewers,keeler,bwc
+
+[32] Alex Hochheiden  —  1 patch(es)
+    ----------------------------------------------------------------------
+      2026-10-15  7f30f992f9d8  Bug 2038789 - Add backend target resolution and use it for `mach gtest` r=mjf
 
 [33] Christian Holler  —  1 patch(es)
     ----------------------------------------------------------------------
@@ -560,18 +562,22 @@ Known aliases (applied in HTML report, NOT below):
     ----------------------------------------------------------------------
       2026-05-29  d51f90c6573d  Bug 2037084 - Enable crashtest (opt) on macosx1500-aarch64-vms r=media-playback-reviewers,webrtc-reviewers,bwc,padenot
 
-[42] Vinit Jangir  —  1 patch(es)
+[42] Tom Schuster  —  1 patch(es)
+    ----------------------------------------------------------------------
+      2026-04-28  391bb5f4369e  Bug 2035452 - Use CaptureEngine type for CamerasParent::GetDeviceInfo and EnsureInitialized. r=webrtc-reviewers,mjf
+
+[43] Vinit Jangir  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-05-08  61c84c2e3eb2  Bug 790194 - Changed all instances in dom/media/webrtc to std::from_chars r=bwc
 
-[43] WSchmalstieg  —  1 patch(es)
+[44] WSchmalstieg  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-05-15  9f0213c204ae  Bug 2036515 - Fix comment spelling errors;r=ng
 
-[44] William McDonald  —  1 patch(es)
+[45] William McDonald  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-08-18  3789074e335c  Bug 1034964 - Use regular nomination with ICE-Lite peers. r=webrtc-reviewers,bwc
 
-[45] rnvannatta  —  1 patch(es)
+[46] rnvannatta  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-07-26  d6b3f25c2e04  Bug 2052617 - Fix off by one error in YuvStamper::WriteDigit. r=webrtc-reviewers,mjf
