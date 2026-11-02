@@ -8,6 +8,7 @@ refresh — so every call retries those with exponential backoff instead
 of failing the whole run.
 """
 
+import http.client
 import json
 import time
 import urllib.error
@@ -21,13 +22,17 @@ _RETRYABLE_STATUS = frozenset({429, 500, 502, 503, 504})
 def is_retryable_error(exc: BaseException) -> bool:
     """True if `exc` is a transient error worth retrying.
 
-    Retryable: GitHub 5xx / 429 responses, plus connection failures and
-    socket timeouts (URLError / TimeoutError). Note HTTPError subclasses
-    URLError, so it must be checked first — a 404 is *not* retryable.
+    Retryable: GitHub 5xx / 429 responses, connection failures, socket
+    timeouts, and connections dropped mid-response (ConnectionError, e.g.
+    RemoteDisconnected, or IncompleteRead), which escape urlopen unwrapped.
+    Other http.client errors (InvalidURL, LineTooLong) are permanent. Note
+    HTTPError subclasses URLError, so it must be checked first — a 404 is
+    *not* retryable.
     """
     if isinstance(exc, urllib.error.HTTPError):
         return exc.code in _RETRYABLE_STATUS
-    return isinstance(exc, (urllib.error.URLError, TimeoutError))
+    return isinstance(exc, (urllib.error.URLError, TimeoutError,
+                            ConnectionError, http.client.IncompleteRead))
 
 
 def backoff_seconds(attempt: int) -> float:

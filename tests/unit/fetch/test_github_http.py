@@ -3,14 +3,16 @@
 We never hit the network: `urllib.request.urlopen` and `time.sleep` are
 mocked. We verify:
 
-* transient errors (5xx / 429 / URLError / timeout) are classified as
-  retryable; client errors (4xx) and unrelated exceptions are not
+* transient errors (5xx / 429 / URLError / timeout / dropped connection)
+  are classified as retryable; client errors (4xx), permanent http.client
+  errors and unrelated exceptions are not
 * `backoff_seconds` grows exponentially from a 1-based attempt number
 * `get_json` retries transient failures, gives up after `_MAX_ATTEMPTS`,
   and does not retry non-retryable errors
 * the request carries the GitHub Accept header and (when given) the token
 """
 
+import http.client
 import json
 import urllib.error
 from unittest.mock import patch, MagicMock
@@ -52,6 +54,18 @@ class TestIsRetryableError:
     def test_url_error_and_timeout_are_retryable(self):
         assert is_retryable_error(urllib.error.URLError("conn reset")) is True
         assert is_retryable_error(TimeoutError("timed out")) is True
+
+    def test_dropped_connection_is_retryable(self):
+        # These escape urlopen unwrapped (not as URLError) when the server
+        # closes the socket mid-response.
+        assert is_retryable_error(
+            http.client.RemoteDisconnected("closed")) is True
+        assert is_retryable_error(http.client.IncompleteRead(b"")) is True
+        assert is_retryable_error(ConnectionResetError("reset")) is True
+
+    def test_permanent_http_client_errors_are_not_retryable(self):
+        assert is_retryable_error(http.client.InvalidURL("bad")) is False
+        assert is_retryable_error(http.client.LineTooLong("header")) is False
 
     def test_unrelated_exception_is_not_retryable(self):
         assert is_retryable_error(ValueError("nope")) is False
@@ -99,6 +113,14 @@ class TestGetJson:
         assert get_json("https://api.github.com/x") == {"ok": 1}
         assert urlopen.call_count == 2
         assert sleep.call_count == 1  # backed off once before the retry
+
+    @patch("reviewstats.github_http.time.sleep")
+    @patch("reviewstats.github_http.urllib.request.urlopen")
+    def test_retries_remote_disconnect_then_succeeds(self, urlopen, sleep):
+        urlopen.side_effect = [
+            http.client.RemoteDisconnected("closed"), _mk_response({"ok": 1})]
+        assert get_json("https://api.github.com/x") == {"ok": 1}
+        assert urlopen.call_count == 2
 
     @patch("reviewstats.github_http.time.sleep")
     @patch("reviewstats.github_http.urllib.request.urlopen")
