@@ -24,7 +24,7 @@ from pathlib import Path
 
 from reviewstats.github_commits import _API, _get_auth_token
 from reviewstats.github_http import get_json, get_text
-from reviewstats.libwebrtc import collect_status
+from reviewstats.libwebrtc import PORTED, collect_status, port_drift, ported_shas
 
 # Last week's table is the fallback, so give up fast rather than spend the
 # default five 30s attempts per call across ~30-50 calls.
@@ -46,13 +46,28 @@ def report_fallback(key: str, exc: Exception) -> None:
     _annotate("warning", f"{key} fetch failed ({exc}); keeping last week's copy.")
 
 
+def warn_if_port_drifted(github_get) -> None:
+    """Annotate the run when a WebRTC-owner script the missing-fixes check
+    ports has changed on main. Never fails the fetch."""
+    try:
+        current = ported_shas(github_get)
+    except Exception as exc:  # noqa: BLE001
+        _annotate("warning", f"couldn't check the ported scripts for changes ({exc}).")
+        return
+    for path in port_drift(PORTED, current):
+        _annotate("warning", f"{Path(path).name} changed upstream; re-sync the port "
+                             "(see PORTED in reviewstats/libwebrtc.py).")
+
+
 def collect(previous: dict | None) -> dict:
     """Fetch this week's view. Last week's file supplies settled values and
     backs the optional sections; a section that falls back is reported, and
     keeps its own as_of so the page can say it is stale."""
     token = _get_auth_token()
+    github_get = lambda path: get_json(_API + path, token=token, **_HTTP)
+    warn_if_port_drifted(github_get)
     return collect_status(
-        lambda path: get_json(_API + path, token=token, **_HTTP),
+        github_get,
         lambda url: get_text(url, **_HTTP),
         today=datetime.now(timezone.utc).date(),
         previous=previous,

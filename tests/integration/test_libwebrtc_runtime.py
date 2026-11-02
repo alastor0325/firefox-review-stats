@@ -470,3 +470,31 @@ def test_ignored_commits_are_named_not_counted(tmp_path):
     assert nightly["branch"].endswith("· 1 commit ignored on purpose")
     assert nightly["branchTip"] == ("5f28ddf5ed [M155] Ensure stopped transceivers "
                                     "(firefox does not build the pc directory)")
+
+
+def _tip_moved(view):
+    """Release ships M154, but its branch tip already took M155 for 158.0:
+    the missing-fixes check reads the tip, like the owners' script."""
+    view = _with_lists(view)
+    harden = "Harden payload capacity checks"
+    view["rows"][2]["unvendored"] = {
+        **_branch(4, _iso(-3)), "as_of": _iso(0), "ref": "release", "firefox": "158.0",
+        "milestone": 155, "branch_head": "branch-heads/8059",
+        "commits": [_commit("r", f"[M155] {harden}", harden)]}
+    return view
+
+
+def test_the_check_names_the_branch_tip_it_read(tmp_path):
+    all_, release = _interact(tmp_path, _tip_moved(_view()), 1280, [_filter_button("Release")])
+    assert release["branch"].startswith(
+        "Checked on release (158.0) · Chrome branch: M155 · branch-heads/8059 · last fix")
+    assert release["branchLink"].endswith("+log/refs/heads/main..refs/branch-heads/8059")
+
+
+def test_a_moved_tip_is_flagged_in_the_table_and_the_list(tmp_path):
+    state, errors = _run(tmp_path, _tip_moved(_view()))
+    assert errors == []
+    # The row still describes the shipped M154 build; its count is for M155.
+    assert state["missing_col"][2] == "1 · on 158.0 (M155)"
+    assert state["missing_col"][1] == "2"
+    assert any("Release · M155 rrrrrrrrrr" in b for b in state["fix_bodies"])

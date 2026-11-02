@@ -4,7 +4,8 @@ the logic of dom/media/webrtc/third_party_build/check_missing_branch_head_commit
 import pytest
 
 from reviewstats.libwebrtc import (
-    fix_identity, ignored_for, project_view, split_ignored, unvendored_commits)
+    PORTED, fix_identity, ignored_for, port_drift, project_view, split_ignored,
+    unvendored_commits)
 
 UP = "Upstream commit: https://webrtc.googlesource.com/src/+/"
 
@@ -194,3 +195,22 @@ class TestIgnoredBranchHeadCommits:
         view = project_view({"rows": [{**ROW, "unvendored": u}]})
         assert view["rows"][0]["unvendored"]["ignored"] == [
             {"sha": "a" * 40, "subject": "S", "comment": "C"}]
+
+    def test_what_was_checked_survives_the_whitelist(self):
+        u = {"commits": [], "ref": "esr153", "firefox": "153.7.0", "milestone": 150,
+             "branch_head": "branch-heads/7871"}
+        got = project_view({"rows": [{**ROW, "unvendored": u}]})["rows"][0]["unvendored"]
+        assert (got["ref"], got["firefox"], got["milestone"], got["branch_head"]) == (
+            "esr153", "153.7.0", 150, "branch-heads/7871")
+
+
+class TestPortDrift:
+    """The check is a port of the WebRTC owners' scripts; a change upstream
+    means the port needs re-syncing, so the weekly run says so."""
+
+    def test_unchanged_scripts_report_nothing(self):
+        assert port_drift(PORTED, dict(PORTED)) == []
+
+    def test_a_changed_script_is_named(self):
+        path = next(iter(PORTED))
+        assert port_drift(PORTED, {**PORTED, path: "0" * 40}) == [path]

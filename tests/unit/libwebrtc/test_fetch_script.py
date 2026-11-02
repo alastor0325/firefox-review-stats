@@ -5,6 +5,7 @@ last week's table."""
 import json
 
 import fetch_libwebrtc_status as fls
+from reviewstats.libwebrtc import PORTED
 
 VIEW = {"chrome_stable": 154, "as_of": "2026-10-05",
         "rows": [{"label": "Release", "firefox": "157.0.1", "milestone": 153,
@@ -95,3 +96,28 @@ def test_annotation_text_is_escaped(monkeypatch, capsys):
     fls.report_fallback("plan", OSError("50% down\nsecond line"))
     out = capsys.readouterr().out
     assert out.count("\n") == 1 and "50%25 down%0Asecond line" in out
+
+
+def test_a_changed_upstream_script_is_flagged(capsys, monkeypatch):
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
+    changed = next(iter(PORTED))
+    listing = [{"path": p, "sha": "0" * 40 if p == changed else sha}
+               for p, sha in PORTED.items()]
+    fls.warn_if_port_drifted(lambda path: listing)
+    err = capsys.readouterr().err
+    assert "check_missing_branch_head_commits.py changed upstream" in err
+
+
+def test_unchanged_upstream_scripts_say_nothing(capsys, monkeypatch):
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
+    fls.warn_if_port_drifted(lambda path: [{"path": p, "sha": s} for p, s in PORTED.items()])
+    assert capsys.readouterr().err == ""
+
+
+def test_a_failed_drift_check_only_warns(capsys, monkeypatch):
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
+
+    def down(path):
+        raise OSError("github down")
+    fls.warn_if_port_drifted(down)
+    assert "github down" in capsys.readouterr().err

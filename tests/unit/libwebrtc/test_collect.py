@@ -19,11 +19,16 @@ MAIN_LAST = "c" * 40
 TODAY = date(2026, 10, 5)
 # ref -> (milestone, branch-head). Shipped builds are read at their tag.
 REFS = {"main": (155, 8059), "FIREFOX_158_0b5_RELEASE": (154, 7990),
-            "FIREFOX_157_0_1_RELEASE": (154, 7990), "FIREFOX_140_17_0esr_RELEASE": (135, 7049)}
+            "FIREFOX_157_0_1_RELEASE": (154, 7990), "FIREFOX_140_17_0esr_RELEASE": (135, 7049),
+            # Branch tips, where the missing-fixes check reads: the ESR
+            # branch already took its next milestone for 140.18.0.
+            "beta": (154, 7990), "release": (154, 7990), "esr140": (136, 7103)}
+TIP_VERSIONS = {"beta": "158.0", "release": "158.0", "esr140": "140.18.0"}
 VERSIONS = {"FIREFOX_NIGHTLY": "159.0a1", "LATEST_FIREFOX_DEVEL_VERSION": "158.0b5",
             "LATEST_FIREFOX_VERSION": "157.0.1", "FIREFOX_ESR": "140.17.0esr"}
 CALENDAR = {"157.0": "2026-09-29", "157.0.1": "2026-10-06", "158.0": "2026-10-13"}
-BRANCH_DATES = {"135": "2025-03-03", "154": "2026-08-31", "155": "2026-09-14", "156": "2026-09-28",
+BRANCH_DATES = {"135": "2025-03-03", "136": "2025-03-31",
+                "154": "2026-08-31", "155": "2026-09-14", "156": "2026-09-28",
                 "157": "2026-10-12", "158": "2026-10-26"}
 
 
@@ -82,9 +87,11 @@ class Upstream:
                                 "committer": {"date": "2026-09-01T10:00:00Z"}}}]
         if "ignored_branch_head_commits.json" in path:
             if path.endswith("ref=esr140"):
-                return _content('[{"firefox_version": 140, "upstream_sha": "70492",'
+                return _content('[{"firefox_version": 140, "upstream_sha": "71032",'
                                 ' "comment": "not built"}]')
             raise _http_error(path, 404)
+        if "browser/config/version.txt?ref=" in path:
+            return _content(TIP_VERSIONS[path.rsplit("=", 1)[1]] + "\n")
         for ref, (ms, bh) in REFS.items():
             if path.endswith(f"default_config_env?ref={ref}"):
                 return _content(
@@ -309,10 +316,25 @@ def test_the_ignore_list_is_read_at_each_release_branch_tip():
     assert [r["unvendored"]["ignored"] for r in rows[:3]] == [[], [], []]
 
 
+def test_missing_fixes_are_checked_at_each_branch_tip():
+    """As check_missing_branch_head_commits.py does: the tip's milestone,
+    version and history, while the table keeps the shipped build."""
+    rows = _collect(Upstream())["rows"]
+    esr = rows[3]
+    assert (esr["milestone"], esr["branch_head"], esr["firefox"]) == (
+        135, "branch-heads/7049", "140.17.0")
+    u = esr["unvendored"]
+    assert (u["ref"], u["firefox"], u["milestone"], u["branch_head"]) == (
+        "esr140", "140.18.0", 136, "branch-heads/7103")
+    assert {c["sha"][:4] for c in u["commits"]} == {"7103"}
+    assert rows[0]["unvendored"]["ref"] == "main"
+    assert rows[0]["unvendored"]["firefox"] == "159.0a1"
+
+
 def test_firefox_history_is_read_from_the_branch_date_on():
     up = Upstream()
     _collect(up)
-    assert any("sha=FIREFOX_140_17_0esr_RELEASE&path=third_party/libwebrtc&since=2025-03-03" in c
+    assert any("sha=esr140&path=third_party/libwebrtc&since=2025-03-31" in c
                for c in up.calls)
 
 
@@ -328,7 +350,8 @@ def test_unvendored_falls_back_to_last_weeks_list_per_release():
     assert "missing fixes" in errors
     assert rows[0]["unvendored"] == {"commits": [], "as_of": "2026-09-28",
                                      "branch_commits": None, "last_merge": None,
-                                     "ignored": []}
+                                     "ignored": [], "ref": None, "firefox": None,
+                                     "milestone": None, "branch_head": None}
     assert rows[1]["unvendored"] is None
 
 
@@ -338,9 +361,10 @@ def test_shipped_channels_are_read_at_their_release_tag():
     up = Upstream()
     _collect(up)
     assert any("default_config_env?ref=FIREFOX_157_0_1_RELEASE" in c for c in up.calls)
-    # Only the ignore list is read at the tip (see the test above).
-    assert not any(c.endswith(("ref=release", "ref=beta")) for c in up.calls
-                   if "ignored_branch_head_commits.json" not in c)
+    # The table's patch count is read at the tag too; only the
+    # missing-fixes check reads the tip.
+    assert any("moz-patch-stack?ref=FIREFOX_157_0_1_RELEASE" in c for c in up.calls)
+    assert not any("moz-patch-stack?ref=release" in c for c in up.calls)
 
 
 def test_channels_that_disagree_with_the_calendar_fail_the_fetch():
@@ -359,6 +383,20 @@ def test_last_weeks_list_is_not_reused_for_a_different_milestone():
                           "unvendored": {"count": 2, "commits": [], "as_of": "2026-09-28"}}]}
     rows = _collect(Upstream(down={"googlesource"}), previous=previous)["rows"]
     assert rows[0]["unvendored"] is None
+
+
+def test_last_weeks_list_is_matched_on_the_branch_tip_it_checked():
+    """The ESR row ships M135 but its list was checked on the tip's M136:
+    reuse it for the same tip, whatever the shipped build."""
+    previous = {"rows": [{"label": "ESR 140", "milestone": 135, "branch_head": "branch-heads/7049",
+                          "unvendored": {"commits": [], "as_of": "2026-09-28",
+                                         "branch_head": "branch-heads/7103"}}]}
+    rows = _collect(Upstream(down={"googlesource"}), previous=previous)["rows"]
+    assert rows[3]["unvendored"]["as_of"] == "2026-09-28"
+    # Same shipped build, but last week's list was checked on another tip.
+    previous["rows"][0]["unvendored"]["branch_head"] = "branch-heads/7999"
+    rows = _collect(Upstream(down={"googlesource"}), previous=previous)["rows"]
+    assert rows[3]["unvendored"] is None
 
 
 def test_fresh_lists_carry_this_weeks_date():

@@ -1628,7 +1628,7 @@ __GH_CORNER__
   <div class="footer-note" id="libwebrtc-stale" style="display:none"></div>
 
   <section>
-    <h2>Upstream fixes not vendored <span class="info" data-tip="Commits Chrome merged to a milestone's release branch (branch-heads/N) that Firefox's history doesn't show as vendored. Matched by Upstream-commit footers, cherry-pick lines and subject, following check_missing_branch_head_commits.py, so expect some false positives. Commits the WebRTC owners list in ignored_branch_head_commits.json on the release's branch are left out of the count and noted as ignored. Each fix is counted once: Chrome merges it to each branch under its own SHA, and a revert and reland count as one fix."></span></h2>
+    <h2>Upstream fixes not vendored <span class="info" data-tip="Commits Chrome merged to a milestone's release branch (branch-heads/N) that the Firefox release's branch doesn't show as vendored, checked as check_missing_branch_head_commits.py does: at the branch tip (after a merge, possibly a newer milestone than the build users have), matched by Upstream-commit footers, cherry-pick lines and subject, so expect some false positives. Commits the WebRTC owners list in ignored_branch_head_commits.json on the release's branch are left out of the count and noted as ignored. Each fix is counted once: Chrome merges it to each branch under its own SHA, and a revert and reland count as one fix."></span></h2>
     <div class="lw-filters" id="lw-filters" role="group" aria-label="Show missing fixes for"></div>
     <div class="footer-note" id="lw-missing-summary" aria-live="polite" aria-atomic="true"></div>
     <div class="lw-fixes" id="lw-fixes"></div>
@@ -2297,8 +2297,15 @@ function renderLibwebrtcStale(view) {
 const CLOSED_TIP = "Chrome merges fixes to a milestone's branch only while it supports that milestone. "
   + 'The date is the last merge. Later fixes went only to newer branches and main, so this count '
   + 'leaves them out, and they may still apply to this release.';
+// What the missing-fixes check read (Python's Tip); files written before it
+// read branch tips only have the row's shipped build.
+function checked(r) {
+  const u = r.unvendored || {};
+  return { milestone: u.milestone ?? r.milestone, branch_head: u.branch_head ?? r.branch_head,
+           ref: u.ref, firefox: u.firefox };
+}
 function branchClosed(r, chromeStable) {
-  if (chromeStable) return r.milestone < chromeStable - 2;
+  if (chromeStable) return checked(r).milestone < chromeStable - 2;
   const last = r.unvendored && r.unvendored.last_merge;
   return last ? daysFromToday(last) < -60 : false;
 }
@@ -2388,7 +2395,9 @@ function renderLibwebrtcMissing(view) {
     } else {
       state = date ? `last fix ${date}` : 'open';
     }
-    const branch = [`Chrome branch: M${esc(r.milestone)}`, branchLink(r.branch_head), state,
+    const c = checked(r);
+    const branch = [c.ref && `Checked on ${esc(c.ref)} (${esc(c.firefox)})`,
+      `Chrome branch: M${esc(c.milestone)}`, branchLink(c.branch_head), state,
       ignoredNote([ri])].filter(Boolean).join(' · ');
     return [[count, uncheckedNote].filter(Boolean).join(' '), branch];
   }
@@ -2414,7 +2423,7 @@ function renderLibwebrtcMissing(view) {
     const multi = c => c.length > 1 || c[0].role !== 'landed';
     const body = [...lines.values()].map(({ labels, releases, r, commits }) =>
       `<div class="lw-fix-line" data-releases="${releases.join(' ')}"><span class="lw-fix-where">`
-      + `${esc(labels.join(', '))} · M${esc(r.milestone)}</span> `
+      + `${esc(labels.join(', '))} · M${esc(checked(r).milestone)}</span> `
       + commits.map(c => `<a href="https://webrtc.googlesource.com/src/+/${escA(c.sha)}"><code>${esc(c.sha.slice(0, 10))}</code></a>`
         + (multi(commits) ? ` ${c.role}` : '')).join(' ')
       + (isStale(r.unvendored.as_of) ? ` · as of ${esc(r.unvendored.as_of)}` : '') + '</div>').join('');
@@ -2450,8 +2459,10 @@ function renderLibwebrtc(view) {
     const branched = r.branched ? `${esc(r.branched)} (${ageLabel(r.branched)} ago)` : '—';
     // A count links to the list, filtered to this release.
     const n = r.unvendored ? fixes.filter(f => f.releases.has(ri)).length : null;
+    const c = checked(r);
     const missing = n == null ? '<span title="Not checked this week">—</span>'
       : (n ? `<button type="button" class="lw-count" data-release="${ri}">${n}</button>` : '0')
+        + (c.milestone !== r.milestone ? ` · on ${esc(c.firefox)} (M${esc(c.milestone)})` : '')
         + (branchClosed(r, view.chrome_stable) ? ' · branch closed' : '');
     return `<tr><td>${esc(r.label)}</td><td>${esc(r.firefox)}</td><td>M${esc(r.milestone)}</td>`
       + `<td>${branchLink(r.branch_head)}</td><td>${branched}</td>`

@@ -27,6 +27,7 @@ import time
 import urllib.error
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
+from typing import NamedTuple
 from datetime import date, datetime, timedelta
 
 from reviewstats.github_commits import _DEFAULT_REPO
@@ -99,12 +100,24 @@ _STACK_ADDED_FIELDS = ("subject", "absorbed")
 _STACK_DROPPED_FIELDS = ("subject", "absorbed", "update")
 _STACK_UPDATE_FIELDS = ("milestone", "bug", "date")
 RAW_URL = "https://raw.githubusercontent.com/{}/{}/{}/{}"
-_UNVENDORED_FIELDS = ("commits", "as_of", "branch_commits", "last_merge", "ignored")
+_UNVENDORED_FIELDS = ("commits", "as_of", "branch_commits", "last_merge", "ignored",
+                      "ref", "firefox", "milestone", "branch_head")  # see Tip
 _UNVENDORED_COMMIT_FIELDS = ("sha", "subject", "fix", "role")
 _IGNORED_COMMIT_FIELDS = ("sha", "subject", "comment")
 # Missing commits the WebRTC owners chose not to take, per Firefox major; the
 # same file check_missing_branch_head_commits.py reads.
 _IGNORED_PATH = "dom/media/webrtc/third_party_build/ignored_branch_head_commits.json"
+_VERSION_TXT = "browser/config/version.txt"
+# The WebRTC owners' scripts that unvendored_commits and ignored_for port,
+# pinned at the blobs they were ported from (bug 2086334). When one changes
+# on main, the weekly run warns that the port needs re-syncing.
+_PORTED_DIR = "dom/media/webrtc/third_party_build"
+PORTED = {
+    "dom/media/webrtc/third_party_build/check_missing_branch_head_commits.py":
+        "1f631eb5b7085174597c694f111ac37934329506",
+    "dom/media/webrtc/third_party_build/show_branch_head_commits.py":
+        "40df82dc277e1903a651f759b24edd98502faf30",
+}
 
 
 @dataclass(frozen=True)
@@ -503,6 +516,11 @@ def split_ignored(commits: list[dict], ignored: dict[str, str]) -> tuple[list[di
     return kept, out
 
 
+def port_drift(pinned: dict[str, str], current: dict[str, str]) -> list[str]:
+    """Ported scripts whose blob on main is no longer the pinned one."""
+    return [path for path, sha in pinned.items() if current.get(path) != sha]
+
+
 def project_view(view: dict) -> dict:
     """Keep only the whitelisted fields, nested ones included. Sections a
     payload lacks (files written before they existed) come back as None."""
@@ -567,6 +585,15 @@ def _decode_content(payload: dict) -> str:
     return base64.b64decode(payload["content"]).decode()
 
 
+def _read_file(github_get, path: str, ref: str) -> str:
+    return _decode_content(github_get(f"{_REPO}/contents/{path}?ref={ref}"))
+
+
+def ported_shas(github_get) -> dict[str, str]:
+    """path -> blob sha on main for the ported scripts' directory."""
+    return {e["path"]: e["sha"] for e in github_get(f"{_REPO}/contents/{_PORTED_DIR}?ref=main")}
+
+
 def _day(value: str | None) -> str | None:
     return (value or "")[:10] or None
 
@@ -610,11 +637,39 @@ def _fetch_gitiles_count(get_text, frm: str, to: str) -> int | None:
 def _fetch_ignored(github_get, branch: str) -> str | None:
     """The branch tip's ignore list, or None where the branch has none."""
     try:
-        return _decode_content(github_get(f"{_REPO}/contents/{_IGNORED_PATH}?ref={branch}"))
+        return _read_file(github_get, _IGNORED_PATH, branch)
     except urllib.error.HTTPError as exc:
         if exc.code == 404:
             return None
         raise
+
+
+class Tip(NamedTuple):
+    """What the missing-fixes check reads: the release's branch tip, as
+    check_missing_branch_head_commits.py does. After a merge it can be past
+    the shipped build the row describes."""
+    milestone: int | None
+    branch_head: str | None
+    firefox: str
+
+
+def _read_tip(github_get, rel: Release, shipped_env: str) -> Tip:
+    if rel.branch == rel.ref:  # Nightly ships its tip
+        return Tip(*parse_config_env(shipped_env), rel.firefox)
+    return Tip(*parse_config_env(_read_file(github_get, _CONFIG_ENV, rel.branch)),
+               _read_file(github_get, _VERSION_TXT, rel.branch).strip())
+
+
+def _fetch_missing(github_get, get_text, *, branch: str, tip: Tip, branched: str | None,
+                   today: date) -> dict:
+    """A branch tip's unvendored commits, less the owners' ignore list for
+    its Firefox major, labelled with what was checked."""
+    u = _fetch_unvendored(github_get, get_text, ref=branch, branch_head=tip.branch_head,
+                          branched=branched, today=today)
+    ignored = u["commits"] and ignored_for(_fetch_ignored(github_get, branch),
+                                           _major(tip.firefox))
+    u["commits"], u["ignored"] = split_ignored(u["commits"], ignored or {})
+    return {**u, **tip._asdict(), "ref": branch}
 
 
 def _fetch_unvendored(github_get, get_text, *, ref: str, branch_head: str,
@@ -832,7 +887,10 @@ def collect_status(github_get, get_text, *, today: date, previous: dict | None =
     dates = known_branch_dates(previous)
     # Last week's list is reusable only for the same branch-head: on a merge
     # week a release moves milestone and the old list no longer applies.
-    last_unvendored = {(r.get("label"), r.get("branch_head")): r.get("unvendored")
+    # Keyed by the branch head the list was checked on; files written before
+    # the check read branch tips only have the row's.
+    last_unvendored = {(r.get("label"), (r.get("unvendored") or {}).get("branch_head")
+                        or r.get("branch_head")): r.get("unvendored")
                        for r in (previous or {}).get("rows") or []}
     versions = json.loads(get_text(PRODUCT_DETAILS_URL))
     check_channels(versions, json.loads(get_text(FIREFOX_RELEASES_URL)), today)
@@ -846,17 +904,20 @@ def collect_status(github_get, get_text, *, today: date, previous: dict | None =
             on_error("chrome stable", exc)
             return None, None
 
+    def branch_date(milestone: int) -> str | None:
+        if milestone not in dates:
+            dates[milestone] = scheduled(milestone)[0]
+        return dates[milestone]
+
     newest = max(r["milestone"] for r in json.loads(get_text(CHROME_STABLE_URL)))
     chrome_stable = full_stable(newest, scheduled(newest)[1], today)
     rows, nightly = [], None
     for rel in releases:
-        env = _decode_content(
-            github_get(f"{_REPO}/contents/{_CONFIG_ENV}?ref={rel.ref}"))
+        env = _read_file(github_get, _CONFIG_ENV, rel.ref)
         milestone, branch_head = parse_config_env(env)
         commits = github_get(f"{_REPO}/commits?sha={rel.ref}"
                              f"&path=third_party/libwebrtc&per_page=30")
-        if milestone not in dates:
-            dates[milestone] = scheduled(milestone)[0]
+        branched = branch_date(milestone)
         patches = count_patches(
             github_get(f"{_REPO}/contents/{_PATCH_STACK}?ref={rel.ref}"))
         # Only Nightly vendors a milestone incrementally; release branches
@@ -875,22 +936,17 @@ def collect_status(github_get, get_text, *, today: date, previous: dict | None =
                 in_progress = None
             nightly = dict(env=env, milestone=milestone, in_progress=in_progress,
                            last=last)
+        tip = None
         try:
-            unvendored = _fetch_unvendored(github_get, get_text, ref=rel.ref,
-                                           branch_head=branch_head,
-                                           branched=dates[milestone], today=today)
-            # Read at the branch tip, not the tag: owners add entries after
-            # a release is tagged.
-            ignored = unvendored["commits"] and ignored_for(
-                _fetch_ignored(github_get, rel.branch), _major(rel.firefox))
-            unvendored["commits"], unvendored["ignored"] = split_ignored(
-                unvendored["commits"], ignored or {})
+            tip = _read_tip(github_get, rel, env)
+            unvendored = _fetch_missing(github_get, get_text, branch=rel.branch, tip=tip,
+                                        branched=branch_date(tip.milestone), today=today)
         except Exception as exc:  # noqa: BLE001 — keep last week's list
             on_error("missing fixes", exc)
-            unvendored = last_unvendored.get((rel.label, branch_head))
+            unvendored = last_unvendored.get((rel.label, tip and tip.branch_head))
         rows.append({
             "label": rel.label, "firefox": rel.firefox, "milestone": milestone,
-            "branch_head": branch_head, "branched": dates[milestone],
+            "branch_head": branch_head, "branched": branched,
             "vs_chrome": _vs_chrome(milestone, chrome_stable),
             "patches": patches,
             "last_change": last_libwebrtc_change(commits),
