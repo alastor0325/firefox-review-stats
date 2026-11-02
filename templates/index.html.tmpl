@@ -1628,7 +1628,7 @@ __GH_CORNER__
   <div class="footer-note" id="libwebrtc-stale" style="display:none"></div>
 
   <section>
-    <h2>Upstream fixes not vendored <span class="info" data-tip="Commits Chrome merged to a milestone's release branch (branch-heads/N) that Firefox's history doesn't show as vendored. Matched by Upstream-commit footers, cherry-pick lines and subject, following check_missing_branch_head_commits.py, so expect some false positives and some fixes skipped on purpose (Chrome-only code). Each fix is counted once: Chrome merges it to each branch under its own SHA, and a revert and reland count as one fix."></span></h2>
+    <h2>Upstream fixes not vendored <span class="info" data-tip="Commits Chrome merged to a milestone's release branch (branch-heads/N) that Firefox's history doesn't show as vendored. Matched by Upstream-commit footers, cherry-pick lines and subject, following check_missing_branch_head_commits.py, so expect some false positives. Commits the WebRTC owners list in ignored_branch_head_commits.json on the release's branch are left out of the count and noted as ignored. Each fix is counted once: Chrome merges it to each branch under its own SHA, and a revert and reland count as one fix."></span></h2>
     <div class="lw-filters" id="lw-filters" role="group" aria-label="Show missing fixes for"></div>
     <div class="footer-note" id="lw-missing-summary" aria-live="polite" aria-atomic="true"></div>
     <div class="lw-fixes" id="lw-fixes"></div>
@@ -2352,6 +2352,15 @@ function renderLibwebrtcMissing(view) {
 
   const closed = rows.map(r => branchClosed(r, view.chrome_stable));
 
+  // Commits the owners chose not to take (ignored_branch_head_commits.json),
+  // named with their reason rather than counted as missing.
+  function ignoredNote(ris) {
+    const items = ris.flatMap(ri => ((rows[ri].unvendored || {}).ignored || [])
+      .map(i => `${ris.length > 1 ? rows[ri].label + ': ' : ''}${i.sha.slice(0, 10)} ${i.subject} (${i.comment})`));
+    return items.length
+      ? `${plural(items.length, 'commit', 'commits')} ignored on purpose ${infoTip(items.join('; '))}` : '';
+  }
+
   // [count sentence, branch line (HTML)].
   function summaryFor(ri) {
     if (ri == null) {
@@ -2361,9 +2370,10 @@ function renderLibwebrtcMissing(view) {
           ? `${plural(fixes.length, 'fix', 'fixes')} missing from ${missingIn.size} of `
             + `${plural(rows.length - unchecked.length, 'release', 'releases')}.`
           : '✓ Every release has every fix on its branch.', uncheckedNote].filter(Boolean).join(' '),
-        shut.length ? `${esc(andList(shut))} ${shut.length === 1 ? 'is' : 'are'} on closed Chrome branches.`
+        [shut.length ? `${esc(andList(shut))} ${shut.length === 1 ? 'is' : 'are'} on closed Chrome branches.`
           + ' ' + infoTip('Each release is counted against its own Chrome milestone branch. On a closed '
-          + 'branch, a low count means Chrome stopped merging fixes, not that the release has them all.') : ''];
+          + 'branch, a low count means Chrome stopped merging fixes, not that the release has them all.') : '',
+         ignoredNote(rows.map((r, i) => i))].filter(Boolean).join(' · ')];
     }
     const r = rows[ri], n = countFor(ri), u = r.unvendored, shut = closed[ri];
     const total = u && u.branch_commits;
@@ -2378,7 +2388,8 @@ function renderLibwebrtcMissing(view) {
     } else {
       state = date ? `last fix ${date}` : 'open';
     }
-    const branch = `Chrome branch: M${esc(r.milestone)} · ${branchLink(r.branch_head)} · ${state}`;
+    const branch = [`Chrome branch: M${esc(r.milestone)}`, branchLink(r.branch_head), state,
+      ignoredNote([ri])].filter(Boolean).join(' · ');
     return [[count, uncheckedNote].filter(Boolean).join(' '), branch];
   }
 

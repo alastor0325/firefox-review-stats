@@ -38,19 +38,19 @@ class TestSupportedReleases:
 
     def test_channels_then_esrs_newest_first(self):
         assert supported_releases(self.VERSIONS) == [
-            Release("Nightly", "main", "159.0a1"),
-            Release("Beta", "FIREFOX_158_0b4_RELEASE", "158.0b4"),
-            Release("Release", "FIREFOX_157_0_RELEASE", "157.0"),
-            Release("ESR 153", "FIREFOX_153_4_0esr_RELEASE", "153.4.0"),
-            Release("ESR 140", "FIREFOX_140_17_0esr_RELEASE", "140.17.0"),
-            Release("ESR 115", "FIREFOX_115_42_0esr_RELEASE", "115.42.0"),
+            Release("Nightly", "main", "159.0a1", "main"),
+            Release("Beta", "FIREFOX_158_0b4_RELEASE", "158.0b4", "beta"),
+            Release("Release", "FIREFOX_157_0_RELEASE", "157.0", "release"),
+            Release("ESR 153", "FIREFOX_153_4_0esr_RELEASE", "153.4.0", "esr153"),
+            Release("ESR 140", "FIREFOX_140_17_0esr_RELEASE", "140.17.0", "esr140"),
+            Release("ESR 115", "FIREFOX_115_42_0esr_RELEASE", "115.42.0", "esr115"),
         ]
 
     def test_empty_or_duplicate_esr_entries_are_ignored(self):
         versions = {"FIREFOX_ESR": "140.17.0esr", "FIREFOX_ESR140": "140.17.0esr",
                     "FIREFOX_ESR_NEXT": ""}
         assert supported_releases(versions) == [
-            Release("ESR 140", "FIREFOX_140_17_0esr_RELEASE", "140.17.0")]
+            Release("ESR 140", "FIREFOX_140_17_0esr_RELEASE", "140.17.0", "esr140")]
 
 
 class TestReleaseTag:
@@ -92,6 +92,33 @@ class TestCheckChannels:
         versions = {"FIREFOX_NIGHTLY": "160.0a1", "LATEST_FIREFOX_DEVEL_VERSION": "159.0b1",
                     "LATEST_FIREFOX_VERSION": "158.0"}
         check_channels(versions, self.CALENDAR, date(2026, 10, 13))
+
+    MERGE = {"FIREFOX_NIGHTLY": "160.0a1", "LATEST_FIREFOX_DEVEL_VERSION": "158.0b9",
+             "LATEST_FIREFOX_VERSION": "157.0.1"}
+    RELEASED = {**MERGE, "LATEST_FIREFOX_VERSION": "158.0"}
+
+    def test_on_merge_day_nightly_may_lead_a_beta_not_yet_moved(self):
+        """main bumps the day before 158 ships (one train after 157)."""
+        check_channels(self.MERGE, self.CALENDAR, date(2026, 10, 12))
+
+    def test_mid_cycle_the_same_skew_fails(self):
+        with pytest.raises(ValueError, match="outside merge week"):
+            check_channels(self.MERGE, self.CALENDAR, self.TODAY)
+
+    def test_on_release_day_release_may_catch_up_with_beta(self):
+        check_channels(self.RELEASED, self.CALENDAR, date(2026, 10, 13))
+
+    def test_a_week_after_release_beta_must_have_moved(self):
+        with pytest.raises(ValueError, match="outside merge week"):
+            check_channels(self.RELEASED, self.CALENDAR, date(2026, 10, 20))
+
+    @pytest.mark.parametrize("n, b, r", [("161.0a1", "158.0b9", "157.0.1"),
+                                         ("159.0a1", "159.0b1", "157.0.1")])
+    def test_other_gaps_fail_even_in_merge_week(self, n, b, r):
+        versions = {"FIREFOX_NIGHTLY": n, "LATEST_FIREFOX_DEVEL_VERSION": b,
+                    "LATEST_FIREFOX_VERSION": r}
+        with pytest.raises(ValueError, match="outside merge week"):
+            check_channels(versions, self.CALENDAR, date(2026, 10, 12))
 
     def test_a_missing_channel_fails(self):
         versions = {k: v for k, v in self.VERSIONS.items() if k != "LATEST_FIREFOX_VERSION"}
@@ -221,7 +248,7 @@ class TestProjectView:
         assert project_view({**self.VIEW, "rows": [row]})["rows"][0]["unvendored"] == {
             "as_of": "2026-10-05", "branch_commits": None, "last_merge": None,
             "commits": [{"sha": "a" * 40, "subject": "Fix A", "fix": "Fix A",
-                         "role": "landed"}]}
+                         "role": "landed"}], "ignored": []}
 
 
 class TestFullStable:
@@ -236,3 +263,4 @@ class TestFullStable:
     ])
     def test_cases(self, stable_date, today, expected):
         assert full_stable(156, stable_date, today) == expected
+

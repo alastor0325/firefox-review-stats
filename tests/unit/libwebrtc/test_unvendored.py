@@ -3,7 +3,8 @@ the logic of dom/media/webrtc/third_party_build/check_missing_branch_head_commit
 
 import pytest
 
-from reviewstats.libwebrtc import fix_identity, project_view, unvendored_commits
+from reviewstats.libwebrtc import (
+    fix_identity, ignored_for, project_view, split_ignored, unvendored_commits)
 
 UP = "Upstream commit: https://webrtc.googlesource.com/src/+/"
 
@@ -157,3 +158,39 @@ def test_files_written_before_fix_identity_are_upgraded_on_read():
         {"sha": "g" * 40, "subject": 'Revert^2 "[M120] Remove raw pointers"'}]}}
     commit = project_view({"rows": [row]})["rows"][0]["unvendored"]["commits"][0]
     assert (commit["fix"], commit["role"]) == ("Remove raw pointers", "relanded")
+
+
+IGNORE_FILE = """[
+  {"firefox_version": 153, "upstream_sha": "5f28ddf5ed", "comment": "no pc directory"},
+  {"firefox_version": 153, "upstream_sha": "1F975DFD76 ", "comment": "no CCFB"},
+  {"firefox_version": 140, "upstream_sha": "aaaaaaaaaa", "comment": "other train"}
+]"""
+
+
+class TestIgnoredBranchHeadCommits:
+    """ignored_branch_head_commits.json, as check_missing_branch_head_commits.py
+    reads it: entries for this Firefox major, matched by SHA prefix."""
+
+    def test_keeps_only_this_major(self):
+        assert ignored_for(IGNORE_FILE, 153) == {"5f28ddf5ed": "no pc directory",
+                                                 "1f975dfd76": "no CCFB"}
+
+    def test_no_file_ignores_nothing(self):
+        assert ignored_for(None, 153) == {}
+
+    def test_splits_by_sha_prefix(self):
+        commits = [{"sha": "5f28ddf5ed" + "0" * 30, "subject": "[M150] pc", "fix": "pc",
+                    "role": "landed"},
+                   {"sha": "c6c0780f55" + "0" * 30, "subject": "[M150] RTP", "fix": "RTP",
+                    "role": "landed"}]
+        kept, ignored = split_ignored(commits, ignored_for(IGNORE_FILE, 153))
+        assert [c["sha"][:10] for c in kept] == ["c6c0780f55"]
+        assert ignored == [{"sha": "5f28ddf5ed" + "0" * 30, "subject": "[M150] pc",
+                            "comment": "no pc directory"}]
+
+    def test_ignored_list_survives_the_whitelist(self):
+        u = {"commits": [], "as_of": "2026-11-02",
+             "ignored": [{"sha": "a" * 40, "subject": "S", "comment": "C", "extra": 1}]}
+        view = project_view({"rows": [{**ROW, "unvendored": u}]})
+        assert view["rows"][0]["unvendored"]["ignored"] == [
+            {"sha": "a" * 40, "subject": "S", "comment": "C"}]

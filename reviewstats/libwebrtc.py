@@ -81,10 +81,10 @@ _BRACKET_PREFIX_RE = re.compile(r"^(\[[^\]]*\]\s*)+")
 _MAIN_POSITION_RE = re.compile(
     r"^Cr-(?:Commit-Position|Branched-From):.*refs/heads/main@\{#(\d+)\}", re.MULTILINE)
 NIGHTLY_REF = "main"  # Nightly ships main; there is no tag to read
-_CHANNELS = (
-    ("FIREFOX_NIGHTLY", "Nightly"),
-    ("LATEST_FIREFOX_DEVEL_VERSION", "Beta"),
-    ("LATEST_FIREFOX_VERSION", "Release"),
+_CHANNELS = (  # (product-details key, label, branch)
+    ("FIREFOX_NIGHTLY", "Nightly", NIGHTLY_REF),
+    ("LATEST_FIREFOX_DEVEL_VERSION", "Beta", "beta"),
+    ("LATEST_FIREFOX_VERSION", "Release", "release"),
 )
 _VIEW_FIELDS = ("chrome_stable", "as_of")
 _ROW_FIELDS = ("label", "firefox", "milestone", "branch_head", "branched",
@@ -99,8 +99,12 @@ _STACK_ADDED_FIELDS = ("subject", "absorbed")
 _STACK_DROPPED_FIELDS = ("subject", "absorbed", "update")
 _STACK_UPDATE_FIELDS = ("milestone", "bug", "date")
 RAW_URL = "https://raw.githubusercontent.com/{}/{}/{}/{}"
-_UNVENDORED_FIELDS = ("commits", "as_of", "branch_commits", "last_merge")
+_UNVENDORED_FIELDS = ("commits", "as_of", "branch_commits", "last_merge", "ignored")
 _UNVENDORED_COMMIT_FIELDS = ("sha", "subject", "fix", "role")
+_IGNORED_COMMIT_FIELDS = ("sha", "subject", "comment")
+# Missing commits the WebRTC owners chose not to take, per Firefox major; the
+# same file check_missing_branch_head_commits.py reads.
+_IGNORED_PATH = "dom/media/webrtc/third_party_build/ignored_branch_head_commits.json"
 
 
 @dataclass(frozen=True)
@@ -108,6 +112,7 @@ class Release:
     label: str
     ref: str      # git ref of the build users have
     firefox: str  # its version
+    branch: str   # the branch its train lives on (main, beta, release, esrNNN)
 
 
 def _major(version: str) -> int:
@@ -128,29 +133,56 @@ def supported_releases(versions: dict) -> list[Release]:
     ESRs are taken from any `FIREFOX_ESR*` key (FIREFOX_ESR, FIREFOX_ESR115,
     FIREFOX_ESR_NEXT, ...) and de-duplicated by major version.
     """
-    out = [Release(label, NIGHTLY_REF if key == "FIREFOX_NIGHTLY" else release_tag(v), v)
-           for key, label in _CHANNELS if (v := versions.get(key))]
+    out = [Release(label, NIGHTLY_REF if key == "FIREFOX_NIGHTLY" else release_tag(v), v, branch)
+           for key, label, branch in _CHANNELS if (v := versions.get(key))]
     esrs = {}
     for k, v in versions.items():
         if k.startswith("FIREFOX_ESR") and v:
             esrs.setdefault(_major(v), v)
-    out += [Release(f"ESR {m}", release_tag(esrs[m]), esrs[m].removesuffix("esr"))
+    out += [Release(f"ESR {m}", release_tag(esrs[m]), esrs[m].removesuffix("esr"), f"esr{m}")
             for m in sorted(esrs, reverse=True)]
     return out
 
 
+# How close to a release date the channels may disagree: main bumps on merge
+# day, the day before a release, and Beta catches up with its first build.
+MERGE_WINDOW_DAYS = 3
+
+
+def _released(calendar: dict, major: int) -> date | None:
+    d = calendar.get(f"{major}.0")
+    return date.fromisoformat(d) if d else None
+
+
+def in_merge_window(gaps: tuple[int, int], release: int, calendar: dict, today: date) -> bool:
+    """Whether a merge-week skew is expected `today`: Nightly two ahead of a
+    Beta still a train behind (2, 1) just before the next release, which is
+    one train length after Release's own; or Beta caught up by Release
+    (2, 0) just after Release shipped."""
+    shipped, before = _released(calendar, release), _released(calendar, release - 1)
+    if shipped is None:
+        return False
+    if gaps == (2, 0):
+        return 0 <= (today - shipped).days <= MERGE_WINDOW_DAYS
+    if gaps == (2, 1) and before is not None:
+        return 0 <= (shipped + (shipped - before) - today).days <= MERGE_WINDOW_DAYS
+    return False
+
+
 def check_channels(versions: dict, calendar: dict, today: date) -> None:
-    """Raise unless Nightly, Beta and Release are each one major apart and
-    Release is the newest major the release calendar (version -> release
-    date) has shipped by `today`."""
+    """Raise unless Nightly, Beta and Release are each one major apart
+    (or skewed as merge week does, see in_merge_window) and Release is the
+    newest major the release calendar (version -> release date) has shipped
+    by `today`."""
     try:
         n, b, r = (_major(versions[key]) for key in
                    ("FIREFOX_NIGHTLY", "LATEST_FIREFOX_DEVEL_VERSION", "LATEST_FIREFOX_VERSION"))
     except KeyError as exc:
         raise ValueError(f"product-details has no {exc.args[0]}") from None
-    if (n - b, b - r) != (1, 1):
+    gaps = (n - b, b - r)
+    if gaps != (1, 1) and not in_merge_window(gaps, r, calendar, today):
         raise ValueError(f"Nightly {n}, Beta {b}, Release {r}: "
-                         "expected each one version apart")
+                         "expected each one version apart outside merge week")
     shipped = max((_major(v) for v, d in calendar.items() if d <= today.isoformat()),
                   default=None)
     if r != shipped:
@@ -450,6 +482,27 @@ def unvendored_commits(branch_log: list[dict], firefox_commits: list[dict]) -> l
     return out
 
 
+def ignored_for(text: str | None, firefox_major: int) -> dict[str, str]:
+    """{sha prefix: comment} from ignored_branch_head_commits.json for one
+    Firefox major; no file ignores nothing."""
+    if text is None:
+        return {}
+    return {e["upstream_sha"].strip().lower(): e["comment"] for e in json.loads(text)
+            if e["firefox_version"] == firefox_major and e["upstream_sha"].strip()}
+
+
+def split_ignored(commits: list[dict], ignored: dict[str, str]) -> tuple[list[dict], list[dict]]:
+    """(still missing, ignored with their comment), matching SHA prefixes."""
+    kept, out = [], []
+    for c in commits:
+        comment = next((v for k, v in ignored.items() if c["sha"].startswith(k)), None)
+        if comment is None:
+            kept.append(c)
+        else:
+            out.append({"sha": c["sha"], "subject": c["subject"], "comment": comment})
+    return kept, out
+
+
 def project_view(view: dict) -> dict:
     """Keep only the whitelisted fields, nested ones included. Sections a
     payload lacks (files written before they existed) come back as None."""
@@ -464,7 +517,8 @@ def project_view(view: dict) -> dict:
         out["last_change"] = pick(out["last_change"], _LAST_CHANGE_FIELDS)
         u = r.get("unvendored")
         out["unvendored"] = u and {**pick(u, _UNVENDORED_FIELDS), "commits": [
-            commit(c) for c in pick_all(u.get("commits"), _UNVENDORED_COMMIT_FIELDS)]}
+            commit(c) for c in pick_all(u.get("commits"), _UNVENDORED_COMMIT_FIELDS)],
+            "ignored": pick_all(u.get("ignored"), _IGNORED_COMMIT_FIELDS)}
         return out
 
     def history_point(h):
@@ -551,6 +605,16 @@ def _fetch_gitiles_log(get_text, frm: str, to: str) -> dict:
 def _fetch_gitiles_count(get_text, frm: str, to: str) -> int | None:
     log = _fetch_gitiles_log(get_text, frm, to)
     return None if log.get("next") else len(log.get("log", []))
+
+
+def _fetch_ignored(github_get, branch: str) -> str | None:
+    """The branch tip's ignore list, or None where the branch has none."""
+    try:
+        return _decode_content(github_get(f"{_REPO}/contents/{_IGNORED_PATH}?ref={branch}"))
+    except urllib.error.HTTPError as exc:
+        if exc.code == 404:
+            return None
+        raise
 
 
 def _fetch_unvendored(github_get, get_text, *, ref: str, branch_head: str,
@@ -815,6 +879,12 @@ def collect_status(github_get, get_text, *, today: date, previous: dict | None =
             unvendored = _fetch_unvendored(github_get, get_text, ref=rel.ref,
                                            branch_head=branch_head,
                                            branched=dates[milestone], today=today)
+            # Read at the branch tip, not the tag: owners add entries after
+            # a release is tagged.
+            ignored = unvendored["commits"] and ignored_for(
+                _fetch_ignored(github_get, rel.branch), _major(rel.firefox))
+            unvendored["commits"], unvendored["ignored"] = split_ignored(
+                unvendored["commits"], ignored or {})
         except Exception as exc:  # noqa: BLE001 — keep last week's list
             on_error("missing fixes", exc)
             unvendored = last_unvendored.get((rel.label, branch_head))

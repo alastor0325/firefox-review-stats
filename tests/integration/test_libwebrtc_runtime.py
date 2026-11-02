@@ -455,3 +455,18 @@ def test_detail_opens_on_the_summary_month_when_nothing_is_unexplained(tmp_path)
     state, _ = _run(tmp_path, view)
     assert state["stack_detail_head"].startswith("September 2026")
 
+
+
+def test_ignored_commits_are_named_not_counted(tmp_path):
+    """Commits in ignored_branch_head_commits.json leave the count, and the
+    summary names them with the owners' reason."""
+    view = _with_lists(_view())
+    view["rows"][0]["unvendored"]["ignored"] = [
+        {"sha": "5f28ddf5ed" + "0" * 30, "subject": "[M155] Ensure stopped transceivers",
+         "comment": "firefox does not build the pc directory"}]
+    all_, nightly = _interact(tmp_path, view, 1280, [_filter_button("Nightly")])
+    assert "Nightly 1" in all_["buttons"]
+    assert all_["branch"].endswith("1 commit ignored on purpose")
+    assert nightly["branch"].endswith("· 1 commit ignored on purpose")
+    assert nightly["branchTip"] == ("5f28ddf5ed [M155] Ensure stopped transceivers "
+                                    "(firefox does not build the pc directory)")

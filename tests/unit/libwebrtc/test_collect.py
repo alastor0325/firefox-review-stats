@@ -80,6 +80,11 @@ class Upstream:
                     {"sha": "x", "parents": [{"sha": "y"}],
                      "commit": {"message": "Bug 1 - unrelated config tweak",
                                 "committer": {"date": "2026-09-01T10:00:00Z"}}}]
+        if "ignored_branch_head_commits.json" in path:
+            if path.endswith("ref=esr140"):
+                return _content('[{"firefox_version": 140, "upstream_sha": "70492",'
+                                ' "comment": "not built"}]')
+            raise _http_error(path, 404)
         for ref, (ms, bh) in REFS.items():
             if path.endswith(f"default_config_env?ref={ref}"):
                 return _content(
@@ -286,10 +291,22 @@ def test_the_core_still_fails_hard():
 def test_each_release_lists_its_unvendored_branch_head_commits():
     rows = _collect(Upstream())["rows"]
     assert [(r["label"], len(r["unvendored"]["commits"])) for r in rows] == [
-        ("Nightly", 3), ("Beta", 3), ("Release", 3), ("ESR 140", 3)]
+        ("Nightly", 3), ("Beta", 3), ("Release", 3), ("ESR 140", 2)]
     first = rows[0]["unvendored"]["commits"][0]
     assert (first["sha"], first["fix"], first["role"]) == (
         "80591".ljust(40, "0"), "Fix 8059-1", "landed")
+
+
+def test_the_ignore_list_is_read_at_each_release_branch_tip():
+    """Sheriffs add entries to the branch after a release is tagged, so the
+    list comes from the branch, as check_missing_branch_head_commits.py
+    reads it."""
+    up = Upstream()
+    rows = _collect(up)["rows"]
+    assert [i["comment"] for i in rows[3]["unvendored"]["ignored"]] == ["not built"]
+    assert any(c.endswith("ignored_branch_head_commits.json?ref=esr140") for c in up.calls)
+    # The other branches have no list (404): nothing ignored, nothing lost.
+    assert [r["unvendored"]["ignored"] for r in rows[:3]] == [[], [], []]
 
 
 def test_firefox_history_is_read_from_the_branch_date_on():
@@ -310,7 +327,8 @@ def test_unvendored_falls_back_to_last_weeks_list_per_release():
                     on_error=lambda key, exc: errors.append(key))["rows"]
     assert "missing fixes" in errors
     assert rows[0]["unvendored"] == {"commits": [], "as_of": "2026-09-28",
-                                     "branch_commits": None, "last_merge": None}
+                                     "branch_commits": None, "last_merge": None,
+                                     "ignored": []}
     assert rows[1]["unvendored"] is None
 
 
@@ -320,7 +338,9 @@ def test_shipped_channels_are_read_at_their_release_tag():
     up = Upstream()
     _collect(up)
     assert any("default_config_env?ref=FIREFOX_157_0_1_RELEASE" in c for c in up.calls)
-    assert not any(c.endswith(("ref=release", "ref=beta")) for c in up.calls)
+    # Only the ignore list is read at the tip (see the test above).
+    assert not any(c.endswith(("ref=release", "ref=beta")) for c in up.calls
+                   if "ignored_branch_head_commits.json" not in c)
 
 
 def test_channels_that_disagree_with_the_calendar_fail_the_fetch():
