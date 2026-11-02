@@ -1,8 +1,8 @@
 ==============================================================================
 AI-PLATFORM-REVIEWERS AUTHOR-PATCH LISTING (raw author %an, no aliasing)
-Source: github.com/mozilla-firefox/firefox   Paths: toolkit/components/ml, toolkit/components/pageextractor, toolkit/components/aboutinference, dom/onnx, third_party/llama.cpp, config/external/mozinference, browser/components/aiwindow/services   Since: 2026-04-29T16:01:01Z
+Source: github.com/mozilla-firefox/firefox   Paths: toolkit/components/ml, toolkit/components/pageextractor, toolkit/components/aboutinference, dom/onnx, third_party/llama.cpp, config/external/mozinference, browser/components/aiwindow/services   Since: 2026-05-06T19:57:26Z
 Excluded paths: (none)
-Authors: 43    Patches: 265    (Lando-format / Lando-author / merge / Revert commits already excluded)
+Authors: 41    Patches: 255    (Lando-format / Lando-author / merge / Revert commits already excluded)
 ==============================================================================
 
 Known aliases (applied in HTML report, NOT below):
@@ -13,6 +13,7 @@ Known aliases (applied in HTML report, NOT below):
 
 [ 1] Valentin Pollet  —  66 patch(es)
     ----------------------------------------------------------------------
+      2026-10-28  10dee32874ee  Bug 2083088 - Keep callable alive during TextGeneration callback r=ai-platform-reviewers,gregtatum
       2026-10-22  ca6b1d03bd46  Bug 2074072 - Release native ONNX inference outputs and metadata. Release engines and workers after initialization failure. r=ai-platform-reviewers,nordzilla
       2026-10-22  1d9bc9ed888d  Bug 2074072 - Test native ONNX session memory growth and engine cleanup after initialization failure. r=ai-platform-reviewers,nordzilla
       2026-10-06  2be77664290b  Bug 2078561 - Make ml.llama.hwInference pref ride the train r=ai-platform-reviewers,nordzilla
@@ -78,7 +79,6 @@ Known aliases (applied in HTML report, NOT below):
       2026-05-27  dc0d8bbc54b0  Bug 2041340 - Fixed condition in LlamaGenerateTask::IsActive r=gregtatum,ai-platform-reviewers
       2026-05-19  bbf3a3d6f37c  Bug 2024445 - Changed MetadataCallback reference to its LlamaRunner to a weak pointer. r=gregtatum,ai-platform-reviewers,padenot
       2026-05-15  6a4b950c3ed7  Bug 2030110 - Added a guard in LlamaRunner::CreateGenerationStream to prevent concurrent use. r=gregtatum,ai-platform-reviewers
-      2026-04-30  1bc00aa92611  Bug 2029703 - define copy/move semantics for AutoOrtStatus r=gregtatum
 
 [ 2] Paul Adenot  —  36 patch(es)
     ----------------------------------------------------------------------
@@ -171,23 +171,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-06-04  7e024107d83e  Bug 2005365 - Collect inference metrics in the llama.cpp pipeline. r=thasan,ai-platform-reviewers
       2026-05-15  7cddb977bca5  Bug 1967279 - replace wllamapreview with link-preview r=ai-platform-reviewers,thasan
 
-[ 5] Sylvestre Ledru  —  13 patch(es)
-    ----------------------------------------------------------------------
-      2026-10-15  2839514b9bb4  no bug - docs: use internal references for in-tree docs instead of firefox-source-docs URLs r=necko-reviewers,home-newtab-reviewers-rotation,nina-py,valentin DONTBUILD
-      2026-09-23  23ac933ec4f9  Bug 2070824 - Declare every about:license notice in moz.build r=firefox-build-system-reviewers,ipc-reviewers,application-update-reviewers,media-playback-reviewers,credential-management-reviewers,webrtc-reviewers,devtools-reviewers,cubeb-reviewers,profiler-reviewers,win-reviewers,frontend-codestyle-reviewers,ai-platform-reviewers,sandbox-reviewers,crashreporting-reviewers,media-webspeech-reviewers,bobowen,dimi,canova,padenot,nchevobbe,mccr8,yjuglaret,bwc,ahochheiden
-      2026-09-22  8c79875a596a  Bug 2070824 - Declare every about:license notice in moz.build r=firefox-build-system-reviewers,ipc-reviewers,application-update-reviewers,media-playback-reviewers,credential-management-reviewers,webrtc-reviewers,devtools-reviewers,cubeb-reviewers,profiler-reviewers,win-reviewers,frontend-codestyle-reviewers,ai-platform-reviewers,sandbox-reviewers,crashreporting-reviewers,media-webspeech-reviewers,bobowen,dimi,canova,padenot,nchevobbe,mccr8,yjuglaret,bwc,ahochheiden
-      2026-09-22  d9a76c0abc66  Bug 2070824 - Declare every about:license notice in moz.build r=firefox-build-system-reviewers,ipc-reviewers,application-update-reviewers,media-playback-reviewers,credential-management-reviewers,webrtc-reviewers,devtools-reviewers,cubeb-reviewers,profiler-reviewers,win-reviewers,frontend-codestyle-reviewers,ai-platform-reviewers,sandbox-reviewers,crashreporting-reviewers,media-webspeech-reviewers,bobowen,dimi,canova,padenot,nchevobbe,mccr8,yjuglaret,bwc,ahochheiden
-      2026-09-09  74287815dbb2  Bug 2008577 - doc: fix JSDoc markup rejected by myst-parser 5 r=firefox-source-docs-reviewers,ahal
-      2026-09-09  c4d632c0ad8d  Bug 2008577 - doc: fix JSDoc markup rejected by myst-parser 5 r=firefox-source-docs-reviewers,ahal
-      2026-08-04  b7646161c508  Bug 2060009 - Fix duplicate documentation labels. r=ai-platform-reviewers
-      2026-07-04  3aeaba20ad83  Bug 2038819 - Convert toolkit/**/docs RST to Markdown r=firefox-source-docs-reviewers,extension-reviewers,search-reviewers,omc-reviewers,dom-core-reviewers,ai-platform-reviewers,smaug,Standard8,chutten,rpl,farre,mconley,sachung,ahal
-      2026-07-03  bee3de6a7d01  Bug 2038819 - Convert toolkit/**/docs RST to Markdown r=firefox-source-docs-reviewers,extension-reviewers,search-reviewers,omc-reviewers,dom-core-reviewers,ai-platform-reviewers,smaug,Standard8,chutten,rpl,farre,mconley,sachung,ahal
-      2026-06-14  4a428eca17e4  Bug 2045867 - Avoid removing an unregistered ipc:content-shutdown observer in MLEngineParent r=gregtatum,ai-platform-reviewers
-      2026-05-05  9887c45a7ed5  Bug 2036402 - Apply std::move in toolkit where values can be moved instead of copied r=credential-management-reviewers,ai-platform-reviewers,dimi,chutten
-      2026-04-30  a2ce5437cef5  Bug 2024589 - doc: use the :searchfox: macro r=asuth,perftest-reviewers,necko-reviewers,mozperftest-reviewers,geckoview-reviewers,extension-reviewers,credential-management-reviewers,search-reviewers,releng-reviewers,places-reviewers,profiler-reviewers,win-reviewers,omc-reviewers,urlbar-reviewers,permissions-reviewers,core-sessionstore-reviewers,browser-installer-reviewers,layout-reviewers,dom-worker-reviewers,ai-platform-reviewers,niklas,sthompson,janerik,bhearsum,valentin,dshin,sparky,scunnane,canaltinova,hanna_a,handyman,ahal,farre,jteow,emz,nrishel,ohall,dimi,robwu,emilio
-      2026-04-30  62b1ca8d057b  Bug 2024589 - adjust the code: searchfox.org/mozilla-central is now redirecting to searchfox.org/firefox-main/ r=asuth,perftest-reviewers,necko-reviewers,jgraham,webcompat-reviewers,mozperftest-reviewers,geckoview-reviewers,extension-reviewers,credential-management-reviewers,devtools-reviewers,taskgraph-reviewers,releng-reviewers,desktop-theme-reviewers,win-reviewers,translations-reviewers,omc-reviewers,firefox-desktop-core-reviewers ,home-newtab-reviewers,core-sessionstore-reviewers,browser-installer-reviewers,profiles-reviewers,dom-worker-reviewers,geckodriver-reviewers,ai-platform-reviewers,Sasha,niklas,manuel,janerik,bhearsum,valentin,twisniewski,nchevobbe,emcminn,webrtc-reviewers,mjf,handyman,mconley,mossop,ahal,sparky,nrishel,robwu,ohall,dimi,hjones
-
-[ 6] Greg Tatum  —  12 patch(es)
+[ 5] Greg Tatum  —  12 patch(es)
     ----------------------------------------------------------------------
       2026-10-07  7863891af1e4  Bug 2012843 - Add an owned HiddenFrame for OPFS; r=nordzilla,ai-platform-reviewers
       2026-10-07  62fd45d6c0c4  Bug 2012843 - Remove OPFS usage in workers; r=nordzilla,ai-platform-reviewers
@@ -202,7 +186,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-05-24  be9dd0705d58  Bug 2018054 - Create a MockLLMEngine in toolkit r=ai-platform-reviewers,thasan
       2026-05-13  62ff45611b59  Bug 2037513 - Update the toolkit/components/ml docs r=ai-platform-reviewers,valentinp
 
-[ 7] Rolf Rando  —  11 patch(es)
+[ 6] Rolf Rando  —  11 patch(es)
     ----------------------------------------------------------------------
       2026-09-02  a4ae60a8bf54  Bug 2066218 - Update autofill models, introduce smoke tests to check for regressions r=perftest-reviewers,credential-management-reviewers,ai-platform-reviewers,dimi,aglavic,valentinp
       2026-08-22  d1744f6b82a7  Bug 2061823 - Add config for two head model r=NeilDeakin,perftest-reviewers,credential-management-reviewers,ai-platform-reviewers,nordzilla,sparky
@@ -215,6 +199,19 @@ Known aliases (applied in HTML report, NOT below):
       2026-06-01  604a88d68b2b  Bug 2043884 - Fix broken semantic search test. Test needed to be brought up to date with system changes. Issue is with test only. r=ai-platform-reviewers,thasan
       2026-05-30  552d2eb44338  Bug 2039131 - New table indicating state of semantic search db (current model, dimensions). Allow switching models used for embeddings via config and Nimbus r=places-reviewers,ai-platform-reviewers,mak,thasan
       2026-05-29  fb46e0bc4ba8  Bug 2039101 - Turn on native coarse bit indexing, sqlite-vec to 0.1.10 r=mak,places-reviewers,ai-platform-reviewers,mzhang,thasan
+
+[ 7] Sylvestre Ledru  —  10 patch(es)
+    ----------------------------------------------------------------------
+      2026-10-15  2839514b9bb4  no bug - docs: use internal references for in-tree docs instead of firefox-source-docs URLs r=necko-reviewers,home-newtab-reviewers-rotation,nina-py,valentin DONTBUILD
+      2026-09-23  23ac933ec4f9  Bug 2070824 - Declare every about:license notice in moz.build r=firefox-build-system-reviewers,ipc-reviewers,application-update-reviewers,media-playback-reviewers,credential-management-reviewers,webrtc-reviewers,devtools-reviewers,cubeb-reviewers,profiler-reviewers,win-reviewers,frontend-codestyle-reviewers,ai-platform-reviewers,sandbox-reviewers,crashreporting-reviewers,media-webspeech-reviewers,bobowen,dimi,canova,padenot,nchevobbe,mccr8,yjuglaret,bwc,ahochheiden
+      2026-09-22  8c79875a596a  Bug 2070824 - Declare every about:license notice in moz.build r=firefox-build-system-reviewers,ipc-reviewers,application-update-reviewers,media-playback-reviewers,credential-management-reviewers,webrtc-reviewers,devtools-reviewers,cubeb-reviewers,profiler-reviewers,win-reviewers,frontend-codestyle-reviewers,ai-platform-reviewers,sandbox-reviewers,crashreporting-reviewers,media-webspeech-reviewers,bobowen,dimi,canova,padenot,nchevobbe,mccr8,yjuglaret,bwc,ahochheiden
+      2026-09-22  d9a76c0abc66  Bug 2070824 - Declare every about:license notice in moz.build r=firefox-build-system-reviewers,ipc-reviewers,application-update-reviewers,media-playback-reviewers,credential-management-reviewers,webrtc-reviewers,devtools-reviewers,cubeb-reviewers,profiler-reviewers,win-reviewers,frontend-codestyle-reviewers,ai-platform-reviewers,sandbox-reviewers,crashreporting-reviewers,media-webspeech-reviewers,bobowen,dimi,canova,padenot,nchevobbe,mccr8,yjuglaret,bwc,ahochheiden
+      2026-09-09  74287815dbb2  Bug 2008577 - doc: fix JSDoc markup rejected by myst-parser 5 r=firefox-source-docs-reviewers,ahal
+      2026-09-09  c4d632c0ad8d  Bug 2008577 - doc: fix JSDoc markup rejected by myst-parser 5 r=firefox-source-docs-reviewers,ahal
+      2026-08-04  b7646161c508  Bug 2060009 - Fix duplicate documentation labels. r=ai-platform-reviewers
+      2026-07-04  3aeaba20ad83  Bug 2038819 - Convert toolkit/**/docs RST to Markdown r=firefox-source-docs-reviewers,extension-reviewers,search-reviewers,omc-reviewers,dom-core-reviewers,ai-platform-reviewers,smaug,Standard8,chutten,rpl,farre,mconley,sachung,ahal
+      2026-07-03  bee3de6a7d01  Bug 2038819 - Convert toolkit/**/docs RST to Markdown r=firefox-source-docs-reviewers,extension-reviewers,search-reviewers,omc-reviewers,dom-core-reviewers,ai-platform-reviewers,smaug,Standard8,chutten,rpl,farre,mconley,sachung,ahal
+      2026-06-14  4a428eca17e4  Bug 2045867 - Avoid removing an unregistered ipc:content-shutdown observer in MLEngineParent r=gregtatum,ai-platform-reviewers
 
 [ 8] Christopher DiPersio  —  7 patch(es)
     ----------------------------------------------------------------------
@@ -236,16 +233,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-08-03  2ef74fa3dfb8  Bug 2059875 - Expose isAvailable() for native ONNX runtime r=valentinp,webidl,ai-platform-reviewers,saschanaz
       2026-05-08  6259edd815e1  Bug 2027897 - Revise AIFeature.sys.mjs interface r=mstriemer,ai-platform-reviewers,thasan
 
-[10] Bryan Johns  —  6 patch(es)
-    ----------------------------------------------------------------------
-      2026-09-30  7241acfee727  Bug 2069436 - Added /answer path for search_the_web r=gazhibekova,ai-platform-reviewers,npodgurski
-      2026-09-03  28f0e573577b  Bug 2065298 - Exposing maxRetries switch to openaiEngine class r=rrando
-      2026-07-23  489a6bd8c2fa  Bug 2055850 - passing inference params via defined parameter inferenceParams r=simonf,ai-platform-reviewers,mshillabeer,valentinp,ai-security-reviewers
-      2026-07-22  2ca6fa221d80  Bug 2055850 - passing inference params via defined parameter inferenceParams r=simonf,ai-platform-reviewers,mshillabeer,valentinp,ai-security-reviewers
-      2026-05-29  4cbedf66a493  Bug 2033537 - added telemetry engine for running llm-based telemetry r=ai-platform-reviewers,mlucks,tetchart,thasan
-      2026-05-01  3ab010d77903  Bug 2034635 - Added better error handling when createEngineIfNotPresent fails r=cgopal,ai-models-reviewers,ai-platform-reviewers,thasan
-
-[11] Florian Quèze  —  6 patch(es)
+[10] Florian Quèze  —  6 patch(es)
     ----------------------------------------------------------------------
       2026-10-07  a9b6bb23e58f  Bug 2078158 - Re-enable tests disabled on TSan that pass there on try. r=aryx,necko-reviewers,ipc-reviewers,devtools-reviewers,firefox-style-system-reviewers,layout-reviewers,Gijs,dshin,valentin,jdescottes,mccr8
       2026-09-29  fe46b2cfe466  Bug 2076017 - Re-enable tests disabled on macOS 15 AArch64 that pass there on try. r=aryx,necko-reviewers,webcompat-reviewers,extension-reviewers,settings-reviewers,media-playback-reviewers,credential-management-reviewers,devtools-reviewers,places-reviewers,dom-storage-reviewers,firefox-style-system-reviewers,layout-reviewers,crashreporting-reviewers,mkennedy,emz,Mardak,aosmond,twisniewski,tnikkel,jdescottes,gsvelto,dimi,valentin,jari,dshin,robwu
@@ -254,153 +242,149 @@ Known aliases (applied in HTML report, NOT below):
       2026-06-23  f439878dcd2c  Bug 2048967 - Wait for the abnormal content-process shutdown when cleaning up the intentional-crash minidump in browser_ml_native.js. r=ai-platform-reviewers,thasan
       2026-06-22  74bdd271ab52  Bug 2048967 - Deterministically clean up the intentional-crash minidump in browser_ml_native.js. r=ai-platform-reviewers,thasan
 
-[12] Mark Banner  —  5 patch(es)
+[11] Mark Banner  —  6 patch(es)
     ----------------------------------------------------------------------
+      2026-10-30  1a1f5af187ed  Bug 2086287 - Switch from eslint-plugin-import to eslint-plugin-import-x (comment-only changes for ESLint). r=frontend-codestyle-reviewers,Gijs
       2026-09-17  e8bb2745fa7f  Bug 2069131 - Rename browser/base/content/test general, about, webrtc, popups and tabPrompts directories to match eslint-test-paths conventions r=frontend-codestyle-reviewers,webcompat-reviewers,fxview-reviewers,tabbrowser-reviewers,places-reviewers,urlbar-reviewers,ai-platform-reviewers,timhuang,dao,mossop,twisniewski,nsharpley,mak
       2026-09-16  8ed33317b6c8  Bug 2069131 - Rename browser/base/content/test general, about, webrtc, popups and tabPrompts directories to match eslint-test-paths conventions r=frontend-codestyle-reviewers,webcompat-reviewers,fxview-reviewers,tabbrowser-reviewers,places-reviewers,urlbar-reviewers,ai-platform-reviewers,timhuang,dao,mossop,twisniewski,nsharpley,mak
       2026-09-16  b15860c6d471  Bug 2069131 - Rename browser/base/content/test general, about, webrtc, popups and tabPrompts directories to match eslint-test-paths conventions r=frontend-codestyle-reviewers,webcompat-reviewers,fxview-reviewers,tabbrowser-reviewers,places-reviewers,urlbar-reviewers,ai-platform-reviewers,timhuang,dao,mossop,twisniewski,nsharpley,mak
       2026-08-04  44a4b924ba68  Bug 2059751 - Rename ESLint exclusions for the eslint-plugin-sdl rule now that it is vendored. r=frontend-codestyle-reviewers,perftest-reviewers,mossop,sparky
       2026-08-04  5d4faac56ff1  Bug 2059751 - Rename ESLint exclusions for the eslint-plugin-sdl rule now that it is vendored. r=frontend-codestyle-reviewers,perftest-reviewers,mossop,sparky
 
-[13] Emilio Cobos Álvarez  —  4 patch(es)
+[12] Bryan Johns  —  5 patch(es)
     ----------------------------------------------------------------------
-      2026-05-02  e833a1757bf7  Bug 2033243 - Replace ownerGlobal with documentGlobal, and stop exposing ownerGlobal to JS. r=firefox-desktop-core-reviewers ,webidl,joschmidt,perftest-reviewers,sparky,smaug,mossop ,webidl,joschmidt,perftest-reviewers,sparky,smaug,mossop
-      2026-05-02  526325469022  Bug 2033243 - Replace ownerGlobal with documentGlobal, and stop exposing ownerGlobal to JS. r=firefox-desktop-core-reviewers ,webidl,joschmidt,perftest-reviewers,sparky,smaug,mossop ,webidl,joschmidt,perftest-reviewers,sparky,smaug,mossop
-      2026-05-01  367d83d299b4  Bug 2033243 - Replace ownerGlobal with documentGlobal, and stop exposing ownerGlobal to JS. r=firefox-desktop-core-reviewers ,webidl,joschmidt,perftest-reviewers,sparky,smaug,mossop
-      2026-04-30  7dea1af2e034  Bug 2033243 - Replace ownerGlobal with documentGlobal, and stop exposing ownerGlobal to JS. r=firefox-desktop-core-reviewers ,webidl,joschmidt,perftest-reviewers,sparky,smaug,mossop
+      2026-09-30  7241acfee727  Bug 2069436 - Added /answer path for search_the_web r=gazhibekova,ai-platform-reviewers,npodgurski
+      2026-09-03  28f0e573577b  Bug 2065298 - Exposing maxRetries switch to openaiEngine class r=rrando
+      2026-07-23  489a6bd8c2fa  Bug 2055850 - passing inference params via defined parameter inferenceParams r=simonf,ai-platform-reviewers,mshillabeer,valentinp,ai-security-reviewers
+      2026-07-22  2ca6fa221d80  Bug 2055850 - passing inference params via defined parameter inferenceParams r=simonf,ai-platform-reviewers,mshillabeer,valentinp,ai-security-reviewers
+      2026-05-29  4cbedf66a493  Bug 2033537 - added telemetry engine for running llm-based telemetry r=ai-platform-reviewers,mlucks,tetchart,thasan
 
-[14] Tyler Etchart  —  4 patch(es)
+[13] Tyler Etchart  —  4 patch(es)
     ----------------------------------------------------------------------
       2026-09-23  b10f889a3ddc  Bug 2073121 - Added snapshot promises tracking to monitor and updated LLM engine mock to support promise awaits instead of polling to help test flakiness r=ai-platform-reviewers,gregtatum,again
       2026-09-04  95e13be79001  Bug 2066194 - Adding smoke test for smart window intent model r=mozperftest-reviewers,ai-platform-reviewers,kshampur,valentinp
       2026-07-10  de6e5302260d  Bug 2046597 - Monitor agent runtime r=gregtatum,yjamora,ai-platform-reviewers
       2026-06-22  9a743a68374b  Bug 2048023 - Added User Agent to OpenAIPipeline run r=ai-platform-reviewers,npodgurski
 
-[15] Mathieu Leplatre  —  3 patch(es)
+[14] Mathieu Leplatre  —  3 patch(es)
     ----------------------------------------------------------------------
       2026-06-29  c0ca49e2b3c8  Bug 2043699 - Remove fallback URIs for Remote Settings attachments r=acottner,ai-platform-reviewers,omc-reviewers,dmose,jbowser,search-reviewers
       2026-06-23  f9519bc75219  Bug 2043699 - Remove fallback URIs for Remote Settings attachments r=acottner,ai-platform-reviewers,omc-reviewers,dmose,jbowser,search-reviewers
       2026-06-16  0e1e88227a25  Bug 2043699 - Remove fallback URIs for Remote Settings attachments r=acottner,ai-platform-reviewers,omc-reviewers,dmose,jbowser
 
-[16] Neil Deakin  —  3 patch(es)
+[15] Neil Deakin  —  3 patch(es)
     ----------------------------------------------------------------------
       2026-10-13  8b2be85c999a  Bug 2080429, add missing splitContext function, r=ai-platform-reviewers,nordzilla
       2026-05-08  8993dcf36b38  Bug 2035232, add initial support for address autofill using ML experiment, enabled on Nightly only, r=dimi,credential-management-reviewers,fluent-reviewers,ai-platform-reviewers,bolsson,vazish
       2026-05-07  f4b1ea74626e  Bug 2035232, add initial support for address autofill using ML experiment, enabled on Nightly only, r=dimi,credential-management-reviewers,fluent-reviewers,ai-platform-reviewers,bolsson,vazish
 
-[17] Nika Layzell  —  3 patch(es)
+[16] Nika Layzell  —  3 patch(es)
     ----------------------------------------------------------------------
       2026-08-31  c51090b13586  Bug 2052614 - Add a structured RemoteType representation. r=ipc-reviewers,necko-reviewers,geckoview-reviewers,extension-reviewers,media-playback-reviewers,webrtc-reviewers,places-reviewers,layout-reviewers,dom-worker-reviewers,ai-platform-reviewers,sandbox-reviewers,janerik,emilio,hiro,kershaw,bwc,asuth,mccr8,alwu,nordzilla,valentin,bobowen
       2026-08-07  ef4f6e06d630  Bug 2055554 - Part 2: Track loaded origins in content processes, r=necko-reviewers,dom-worker-reviewers,ai-platform-reviewers,vhilla,asuth,permissions-reviewers,valentin,timhuang
       2026-06-25  46570b8ffe7f  Bug 2006467 - Part 5: Stop using blob based workers for onnx_fallback test, r=ai-platform-reviewers,jbowser
 
-[18] Vasish Baungally  —  3 patch(es)
+[17] Vasish Baungally  —  3 patch(es)
     ----------------------------------------------------------------------
       2026-08-18  60e482af8dea  Bug 2062696 - Improve group naming for Auto Tab Grouping. r=jlewis,cdipersio,ai-platform-reviewers,valentinp
       2026-08-08  b556f787a56a  Bug 2061853 - Add Auto Tab Grouping model for Smart Window name generation. r=jlewis,ai-platform-reviewers,valentinp
       2026-08-06  7d249b9965ab  Bug 2060260 - Add agglomerative clustering algorithm for Auto Tab Grouping. r=rrando,jlewis,tabbrowser-reviewers,ai-platform-reviewers,dao,valentinp
 
-[19] Matthew Tighe  —  2 patch(es)
+[18] Matthew Tighe  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-08-21  a7fd05236f35  Bug 2051605 - add metadata to page extractor to check for paywalled content r=ai-platform-reviewers,thasan
       2026-08-21  7a8016c94ae3  Bug 2062980 - allow for extraction of simple, human-readable text from PageExtractor r=ai-platform-reviewers,thasan
 
-[20] Molly Shillabeer  —  2 patch(es)
-    ----------------------------------------------------------------------
-      2026-06-02  edb32f2c1557  Bug 2034914 - Part 1: Add anonymous fetch option to PageExtractorParent to be used by serp urls r=ai-platform-reviewers,gregtatum,freddyb
-      2026-04-30  c98a231bad1e  Bug 2032139 - Add custom DOM extractor for google search pages r=gregtatum,ai-models-reviewers,ai-platform-reviewers,bjohns
-
-[21] Ryan VanderMeulen  —  2 patch(es)
+[19] Ryan VanderMeulen  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-09-17  28030c037bf1  Bug 2039862 - Update onnxruntime toolchain to v1.30.0. r=firefox-build-system-reviewers,ai-platform-reviewers,sergesanspaille,valentinp
       2026-08-11  ed892d0b5aa1  Bug 2062445 - Run the native ML tests on win32. r=ai-platform-reviewers,valentinp
 
-[22] cary  —  2 patch(es)
+[20] cary  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-08-11  f4142bc4db1a  Bug 2054096: Develop prompting and code for new tab PUWYLO chip or card r=ai-platform-reviewers,ai-security-reviewers,cdipersio,thasan,tetchart
       2026-08-10  db2d8e456cb1  Bug 2054096: Develop prompting and code for new tab PUWYLO chip or card r=ai-platform-reviewers,ai-security-reviewers,cdipersio,thasan,tetchart
 
-[23] serge-sans-paille  —  2 patch(es)
-    ----------------------------------------------------------------------
-      2026-10-08  79d9708987a3  Bug 2077605 - Register SOURCE_HEADERS for third_party/ r=webrtc-reviewers,media-webspeech-reviewers,ng,padenot
-      2026-04-30  d765ab71061c  Bug 2034832 - Make toolkit/ headers compatible with current static analysis r=ai-platform-reviewers,valentinp
-
-[24] Alastor Wu  —  1 patch(es)
+[21] Alastor Wu  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-06-29  6555dc0b78de  Bug 1962876 - Part 2: Let browser control tab mute via MediaController. r=media-playback-reviewers,tabbrowser-reviewers,tgiles,geckoview-reviewers,tcampbell,padenot,jsudiaman
 
-[25] Alex G  —  1 patch(es)
+[22] Alex G  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-10-20  6ac6e2b7394e  Bug 2082500 - [Monitor Agent][Models] Preserve the MLPA 429 error code so monitors can tell an exhausted budget from rate limiting r=fluent-reviewers,ai-platform-reviewers,yjamora,bolsson,npodgurski
 
-[26] Alex Hochheiden  —  1 patch(es)
+[23] Alex Hochheiden  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-09-07  0d97f3e47929  Bug 2069656 - Add the annotations future import to the modules FA102 flags r=linter-reviewers,sylvestre
 
-[27] Andrea Marchesini  —  1 patch(es)
+[24] Andrea Marchesini  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-10-21  f1e40fd5ea7d  Bug 2081104 - Create an abstraction layer around the auth flow for smartwindow r=firefox-desktop-core-reviewers ,ai-platform-reviewers,ai-security-reviewers,yjamora,mossop,pdahiya,bjohns
 
-[28] Calixte Denizet  —  1 patch(es)
+[25] Calixte Denizet  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-08-22  f1a38aa08e46  Bug 2053383 - Standardize the pdf.js module and actor names on the PdfJs capitalization. r=dholbert,geckoview-reviewers,tabbrowser-reviewers,ai-platform-reviewers,jsudiaman,ohall
 
-[29] Chidam Gopal  —  1 patch(es)
+[26] Chidam Gopal  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-06-24  2d2fc923cec1  Bug 2044529 - Generate memories from sessions and establish lineage r=ai-platform-reviewers,tetchart,Mardak,cmurray,thasan
 
-[30] Dale Harvey  —  1 patch(es)
+[27] Dale Harvey  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-08-25  bda2a76f166a  Bug 2065430 - Migrate various actors to moz-src. r=mossop,perftest-reviewers,necko-reviewers,credential-management-reviewers,tabbrowser-reviewers,urlbar-reviewers,layout-reviewers,ai-platform-reviewers,kpatenio,mkennedy,dao,sparky,dshin,dimi,valentin
 
-[31] Dão Gottwald  —  1 patch(es)
+[28] Dão Gottwald  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-10-09  61926a0075fa  Bug 2076596 - Correct the JSDoc types of getInferenceOptions, getAccuracyStats and computeRandScore. r=ai-platform-reviewers,nordzilla
 
-[32] Gregory Mierzwinski  —  1 patch(es)
-    ----------------------------------------------------------------------
-      2026-05-05  df61e1661d43  Bug 1868773 - Update docs to use new perfdocs comand. r=fbilt,perftest-reviewers,mozperftest-reviewers,dom-storage-reviewers,dom-worker-reviewers,ai-platform-reviewers,kshampur,jesup,asuth
-
-[33] Kagami Sascha Rosylight  —  1 patch(es)
+[29] Kagami Sascha Rosylight  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-05-28  c72cf2e6da5d  Bug 2031661 - Part 1: Add missing cycle collection entries in toolkit/ r=extension-reviewers,credential-management-reviewers,ai-platform-reviewers,robwu,dimi
 
-[34] Keith Cirkel  —  1 patch(es)
+[30] Keith Cirkel  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-06-11  4d969909ed7e  Bug 2045043 - Part 20 - Fixup final classes using _FINAL cycle collecting isupports macro in dom/onnx r=dom-core-reviewers,edgar
 
-[35] Kershaw Chang  —  1 patch(es)
+[31] Kershaw Chang  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-06-08  6620dfb93ace  Bug 2042664 - Disable IPv6 for the perf test to avoid latency from unreachable IPv6, r=ai-platform-reviewers,mxinden,thasan
 
-[36] Maile Lucks  —  1 patch(es)
+[32] Maile Lucks  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-08-17  eab7cdd693e5  Bug 2024015 - Add a catch for MLEngine.runWithGenerator completionPromise and reset ChatStore before the chat_storage assertion r=ai-platform-reviewers,jlewis,cdipersio,gregtatum
 
-[37] Michael Kaply  —  1 patch(es)
+[33] Michael Kaply  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-05-28  2aa5871b9684  Bug 2007024 - Add an enterprise policy for remote settings. r=decoder,fluent-reviewers,bolsson,ai-platform-reviewers,gregtatum,urlbar-reviewers,adw,thecount
 
-[38] Omar Gonzalez  —  1 patch(es)
+[34] Molly Shillabeer  —  1 patch(es)
+    ----------------------------------------------------------------------
+      2026-06-02  edb32f2c1557  Bug 2034914 - Part 1: Add anonymous fetch option to PageExtractorParent to be used by serp urls r=ai-platform-reviewers,gregtatum,freddyb
+
+[35] Omar Gonzalez  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-08-08  462662b02b6d  Bug 2058227 - Integrate Smart Form Fill LLM prompts r=ai-platform-reviewers,tliu,jlewis,thasan
 
-[39] Sebastian Hengst  —  1 patch(es)
+[36] Sebastian Hengst  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-07-27  1cd5155da24e  Bug 2057902 - skip tests with Nova design enabled if they fail permanently or frequently. r=webcompat-reviewers,twisniewski
 
-[40] Tim Xia  —  1 patch(es)
+[37] Tim Xia  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-05-16  0646764ae034  Bug 2024509 - Add Gecko Profiler markers to SmartWindow interaction lifecycle and tools, r=Mardak,gregtatum,ai-platform-reviewers,cgopal
 
-[41] Timothy Nikkel  —  1 patch(es)
+[38] Timothy Nikkel  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-08-17  e3bfebe1ae03  Bug 2063948. Make third_party/llama.cpp vendor again. r=padenot
 
-[42] Tom Schuster  —  1 patch(es)
+[39] Tom Schuster  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-06-01  0de07c477148  Bug 2041607 - Stop using blob based Workers for ML tests. r=ai-platform-reviewers,gregtatum
 
-[43] gazhibekova-hub  —  1 patch(es)
+[40] gazhibekova-hub  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-07-17  a82e56b40cb4  Bug 2046183 - Implement V0 Search Loop validatio, orchestration, and tool gating for search_the_web r=ai-platform-reviewers,bjohns,simonf,tetchart,npodgurski,thasan
+
+[41] serge-sans-paille  —  1 patch(es)
+    ----------------------------------------------------------------------
+      2026-10-08  79d9708987a3  Bug 2077605 - Register SOURCE_HEADERS for third_party/ r=webrtc-reviewers,media-webspeech-reviewers,ng,padenot
