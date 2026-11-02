@@ -6,6 +6,13 @@ on:
     - cron: '0 9 * * 1'
   workflow_dispatch:  # allow manual runs from the Actions tab
 
+# One refresh at a time: two runs would rebase their regenerated outputs
+# onto each other. Not cancelling the in-flight one, which may already
+# have paid for its Copilot summaries.
+concurrency:
+  group: weekly-refresh
+  cancel-in-progress: false
+
 permissions:
   contents: write          # needed to push regenerated data + html
   copilot-requests: write  # lets the workflow token drive Copilot CLI for overviews
@@ -151,5 +158,10 @@ jobs:
             echo "No changes to commit."
           else
             git commit -m "weekly: $(date -u +'%G-W%V refresh')"
-            git push
+            # Commits may have landed on main during the run, so replay the
+            # bot's commit on top (as media-caps.yml does). A developer
+            # regen can rewrite the same generated files; in a rebase
+            # "theirs" is the bot's commit, so this week's output wins.
+            git pull --rebase -X theirs --autostash origin "${GITHUB_REF_NAME}"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
           fi

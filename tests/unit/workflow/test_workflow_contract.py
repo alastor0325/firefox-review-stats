@@ -265,3 +265,16 @@ def test_upstream_fetch_runs_in_its_own_tolerant_bounded_step(workflow_text, run
     assert "continue-on-error: true" in step
     assert "timeout-minutes:" in step
     assert i < workflow_text.index("run: python analyze_git.py")
+
+
+def test_rebases_onto_main_before_pushing(workflow_text):
+    """A push to main during the run must not reject the bot's push and
+    lose the week's data (2026-11-02). A developer regen may have rewritten
+    the same generated files, so the bot's fresh output wins conflicts."""
+    assert (workflow_text.index("git pull --rebase -X theirs --autostash")
+            < workflow_text.index("git push"))
+
+
+def test_one_refresh_at_a_time(workflow_text):
+    """Two runs would both rebase regenerated outputs onto each other."""
+    assert "concurrency:\n  group: weekly-refresh\n  cancel-in-progress: false" in workflow_text
