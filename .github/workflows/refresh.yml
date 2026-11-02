@@ -95,6 +95,7 @@ jobs:
       # collapsed result.
       - name: Fetch media performance metrics (Perfherder)
         continue-on-error: true
+        timeout-minutes: 10
         run: python fetch_perf_metrics.py --days 30
 
       # Same contract as the Perfherder step: a slow or down upstream costs the

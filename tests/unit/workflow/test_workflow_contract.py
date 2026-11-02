@@ -250,11 +250,18 @@ class TestTheAddMetricSkillStaysWiredToReality:
         assert "METRICS.groups" in self._skill
 
 
-def test_fetches_libwebrtc_status_in_its_own_tolerant_step(workflow_text):
-    """Like the Perfherder step: before the page build, allowed to fail, and
-    bounded, so a slow upstream can't eat the job's 60-minute budget."""
-    i = workflow_text.index("python fetch_libwebrtc_status.py")
-    step = workflow_text[workflow_text.rindex("- name:", 0, i):i]
+def _step(workflow_text, run_cmd):
+    i = workflow_text.index(run_cmd)
+    return workflow_text[workflow_text.rindex("- name:", 0, i):i], i
+
+
+@pytest.mark.parametrize("run_cmd", ["python fetch_libwebrtc_status.py",
+                                     "python fetch_perf_metrics.py"])
+def test_upstream_fetch_runs_in_its_own_tolerant_bounded_step(workflow_text, run_cmd):
+    """Before the page build, allowed to fail, and bounded: requests retry
+    with backoff, so a slow upstream must hit a step cap instead of the
+    job's 60-minute budget."""
+    step, i = _step(workflow_text, run_cmd)
     assert "continue-on-error: true" in step
     assert "timeout-minutes:" in step
     assert i < workflow_text.index("run: python analyze_git.py")

@@ -21,6 +21,7 @@ import pytest
 
 from reviewstats.github_http import (
     _MAX_ATTEMPTS,
+    NETWORK_ERRORS,
     backoff_seconds,
     get_json,
     is_retryable_error,
@@ -69,6 +70,12 @@ class TestIsRetryableError:
 
     def test_unrelated_exception_is_not_retryable(self):
         assert is_retryable_error(ValueError("nope")) is False
+
+
+class TestNetworkErrors:
+    def test_includes_non_retryable_http_errors(self):
+        # A 404 is not retried but is still a network failure to the caller.
+        assert isinstance(_http_error(404), NETWORK_ERRORS)
 
 
 class TestBackoffSeconds:

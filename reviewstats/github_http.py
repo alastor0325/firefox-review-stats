@@ -1,11 +1,11 @@
-"""Shared GitHub REST API helper: authenticated JSON GET with retry.
+"""Shared retrying HTTP GET over plain urllib.
 
-Both the commit-list path (`github_commits`) and the single-commit
-file-list path (`commit_files`) hit api.github.com over plain urllib.
-GitHub occasionally returns transient 5xx / 429 errors or times out
-under load — a 504 Gateway Timeout once aborted an entire weekly
-refresh — so every call retries those with exponential backoff instead
-of failing the whole run.
+`get_text` is the helper for every host (GitHub, Gitiles, chromiumdash,
+Perfherder, Treeherder, Bugzilla); `get_json` adds GitHub's Accept header
+and token. Upstreams occasionally return transient 5xx / 429 errors, time
+out, or drop the connection under load — a 504 once aborted an entire
+weekly refresh — so every call retries those with exponential backoff
+instead of failing the whole run.
 """
 
 import http.client
@@ -18,21 +18,22 @@ import urllib.request
 _MAX_ATTEMPTS = 5
 _RETRYABLE_STATUS = frozenset({429, 500, 502, 503, 504})
 
+# What a request can end in once retries are spent, for callers that
+# tolerate an upstream being down. A dropped connection escapes urlopen
+# unwrapped, hence ConnectionError and IncompleteRead.
+NETWORK_ERRORS = (urllib.error.URLError, TimeoutError, ConnectionError,
+                  http.client.IncompleteRead)
+
 
 def is_retryable_error(exc: BaseException) -> bool:
     """True if `exc` is a transient error worth retrying.
 
-    Retryable: GitHub 5xx / 429 responses, connection failures, socket
-    timeouts, and connections dropped mid-response (ConnectionError, e.g.
-    RemoteDisconnected, or IncompleteRead), which escape urlopen unwrapped.
-    Other http.client errors (InvalidURL, LineTooLong) are permanent. Note
-    HTTPError subclasses URLError, so it must be checked first — a 404 is
-    *not* retryable.
+    Any of NETWORK_ERRORS except an HTTPError outside 5xx / 429. Other
+    http.client errors (InvalidURL, LineTooLong) are permanent.
     """
     if isinstance(exc, urllib.error.HTTPError):
         return exc.code in _RETRYABLE_STATUS
-    return isinstance(exc, (urllib.error.URLError, TimeoutError,
-                            ConnectionError, http.client.IncompleteRead))
+    return isinstance(exc, NETWORK_ERRORS)
 
 
 def backoff_seconds(attempt: int) -> float:

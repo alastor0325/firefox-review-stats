@@ -31,13 +31,12 @@ media-raptor-cross-browser-cpu-power-investigation.md.
 import argparse
 import json
 import sys
-import urllib.error
 import urllib.parse
-import urllib.request
 from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 
+from reviewstats.github_http import NETWORK_ERRORS, get_text
 from reviewstats.perfcause import (
     PUSH_CAP,
     TREEHERDER,
@@ -248,10 +247,15 @@ COVERAGE_SUITES = [
 COVERAGE_BROWSERS = ["firefox", "chrome", "safari", "custom-car"]
 
 
-def _get(url: str, timeout: int = 90):
-    req = urllib.request.Request(url, headers={"User-Agent": UA})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        return json.loads(r.read().decode("utf-8"))
+# Series fetches retry transient failures; cause lookups are optional
+# decoration, so they get fewer attempts to bound the per-signature cost.
+FETCH_ATTEMPTS = 3
+CAUSE_ATTEMPTS = 2
+
+
+def _get(url: str, timeout: int = 90, max_attempts: int = FETCH_ATTEMPTS):
+    return json.loads(get_text(url, headers={"User-Agent": UA},
+                               timeout=timeout, max_attempts=max_attempts))
 
 
 def fetch_signatures(platform: str) -> dict:
@@ -319,7 +323,7 @@ def resolve_cause(signature_hash: str, shift: dict) -> dict | None:
             f"{TREEHERDER_API}/project/{summary['repository']}/push/", {
                 "id__gt": summary["prev_push_id"],
                 "id__lte": summary["push_id"], "count": PUSH_CAP})["results"]
-    except (urllib.error.URLError, TimeoutError, KeyError, IndexError) as e:
+    except (*NETWORK_ERRORS, KeyError, IndexError) as e:
         print(f"  ! cause lookup for signature {signature_hash[:12]}: {e}",
               file=sys.stderr)
         return None
@@ -348,7 +352,7 @@ def _add_bug_details(cause: dict) -> None:
             cause["regressed_by"] = [
                 {"id": b["id"], "summary": b.get("summary"), "state": _state(b)}
                 for b in _bugs(culprits, "id,summary,status,resolution")]
-    except (urllib.error.URLError, TimeoutError, KeyError) as e:
+    except (*NETWORK_ERRORS, KeyError) as e:
         print(f"  ! bug {cause['bug_id']}: {e}", file=sys.stderr)
 
 
@@ -358,7 +362,8 @@ def _state(bug: dict):
 
 
 def _cause_get(url: str, params: dict):
-    return _get(f"{url}?{urllib.parse.urlencode(params)}", timeout=CAUSE_TIMEOUT)
+    return _get(f"{url}?{urllib.parse.urlencode(params)}", timeout=CAUSE_TIMEOUT,
+                max_attempts=CAUSE_ATTEMPTS)
 
 
 def _bugs(ids: list, fields: str) -> list:
@@ -370,7 +375,8 @@ def fetch_samples(signature_id: int, days: int) -> list:
     q = urllib.parse.urlencode(
         {"signature_id": signature_id, "interval": days * 86400}
     )
-    data = _get(f"{BASE}/data/?{q}")
+    # Coverage probes only feed a caption and there are many: no retries.
+    data = _get(f"{BASE}/data/?{q}", max_attempts=1)
     return [
         p["value"] for series in data.values() for p in series
         if p.get("value") is not None
@@ -495,7 +501,7 @@ def collect(days: int) -> dict:
                 try:
                     # One wide fetch, then slide a fixed-length window over it.
                     pts = fetch_points(r["id"], SEARCH_DAYS)
-                except (urllib.error.URLError, TimeoutError) as e:
+                except NETWORK_ERRORS as e:
                     print(f"  ! {spec['id']} {app} signature {r['id']}: {e}")
                     continue
                 w = select_recent_window(pts, days=days, now_ts=now_ts)
@@ -590,7 +596,7 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         data = collect(args.days)
-    except (urllib.error.URLError, TimeoutError) as e:
+    except NETWORK_ERRORS as e:
         # Perfherder being unreachable must not fail the build; the page simply
         # renders without the Metrics subview until the next run.
         print(f"Perfherder unreachable ({e}); leaving data_metrics.json alone.",

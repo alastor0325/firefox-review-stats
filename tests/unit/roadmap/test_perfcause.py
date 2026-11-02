@@ -8,6 +8,8 @@ whether its range is narrow enough to name a bug -- is tested directly; the
 fetcher's I/O wrapper is tested with every request mocked.
 """
 
+import http.client
+
 from reviewstats.perfcause import (
     alert_redirect,
     bugs_in_pushes,
@@ -30,6 +32,16 @@ def _summary(sid=1, ts=T, status=0, bug=None, alerts=None, **kw):
 def _alert(sig=99, regression=False, status=0, related=None):
     return {"series_signature": {"id": sig}, "is_regression": regression,
             "status": status, "related_summary_id": related}
+
+
+def _load_fpm():
+    import importlib.util, pathlib, sys
+    spec = importlib.util.spec_from_file_location(
+        "fpm_cause", pathlib.Path("fetch_perf_metrics.py"))
+    m = importlib.util.module_from_spec(spec)
+    sys.modules["fpm_cause"] = m
+    spec.loader.exec_module(m)
+    return m
 
 
 def _url_only(route):
@@ -204,13 +216,7 @@ class TestResolveCauseInTheFetcher:
     leave the card without a cause rather than fail the fetch."""
 
     def _fpm(self):
-        import importlib.util, pathlib, sys
-        spec = importlib.util.spec_from_file_location(
-            "fpm_cause", pathlib.Path("fetch_perf_metrics.py"))
-        m = importlib.util.module_from_spec(spec)
-        sys.modules["fpm_cause"] = m
-        spec.loader.exec_module(m)
-        return m
+        return _load_fpm()
 
     SHIFT = {"improved": True, "first_ts": T + 8 * 3600}
 
@@ -285,6 +291,25 @@ class TestResolveCauseInTheFetcher:
         monkeypatch.setattr(m, "_get", _url_only(boom))
         assert m.resolve_cause("abc", self.SHIFT) is None
 
+    def test_a_dropped_treeherder_connection_yields_no_cause(self, monkeypatch):
+        m = self._fpm()
+
+        def boom(url):
+            raise http.client.RemoteDisconnected("closed")
+        monkeypatch.setattr(m, "_get", _url_only(boom))
+        assert m.resolve_cause("abc", self.SHIFT) is None
+
+    def test_a_dropped_bugzilla_connection_still_keeps_the_alert(self, monkeypatch):
+        m = self._fpm()
+
+        def routes(url):
+            if "bugzilla" in url:
+                raise ConnectionResetError("reset")
+            return self._routes(url)
+        monkeypatch.setattr(m, "_get", _url_only(routes))
+        c = m.resolve_cause("abc", self.SHIFT)
+        assert c["alert_id"] == 1 and c["bug_summary"] is None
+
     def test_a_tracking_bug_follows_regressed_by_to_the_culprit(self, monkeypatch):
         """For a regression the linked bug is the one sheriffs filed; the
         landing that caused it is its `regressed_by`, once they know it."""
@@ -355,3 +380,59 @@ class TestResolveCauseInTheFetcher:
         monkeypatch.setattr(m, "_get", _url_only(routes))
         assert m.resolve_cause("abc", self.SHIFT) is None
         assert m.resolve_cause("unknown", self.SHIFT) is None
+
+
+class TestFetcherHttp:
+    """`_get` goes through the shared retrying helper with only the UA header."""
+
+    def _fpm(self):
+        return _load_fpm()
+
+    def test_get_retries_through_the_shared_helper(self, monkeypatch):
+        m = self._fpm()
+        calls = []
+
+        def fake_get_text(url, *, headers, timeout, max_attempts):
+            calls.append((url, headers, timeout, max_attempts))
+            return '{"ok": 1}'
+        monkeypatch.setattr(m, "get_text", fake_get_text)
+        assert m._get("https://treeherder.mozilla.org/x", timeout=7) == {"ok": 1}
+        (url, headers, timeout, attempts), = calls
+        assert headers == {"User-Agent": m.UA}
+        assert timeout == 7 and attempts == m.FETCH_ATTEMPTS
+
+    def test_cause_lookups_retry_less_than_series_fetches(self, monkeypatch):
+        # A cause is optional; a slow Treeherder must not multiply the
+        # per-signature cost by the full retry budget.
+        m = self._fpm()
+        seen = {}
+
+        def fake_get(url, **kw):
+            seen.update(kw)
+            return {}
+        monkeypatch.setattr(m, "_get", fake_get)
+        m._cause_get("https://treeherder.mozilla.org/x", {"a": 1})
+        assert seen["timeout"] == m.CAUSE_TIMEOUT
+        assert seen["max_attempts"] == m.CAUSE_ATTEMPTS < m.FETCH_ATTEMPTS
+
+    def test_a_dropped_perfherder_connection_exits_nonzero(self, monkeypatch, tmp_path):
+        m = self._fpm()
+
+        def boom(days):
+            raise http.client.RemoteDisconnected("closed")
+        monkeypatch.setattr(m, "collect", boom)
+        assert m.main(["--out", str(tmp_path)]) == 1
+
+
+    def test_coverage_probes_do_not_retry(self, monkeypatch):
+        # A probe only feeds a caption and there are up to ~120 of them; a
+        # retry budget on each would let a slow Perfherder eat the step cap.
+        m = self._fpm()
+        seen = {}
+
+        def fake_get(url, **kw):
+            seen.update(kw)
+            return {}
+        monkeypatch.setattr(m, "_get", fake_get)
+        m.fetch_samples(1, 30)
+        assert seen["max_attempts"] == 1
