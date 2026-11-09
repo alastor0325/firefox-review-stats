@@ -1,8 +1,8 @@
 ==============================================================================
 TRANSLATIONS-REVIEWERS AUTHOR-PATCH LISTING (raw author %an, no aliasing)
-Source: github.com/mozilla-firefox/firefox   Paths: toolkit/components/translations, browser/components/translations   Since: 2026-05-06T21:08:05Z
+Source: github.com/mozilla-firefox/firefox   Paths: toolkit/components/translations, browser/components/translations   Since: 2026-05-13T19:41:58Z
 Excluded paths: (none)
-Authors: 14    Patches: 64    (Lando-format / Lando-author / merge / Revert commits already excluded)
+Authors: 15    Patches: 61    (Lando-format / Lando-author / merge / Revert commits already excluded)
 ==============================================================================
 
 Known aliases (applied in HTML report, NOT below):
@@ -11,8 +11,11 @@ Known aliases (applied in HTML report, NOT below):
 
 ==============================================================================
 
-[ 1] Erik Nordin  —  39 patch(es)
+[ 1] Erik Nordin  —  37 patch(es)
     ----------------------------------------------------------------------
+      2026-11-04  b105a4b0531f  Bug 2086022 - Prevent full-page translations on PDF documents r=gregtatum,translations-reviewers
+      2026-11-04  093f7e4b6d91  Bug 2086022 - Refactor full-page Translations eligibility checks to accept a browser r=gregtatum,translations-reviewers
+      2026-11-04  22764d09e321  Bug 2087793 - Eagerly release TranslationsEngineParent process keepalive r=gregtatum,translations-reviewers
       2026-10-09  f665d5eb1e93  Bug 2079159 - Distinguish final paragraph from last-of-type in Translations tests r=translations-reviewers,gregtatum
       2026-10-09  8bc0d9551bce  Bug 2079159 - Document existing Translations test getters r=translations-reviewers,gregtatum
       2026-09-11  db89fb905547  Bug 2065915 - Distinguish target-language fluent strings in Full-Page Translations r=gregtatum,fluent-reviewers,translations-reviewers,bolsson
@@ -47,41 +50,34 @@ Known aliases (applied in HTML report, NOT below):
       2026-05-27  9583ced3e325  Bug 1963362 - Improve Translations test cleanup for moved tabs r=translations-reviewers,gregtatum
       2026-05-27  f8db81bca7ed  Bug 1963362 - Avoid missing fast page loads in Translations tests r=translations-reviewers,gregtatum
       2026-05-27  117618005cc7  Bug 1988588 - Impove Translations test mock downloads r=translations-reviewers,gregtatum
-      2026-05-12  8d1f690d0364  Bug 2038317 - Update Translations test defaults for SRD r=mstriemer
-      2026-05-08  d64f6801e529  Bug 2027897 - Update TranslationsFeature for the revised AI feature contract r=translations-reviewers,ohall
-      2026-05-08  d96b53db0701  Bug 2027897 - Clean up Translations engine support return types r=translations-reviewers,ohall
-      2026-05-08  0ebdd28b1548  Bug 2027897 - Use TranslationsFeature directly at Translations call sites r=translations-reviewers,ohall
-      2026-05-07  a4f828f04f62  Bug 2037850 - Hide More-Tools Translate when Translations is disabled r=sfoster
 
-[ 2] hannajones  —  4 patch(es)
-    ----------------------------------------------------------------------
-      2026-10-28  0b36f0f2066f  Bug 2085129 - Cleanup translations tests that rely on the SRD pref being false r=translations-reviewers,nordzilla
-      2026-10-27  157c0d85b569  Bug 2085129 - Cleanup translations tests that rely on the SRD pref being false r=translations-reviewers,nordzilla
-      2026-05-14  012813a867fb  Bug 2036762 - Make Accounts and sync pane default with SRD enabled r=mkennedy,translations-reviewers,nordzilla
-      2026-05-12  f7ce3f5fc61f  Bug 2036762 - Make Accounts and sync pane default with SRD enabled r=mkennedy,translations-reviewers,nordzilla
-
-[ 3] Florian Quèze  —  3 patch(es)
+[ 2] Florian Quèze  —  3 patch(es)
     ----------------------------------------------------------------------
       2026-10-29  9407148b0120  Bug 2086266 - Re-enable tests disabled on ccov builds that pass there on try. r=aryx,application-update-reviewers,devtools-reviewers,dom-worker-reviewers,niklas,janerik,edenchuang,spohl,nchevobbe
       2026-10-07  5d6730069fc8  Bug 2078158 - Re-enable tests disabled on Linux that pass there on try. r=aryx,necko-reviewers,webdriver-reviewers,webcompat-reviewers,media-playback-reviewers,webrtc-reviewers,devtools-reviewers,dom-storage-reviewers,firefox-style-system-reviewers,layout-reviewers,device-api-reviewers,Sasha,Gijs,padenot,twisniewski,gstoll,dshin,jdescottes,bwc,masayuki,edgar,valentin,jesup
       2026-09-05  756539df3d1d  Bug 2069345 - Remove test.wait300msAfterTabSwitch from browser/ tests that already pass without it. r=firefox-desktop-core-reviewers ,webcompat-reviewers,search-reviewers,fxview-reviewers,tabbrowser-reviewers,akulyk,nsharpley,jsudiaman,scunnane,twisniewski,Gijs
 
-[ 4] Mark Banner  —  3 patch(es)
+[ 3] Mark Banner  —  3 patch(es)
     ----------------------------------------------------------------------
       2026-10-30  1a1f5af187ed  Bug 2086287 - Switch from eslint-plugin-import to eslint-plugin-import-x (comment-only changes for ESLint). r=frontend-codestyle-reviewers,Gijs
       2026-08-04  44a4b924ba68  Bug 2059751 - Rename ESLint exclusions for the eslint-plugin-sdl rule now that it is vendored. r=frontend-codestyle-reviewers,perftest-reviewers,mossop,sparky
       2026-08-04  5d4faac56ff1  Bug 2059751 - Rename ESLint exclusions for the eslint-plugin-sdl rule now that it is vendored. r=frontend-codestyle-reviewers,perftest-reviewers,mossop,sparky
 
-[ 5] Mark Striemer  —  3 patch(es)
+[ 4] hannajones  —  3 patch(es)
     ----------------------------------------------------------------------
-      2026-05-22  db42822c223c  Bug 2041391 - Don't load remote langpacks in tr8ns tests r=nordzilla,translations-reviewers
-      2026-05-19  22834a5e8feb  Bug 2040685 - Fix translations tests prefs pane URLS for SRD r=akulyk,translations-reviewers,nordzilla
-      2026-05-08  71deb08e0348  Bug 2035799 - Ensure langpacks aren't downloaded in tests r=translations-reviewers,akulyk,nordzilla
+      2026-10-28  0b36f0f2066f  Bug 2085129 - Cleanup translations tests that rely on the SRD pref being false r=translations-reviewers,nordzilla
+      2026-10-27  157c0d85b569  Bug 2085129 - Cleanup translations tests that rely on the SRD pref being false r=translations-reviewers,nordzilla
+      2026-05-14  012813a867fb  Bug 2036762 - Make Accounts and sync pane default with SRD enabled r=mkennedy,translations-reviewers,nordzilla
 
-[ 6] Emilio Cobos Álvarez  —  2 patch(es)
+[ 5] Emilio Cobos Álvarez  —  2 patch(es)
     ----------------------------------------------------------------------
       2026-08-06  6fde85fcae9c  Bug 2060862 - Add a stylelint rule for :has(). r=dao,desktop-theme-reviewers,devtools-reviewers,fxview-reviewers,tabbrowser-reviewers,webcompat-reviewers,urlbar-reviewers,omarg,twisniewski,nchevobbe,jsudiaman,Gijs
       2026-08-06  50a7e859636a  Bug 2060862 - Add a stylelint rule for :has(). r=dao,desktop-theme-reviewers,devtools-reviewers,fxview-reviewers,tabbrowser-reviewers,webcompat-reviewers,urlbar-reviewers,omarg,twisniewski,nchevobbe,jsudiaman,Gijs
+
+[ 6] Mark Striemer  —  2 patch(es)
+    ----------------------------------------------------------------------
+      2026-05-22  db42822c223c  Bug 2041391 - Don't load remote langpacks in tr8ns tests r=nordzilla,translations-reviewers
+      2026-05-19  22834a5e8feb  Bug 2040685 - Fix translations tests prefs pane URLS for SRD r=akulyk,translations-reviewers,nordzilla
 
 [ 7] Sylvestre Ledru  —  2 patch(es)
     ----------------------------------------------------------------------
@@ -101,18 +97,22 @@ Known aliases (applied in HTML report, NOT below):
     ----------------------------------------------------------------------
       2026-10-20  2e966f1ba29a  Bug 2074613 - Test that OHTTP is used for pings that request OHTTP r=csadilek,TravisLong,frontend-codestyle-reviewers,translations-reviewers,nordzilla
 
-[11] Dimi  —  1 patch(es)
+[11] Damien Carver  —  1 patch(es)
+    ----------------------------------------------------------------------
+      2026-11-05  d6e6e4211833  Bug 2086657 - Replace prefix: with logModule: in the console.createInstance calls (Automatic fixes). r=saschanaz,search-reviewers,fxview-reviewers,urlbar-reviewers,daleharvey,timhuang,jsudiaman,frontend-codestyle-reviewers,Standard8
+
+[12] Dimi  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-05-27  3290e63a4338  Bug 2039199 - Port onLocationChange module initialization to use category-manager invocation r=Gijs,urlbar-reviewers,geckoview-reviewers,translations-reviewers,omc-reviewers,mconley,ohall,sachung
 
-[12] Exploding-Joysticks  —  1 patch(es)
+[13] Exploding-Joysticks  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-10-15  ffda7fae91ec  Bug 1876516 - Change ConsoleLogLevel and maxLogLevel strings from PascalCase to camelCase r=firefox-desktop-core-reviewers ,dom-core-reviewers,devtools-reviewers,joschmidt,geckoview-reviewers,credential-management-reviewers,search-reviewers,tabbrowser-reviewers,places-reviewers,omc-reviewers,jteow,niklas,fchasen,yjamora,jjaschke,nalexander,translations-reviewers,nchevobbe,mossop,emcminn
 
-[13] Mugurell  —  1 patch(es)
+[14] Mugurell  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-07-02  c637a317d66f  Bug 1975878 - Offer to translate when the webpage has a different locale than app's primary r=translations-reviewers,nordzilla,geckoview-reviewers,ohall
 
-[14] Takeru Mitsumori  —  1 patch(es)
+[15] Osmond Arnesto  —  1 patch(es)
     ----------------------------------------------------------------------
-      2026-05-12  8008d4368db1  Bug 2038948 - Fix typo in ID name about-translations-swap-langauges-icon r=translations-reviewers,nordzilla
+      2026-11-05  60e3e480f4ed  Bug 2005078 - Replace button.footer with moz-button in browser/components/translations/ r=translations-reviewers,akulyk,desktop-theme-reviewers,nordzilla
