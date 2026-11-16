@@ -1,8 +1,8 @@
 ==============================================================================
 AI-PLATFORM-REVIEWERS AUTHOR-PATCH LISTING (raw author %an, no aliasing)
-Source: github.com/mozilla-firefox/firefox   Paths: toolkit/components/ml, toolkit/components/pageextractor, toolkit/components/aboutinference, dom/onnx, third_party/llama.cpp, config/external/mozinference, browser/components/aiwindow/services   Since: 2026-05-13T19:41:58Z
+Source: github.com/mozilla-firefox/firefox   Paths: toolkit/components/ml, toolkit/components/pageextractor, toolkit/components/aboutinference, dom/onnx, third_party/llama.cpp, config/external/mozinference, browser/components/aiwindow/services   Since: 2026-05-20T19:29:04Z
 Excluded paths: (none)
-Authors: 46    Patches: 274    (Lando-format / Lando-author / merge / Revert commits already excluded)
+Authors: 45    Patches: 275    (Lando-format / Lando-author / merge / Revert commits already excluded)
 ==============================================================================
 
 Known aliases (applied in HTML report, NOT below):
@@ -11,7 +11,7 @@ Known aliases (applied in HTML report, NOT below):
 
 ==============================================================================
 
-[ 1] Valentin Pollet  —  84 patch(es)
+[ 1] Valentin Pollet  —  82 patch(es)
     ----------------------------------------------------------------------
       2026-11-03  d5ce10e284c2  Bug 2058478 - Part 5: Test llama.cpp on the Metal GPU of the macOS CI machines. r=ai-platform-reviewers,taskgraph-reviewers,jcristau,nordzilla
       2026-11-03  47a4a66bd66a  Bug 2080323 - Part 3: Text generation panel in about:inference. r=ai-platform-reviewers,fluent-reviewers,bolsson,nordzilla
@@ -95,8 +95,6 @@ Known aliases (applied in HTML report, NOT below):
       2026-06-18  f3c135230eec  Bug 2015887 - Added missing fclose on exit of LlamaRunner::OnMetadataReceived r=jbowser,ai-platform-reviewers
       2026-05-27  8e83a98b7f9d  Bug 2024445 - Changed MetadataCallback reference to its LlamaRunner to a weak pointer. r=gregtatum,ai-platform-reviewers,padenot
       2026-05-27  dc0d8bbc54b0  Bug 2041340 - Fixed condition in LlamaGenerateTask::IsActive r=gregtatum,ai-platform-reviewers
-      2026-05-19  bbf3a3d6f37c  Bug 2024445 - Changed MetadataCallback reference to its LlamaRunner to a weak pointer. r=gregtatum,ai-platform-reviewers,padenot
-      2026-05-15  6a4b950c3ed7  Bug 2030110 - Added a guard in LlamaRunner::CreateGenerationStream to prevent concurrent use. r=gregtatum,ai-platform-reviewers
 
 [ 2] Paul Adenot  —  36 patch(es)
     ----------------------------------------------------------------------
@@ -137,8 +135,12 @@ Known aliases (applied in HTML report, NOT below):
       2026-08-18  3c981492fc46  Bug 2051970 - Introduce the HWInference utility process. r=gerard-majax,ipc-reviewers,fluent-reviewers,nika,ai-platform-reviewers,flod,sandbox-reviewers,gregtatum
       2026-08-18  bcc7c27b3e5c  Bug 2051970 - Sandbox policy for the HWInference utility process. r=haik,sandbox-reviewers,ai-platform-reviewers,ipc-reviewers,nika
 
-[ 3] Taimur Hasan  —  24 patch(es)
+[ 3] Taimur Hasan  —  28 patch(es)
     ----------------------------------------------------------------------
+      2026-11-13  c867fe73b235  Bug 2090291 - Let the contextual embeddings engine shut down when idle r=ai-platform-reviewers,valentinp
+      2026-11-13  8eb1c35fa5bf  Bug 2090291 - Keep ML engines usable after the inference process shuts them down for being idle r=ai-platform-reviewers,valentinp
+      2026-11-13  adb85ab1555b  Bug 2074080 - Give static embeddings their own engineId r=ai-platform-reviewers,ai-security-reviewers,cdipersio,valentinp
+      2026-11-12  321abe97608e  Bug 2057035 - Read Google Docs through their /mobilebasic view in PageExtractor. r=ai-platform-reviewers,nordzilla
       2026-10-15  ba3e18c15d63  Bug 2080002 - Let headless extractor tests fire the load deadline after the navigation instead of racing it r=ai-platform-reviewers,nordzilla
       2026-10-15  9599a53b2a0c  Bug 2072322 - Give monitor checks time to settle before reading pages r=ai-platform-reviewers,ai-security-reviewers,gregtatum,again
       2026-10-13  4c0249e82743  Bug 2079546 - Allow Smart Window to read longer YouTube transcripts r=ai-platform-reviewers,ai-security-reviewers,vazish,gregtatum
@@ -164,7 +166,7 @@ Known aliases (applied in HTML report, NOT below):
       2026-06-15  d1477c436ae3  Bug 2030307 - Add browser_security_get_open_tabs.js security test r=gregtatum,ai-platform-reviewers,mlucks
       2026-06-08  1e0ac6f1c01a  Bug 2044189 - Route toolkit/ml telemetry notification_emails to firefox-ai-and-ml@mozilla.com r=ai-platform-reviewers,jbowser
 
-[ 4] Joe Bowser  —  20 patch(es)
+[ 4] Joe Bowser  —  19 patch(es)
     ----------------------------------------------------------------------
       2026-09-24  f342dc69d5bf  Bug 2066288 - Add a test that the next run waits for a cancelled generation r=ai-platform-reviewers,valentinp
       2026-09-24  902bc3e1d007  Bug 2066288 - End the run when a runWithGenerator consumer abandons the generator r=ai-platform-reviewers,valentinp
@@ -185,7 +187,6 @@ Known aliases (applied in HTML report, NOT below):
       2026-06-10  ebfa0da43e2f  Bug 2005369 - Collect inference metrics in the static embeddings pipeline. r=thasan,ai-platform-reviewers
       2026-06-04  ff2569a4a447  Bug 2012177 - Add a "best-onnx" backend that chooses between onnx-native and wasm onnx r=tabbrowser-reviewers,ai-platform-reviewers,thasan,sthompson
       2026-06-04  7e024107d83e  Bug 2005365 - Collect inference metrics in the llama.cpp pipeline. r=thasan,ai-platform-reviewers
-      2026-05-15  7cddb977bca5  Bug 1967279 - replace wllamapreview with link-preview r=ai-platform-reviewers,thasan
 
 [ 5] Greg Tatum  —  11 patch(es)
     ----------------------------------------------------------------------
@@ -215,8 +216,9 @@ Known aliases (applied in HTML report, NOT below):
       2026-05-30  552d2eb44338  Bug 2039131 - New table indicating state of semantic search db (current model, dimensions). Allow switching models used for embeddings via config and Nimbus r=places-reviewers,ai-platform-reviewers,mak,thasan
       2026-05-29  fb46e0bc4ba8  Bug 2039101 - Turn on native coarse bit indexing, sqlite-vec to 0.1.10 r=mak,places-reviewers,ai-platform-reviewers,mzhang,thasan
 
-[ 7] Sylvestre Ledru  —  10 patch(es)
+[ 7] Sylvestre Ledru  —  11 patch(es)
     ----------------------------------------------------------------------
+      2026-11-09  7bc1fdbf9e2a  Bug 2090866 - Move the delta stats into the generate resolve callback in TextGenerator::Generate (Coverity CID 1702186) r=ai-platform-reviewers,valentinp
       2026-10-15  2839514b9bb4  no bug - docs: use internal references for in-tree docs instead of firefox-source-docs URLs r=necko-reviewers,home-newtab-reviewers-rotation,nina-py,valentin DONTBUILD
       2026-09-23  23ac933ec4f9  Bug 2070824 - Declare every about:license notice in moz.build r=firefox-build-system-reviewers,ipc-reviewers,application-update-reviewers,media-playback-reviewers,credential-management-reviewers,webrtc-reviewers,devtools-reviewers,cubeb-reviewers,profiler-reviewers,win-reviewers,frontend-codestyle-reviewers,ai-platform-reviewers,sandbox-reviewers,crashreporting-reviewers,media-webspeech-reviewers,bobowen,dimi,canova,padenot,nchevobbe,mccr8,yjuglaret,bwc,ahochheiden
       2026-09-22  8c79875a596a  Bug 2070824 - Declare every about:license notice in moz.build r=firefox-build-system-reviewers,ipc-reviewers,application-update-reviewers,media-playback-reviewers,credential-management-reviewers,webrtc-reviewers,devtools-reviewers,cubeb-reviewers,profiler-reviewers,win-reviewers,frontend-codestyle-reviewers,ai-platform-reviewers,sandbox-reviewers,crashreporting-reviewers,media-webspeech-reviewers,bobowen,dimi,canova,padenot,nchevobbe,mccr8,yjuglaret,bwc,ahochheiden
@@ -399,26 +401,22 @@ Known aliases (applied in HTML report, NOT below):
     ----------------------------------------------------------------------
       2026-07-27  1cd5155da24e  Bug 2057902 - skip tests with Nova design enabled if they fail permanently or frequently. r=webcompat-reviewers,twisniewski
 
-[41] Tim Xia  —  1 patch(es)
-    ----------------------------------------------------------------------
-      2026-05-16  0646764ae034  Bug 2024509 - Add Gecko Profiler markers to SmartWindow interaction lifecycle and tools, r=Mardak,gregtatum,ai-platform-reviewers,cgopal
-
-[42] Timothy Nikkel  —  1 patch(es)
+[41] Timothy Nikkel  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-08-17  e3bfebe1ae03  Bug 2063948. Make third_party/llama.cpp vendor again. r=padenot
 
-[43] Tom Schuster  —  1 patch(es)
+[42] Tom Schuster  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-06-01  0de07c477148  Bug 2041607 - Stop using blob based Workers for ML tests. r=ai-platform-reviewers,gregtatum
 
-[44] calixteman  —  1 patch(es)
+[43] calixteman  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-11-04  2257ad6d5f54  Bug 2085462 - Reject pending PDF text requests on actor destruction. r=gregtatum,ai-platform-reviewers
 
-[45] gazhibekova-hub  —  1 patch(es)
+[44] gazhibekova-hub  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-07-17  a82e56b40cb4  Bug 2046183 - Implement V0 Search Loop validatio, orchestration, and tool gating for search_the_web r=ai-platform-reviewers,bjohns,simonf,tetchart,npodgurski,thasan
 
-[46] serge-sans-paille  —  1 patch(es)
+[45] serge-sans-paille  —  1 patch(es)
     ----------------------------------------------------------------------
       2026-10-08  79d9708987a3  Bug 2077605 - Register SOURCE_HEADERS for third_party/ r=webrtc-reviewers,media-webspeech-reviewers,ng,padenot
